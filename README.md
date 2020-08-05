@@ -16,8 +16,9 @@ Note: .graphqlconfig can be used to point graphql client tools to the right dire
 
 ## TODOs
 
+* !! Unify property (de)serialisation across the pool package
+* !! graphql error handling ... no msg is returned to caller e.g. when creating a duplicate pool
 * graphql.schema - add support for directives to better control entity field values
-* !! pool - support custom pool type with WASM (on graphql and ent)
 * !! pool - support labels
 * ent - research and implement policies/privacy for entities based on user role (RBAC)
 * docker-compose - create docker compose for graphql server + mysql

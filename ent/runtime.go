@@ -3,6 +3,7 @@
 package ent
 
 import (
+	"github.com/net-auto/resourceManager/ent/allocationstrategy"
 	"github.com/net-auto/resourceManager/ent/label"
 	"github.com/net-auto/resourceManager/ent/propertytype"
 	"github.com/net-auto/resourceManager/ent/resource"
@@ -15,6 +16,16 @@ import (
 // code (default values, validators or hooks) and stitches it
 // to their package variables.
 func init() {
+	allocationstrategyFields := schema.AllocationStrategy{}.Fields()
+	_ = allocationstrategyFields
+	// allocationstrategyDescName is the schema descriptor for name field.
+	allocationstrategyDescName := allocationstrategyFields[0].Descriptor()
+	// allocationstrategy.NameValidator is a validator for the "name" field. It is called by the builders before save.
+	allocationstrategy.NameValidator = allocationstrategyDescName.Validators[0].(func(string) error)
+	// allocationstrategyDescScript is the schema descriptor for script field.
+	allocationstrategyDescScript := allocationstrategyFields[2].Descriptor()
+	// allocationstrategy.ScriptValidator is a validator for the "script" field. It is called by the builders before save.
+	allocationstrategy.ScriptValidator = allocationstrategyDescScript.Validators[0].(func(string) error)
 	labelFields := schema.Label{}.Fields()
 	_ = labelFields
 	// labelDescLabl is the schema descriptor for labl field.

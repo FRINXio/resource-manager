@@ -13,6 +13,7 @@ import (
 	"github.com/facebookincubator/ent/dialect/sql"
 	"github.com/facebookincubator/ent/dialect/sql/schema"
 	"github.com/hashicorp/go-multierror"
+	"github.com/net-auto/resourceManager/ent/allocationstrategy"
 	"github.com/net-auto/resourceManager/ent/label"
 	"github.com/net-auto/resourceManager/ent/property"
 	"github.com/net-auto/resourceManager/ent/propertytype"
@@ -48,6 +49,53 @@ type Edge struct {
 	Type string `json:"type,omitempty"` // edge type.
 	Name string `json:"name,omitempty"` // edge name.
 	IDs  []int  `json:"ids,omitempty"`  // node ids (where this edge point to).
+}
+
+func (as *AllocationStrategy) Node(ctx context.Context) (node *Node, err error) {
+	node = &Node{
+		ID:     as.ID,
+		Type:   "AllocationStrategy",
+		Fields: make([]*Field, 3),
+		Edges:  make([]*Edge, 1),
+	}
+	var buf []byte
+	if buf, err = json.Marshal(as.Name); err != nil {
+		return nil, err
+	}
+	node.Fields[0] = &Field{
+		Type:  "string",
+		Name:  "name",
+		Value: string(buf),
+	}
+	if buf, err = json.Marshal(as.Lang); err != nil {
+		return nil, err
+	}
+	node.Fields[1] = &Field{
+		Type:  "allocationstrategy.Lang",
+		Name:  "lang",
+		Value: string(buf),
+	}
+	if buf, err = json.Marshal(as.Script); err != nil {
+		return nil, err
+	}
+	node.Fields[2] = &Field{
+		Type:  "string",
+		Name:  "script",
+		Value: string(buf),
+	}
+	var ids []int
+	ids, err = as.QueryPools().
+		Select(resourcepool.FieldID).
+		Ints(ctx)
+	if err != nil {
+		return nil, err
+	}
+	node.Edges[0] = &Edge{
+		IDs:  ids,
+		Type: "ResourcePool",
+		Name: "pools",
+	}
+	return node, nil
 }
 
 func (l *Label) Node(ctx context.Context) (node *Node, err error) {
@@ -382,7 +430,7 @@ func (rp *ResourcePool) Node(ctx context.Context) (node *Node, err error) {
 		ID:     rp.ID,
 		Type:   "ResourcePool",
 		Fields: make([]*Field, 2),
-		Edges:  make([]*Edge, 3),
+		Edges:  make([]*Edge, 4),
 	}
 	var buf []byte
 	if buf, err = json.Marshal(rp.Name); err != nil {
@@ -434,6 +482,17 @@ func (rp *ResourcePool) Node(ctx context.Context) (node *Node, err error) {
 		IDs:  ids,
 		Type: "Resource",
 		Name: "claims",
+	}
+	ids, err = rp.QueryAllocationStrategy().
+		Select(allocationstrategy.FieldID).
+		Ints(ctx)
+	if err != nil {
+		return nil, err
+	}
+	node.Edges[3] = &Edge{
+		IDs:  ids,
+		Type: "AllocationStrategy",
+		Name: "allocation_strategy",
 	}
 	return node, nil
 }
@@ -515,6 +574,15 @@ func (c *Client) Noder(ctx context.Context, id int) (_ Noder, err error) {
 
 func (c *Client) noder(ctx context.Context, tbl string, id int) (Noder, error) {
 	switch tbl {
+	case allocationstrategy.Table:
+		n, err := c.AllocationStrategy.Query().
+			Where(allocationstrategy.ID(id)).
+			CollectFields(ctx, "AllocationStrategy").
+			Only(ctx)
+		if err != nil {
+			return nil, err
+		}
+		return n, nil
 	case label.Table:
 		n, err := c.Label.Query().
 			Where(label.ID(id)).

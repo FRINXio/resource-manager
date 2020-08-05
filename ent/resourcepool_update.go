@@ -9,6 +9,7 @@ import (
 	"github.com/facebookincubator/ent/dialect/sql"
 	"github.com/facebookincubator/ent/dialect/sql/sqlgraph"
 	"github.com/facebookincubator/ent/schema/field"
+	"github.com/net-auto/resourceManager/ent/allocationstrategy"
 	"github.com/net-auto/resourceManager/ent/label"
 	"github.com/net-auto/resourceManager/ent/predicate"
 	"github.com/net-auto/resourceManager/ent/resource"
@@ -95,6 +96,25 @@ func (rpu *ResourcePoolUpdate) AddClaims(r ...*Resource) *ResourcePoolUpdate {
 	return rpu.AddClaimIDs(ids...)
 }
 
+// SetAllocationStrategyID sets the allocation_strategy edge to AllocationStrategy by id.
+func (rpu *ResourcePoolUpdate) SetAllocationStrategyID(id int) *ResourcePoolUpdate {
+	rpu.mutation.SetAllocationStrategyID(id)
+	return rpu
+}
+
+// SetNillableAllocationStrategyID sets the allocation_strategy edge to AllocationStrategy by id if the given value is not nil.
+func (rpu *ResourcePoolUpdate) SetNillableAllocationStrategyID(id *int) *ResourcePoolUpdate {
+	if id != nil {
+		rpu = rpu.SetAllocationStrategyID(*id)
+	}
+	return rpu
+}
+
+// SetAllocationStrategy sets the allocation_strategy edge to AllocationStrategy.
+func (rpu *ResourcePoolUpdate) SetAllocationStrategy(a *AllocationStrategy) *ResourcePoolUpdate {
+	return rpu.SetAllocationStrategyID(a.ID)
+}
+
 // Mutation returns the ResourcePoolMutation object of the builder.
 func (rpu *ResourcePoolUpdate) Mutation() *ResourcePoolMutation {
 	return rpu.mutation
@@ -125,6 +145,12 @@ func (rpu *ResourcePoolUpdate) RemoveClaims(r ...*Resource) *ResourcePoolUpdate 
 		ids[i] = r[i].ID
 	}
 	return rpu.RemoveClaimIDs(ids...)
+}
+
+// ClearAllocationStrategy clears the allocation_strategy edge to AllocationStrategy.
+func (rpu *ResourcePoolUpdate) ClearAllocationStrategy() *ResourcePoolUpdate {
+	rpu.mutation.ClearAllocationStrategy()
+	return rpu
 }
 
 // Save executes the query and returns the number of rows/vertices matched by this operation.
@@ -329,6 +355,41 @@ func (rpu *ResourcePoolUpdate) sqlSave(ctx context.Context) (n int, err error) {
 		}
 		_spec.Edges.Add = append(_spec.Edges.Add, edge)
 	}
+	if rpu.mutation.AllocationStrategyCleared() {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.M2O,
+			Inverse: false,
+			Table:   resourcepool.AllocationStrategyTable,
+			Columns: []string{resourcepool.AllocationStrategyColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: &sqlgraph.FieldSpec{
+					Type:   field.TypeInt,
+					Column: allocationstrategy.FieldID,
+				},
+			},
+		}
+		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
+	}
+	if nodes := rpu.mutation.AllocationStrategyIDs(); len(nodes) > 0 {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.M2O,
+			Inverse: false,
+			Table:   resourcepool.AllocationStrategyTable,
+			Columns: []string{resourcepool.AllocationStrategyColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: &sqlgraph.FieldSpec{
+					Type:   field.TypeInt,
+					Column: allocationstrategy.FieldID,
+				},
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges.Add = append(_spec.Edges.Add, edge)
+	}
 	if n, err = sqlgraph.UpdateNodes(ctx, rpu.driver, _spec); err != nil {
 		if _, ok := err.(*sqlgraph.NotFoundError); ok {
 			err = &NotFoundError{resourcepool.Label}
@@ -412,6 +473,25 @@ func (rpuo *ResourcePoolUpdateOne) AddClaims(r ...*Resource) *ResourcePoolUpdate
 	return rpuo.AddClaimIDs(ids...)
 }
 
+// SetAllocationStrategyID sets the allocation_strategy edge to AllocationStrategy by id.
+func (rpuo *ResourcePoolUpdateOne) SetAllocationStrategyID(id int) *ResourcePoolUpdateOne {
+	rpuo.mutation.SetAllocationStrategyID(id)
+	return rpuo
+}
+
+// SetNillableAllocationStrategyID sets the allocation_strategy edge to AllocationStrategy by id if the given value is not nil.
+func (rpuo *ResourcePoolUpdateOne) SetNillableAllocationStrategyID(id *int) *ResourcePoolUpdateOne {
+	if id != nil {
+		rpuo = rpuo.SetAllocationStrategyID(*id)
+	}
+	return rpuo
+}
+
+// SetAllocationStrategy sets the allocation_strategy edge to AllocationStrategy.
+func (rpuo *ResourcePoolUpdateOne) SetAllocationStrategy(a *AllocationStrategy) *ResourcePoolUpdateOne {
+	return rpuo.SetAllocationStrategyID(a.ID)
+}
+
 // Mutation returns the ResourcePoolMutation object of the builder.
 func (rpuo *ResourcePoolUpdateOne) Mutation() *ResourcePoolMutation {
 	return rpuo.mutation
@@ -442,6 +522,12 @@ func (rpuo *ResourcePoolUpdateOne) RemoveClaims(r ...*Resource) *ResourcePoolUpd
 		ids[i] = r[i].ID
 	}
 	return rpuo.RemoveClaimIDs(ids...)
+}
+
+// ClearAllocationStrategy clears the allocation_strategy edge to AllocationStrategy.
+func (rpuo *ResourcePoolUpdateOne) ClearAllocationStrategy() *ResourcePoolUpdateOne {
+	rpuo.mutation.ClearAllocationStrategy()
+	return rpuo
 }
 
 // Save executes the query and returns the updated entity.
@@ -636,6 +722,41 @@ func (rpuo *ResourcePoolUpdateOne) sqlSave(ctx context.Context) (rp *ResourcePoo
 				IDSpec: &sqlgraph.FieldSpec{
 					Type:   field.TypeInt,
 					Column: resource.FieldID,
+				},
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges.Add = append(_spec.Edges.Add, edge)
+	}
+	if rpuo.mutation.AllocationStrategyCleared() {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.M2O,
+			Inverse: false,
+			Table:   resourcepool.AllocationStrategyTable,
+			Columns: []string{resourcepool.AllocationStrategyColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: &sqlgraph.FieldSpec{
+					Type:   field.TypeInt,
+					Column: allocationstrategy.FieldID,
+				},
+			},
+		}
+		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
+	}
+	if nodes := rpuo.mutation.AllocationStrategyIDs(); len(nodes) > 0 {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.M2O,
+			Inverse: false,
+			Table:   resourcepool.AllocationStrategyTable,
+			Columns: []string{resourcepool.AllocationStrategyColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: &sqlgraph.FieldSpec{
+					Type:   field.TypeInt,
+					Column: allocationstrategy.FieldID,
 				},
 			},
 		}

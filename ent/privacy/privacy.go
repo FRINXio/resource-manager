@@ -210,6 +210,30 @@ func DenyMutationOperationRule(op ent.Op) MutationRule {
 	return OnMutationOperation(rule, op)
 }
 
+// The AllocationStrategyQueryRuleFunc type is an adapter to allow the use of ordinary
+// functions as a query rule.
+type AllocationStrategyQueryRuleFunc func(context.Context, *ent.AllocationStrategyQuery) error
+
+// EvalQuery return f(ctx, q).
+func (f AllocationStrategyQueryRuleFunc) EvalQuery(ctx context.Context, q ent.Query) error {
+	if q, ok := q.(*ent.AllocationStrategyQuery); ok {
+		return f(ctx, q)
+	}
+	return Denyf("ent/privacy: unexpected query type %T, expect *ent.AllocationStrategyQuery", q)
+}
+
+// The AllocationStrategyMutationRuleFunc type is an adapter to allow the use of ordinary
+// functions as a mutation rule.
+type AllocationStrategyMutationRuleFunc func(context.Context, *ent.AllocationStrategyMutation) error
+
+// EvalMutation calls f(ctx, m).
+func (f AllocationStrategyMutationRuleFunc) EvalMutation(ctx context.Context, m ent.Mutation) error {
+	if m, ok := m.(*ent.AllocationStrategyMutation); ok {
+		return f(ctx, m)
+	}
+	return Denyf("ent/privacy: unexpected mutation type %T, expect *ent.AllocationStrategyMutation", m)
+}
+
 // The LabelQueryRuleFunc type is an adapter to allow the use of ordinary
 // functions as a query rule.
 type LabelQueryRuleFunc func(context.Context, *ent.LabelQuery) error

@@ -1,65 +1,124 @@
 mutation createNewResourceType {
-  CreateResourceType(
-    resourceName: "vlans",
-    resourceProperties: {
-      type: "int",
-      init: 1
+    CreateResourceType(
+        resourceName: "vlan",
+        resourceProperties: {
+            vlan: "int"
+        }
+    ) {
+        ID
+        Name
     }
-  ) {
-    ID
-    Name
-  }
+}
+
+mutation createComplexResourceType {
+    CreateResourceType(
+        resourceName: "complex",
+        resourceProperties: {
+            a: "int",
+            b: "string"
+        }
+    ) {
+        ID
+        Name
+    }
 }
 
 query queryResourceTypes {
-  QueryResourceTypes{
-    ID
-    Name
-  }
+    QueryResourceTypes{
+        ID
+        Name
+        Edges {
+            PropertyTypes {
+                Name
+                Type
+            }
+        }
+    }
 }
 
-mutation createNewPool {
-  CreatePool(
-    poolType: set,
-    resourceTypeId: 21474836480,
-    poolName: "vlan_test",
-    poolValues: [{vlans: 13}, {vlans: 14}],
-    allocationScript: "empty"
-  ){
-    ID
-    PoolType
-    Name
-  }
+mutation createSetPool {
+    CreateSetPool(
+        resourceTypeId: 25769803776,
+        poolName: "vlan_test4",
+        poolValues: [{vlan: 13}, {vlan: 14}],
+    ){
+        ID
+        PoolType
+        Name
+    }
+}
+
+mutation createAllocationStrat {
+    CreateAllocationStrategy(
+        name: "helloWorld",
+        script: "function invoke() { return {\"vlan\" : 101}; }"
+    ){
+        ID
+        Name
+        Lang
+        Script
+    }
+}
+
+query queryAllocationStrats {
+    QueryAllocationStrategies{
+        ID
+        Name
+        Lang
+        Script
+    }
+}
+
+mutation createAllocationPool {
+    CreateAllocatingPool(
+        resourceTypeId: 25769803776,
+        poolName: "vlan_allocating",
+        allocationStrategyId: 1,
+    ){
+        ID
+        PoolType
+        Name
+    }
 }
 
 query QueryAllPools {
-  QueryResourcePools{
-    ID
-    Name
-  }
+    QueryResourcePools{
+        ID
+        Name
+    }
 }
 
 mutation ClaimResource {
-  ClaimResource(poolName:"vlan_test") {
-    ID
-  }
+    ClaimResource(poolName:"vlan_test4") {
+        ID
+        Properties
+    }
+}
+
+mutation ClaimResourceFromAllocatingPool {
+    ClaimResource(poolName:"vlan_allocating") {
+        ID
+        Properties
+    }
 }
 
 query QueryResources {
-  QueryResources(poolName:"vlan_test"){
-    ID
-  }
-}
-
-mutation updateExistingPool {
-  UpdateResourcePool(
-    resourcePoolId: 17179869184,
-    poolName: "vlan_test94updated",
-    poolValues: [{vlans: 16}, {vlans: 17}],
-    allocationScript: "empty"
-  )
+    QueryResources(poolName:"vlan_allocating"){
+        ID
+        Properties
+    }
 }
 
 mutation deleteResourcePool {
-  DeleteResourcePool(resourcePoolId: 17179869184)
+    DeleteAllocationStrategy(allocationStrategyId: 10) {
+        Name
+    }
+}
+
+mutation deleteAllocationStrat {
+    DeleteAllocationStrategy(
+        allocationStrategyId: 1,
+    ){
+        Name
+    }
 }

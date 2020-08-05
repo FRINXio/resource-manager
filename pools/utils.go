@@ -3,13 +3,11 @@ package pools
 import (
 	"context"
 	"fmt"
-	"log"
-	"reflect"
-	"strings"
-
 	"github.com/facebookincubator/symphony/pkg/authz"
 	"github.com/facebookincubator/symphony/pkg/authz/models"
 	"github.com/net-auto/resourceManager/ent/propertytype"
+	"log"
+	"reflect"
 
 	"github.com/net-auto/resourceManager/ent"
 	"github.com/pkg/errors"
@@ -58,40 +56,11 @@ func HasPropertyTypeExistingProperties(
 	return exists
 }
 
-func UpdatePropertyType(
-	ctx context.Context,
-	client *ent.Client,
-	propertyTypeID int,
-	name string,
-	typeName interface{},
-	initValue interface{}) error {
-
-	propertyTypeNameString := fmt.Sprintf("%v", typeName)
-	propertyTypeName := propertytype.Type(propertyTypeNameString)
-	if err := propertytype.TypeValidator(propertyTypeName); err != nil {
-		return errors.Wrapf(err, "Unknown property type: %s", typeName)
-	}
-
-	prop := client.PropertyType.UpdateOneID(propertyTypeID).
-		SetName(name).
-		SetType(propertytype.TypeInt).
-		SetMandatory(true)
-
-	in := ProcessInitValue(initValue)
-	//we set the property type value (we don't know what we get from the user)
-	// TODO same is attempted in pools.go using switch case -> unify
-	reflect.ValueOf(prop).MethodByName("Set" + strings.Title(propertyTypeNameString) + "Val").Call(in)
-
-	_, err := prop.Save(ctx)
-	return err
-}
-
 func CreatePropertyType(
 	ctx context.Context,
 	client *ent.Client,
 	name string,
-	typeName interface{},
-	initValue interface{}) (*ent.PropertyType, error) {
+	typeName interface{}) (*ent.PropertyType, error) {
 
 	propertyTypeNameString := fmt.Sprintf("%v", typeName)
 	propertyTypeName := propertytype.Type(propertyTypeNameString)
@@ -99,33 +68,17 @@ func CreatePropertyType(
 		return nil, errors.Wrapf(err, "Unknown property type: %s", typeName)
 	}
 
-	prop := client.PropertyType.Create().
+	return client.PropertyType.Create().
 		SetName(name).
 		SetType(propertyTypeName).
-		SetMandatory(true)
-
-	in := ProcessInitValue(initValue)
-	//we set the property type value (we don't know what we get from the user)
-	// TODO same is attempted in pools.go using switch case -> unify
-	reflect.ValueOf(prop).MethodByName("Set" + strings.Title(propertyTypeNameString) + "Val").Call(in)
-
-	return prop.Save(ctx)
-}
-
-func ProcessInitValue(initValue interface{}) []reflect.Value {
-	//TODO we support int, but we always get int64 instead of int
-	if reflect.TypeOf(initValue).String() == "int64" {
-		initValue = int(initValue.(int64))
-	}
-
-	return []reflect.Value{reflect.ValueOf(initValue)}
+		SetMandatory(true).
+		Save(ctx)
 }
 
 func ToRawTypes(poolValues []map[string]interface{}) []RawResourceProps {
 	//TODO we support int, but we always get int64 instead of int
 	for i, v := range poolValues {
 		for k, val := range v {
-			fmt.Printf("key[%s] value[%s]\n", k, v)
 			if reflect.TypeOf(val).String() == "int64" {
 				poolValues[i][k] = int(val.(int64))
 			}
@@ -145,30 +98,35 @@ func PreCreateResources(ctx context.Context,
 	client *ent.Client,
 	propertyValues []RawResourceProps,
 	pool *ent.ResourcePool,
-	resourceType *ent.ResourceType) error {
+	resourceType *ent.ResourceType,
+	claimed bool) ([]*ent.Resource, error) {
+
+	var created []*ent.Resource
 	for _, rawResourceProps := range propertyValues {
 		// Parse & create the props
 		var err error = nil
 		var props ent.Properties
 		if props, err = ParseProps(ctx, client, resourceType, rawResourceProps); err != nil {
 			//TODO logging
-			return errors.Wrapf(err, "Unable to create new pool \"%s\". Error parsing properties", pool.Name)
+			return nil, errors.Wrapf(err, "Error parsing properties")
 		}
 
 		// Create pre-allocated resource
-		_, err = client.Resource.Create().
+		var resource *ent.Resource
+		resource, err = client.Resource.Create().
 			SetPool(pool).
-			SetClaimed(false).
+			SetClaimed(claimed).
 			AddProperties(props...).
 			Save(ctx)
+		created = append(created, resource)
 
 		if err != nil {
 			//TODO logging
-			return errors.Wrapf(err, "Unable to create new pool \"%s\". Error creating resource", pool.Name)
+			return nil, errors.Wrapf(err, "Error creating resource")
 		}
 	}
 
-	return nil
+	return created, nil
 }
 
 func CheckIfPoolsExist(
@@ -191,3 +149,24 @@ func CheckIfPoolsExist(
 
 	return false, resourceType
 }
+
+func PropertiesToMap(props []*ent.Property) (map[string]interface{}, error) {
+	var asMap = make(map[string]interface{})
+
+	for _, prop := range props {
+		// TODO is there a better way of parsing individual types ? Reuse something from inv ?
+		// TODO add additional types
+		// TODO we have this switch in 2 places
+		switch prop.Edges.Type.Type {
+		case "int":
+			asMap[prop.Edges.Type.Name] = *prop.IntVal
+		case "string":
+			asMap[prop.Edges.Type.Name] = *prop.StringVal
+		default:
+			return nil, fmt.Errorf("Unsupported property type \"%s\"", prop.Edges.Type.Type)
+		}
+	}
+
+	return asMap, nil
+}
+

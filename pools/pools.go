@@ -2,6 +2,8 @@ package pools
 
 import (
 	"context"
+	"fmt"
+	"strconv"
 
 	"github.com/net-auto/resourceManager/ent"
 	"github.com/net-auto/resourceManager/ent/predicate"
@@ -23,18 +25,27 @@ type Pool interface {
 	QueryResource(RawResourceProps) (*ent.Resource, error)
 	QueryResources() (ent.Resources, error)
 	Destroy() error
+	ResourceType() (*ent.ResourceType, error)
 }
 
 type LabeledPool interface {
 	AddLabel(label PoolLabel) error
 }
 
-// SetPool is a pool providing resources from a finite/predefined set of resources
-type SetPool struct {
+type poolBase struct {
 	*ent.ResourcePool
 
 	ctx    context.Context
 	client *ent.Client
+}
+
+func (pool poolBase) ResourceType() (*ent.ResourceType, error) {
+	return pool.ResourcePool.QueryResourceType().Only(pool.ctx)
+}
+
+// SetPool is a pool providing resources from a finite/predefined set of resources
+type SetPool struct {
+	poolBase
 }
 
 // SingletonPool always provides the same resource and never deallocates it
@@ -42,10 +53,16 @@ type SingletonPool struct {
 	SetPool
 }
 
+// AllocatingPool provides resources based on allocation strategy
+type AllocatingPool struct {
+	poolBase
+	invoker ScriptInvoker
+}
+
 // Raw representation of resource property values such as ["a": 2, "b": "value"]
 type RawResourceProps map[string]interface{}
 
-func newPoolInner(ctx context.Context,
+func newFixedPoolInner(ctx context.Context,
 	client *ent.Client,
 	resourceType *ent.ResourceType,
 	propertyValues []RawResourceProps,
@@ -62,10 +79,10 @@ func newPoolInner(ctx context.Context,
 	}
 
 	// Pre-create all resources
-	resourceErr := PreCreateResources(ctx, client, propertyValues, pool, resourceType)
+	_, resourceErr := PreCreateResources(ctx, client, propertyValues, pool, resourceType, false)
 
 	if resourceErr != nil {
-		return nil, resourceErr
+		return nil, errors.Wrapf(resourceErr, "Unable to create pool")
 	}
 
 	return pool, nil
@@ -112,9 +129,11 @@ func existingPool(
 
 	switch pool.PoolType {
 	case resourcePool.PoolTypeSingleton:
-		return &SingletonPool{SetPool{pool, ctx, client}}, nil
+		return &SingletonPool{SetPool{poolBase{pool, ctx, client}}}, nil
 	case resourcePool.PoolTypeSet:
-		return &SetPool{pool, ctx, client}, nil
+		return &SetPool{poolBase{pool, ctx, client}}, nil
+	case resourcePool.PoolTypeAllocating:
+		return &AllocatingPool{poolBase{pool, ctx, client}, NewWasmerDefault()}, nil
 	default:
 		return nil, errors.Errorf("Unknown pool type \"%s\"", pool.PoolType)
 	}
@@ -153,7 +172,12 @@ func ParseProps(
 		// TODO add additional types
 		switch pt.Type {
 		case "int":
-			ppBuilder.SetIntVal(pv.(int))
+			// Parse the int from string to be sure
+			atoi, err := strconv.Atoi(fmt.Sprintf("%v", pv))
+			if err != nil {
+				return nil, errors.Wrapf(err, "Unable to parse int value from \"%s\"", pv)
+			}
+			ppBuilder.SetIntVal(atoi)
 		case "string":
 			ppBuilder.SetStringVal(pv.(string))
 		default:

@@ -13,6 +13,7 @@ import (
 	"github.com/99designs/gqlgen/graphql"
 	"github.com/99designs/gqlgen/graphql/introspection"
 	"github.com/net-auto/resourceManager/ent"
+	"github.com/net-auto/resourceManager/ent/allocationstrategy"
 	"github.com/net-auto/resourceManager/ent/resourcepool"
 	gqlparser "github.com/vektah/gqlparser/v2"
 	"github.com/vektah/gqlparser/v2/ast"
@@ -39,29 +40,37 @@ type ResolverRoot interface {
 	Mutation() MutationResolver
 	PropertyType() PropertyTypeResolver
 	Query() QueryResolver
+	Resource() ResourceResolver
 }
 
 type DirectiveRoot struct {
 }
 
 type ComplexityRoot struct {
+	AllocationStrategy struct {
+		ID     func(childComplexity int) int
+		Lang   func(childComplexity int) int
+		Name   func(childComplexity int) int
+		Script func(childComplexity int) int
+	}
+
 	Label struct {
 		ID   func(childComplexity int) int
 		Labl func(childComplexity int) int
 	}
 
 	Mutation struct {
-		AddExistingPropertyToResourceType func(childComplexity int, resourceTypeID int, propertyTypeID int) int
-		AddResourceTypeProperty           func(childComplexity int, resourceTypeID int, resourceProperties map[string]interface{}) int
-		ClaimResource                     func(childComplexity int, poolName string) int
-		CreatePool                        func(childComplexity int, poolType *resourcepool.PoolType, resourceTypeID int, poolName string, poolValues []map[string]interface{}, allocationScript string) int
-		CreateResourceType                func(childComplexity int, resourceName string, resourceProperties map[string]interface{}) int
-		DeleteResourcePool                func(childComplexity int, resourcePoolID int) int
-		DeleteResourceType                func(childComplexity int, resourceTypeID int) int
-		FreeResource                      func(childComplexity int, input map[string]interface{}, poolName string) int
-		RemoveResourceTypeProperty        func(childComplexity int, resourceTypeID int, propertyTypeID int) int
-		UpdateResourcePool                func(childComplexity int, resourcePoolID int, poolName string, poolValues []map[string]interface{}, allocationScript string) int
-		UpdateResourceTypeName            func(childComplexity int, resourceTypeID int, resourceName string) int
+		ClaimResource            func(childComplexity int, poolName string) int
+		CreateAllocatingPool     func(childComplexity int, resourceTypeID int, poolName string, allocationStrategyID int) int
+		CreateAllocationStrategy func(childComplexity int, name string, script string) int
+		CreateResourceType       func(childComplexity int, resourceName string, resourceProperties map[string]interface{}) int
+		CreateSetPool            func(childComplexity int, resourceTypeID int, poolName string, poolValues []map[string]interface{}) int
+		CreateSingletonPool      func(childComplexity int, resourceTypeID int, poolName string, poolValues []map[string]interface{}) int
+		DeleteAllocationStrategy func(childComplexity int, allocationStrategyID int) int
+		DeleteResourcePool       func(childComplexity int, resourcePoolID int) int
+		DeleteResourceType       func(childComplexity int, resourceTypeID int) int
+		FreeResource             func(childComplexity int, input map[string]interface{}, poolName string) int
+		UpdateResourceTypeName   func(childComplexity int, resourceTypeID int, resourceName string) int
 	}
 
 	PropertyType struct {
@@ -75,14 +84,17 @@ type ComplexityRoot struct {
 	}
 
 	Query struct {
-		QueryResource      func(childComplexity int, input map[string]interface{}, poolName string) int
-		QueryResourcePools func(childComplexity int) int
-		QueryResourceTypes func(childComplexity int) int
-		QueryResources     func(childComplexity int, poolName string) int
+		QueryAllocationStrategies func(childComplexity int) int
+		QueryAllocationStrategy   func(childComplexity int, allocationStrategyName string) int
+		QueryResource             func(childComplexity int, input map[string]interface{}, poolName string) int
+		QueryResourcePools        func(childComplexity int) int
+		QueryResourceTypes        func(childComplexity int) int
+		QueryResources            func(childComplexity int, poolName string) int
 	}
 
 	Resource struct {
-		ID func(childComplexity int) int
+		ID         func(childComplexity int) int
+		Properties func(childComplexity int) int
 	}
 
 	ResourcePool struct {
@@ -93,8 +105,9 @@ type ComplexityRoot struct {
 	}
 
 	ResourcePoolEdges struct {
-		Labels       func(childComplexity int) int
-		ResourceType func(childComplexity int) int
+		AllocationStrategy func(childComplexity int) int
+		Labels             func(childComplexity int) int
+		ResourceType       func(childComplexity int) int
 	}
 
 	ResourceType struct {
@@ -110,17 +123,17 @@ type ComplexityRoot struct {
 }
 
 type MutationResolver interface {
+	CreateAllocationStrategy(ctx context.Context, name string, script string) (*ent.AllocationStrategy, error)
+	DeleteAllocationStrategy(ctx context.Context, allocationStrategyID int) (*ent.AllocationStrategy, error)
 	ClaimResource(ctx context.Context, poolName string) (*ent.Resource, error)
 	FreeResource(ctx context.Context, input map[string]interface{}, poolName string) (string, error)
-	CreatePool(ctx context.Context, poolType *resourcepool.PoolType, resourceTypeID int, poolName string, poolValues []map[string]interface{}, allocationScript string) (*ent.ResourcePool, error)
+	CreateSetPool(ctx context.Context, resourceTypeID int, poolName string, poolValues []map[string]interface{}) (*ent.ResourcePool, error)
+	CreateSingletonPool(ctx context.Context, resourceTypeID int, poolName string, poolValues []map[string]interface{}) (*ent.ResourcePool, error)
+	CreateAllocatingPool(ctx context.Context, resourceTypeID int, poolName string, allocationStrategyID int) (*ent.ResourcePool, error)
 	DeleteResourcePool(ctx context.Context, resourcePoolID int) (string, error)
-	UpdateResourcePool(ctx context.Context, resourcePoolID int, poolName string, poolValues []map[string]interface{}, allocationScript string) (string, error)
 	CreateResourceType(ctx context.Context, resourceName string, resourceProperties map[string]interface{}) (*ent.ResourceType, error)
 	DeleteResourceType(ctx context.Context, resourceTypeID int) (string, error)
 	UpdateResourceTypeName(ctx context.Context, resourceTypeID int, resourceName string) (*ent.ResourceType, error)
-	AddResourceTypeProperty(ctx context.Context, resourceTypeID int, resourceProperties map[string]interface{}) (*ent.ResourceType, error)
-	AddExistingPropertyToResourceType(ctx context.Context, resourceTypeID int, propertyTypeID int) (int, error)
-	RemoveResourceTypeProperty(ctx context.Context, resourceTypeID int, propertyTypeID int) (*ent.ResourceType, error)
 }
 type PropertyTypeResolver interface {
 	Type(ctx context.Context, obj *ent.PropertyType) (string, error)
@@ -128,8 +141,13 @@ type PropertyTypeResolver interface {
 type QueryResolver interface {
 	QueryResource(ctx context.Context, input map[string]interface{}, poolName string) (*ent.Resource, error)
 	QueryResources(ctx context.Context, poolName string) ([]*ent.Resource, error)
+	QueryAllocationStrategy(ctx context.Context, allocationStrategyName string) (*ent.AllocationStrategy, error)
+	QueryAllocationStrategies(ctx context.Context) ([]*ent.AllocationStrategy, error)
 	QueryResourceTypes(ctx context.Context) ([]*ent.ResourceType, error)
 	QueryResourcePools(ctx context.Context) ([]*ent.ResourcePool, error)
+}
+type ResourceResolver interface {
+	Properties(ctx context.Context, obj *ent.Resource) (map[string]interface{}, error)
 }
 
 type executableSchema struct {
@@ -147,6 +165,34 @@ func (e *executableSchema) Complexity(typeName, field string, childComplexity in
 	_ = ec
 	switch typeName + "." + field {
 
+	case "AllocationStrategy.ID":
+		if e.complexity.AllocationStrategy.ID == nil {
+			break
+		}
+
+		return e.complexity.AllocationStrategy.ID(childComplexity), true
+
+	case "AllocationStrategy.Lang":
+		if e.complexity.AllocationStrategy.Lang == nil {
+			break
+		}
+
+		return e.complexity.AllocationStrategy.Lang(childComplexity), true
+
+	case "AllocationStrategy.Name":
+		if e.complexity.AllocationStrategy.Name == nil {
+			break
+		}
+
+		return e.complexity.AllocationStrategy.Name(childComplexity), true
+
+	case "AllocationStrategy.Script":
+		if e.complexity.AllocationStrategy.Script == nil {
+			break
+		}
+
+		return e.complexity.AllocationStrategy.Script(childComplexity), true
+
 	case "Label.ID":
 		if e.complexity.Label.ID == nil {
 			break
@@ -161,30 +207,6 @@ func (e *executableSchema) Complexity(typeName, field string, childComplexity in
 
 		return e.complexity.Label.Labl(childComplexity), true
 
-	case "Mutation.AddExistingPropertyToResourceType":
-		if e.complexity.Mutation.AddExistingPropertyToResourceType == nil {
-			break
-		}
-
-		args, err := ec.field_Mutation_AddExistingPropertyToResourceType_args(context.TODO(), rawArgs)
-		if err != nil {
-			return 0, false
-		}
-
-		return e.complexity.Mutation.AddExistingPropertyToResourceType(childComplexity, args["resourceTypeId"].(int), args["PropertyTypeId"].(int)), true
-
-	case "Mutation.AddResourceTypeProperty":
-		if e.complexity.Mutation.AddResourceTypeProperty == nil {
-			break
-		}
-
-		args, err := ec.field_Mutation_AddResourceTypeProperty_args(context.TODO(), rawArgs)
-		if err != nil {
-			return 0, false
-		}
-
-		return e.complexity.Mutation.AddResourceTypeProperty(childComplexity, args["resourceTypeId"].(int), args["resourceProperties"].(map[string]interface{})), true
-
 	case "Mutation.ClaimResource":
 		if e.complexity.Mutation.ClaimResource == nil {
 			break
@@ -197,17 +219,29 @@ func (e *executableSchema) Complexity(typeName, field string, childComplexity in
 
 		return e.complexity.Mutation.ClaimResource(childComplexity, args["poolName"].(string)), true
 
-	case "Mutation.CreatePool":
-		if e.complexity.Mutation.CreatePool == nil {
+	case "Mutation.CreateAllocatingPool":
+		if e.complexity.Mutation.CreateAllocatingPool == nil {
 			break
 		}
 
-		args, err := ec.field_Mutation_CreatePool_args(context.TODO(), rawArgs)
+		args, err := ec.field_Mutation_CreateAllocatingPool_args(context.TODO(), rawArgs)
 		if err != nil {
 			return 0, false
 		}
 
-		return e.complexity.Mutation.CreatePool(childComplexity, args["poolType"].(*resourcepool.PoolType), args["resourceTypeId"].(int), args["poolName"].(string), args["poolValues"].([]map[string]interface{}), args["allocationScript"].(string)), true
+		return e.complexity.Mutation.CreateAllocatingPool(childComplexity, args["resourceTypeId"].(int), args["poolName"].(string), args["allocationStrategyId"].(int)), true
+
+	case "Mutation.CreateAllocationStrategy":
+		if e.complexity.Mutation.CreateAllocationStrategy == nil {
+			break
+		}
+
+		args, err := ec.field_Mutation_CreateAllocationStrategy_args(context.TODO(), rawArgs)
+		if err != nil {
+			return 0, false
+		}
+
+		return e.complexity.Mutation.CreateAllocationStrategy(childComplexity, args["name"].(string), args["script"].(string)), true
 
 	case "Mutation.CreateResourceType":
 		if e.complexity.Mutation.CreateResourceType == nil {
@@ -220,6 +254,42 @@ func (e *executableSchema) Complexity(typeName, field string, childComplexity in
 		}
 
 		return e.complexity.Mutation.CreateResourceType(childComplexity, args["resourceName"].(string), args["resourceProperties"].(map[string]interface{})), true
+
+	case "Mutation.CreateSetPool":
+		if e.complexity.Mutation.CreateSetPool == nil {
+			break
+		}
+
+		args, err := ec.field_Mutation_CreateSetPool_args(context.TODO(), rawArgs)
+		if err != nil {
+			return 0, false
+		}
+
+		return e.complexity.Mutation.CreateSetPool(childComplexity, args["resourceTypeId"].(int), args["poolName"].(string), args["poolValues"].([]map[string]interface{})), true
+
+	case "Mutation.CreateSingletonPool":
+		if e.complexity.Mutation.CreateSingletonPool == nil {
+			break
+		}
+
+		args, err := ec.field_Mutation_CreateSingletonPool_args(context.TODO(), rawArgs)
+		if err != nil {
+			return 0, false
+		}
+
+		return e.complexity.Mutation.CreateSingletonPool(childComplexity, args["resourceTypeId"].(int), args["poolName"].(string), args["poolValues"].([]map[string]interface{})), true
+
+	case "Mutation.DeleteAllocationStrategy":
+		if e.complexity.Mutation.DeleteAllocationStrategy == nil {
+			break
+		}
+
+		args, err := ec.field_Mutation_DeleteAllocationStrategy_args(context.TODO(), rawArgs)
+		if err != nil {
+			return 0, false
+		}
+
+		return e.complexity.Mutation.DeleteAllocationStrategy(childComplexity, args["allocationStrategyId"].(int)), true
 
 	case "Mutation.DeleteResourcePool":
 		if e.complexity.Mutation.DeleteResourcePool == nil {
@@ -256,30 +326,6 @@ func (e *executableSchema) Complexity(typeName, field string, childComplexity in
 		}
 
 		return e.complexity.Mutation.FreeResource(childComplexity, args["input"].(map[string]interface{}), args["poolName"].(string)), true
-
-	case "Mutation.RemoveResourceTypeProperty":
-		if e.complexity.Mutation.RemoveResourceTypeProperty == nil {
-			break
-		}
-
-		args, err := ec.field_Mutation_RemoveResourceTypeProperty_args(context.TODO(), rawArgs)
-		if err != nil {
-			return 0, false
-		}
-
-		return e.complexity.Mutation.RemoveResourceTypeProperty(childComplexity, args["resourceTypeId"].(int), args["PropertyTypeId"].(int)), true
-
-	case "Mutation.UpdateResourcePool":
-		if e.complexity.Mutation.UpdateResourcePool == nil {
-			break
-		}
-
-		args, err := ec.field_Mutation_UpdateResourcePool_args(context.TODO(), rawArgs)
-		if err != nil {
-			return 0, false
-		}
-
-		return e.complexity.Mutation.UpdateResourcePool(childComplexity, args["resourcePoolId"].(int), args["poolName"].(string), args["poolValues"].([]map[string]interface{}), args["allocationScript"].(string)), true
 
 	case "Mutation.UpdateResourceTypeName":
 		if e.complexity.Mutation.UpdateResourceTypeName == nil {
@@ -342,6 +388,25 @@ func (e *executableSchema) Complexity(typeName, field string, childComplexity in
 
 		return e.complexity.PropertyType.Type(childComplexity), true
 
+	case "Query.QueryAllocationStrategies":
+		if e.complexity.Query.QueryAllocationStrategies == nil {
+			break
+		}
+
+		return e.complexity.Query.QueryAllocationStrategies(childComplexity), true
+
+	case "Query.QueryAllocationStrategy":
+		if e.complexity.Query.QueryAllocationStrategy == nil {
+			break
+		}
+
+		args, err := ec.field_Query_QueryAllocationStrategy_args(context.TODO(), rawArgs)
+		if err != nil {
+			return 0, false
+		}
+
+		return e.complexity.Query.QueryAllocationStrategy(childComplexity, args["allocationStrategyName"].(string)), true
+
 	case "Query.QueryResource":
 		if e.complexity.Query.QueryResource == nil {
 			break
@@ -387,6 +452,13 @@ func (e *executableSchema) Complexity(typeName, field string, childComplexity in
 
 		return e.complexity.Resource.ID(childComplexity), true
 
+	case "Resource.Properties":
+		if e.complexity.Resource.Properties == nil {
+			break
+		}
+
+		return e.complexity.Resource.Properties(childComplexity), true
+
 	case "ResourcePool.Edges":
 		if e.complexity.ResourcePool.Edges == nil {
 			break
@@ -414,6 +486,13 @@ func (e *executableSchema) Complexity(typeName, field string, childComplexity in
 		}
 
 		return e.complexity.ResourcePool.PoolType(childComplexity), true
+
+	case "ResourcePoolEdges.AllocationStrategy":
+		if e.complexity.ResourcePoolEdges.AllocationStrategy == nil {
+			break
+		}
+
+		return e.complexity.ResourcePoolEdges.AllocationStrategy(childComplexity), true
 
 	case "ResourcePoolEdges.Labels":
 		if e.complexity.ResourcePoolEdges.Labels == nil {
@@ -550,6 +629,7 @@ type Resource
 @goModel(model: "github.com/net-auto/resourceManager/ent.Resource")
 {
     ID: Int!
+    Properties: Map!
 }
 
 type PropertyType
@@ -577,10 +657,29 @@ type Label
     Labl: String!
 }
 
+enum AllocationStrategyLang
+@goModel(
+    model: "github.com/net-auto/resourceManager/ent/allocationstrategy.Lang"
+)
+{
+    js
+    py
+}
+
+
+type AllocationStrategy
+@goModel(model: "github.com/net-auto/resourceManager/ent.AllocationStrategy"){
+    ID: Int!
+    Name: String!
+    Lang: AllocationStrategyLang!
+    Script: String!
+}
+
 type ResourcePoolEdges
 @goModel(model: "github.com/net-auto/resourceManager/ent.ResourcePoolEdges"){
     ResourceType: ResourceType!
     Labels: Label
+    AllocationStrategy: AllocationStrategy
 }
 
 type ResourceTypeEdges
@@ -599,6 +698,8 @@ type ResourceType
 type Query {
     QueryResource(input: Map!, poolName: String!): Resource!
     QueryResources(poolName: String!): [Resource]!
+    QueryAllocationStrategy(allocationStrategyName: String!): AllocationStrategy!
+    QueryAllocationStrategies: [AllocationStrategy]!
     QueryResourceTypes: [ResourceType]!
     QueryResourcePools: [ResourcePool]!
 }
@@ -606,19 +707,19 @@ type Query {
 #TODO missing CRUD for pools <-> labels
 
 type Mutation {
+    # Allocation strategy
+    CreateAllocationStrategy(name: String!, script: String!): AllocationStrategy!
+    DeleteAllocationStrategy(allocationStrategyId: Int!): AllocationStrategy!
+
     # managing resources via pools
     ClaimResource(poolName: String!): Resource!
     FreeResource(input: Map!, poolName: String!): String!
 
     # create/update/delete resource pool
-    CreatePool(poolType: PoolType, resourceTypeId: Int!, poolName: String!, poolValues: [Map], allocationScript: String!): ResourcePool!
+    CreateSetPool(resourceTypeId: Int!, poolName: String!, poolValues: [Map]): ResourcePool!
+    CreateSingletonPool(resourceTypeId: Int!, poolName: String!, poolValues: [Map]): ResourcePool!
+    CreateAllocatingPool(resourceTypeId: Int!, poolName: String!, allocationStrategyId: Int!): ResourcePool!
     DeleteResourcePool(resourcePoolId: Int!): String!
-
-    ## poolValues: [Map] - only NEW pool values are allowed, leave it empty if no values need to be added to the pool
-    ##                     old values cannot be deleted (maybe they should be deletable?)
-    ## poolName: String! - new pool name (if not changed send the current name)
-    ## allocationScript: String! - new allocation script, if not changed send the current one
-    UpdateResourcePool(resourcePoolId: Int!, poolName: String!, poolValues: [Map], allocationScript: String!): String!
 
     # create/update/delete resource type
     ## resourceName: String! - name of the resource type AND property type (should they be different?)
@@ -628,12 +729,6 @@ type Mutation {
     DeleteResourceType(resourceTypeId: Int!): String!
     ## it only changes the name of the resource type
     UpdateResourceTypeName(resourceTypeId: Int!, resourceName: String!): ResourceType!
-    ## I don't know if AddResourceTypeProperty is a legitimate case that we should support
-    AddResourceTypeProperty(resourceTypeId: Int!, resourceProperties: Map!): ResourceType! # new property type added
-    ## I don't know if AddExistingPropertyToResourceType is a legitimate case that we should support
-    AddExistingPropertyToResourceType(resourceTypeId: Int!, PropertyTypeId: Int!): Int! # existing property type added
-    ## I don't know if RemoveResourceTypeProperty is a legitimate case that we should support
-    RemoveResourceTypeProperty(resourceTypeId: Int!, PropertyTypeId: Int!): ResourceType! # remove property type
 }`, BuiltIn: false},
 }
 var parsedSchema = gqlparser.MustLoadSchema(sources...)
@@ -641,50 +736,6 @@ var parsedSchema = gqlparser.MustLoadSchema(sources...)
 // endregion ************************** generated!.gotpl **************************
 
 // region    ***************************** args.gotpl *****************************
-
-func (ec *executionContext) field_Mutation_AddExistingPropertyToResourceType_args(ctx context.Context, rawArgs map[string]interface{}) (map[string]interface{}, error) {
-	var err error
-	args := map[string]interface{}{}
-	var arg0 int
-	if tmp, ok := rawArgs["resourceTypeId"]; ok {
-		arg0, err = ec.unmarshalNInt2int(ctx, tmp)
-		if err != nil {
-			return nil, err
-		}
-	}
-	args["resourceTypeId"] = arg0
-	var arg1 int
-	if tmp, ok := rawArgs["PropertyTypeId"]; ok {
-		arg1, err = ec.unmarshalNInt2int(ctx, tmp)
-		if err != nil {
-			return nil, err
-		}
-	}
-	args["PropertyTypeId"] = arg1
-	return args, nil
-}
-
-func (ec *executionContext) field_Mutation_AddResourceTypeProperty_args(ctx context.Context, rawArgs map[string]interface{}) (map[string]interface{}, error) {
-	var err error
-	args := map[string]interface{}{}
-	var arg0 int
-	if tmp, ok := rawArgs["resourceTypeId"]; ok {
-		arg0, err = ec.unmarshalNInt2int(ctx, tmp)
-		if err != nil {
-			return nil, err
-		}
-	}
-	args["resourceTypeId"] = arg0
-	var arg1 map[string]interface{}
-	if tmp, ok := rawArgs["resourceProperties"]; ok {
-		arg1, err = ec.unmarshalNMap2map(ctx, tmp)
-		if err != nil {
-			return nil, err
-		}
-	}
-	args["resourceProperties"] = arg1
-	return args, nil
-}
 
 func (ec *executionContext) field_Mutation_ClaimResource_args(ctx context.Context, rawArgs map[string]interface{}) (map[string]interface{}, error) {
 	var err error
@@ -700,49 +751,55 @@ func (ec *executionContext) field_Mutation_ClaimResource_args(ctx context.Contex
 	return args, nil
 }
 
-func (ec *executionContext) field_Mutation_CreatePool_args(ctx context.Context, rawArgs map[string]interface{}) (map[string]interface{}, error) {
+func (ec *executionContext) field_Mutation_CreateAllocatingPool_args(ctx context.Context, rawArgs map[string]interface{}) (map[string]interface{}, error) {
 	var err error
 	args := map[string]interface{}{}
-	var arg0 *resourcepool.PoolType
-	if tmp, ok := rawArgs["poolType"]; ok {
-		arg0, err = ec.unmarshalOPoolType2ᚖgithubᚗcomᚋnetᚑautoᚋresourceManagerᚋentᚋresourcepoolᚐPoolType(ctx, tmp)
-		if err != nil {
-			return nil, err
-		}
-	}
-	args["poolType"] = arg0
-	var arg1 int
+	var arg0 int
 	if tmp, ok := rawArgs["resourceTypeId"]; ok {
-		arg1, err = ec.unmarshalNInt2int(ctx, tmp)
+		arg0, err = ec.unmarshalNInt2int(ctx, tmp)
 		if err != nil {
 			return nil, err
 		}
 	}
-	args["resourceTypeId"] = arg1
-	var arg2 string
+	args["resourceTypeId"] = arg0
+	var arg1 string
 	if tmp, ok := rawArgs["poolName"]; ok {
-		arg2, err = ec.unmarshalNString2string(ctx, tmp)
+		arg1, err = ec.unmarshalNString2string(ctx, tmp)
 		if err != nil {
 			return nil, err
 		}
 	}
-	args["poolName"] = arg2
-	var arg3 []map[string]interface{}
-	if tmp, ok := rawArgs["poolValues"]; ok {
-		arg3, err = ec.unmarshalOMap2ᚕmap(ctx, tmp)
+	args["poolName"] = arg1
+	var arg2 int
+	if tmp, ok := rawArgs["allocationStrategyId"]; ok {
+		arg2, err = ec.unmarshalNInt2int(ctx, tmp)
 		if err != nil {
 			return nil, err
 		}
 	}
-	args["poolValues"] = arg3
-	var arg4 string
-	if tmp, ok := rawArgs["allocationScript"]; ok {
-		arg4, err = ec.unmarshalNString2string(ctx, tmp)
+	args["allocationStrategyId"] = arg2
+	return args, nil
+}
+
+func (ec *executionContext) field_Mutation_CreateAllocationStrategy_args(ctx context.Context, rawArgs map[string]interface{}) (map[string]interface{}, error) {
+	var err error
+	args := map[string]interface{}{}
+	var arg0 string
+	if tmp, ok := rawArgs["name"]; ok {
+		arg0, err = ec.unmarshalNString2string(ctx, tmp)
 		if err != nil {
 			return nil, err
 		}
 	}
-	args["allocationScript"] = arg4
+	args["name"] = arg0
+	var arg1 string
+	if tmp, ok := rawArgs["script"]; ok {
+		arg1, err = ec.unmarshalNString2string(ctx, tmp)
+		if err != nil {
+			return nil, err
+		}
+	}
+	args["script"] = arg1
 	return args, nil
 }
 
@@ -765,6 +822,80 @@ func (ec *executionContext) field_Mutation_CreateResourceType_args(ctx context.C
 		}
 	}
 	args["resourceProperties"] = arg1
+	return args, nil
+}
+
+func (ec *executionContext) field_Mutation_CreateSetPool_args(ctx context.Context, rawArgs map[string]interface{}) (map[string]interface{}, error) {
+	var err error
+	args := map[string]interface{}{}
+	var arg0 int
+	if tmp, ok := rawArgs["resourceTypeId"]; ok {
+		arg0, err = ec.unmarshalNInt2int(ctx, tmp)
+		if err != nil {
+			return nil, err
+		}
+	}
+	args["resourceTypeId"] = arg0
+	var arg1 string
+	if tmp, ok := rawArgs["poolName"]; ok {
+		arg1, err = ec.unmarshalNString2string(ctx, tmp)
+		if err != nil {
+			return nil, err
+		}
+	}
+	args["poolName"] = arg1
+	var arg2 []map[string]interface{}
+	if tmp, ok := rawArgs["poolValues"]; ok {
+		arg2, err = ec.unmarshalOMap2ᚕmap(ctx, tmp)
+		if err != nil {
+			return nil, err
+		}
+	}
+	args["poolValues"] = arg2
+	return args, nil
+}
+
+func (ec *executionContext) field_Mutation_CreateSingletonPool_args(ctx context.Context, rawArgs map[string]interface{}) (map[string]interface{}, error) {
+	var err error
+	args := map[string]interface{}{}
+	var arg0 int
+	if tmp, ok := rawArgs["resourceTypeId"]; ok {
+		arg0, err = ec.unmarshalNInt2int(ctx, tmp)
+		if err != nil {
+			return nil, err
+		}
+	}
+	args["resourceTypeId"] = arg0
+	var arg1 string
+	if tmp, ok := rawArgs["poolName"]; ok {
+		arg1, err = ec.unmarshalNString2string(ctx, tmp)
+		if err != nil {
+			return nil, err
+		}
+	}
+	args["poolName"] = arg1
+	var arg2 []map[string]interface{}
+	if tmp, ok := rawArgs["poolValues"]; ok {
+		arg2, err = ec.unmarshalOMap2ᚕmap(ctx, tmp)
+		if err != nil {
+			return nil, err
+		}
+	}
+	args["poolValues"] = arg2
+	return args, nil
+}
+
+func (ec *executionContext) field_Mutation_DeleteAllocationStrategy_args(ctx context.Context, rawArgs map[string]interface{}) (map[string]interface{}, error) {
+	var err error
+	args := map[string]interface{}{}
+	var arg0 int
+	if tmp, ok := rawArgs["allocationStrategyId"]; ok {
+		arg0, err = ec.unmarshalNInt2int(ctx, tmp)
+		if err != nil {
+			return nil, err
+		}
+	}
+	args["allocationStrategyId"] = arg0
 	return args, nil
 }
 
@@ -818,66 +949,6 @@ func (ec *executionContext) field_Mutation_FreeResource_args(ctx context.Context
 	return args, nil
 }
 
-func (ec *executionContext) field_Mutation_RemoveResourceTypeProperty_args(ctx context.Context, rawArgs map[string]interface{}) (map[string]interface{}, error) {
-	var err error
-	args := map[string]interface{}{}
-	var arg0 int
-	if tmp, ok := rawArgs["resourceTypeId"]; ok {
-		arg0, err = ec.unmarshalNInt2int(ctx, tmp)
-		if err != nil {
-			return nil, err
-		}
-	}
-	args["resourceTypeId"] = arg0
-	var arg1 int
-	if tmp, ok := rawArgs["PropertyTypeId"]; ok {
-		arg1, err = ec.unmarshalNInt2int(ctx, tmp)
-		if err != nil {
-			return nil, err
-		}
-	}
-	args["PropertyTypeId"] = arg1
-	return args, nil
-}
-
-func (ec *executionContext) field_Mutation_UpdateResourcePool_args(ctx context.Context, rawArgs map[string]interface{}) (map[string]interface{}, error) {
-	var err error
-	args := map[string]interface{}{}
-	var arg0 int
-	if tmp, ok := rawArgs["resourcePoolId"]; ok {
-		arg0, err = ec.unmarshalNInt2int(ctx, tmp)
-		if err != nil {
-			return nil, err
-		}
-	}
-	args["resourcePoolId"] = arg0
-	var arg1 string
-	if tmp, ok := rawArgs["poolName"]; ok {
-		arg1, err = ec.unmarshalNString2string(ctx, tmp)
-		if err != nil {
-			return nil, err
-		}
-	}
-	args["poolName"] = arg1
-	var arg2 []map[string]interface{}
-	if tmp, ok := rawArgs["poolValues"]; ok {
-		arg2, err = ec.unmarshalOMap2ᚕmap(ctx, tmp)
-		if err != nil {
-			return nil, err
-		}
-	}
-	args["poolValues"] = arg2
-	var arg3 string
-	if tmp, ok := rawArgs["allocationScript"]; ok {
-		arg3, err = ec.unmarshalNString2string(ctx, tmp)
-		if err != nil {
-			return nil, err
-		}
-	}
-	args["allocationScript"] = arg3
-	return args, nil
-}
-
 func (ec *executionContext) field_Mutation_UpdateResourceTypeName_args(ctx context.Context, rawArgs map[string]interface{}) (map[string]interface{}, error) {
 	var err error
 	args := map[string]interface{}{}
@@ -897,6 +968,20 @@ func (ec *executionContext) field_Mutation_UpdateResourceTypeName_args(ctx conte
 		}
 	}
 	args["resourceName"] = arg1
+	return args, nil
+}
+
+func (ec *executionContext) field_Query_QueryAllocationStrategy_args(ctx context.Context, rawArgs map[string]interface{}) (map[string]interface{}, error) {
+	var err error
+	args := map[string]interface{}{}
+	var arg0 string
+	if tmp, ok := rawArgs["allocationStrategyName"]; ok {
+		arg0, err = ec.unmarshalNString2string(ctx, tmp)
+		if err != nil {
+			return nil, err
+		}
+	}
+	args["allocationStrategyName"] = arg0
 	return args, nil
 }
 
@@ -986,6 +1071,142 @@ func (ec *executionContext) field___Type_fields_args(ctx context.Context, rawArg
 
 // region    **************************** field.gotpl *****************************
 
+func (ec *executionContext) _AllocationStrategy_ID(ctx context.Context, field graphql.CollectedField, obj *ent.AllocationStrategy) (ret graphql.Marshaler) {
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	fc := &graphql.FieldContext{
+		Object:   "AllocationStrategy",
+		Field:    field,
+		Args:     nil,
+		IsMethod: false,
+	}
+
+	ctx = graphql.WithFieldContext(ctx, fc)
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.ID, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(int)
+	fc.Result = res
+	return ec.marshalNInt2int(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) _AllocationStrategy_Name(ctx context.Context, field graphql.CollectedField, obj *ent.AllocationStrategy) (ret graphql.Marshaler) {
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	fc := &graphql.FieldContext{
+		Object:   "AllocationStrategy",
+		Field:    field,
+		Args:     nil,
+		IsMethod: false,
+	}
+
+	ctx = graphql.WithFieldContext(ctx, fc)
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.Name, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(string)
+	fc.Result = res
+	return ec.marshalNString2string(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) _AllocationStrategy_Lang(ctx context.Context, field graphql.CollectedField, obj *ent.AllocationStrategy) (ret graphql.Marshaler) {
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	fc := &graphql.FieldContext{
+		Object:   "AllocationStrategy",
+		Field:    field,
+		Args:     nil,
+		IsMethod: false,
+	}
+
+	ctx = graphql.WithFieldContext(ctx, fc)
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.Lang, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(allocationstrategy.Lang)
+	fc.Result = res
+	return ec.marshalNAllocationStrategyLang2githubᚗcomᚋnetᚑautoᚋresourceManagerᚋentᚋallocationstrategyᚐLang(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) _AllocationStrategy_Script(ctx context.Context, field graphql.CollectedField, obj *ent.AllocationStrategy) (ret graphql.Marshaler) {
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	fc := &graphql.FieldContext{
+		Object:   "AllocationStrategy",
+		Field:    field,
+		Args:     nil,
+		IsMethod: false,
+	}
+
+	ctx = graphql.WithFieldContext(ctx, fc)
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.Script, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(string)
+	fc.Result = res
+	return ec.marshalNString2string(ctx, field.Selections, res)
+}
+
 func (ec *executionContext) _Label_ID(ctx context.Context, field graphql.CollectedField, obj *ent.Label) (ret graphql.Marshaler) {
 	defer func() {
 		if r := recover(); r != nil {
@@ -1052,6 +1273,88 @@ func (ec *executionContext) _Label_Labl(ctx context.Context, field graphql.Colle
 	res := resTmp.(string)
 	fc.Result = res
 	return ec.marshalNString2string(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) _Mutation_CreateAllocationStrategy(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	fc := &graphql.FieldContext{
+		Object:   "Mutation",
+		Field:    field,
+		Args:     nil,
+		IsMethod: true,
+	}
+
+	ctx = graphql.WithFieldContext(ctx, fc)
+	rawArgs := field.ArgumentMap(ec.Variables)
+	args, err := ec.field_Mutation_CreateAllocationStrategy_args(ctx, rawArgs)
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	fc.Args = args
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return ec.resolvers.Mutation().CreateAllocationStrategy(rctx, args["name"].(string), args["script"].(string))
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(*ent.AllocationStrategy)
+	fc.Result = res
+	return ec.marshalNAllocationStrategy2ᚖgithubᚗcomᚋnetᚑautoᚋresourceManagerᚋentᚐAllocationStrategy(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) _Mutation_DeleteAllocationStrategy(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	fc := &graphql.FieldContext{
+		Object:   "Mutation",
+		Field:    field,
+		Args:     nil,
+		IsMethod: true,
+	}
+
+	ctx = graphql.WithFieldContext(ctx, fc)
+	rawArgs := field.ArgumentMap(ec.Variables)
+	args, err := ec.field_Mutation_DeleteAllocationStrategy_args(ctx, rawArgs)
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	fc.Args = args
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return ec.resolvers.Mutation().DeleteAllocationStrategy(rctx, args["allocationStrategyId"].(int))
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(*ent.AllocationStrategy)
+	fc.Result = res
+	return ec.marshalNAllocationStrategy2ᚖgithubᚗcomᚋnetᚑautoᚋresourceManagerᚋentᚐAllocationStrategy(ctx, field.Selections, res)
 }
 
 func (ec *executionContext) _Mutation_ClaimResource(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
@@ -1136,7 +1439,7 @@ func (ec *executionContext) _Mutation_FreeResource(ctx context.Context, field gr
 	return ec.marshalNString2string(ctx, field.Selections, res)
 }
 
-func (ec *executionContext) _Mutation_CreatePool(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
+func (ec *executionContext) _Mutation_CreateSetPool(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
 	defer func() {
 		if r := recover(); r != nil {
 			ec.Error(ctx, ec.Recover(ctx, r))
@@ -1152,7 +1455,7 @@ func (ec *executionContext) _Mutation_CreatePool(ctx context.Context, field grap
 
 	ctx = graphql.WithFieldContext(ctx, fc)
 	rawArgs := field.ArgumentMap(ec.Variables)
-	args, err := ec.field_Mutation_CreatePool_args(ctx, rawArgs)
+	args, err := ec.field_Mutation_CreateSetPool_args(ctx, rawArgs)
 	if err != nil {
 		ec.Error(ctx, err)
 		return graphql.Null
@@ -1160,7 +1463,89 @@ func (ec *executionContext) _Mutation_CreatePool(ctx context.Context, field grap
 	fc.Args = args
 	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
 		ctx = rctx // use context from middleware stack in children
-		return ec.resolvers.Mutation().CreatePool(rctx, args["poolType"].(*resourcepool.PoolType), args["resourceTypeId"].(int), args["poolName"].(string), args["poolValues"].([]map[string]interface{}), args["allocationScript"].(string))
+		return ec.resolvers.Mutation().CreateSetPool(rctx, args["resourceTypeId"].(int), args["poolName"].(string), args["poolValues"].([]map[string]interface{}))
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(*ent.ResourcePool)
+	fc.Result = res
+	return ec.marshalNResourcePool2ᚖgithubᚗcomᚋnetᚑautoᚋresourceManagerᚋentᚐResourcePool(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) _Mutation_CreateSingletonPool(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	fc := &graphql.FieldContext{
+		Object:   "Mutation",
+		Field:    field,
+		Args:     nil,
+		IsMethod: true,
+	}
+
+	ctx = graphql.WithFieldContext(ctx, fc)
+	rawArgs := field.ArgumentMap(ec.Variables)
+	args, err := ec.field_Mutation_CreateSingletonPool_args(ctx, rawArgs)
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	fc.Args = args
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return ec.resolvers.Mutation().CreateSingletonPool(rctx, args["resourceTypeId"].(int), args["poolName"].(string), args["poolValues"].([]map[string]interface{}))
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(*ent.ResourcePool)
+	fc.Result = res
+	return ec.marshalNResourcePool2ᚖgithubᚗcomᚋnetᚑautoᚋresourceManagerᚋentᚐResourcePool(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) _Mutation_CreateAllocatingPool(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	fc := &graphql.FieldContext{
+		Object:   "Mutation",
+		Field:    field,
+		Args:     nil,
+		IsMethod: true,
+	}
+
+	ctx = graphql.WithFieldContext(ctx, fc)
+	rawArgs := field.ArgumentMap(ec.Variables)
+	args, err := ec.field_Mutation_CreateAllocatingPool_args(ctx, rawArgs)
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	fc.Args = args
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return ec.resolvers.Mutation().CreateAllocatingPool(rctx, args["resourceTypeId"].(int), args["poolName"].(string), args["allocationStrategyId"].(int))
 	})
 	if err != nil {
 		ec.Error(ctx, err)
@@ -1202,47 +1587,6 @@ func (ec *executionContext) _Mutation_DeleteResourcePool(ctx context.Context, fi
 	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
 		ctx = rctx // use context from middleware stack in children
 		return ec.resolvers.Mutation().DeleteResourcePool(rctx, args["resourcePoolId"].(int))
-	})
-	if err != nil {
-		ec.Error(ctx, err)
-		return graphql.Null
-	}
-	if resTmp == nil {
-		if !graphql.HasFieldError(ctx, fc) {
-			ec.Errorf(ctx, "must not be null")
-		}
-		return graphql.Null
-	}
-	res := resTmp.(string)
-	fc.Result = res
-	return ec.marshalNString2string(ctx, field.Selections, res)
-}
-
-func (ec *executionContext) _Mutation_UpdateResourcePool(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
-	defer func() {
-		if r := recover(); r != nil {
-			ec.Error(ctx, ec.Recover(ctx, r))
-			ret = graphql.Null
-		}
-	}()
-	fc := &graphql.FieldContext{
-		Object:   "Mutation",
-		Field:    field,
-		Args:     nil,
-		IsMethod: true,
-	}
-
-	ctx = graphql.WithFieldContext(ctx, fc)
-	rawArgs := field.ArgumentMap(ec.Variables)
-	args, err := ec.field_Mutation_UpdateResourcePool_args(ctx, rawArgs)
-	if err != nil {
-		ec.Error(ctx, err)
-		return graphql.Null
-	}
-	fc.Args = args
-	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
-		ctx = rctx // use context from middleware stack in children
-		return ec.resolvers.Mutation().UpdateResourcePool(rctx, args["resourcePoolId"].(int), args["poolName"].(string), args["poolValues"].([]map[string]interface{}), args["allocationScript"].(string))
 	})
 	if err != nil {
 		ec.Error(ctx, err)
@@ -1366,129 +1710,6 @@ func (ec *executionContext) _Mutation_UpdateResourceTypeName(ctx context.Context
 	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
 		ctx = rctx // use context from middleware stack in children
 		return ec.resolvers.Mutation().UpdateResourceTypeName(rctx, args["resourceTypeId"].(int), args["resourceName"].(string))
-	})
-	if err != nil {
-		ec.Error(ctx, err)
-		return graphql.Null
-	}
-	if resTmp == nil {
-		if !graphql.HasFieldError(ctx, fc) {
-			ec.Errorf(ctx, "must not be null")
-		}
-		return graphql.Null
-	}
-	res := resTmp.(*ent.ResourceType)
-	fc.Result = res
-	return ec.marshalNResourceType2ᚖgithubᚗcomᚋnetᚑautoᚋresourceManagerᚋentᚐResourceType(ctx, field.Selections, res)
-}
-
-func (ec *executionContext) _Mutation_AddResourceTypeProperty(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
-	defer func() {
-		if r := recover(); r != nil {
-			ec.Error(ctx, ec.Recover(ctx, r))
-			ret = graphql.Null
-		}
-	}()
-	fc := &graphql.FieldContext{
-		Object:   "Mutation",
-		Field:    field,
-		Args:     nil,
-		IsMethod: true,
-	}
-
-	ctx = graphql.WithFieldContext(ctx, fc)
-	rawArgs := field.ArgumentMap(ec.Variables)
-	args, err := ec.field_Mutation_AddResourceTypeProperty_args(ctx, rawArgs)
-	if err != nil {
-		ec.Error(ctx, err)
-		return graphql.Null
-	}
-	fc.Args = args
-	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
-		ctx = rctx // use context from middleware stack in children
-		return ec.resolvers.Mutation().AddResourceTypeProperty(rctx, args["resourceTypeId"].(int), args["resourceProperties"].(map[string]interface{}))
-	})
-	if err != nil {
-		ec.Error(ctx, err)
-		return graphql.Null
-	}
-	if resTmp == nil {
-		if !graphql.HasFieldError(ctx, fc) {
-			ec.Errorf(ctx, "must not be null")
-		}
-		return graphql.Null
-	}
-	res := resTmp.(*ent.ResourceType)
-	fc.Result = res
-	return ec.marshalNResourceType2ᚖgithubᚗcomᚋnetᚑautoᚋresourceManagerᚋentᚐResourceType(ctx, field.Selections, res)
-}
-
-func (ec *executionContext) _Mutation_AddExistingPropertyToResourceType(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
-	defer func() {
-		if r := recover(); r != nil {
-			ec.Error(ctx, ec.Recover(ctx, r))
-			ret = graphql.Null
-		}
-	}()
-	fc := &graphql.FieldContext{
-		Object:   "Mutation",
-		Field:    field,
-		Args:     nil,
-		IsMethod: true,
-	}
-
-	ctx = graphql.WithFieldContext(ctx, fc)
-	rawArgs := field.ArgumentMap(ec.Variables)
-	args, err := ec.field_Mutation_AddExistingPropertyToResourceType_args(ctx, rawArgs)
-	if err != nil {
-		ec.Error(ctx, err)
-		return graphql.Null
-	}
-	fc.Args = args
-	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
-		ctx = rctx // use context from middleware stack in children
-		return ec.resolvers.Mutation().AddExistingPropertyToResourceType(rctx, args["resourceTypeId"].(int), args["PropertyTypeId"].(int))
-	})
-	if err != nil {
-		ec.Error(ctx, err)
-		return graphql.Null
-	}
-	if resTmp == nil {
-		if !graphql.HasFieldError(ctx, fc) {
-			ec.Errorf(ctx, "must not be null")
-		}
-		return graphql.Null
-	}
-	res := resTmp.(int)
-	fc.Result = res
-	return ec.marshalNInt2int(ctx, field.Selections, res)
-}
-
-func (ec *executionContext) _Mutation_RemoveResourceTypeProperty(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
-	defer func() {
-		if r := recover(); r != nil {
-			ec.Error(ctx, ec.Recover(ctx, r))
-			ret = graphql.Null
-		}
-	}()
-	fc := &graphql.FieldContext{
-		Object:   "Mutation",
-		Field:    field,
-		Args:     nil,
-		IsMethod: true,
-	}
-
-	ctx = graphql.WithFieldContext(ctx, fc)
-	rawArgs := field.ArgumentMap(ec.Variables)
-	args, err := ec.field_Mutation_RemoveResourceTypeProperty_args(ctx, rawArgs)
-	if err != nil {
-		ec.Error(ctx, err)
-		return graphql.Null
-	}
-	fc.Args = args
-	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
-		ctx = rctx // use context from middleware stack in children
-		return ec.resolvers.Mutation().RemoveResourceTypeProperty(rctx, args["resourceTypeId"].(int), args["PropertyTypeId"].(int))
 	})
 	if err != nil {
 		ec.Error(ctx, err)
@@ -1825,6 +2046,81 @@ func (ec *executionContext) _Query_QueryResources(ctx context.Context, field gra
 	return ec.marshalNResource2ᚕᚖgithubᚗcomᚋnetᚑautoᚋresourceManagerᚋentᚐResource(ctx, field.Selections, res)
 }
 
+func (ec *executionContext) _Query_QueryAllocationStrategy(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	fc := &graphql.FieldContext{
+		Object:   "Query",
+		Field:    field,
+		Args:     nil,
+		IsMethod: true,
+	}
+
+	ctx = graphql.WithFieldContext(ctx, fc)
+	rawArgs := field.ArgumentMap(ec.Variables)
+	args, err := ec.field_Query_QueryAllocationStrategy_args(ctx, rawArgs)
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	fc.Args = args
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return ec.resolvers.Query().QueryAllocationStrategy(rctx, args["allocationStrategyName"].(string))
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(*ent.AllocationStrategy)
+	fc.Result = res
+	return ec.marshalNAllocationStrategy2ᚖgithubᚗcomᚋnetᚑautoᚋresourceManagerᚋentᚐAllocationStrategy(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) _Query_QueryAllocationStrategies(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	fc := &graphql.FieldContext{
+		Object:   "Query",
+		Field:    field,
+		Args:     nil,
+		IsMethod: true,
+	}
+
+	ctx = graphql.WithFieldContext(ctx, fc)
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return ec.resolvers.Query().QueryAllocationStrategies(rctx)
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.([]*ent.AllocationStrategy)
+	fc.Result = res
+	return ec.marshalNAllocationStrategy2ᚕᚖgithubᚗcomᚋnetᚑautoᚋresourceManagerᚋentᚐAllocationStrategy(ctx, field.Selections, res)
+}
+
 func (ec *executionContext) _Query_QueryResourceTypes(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
 	defer func() {
 		if r := recover(); r != nil {
@@ -1994,6 +2290,40 @@ func (ec *executionContext) _Resource_ID(ctx context.Context, field graphql.Coll
 	res := resTmp.(int)
 	fc.Result = res
 	return ec.marshalNInt2int(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) _Resource_Properties(ctx context.Context, field graphql.CollectedField, obj *ent.Resource) (ret graphql.Marshaler) {
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	fc := &graphql.FieldContext{
+		Object:   "Resource",
+		Field:    field,
+		Args:     nil,
+		IsMethod: true,
+	}
+
+	ctx = graphql.WithFieldContext(ctx, fc)
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return ec.resolvers.Resource().Properties(rctx, obj)
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(map[string]interface{})
+	fc.Result = res
+	return ec.marshalNMap2map(ctx, field.Selections, res)
 }
 
 func (ec *executionContext) _ResourcePool_ID(ctx context.Context, field graphql.CollectedField, obj *ent.ResourcePool) (ret graphql.Marshaler) {
@@ -2192,6 +2522,37 @@ func (ec *executionContext) _ResourcePoolEdges_Labels(ctx context.Context, field
 	res := resTmp.(*ent.Label)
 	fc.Result = res
 	return ec.marshalOLabel2ᚖgithubᚗcomᚋnetᚑautoᚋresourceManagerᚋentᚐLabel(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) _ResourcePoolEdges_AllocationStrategy(ctx context.Context, field graphql.CollectedField, obj *ent.ResourcePoolEdges) (ret graphql.Marshaler) {
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	fc := &graphql.FieldContext{
+		Object:   "ResourcePoolEdges",
+		Field:    field,
+		Args:     nil,
+		IsMethod: false,
+	}
+
+	ctx = graphql.WithFieldContext(ctx, fc)
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.AllocationStrategy, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		return graphql.Null
+	}
+	res := resTmp.(*ent.AllocationStrategy)
+	fc.Result = res
+	return ec.marshalOAllocationStrategy2ᚖgithubᚗcomᚋnetᚑautoᚋresourceManagerᚋentᚐAllocationStrategy(ctx, field.Selections, res)
 }
 
 func (ec *executionContext) _ResourceType_ID(ctx context.Context, field graphql.CollectedField, obj *ent.ResourceType) (ret graphql.Marshaler) {
@@ -3418,6 +3779,48 @@ func (ec *executionContext) ___Type_ofType(ctx context.Context, field graphql.Co
 
 // region    **************************** object.gotpl ****************************
 
+var allocationStrategyImplementors = []string{"AllocationStrategy"}
+
+func (ec *executionContext) _AllocationStrategy(ctx context.Context, sel ast.SelectionSet, obj *ent.AllocationStrategy) graphql.Marshaler {
+	fields := graphql.CollectFields(ec.OperationContext, sel, allocationStrategyImplementors)
+
+	out := graphql.NewFieldSet(fields)
+	var invalids uint32
+	for i, field := range fields {
+		switch field.Name {
+		case "__typename":
+			out.Values[i] = graphql.MarshalString("AllocationStrategy")
+		case "ID":
+			out.Values[i] = ec._AllocationStrategy_ID(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				invalids++
+			}
+		case "Name":
+			out.Values[i] = ec._AllocationStrategy_Name(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				invalids++
+			}
+		case "Lang":
+			out.Values[i] = ec._AllocationStrategy_Lang(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				invalids++
+			}
+		case "Script":
+			out.Values[i] = ec._AllocationStrategy_Script(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				invalids++
+			}
+		default:
+			panic("unknown field " + strconv.Quote(field.Name))
+		}
+	}
+	out.Dispatch()
+	if invalids > 0 {
+		return graphql.Null
+	}
+	return out
+}
+
 var labelImplementors = []string{"Label"}
 
 func (ec *executionContext) _Label(ctx context.Context, sel ast.SelectionSet, obj *ent.Label) graphql.Marshaler {
@@ -3465,6 +3868,16 @@ func (ec *executionContext) _Mutation(ctx context.Context, sel ast.SelectionSet)
 		switch field.Name {
 		case "__typename":
 			out.Values[i] = graphql.MarshalString("Mutation")
+		case "CreateAllocationStrategy":
+			out.Values[i] = ec._Mutation_CreateAllocationStrategy(ctx, field)
+			if out.Values[i] == graphql.Null {
+				invalids++
+			}
+		case "DeleteAllocationStrategy":
+			out.Values[i] = ec._Mutation_DeleteAllocationStrategy(ctx, field)
+			if out.Values[i] == graphql.Null {
+				invalids++
+			}
 		case "ClaimResource":
 			out.Values[i] = ec._Mutation_ClaimResource(ctx, field)
 			if out.Values[i] == graphql.Null {
@@ -3475,18 +3888,23 @@ func (ec *executionContext) _Mutation(ctx context.Context, sel ast.SelectionSet)
 			if out.Values[i] == graphql.Null {
 				invalids++
 			}
-		case "CreatePool":
-			out.Values[i] = ec._Mutation_CreatePool(ctx, field)
+		case "CreateSetPool":
+			out.Values[i] = ec._Mutation_CreateSetPool(ctx, field)
+			if out.Values[i] == graphql.Null {
+				invalids++
+			}
+		case "CreateSingletonPool":
+			out.Values[i] = ec._Mutation_CreateSingletonPool(ctx, field)
+			if out.Values[i] == graphql.Null {
+				invalids++
+			}
+		case "CreateAllocatingPool":
+			out.Values[i] = ec._Mutation_CreateAllocatingPool(ctx, field)
 			if out.Values[i] == graphql.Null {
 				invalids++
 			}
 		case "DeleteResourcePool":
 			out.Values[i] = ec._Mutation_DeleteResourcePool(ctx, field)
-			if out.Values[i] == graphql.Null {
-				invalids++
-			}
-		case "UpdateResourcePool":
-			out.Values[i] = ec._Mutation_UpdateResourcePool(ctx, field)
 			if out.Values[i] == graphql.Null {
 				invalids++
 			}
@@ -3502,21 +3920,6 @@ func (ec *executionContext) _Mutation(ctx context.Context, sel ast.SelectionSet)
 			}
 		case "UpdateResourceTypeName":
 			out.Values[i] = ec._Mutation_UpdateResourceTypeName(ctx, field)
-			if out.Values[i] == graphql.Null {
-				invalids++
-			}
-		case "AddResourceTypeProperty":
-			out.Values[i] = ec._Mutation_AddResourceTypeProperty(ctx, field)
-			if out.Values[i] == graphql.Null {
-				invalids++
-			}
-		case "AddExistingPropertyToResourceType":
-			out.Values[i] = ec._Mutation_AddExistingPropertyToResourceType(ctx, field)
-			if out.Values[i] == graphql.Null {
-				invalids++
-			}
-		case "RemoveResourceTypeProperty":
-			out.Values[i] = ec._Mutation_RemoveResourceTypeProperty(ctx, field)
 			if out.Values[i] == graphql.Null {
 				invalids++
 			}
@@ -3640,6 +4043,34 @@ func (ec *executionContext) _Query(ctx context.Context, sel ast.SelectionSet) gr
 				}
 				return res
 			})
+		case "QueryAllocationStrategy":
+			field := field
+			out.Concurrently(i, func() (res graphql.Marshaler) {
+				defer func() {
+					if r := recover(); r != nil {
+						ec.Error(ctx, ec.Recover(ctx, r))
+					}
+				}()
+				res = ec._Query_QueryAllocationStrategy(ctx, field)
+				if res == graphql.Null {
+					atomic.AddUint32(&invalids, 1)
+				}
+				return res
+			})
+		case "QueryAllocationStrategies":
+			field := field
+			out.Concurrently(i, func() (res graphql.Marshaler) {
+				defer func() {
+					if r := recover(); r != nil {
+						ec.Error(ctx, ec.Recover(ctx, r))
+					}
+				}()
+				res = ec._Query_QueryAllocationStrategies(ctx, field)
+				if res == graphql.Null {
+					atomic.AddUint32(&invalids, 1)
+				}
+				return res
+			})
 		case "QueryResourceTypes":
 			field := field
 			out.Concurrently(i, func() (res graphql.Marshaler) {
@@ -3697,8 +4128,22 @@ func (ec *executionContext) _Resource(ctx context.Context, sel ast.SelectionSet,
 		case "ID":
 			out.Values[i] = ec._Resource_ID(ctx, field, obj)
 			if out.Values[i] == graphql.Null {
-				invalids++
+				atomic.AddUint32(&invalids, 1)
 			}
+		case "Properties":
+			field := field
+			out.Concurrently(i, func() (res graphql.Marshaler) {
+				defer func() {
+					if r := recover(); r != nil {
+						ec.Error(ctx, ec.Recover(ctx, r))
+					}
+				}()
+				res = ec._Resource_Properties(ctx, field, obj)
+				if res == graphql.Null {
+					atomic.AddUint32(&invalids, 1)
+				}
+				return res
+			})
 		default:
 			panic("unknown field " + strconv.Quote(field.Name))
 		}
@@ -3767,6 +4212,8 @@ func (ec *executionContext) _ResourcePoolEdges(ctx context.Context, sel ast.Sele
 			}
 		case "Labels":
 			out.Values[i] = ec._ResourcePoolEdges_Labels(ctx, field, obj)
+		case "AllocationStrategy":
+			out.Values[i] = ec._ResourcePoolEdges_AllocationStrategy(ctx, field, obj)
 		default:
 			panic("unknown field " + strconv.Quote(field.Name))
 		}
@@ -4082,6 +4529,66 @@ func (ec *executionContext) ___Type(ctx context.Context, sel ast.SelectionSet, o
 // endregion **************************** object.gotpl ****************************
 
 // region    ***************************** type.gotpl *****************************
+
+func (ec *executionContext) marshalNAllocationStrategy2githubᚗcomᚋnetᚑautoᚋresourceManagerᚋentᚐAllocationStrategy(ctx context.Context, sel ast.SelectionSet, v ent.AllocationStrategy) graphql.Marshaler {
+	return ec._AllocationStrategy(ctx, sel, &v)
+}
+
+func (ec *executionContext) marshalNAllocationStrategy2ᚕᚖgithubᚗcomᚋnetᚑautoᚋresourceManagerᚋentᚐAllocationStrategy(ctx context.Context, sel ast.SelectionSet, v []*ent.AllocationStrategy) graphql.Marshaler {
+	ret := make(graphql.Array, len(v))
+	var wg sync.WaitGroup
+	isLen1 := len(v) == 1
+	if !isLen1 {
+		wg.Add(len(v))
+	}
+	for i := range v {
+		i := i
+		fc := &graphql.FieldContext{
+			Index:  &i,
+			Result: &v[i],
+		}
+		ctx := graphql.WithFieldContext(ctx, fc)
+		f := func(i int) {
+			defer func() {
+				if r := recover(); r != nil {
+					ec.Error(ctx, ec.Recover(ctx, r))
+					ret = nil
+				}
+			}()
+			if !isLen1 {
+				defer wg.Done()
+			}
+			ret[i] = ec.marshalOAllocationStrategy2ᚖgithubᚗcomᚋnetᚑautoᚋresourceManagerᚋentᚐAllocationStrategy(ctx, sel, v[i])
+		}
+		if isLen1 {
+			f(i)
+		} else {
+			go f(i)
+		}
+
+	}
+	wg.Wait()
+	return ret
+}
+
+func (ec *executionContext) marshalNAllocationStrategy2ᚖgithubᚗcomᚋnetᚑautoᚋresourceManagerᚋentᚐAllocationStrategy(ctx context.Context, sel ast.SelectionSet, v *ent.AllocationStrategy) graphql.Marshaler {
+	if v == nil {
+		if !graphql.HasFieldError(ctx, graphql.GetFieldContext(ctx)) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	return ec._AllocationStrategy(ctx, sel, v)
+}
+
+func (ec *executionContext) unmarshalNAllocationStrategyLang2githubᚗcomᚋnetᚑautoᚋresourceManagerᚋentᚋallocationstrategyᚐLang(ctx context.Context, v interface{}) (allocationstrategy.Lang, error) {
+	var res allocationstrategy.Lang
+	return res, res.UnmarshalGQL(v)
+}
+
+func (ec *executionContext) marshalNAllocationStrategyLang2githubᚗcomᚋnetᚑautoᚋresourceManagerᚋentᚋallocationstrategyᚐLang(ctx context.Context, sel ast.SelectionSet, v allocationstrategy.Lang) graphql.Marshaler {
+	return v
+}
 
 func (ec *executionContext) unmarshalNBoolean2bool(ctx context.Context, v interface{}) (bool, error) {
 	return graphql.UnmarshalBoolean(v)
@@ -4604,6 +5111,17 @@ func (ec *executionContext) marshalN__TypeKind2string(ctx context.Context, sel a
 	return res
 }
 
+func (ec *executionContext) marshalOAllocationStrategy2githubᚗcomᚋnetᚑautoᚋresourceManagerᚋentᚐAllocationStrategy(ctx context.Context, sel ast.SelectionSet, v ent.AllocationStrategy) graphql.Marshaler {
+	return ec._AllocationStrategy(ctx, sel, &v)
+}
+
+func (ec *executionContext) marshalOAllocationStrategy2ᚖgithubᚗcomᚋnetᚑautoᚋresourceManagerᚋentᚐAllocationStrategy(ctx context.Context, sel ast.SelectionSet, v *ent.AllocationStrategy) graphql.Marshaler {
+	if v == nil {
+		return graphql.Null
+	}
+	return ec._AllocationStrategy(ctx, sel, v)
+}
+
 func (ec *executionContext) unmarshalOBoolean2bool(ctx context.Context, v interface{}) (bool, error) {
 	return graphql.UnmarshalBoolean(v)
 }
@@ -4682,30 +5200,6 @@ func (ec *executionContext) marshalOMap2ᚕmap(ctx context.Context, sel ast.Sele
 	}
 
 	return ret
-}
-
-func (ec *executionContext) unmarshalOPoolType2githubᚗcomᚋnetᚑautoᚋresourceManagerᚋentᚋresourcepoolᚐPoolType(ctx context.Context, v interface{}) (resourcepool.PoolType, error) {
-	var res resourcepool.PoolType
-	return res, res.UnmarshalGQL(v)
-}
-
-func (ec *executionContext) marshalOPoolType2githubᚗcomᚋnetᚑautoᚋresourceManagerᚋentᚋresourcepoolᚐPoolType(ctx context.Context, sel ast.SelectionSet, v resourcepool.PoolType) graphql.Marshaler {
-	return v
-}
-
-func (ec *executionContext) unmarshalOPoolType2ᚖgithubᚗcomᚋnetᚑautoᚋresourceManagerᚋentᚋresourcepoolᚐPoolType(ctx context.Context, v interface{}) (*resourcepool.PoolType, error) {
-	if v == nil {
-		return nil, nil
-	}
-	res, err := ec.unmarshalOPoolType2githubᚗcomᚋnetᚑautoᚋresourceManagerᚋentᚋresourcepoolᚐPoolType(ctx, v)
-	return &res, err
-}
-
-func (ec *executionContext) marshalOPoolType2ᚖgithubᚗcomᚋnetᚑautoᚋresourceManagerᚋentᚋresourcepoolᚐPoolType(ctx context.Context, sel ast.SelectionSet, v *resourcepool.PoolType) graphql.Marshaler {
-	if v == nil {
-		return graphql.Null
-	}
-	return v
 }
 
 func (ec *executionContext) marshalOPropertyType2githubᚗcomᚋnetᚑautoᚋresourceManagerᚋentᚐPropertyType(ctx context.Context, sel ast.SelectionSet, v ent.PropertyType) graphql.Marshaler {

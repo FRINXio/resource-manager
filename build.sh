@@ -6,6 +6,7 @@ GITHUB_TOKEN=$(grep GITHUB_TOKEN .env | cut -d '=' -f2)
 export GOPRIVATE="github.com/facebookincubator"
 git config --global url."https://${GITHUB_TOKEN}:x-oauth-basic@github.com/facebookincubator".insteadOf "https://github.com/facebookincubator"
 
+go generate ./pools/...
 go generate ./ent
 go generate ./graph/graphql
 

@@ -8,7 +8,6 @@ import (
 
 	"github.com/net-auto/resourceManager/graph/graphql/generated"
 	"github.com/net-auto/resourceManager/ent"
-	"github.com/net-auto/resourceManager/ent/resourcepool"
 )
 
 // txResolver wraps a mutation resolver and executes every mutation under a transaction.
@@ -41,6 +40,34 @@ func (tr txResolver) WithTransaction(ctx context.Context, f func(context.Context
 	return nil
 }
 
+func (tr txResolver) CreateAllocationStrategy(ctx context.Context, name string, script string) (*ent.AllocationStrategy, error) {
+	var result, zero *ent.AllocationStrategy
+	if err := tr.WithTransaction(ctx, func(ctx context.Context, mr generated.MutationResolver) (err error) {
+		result, err = mr.CreateAllocationStrategy(ctx, name, script)
+		return
+	}); err != nil {
+		return zero, err
+	}
+	if result != nil {
+		result = result.Unwrap()
+	}
+	return result, nil
+}
+
+func (tr txResolver) DeleteAllocationStrategy(ctx context.Context, allocationStrategyID int) (*ent.AllocationStrategy, error) {
+	var result, zero *ent.AllocationStrategy
+	if err := tr.WithTransaction(ctx, func(ctx context.Context, mr generated.MutationResolver) (err error) {
+		result, err = mr.DeleteAllocationStrategy(ctx, allocationStrategyID)
+		return
+	}); err != nil {
+		return zero, err
+	}
+	if result != nil {
+		result = result.Unwrap()
+	}
+	return result, nil
+}
+
 func (tr txResolver) ClaimResource(ctx context.Context, poolName string) (*ent.Resource, error) {
 	var result, zero *ent.Resource
 	if err := tr.WithTransaction(ctx, func(ctx context.Context, mr generated.MutationResolver) (err error) {
@@ -66,10 +93,38 @@ func (tr txResolver) FreeResource(ctx context.Context, input map[string]interfac
 	return result, nil
 }
 
-func (tr txResolver) CreatePool(ctx context.Context, poolType *resourcepool.PoolType, resourceTypeID int, poolName string, poolValues []map[string]interface{}, allocationScript string) (*ent.ResourcePool, error) {
+func (tr txResolver) CreateSetPool(ctx context.Context, resourceTypeID int, poolName string, poolValues []map[string]interface{}) (*ent.ResourcePool, error) {
 	var result, zero *ent.ResourcePool
 	if err := tr.WithTransaction(ctx, func(ctx context.Context, mr generated.MutationResolver) (err error) {
-		result, err = mr.CreatePool(ctx, poolType, resourceTypeID, poolName, poolValues, allocationScript)
+		result, err = mr.CreateSetPool(ctx, resourceTypeID, poolName, poolValues)
+		return
+	}); err != nil {
+		return zero, err
+	}
+	if result != nil {
+		result = result.Unwrap()
+	}
+	return result, nil
+}
+
+func (tr txResolver) CreateSingletonPool(ctx context.Context, resourceTypeID int, poolName string, poolValues []map[string]interface{}) (*ent.ResourcePool, error) {
+	var result, zero *ent.ResourcePool
+	if err := tr.WithTransaction(ctx, func(ctx context.Context, mr generated.MutationResolver) (err error) {
+		result, err = mr.CreateSingletonPool(ctx, resourceTypeID, poolName, poolValues)
+		return
+	}); err != nil {
+		return zero, err
+	}
+	if result != nil {
+		result = result.Unwrap()
+	}
+	return result, nil
+}
+
+func (tr txResolver) CreateAllocatingPool(ctx context.Context, resourceTypeID int, poolName string, allocationStrategyID int) (*ent.ResourcePool, error) {
+	var result, zero *ent.ResourcePool
+	if err := tr.WithTransaction(ctx, func(ctx context.Context, mr generated.MutationResolver) (err error) {
+		result, err = mr.CreateAllocatingPool(ctx, resourceTypeID, poolName, allocationStrategyID)
 		return
 	}); err != nil {
 		return zero, err
@@ -84,17 +139,6 @@ func (tr txResolver) DeleteResourcePool(ctx context.Context, resourcePoolID int)
 	var result, zero string
 	if err := tr.WithTransaction(ctx, func(ctx context.Context, mr generated.MutationResolver) (err error) {
 		result, err = mr.DeleteResourcePool(ctx, resourcePoolID)
-		return
-	}); err != nil {
-		return zero, err
-	}
-	return result, nil
-}
-
-func (tr txResolver) UpdateResourcePool(ctx context.Context, resourcePoolID int, poolName string, poolValues []map[string]interface{}, allocationScript string) (string, error) {
-	var result, zero string
-	if err := tr.WithTransaction(ctx, func(ctx context.Context, mr generated.MutationResolver) (err error) {
-		result, err = mr.UpdateResourcePool(ctx, resourcePoolID, poolName, poolValues, allocationScript)
 		return
 	}); err != nil {
 		return zero, err
@@ -131,45 +175,6 @@ func (tr txResolver) UpdateResourceTypeName(ctx context.Context, resourceTypeID 
 	var result, zero *ent.ResourceType
 	if err := tr.WithTransaction(ctx, func(ctx context.Context, mr generated.MutationResolver) (err error) {
 		result, err = mr.UpdateResourceTypeName(ctx, resourceTypeID, resourceName)
-		return
-	}); err != nil {
-		return zero, err
-	}
-	if result != nil {
-		result = result.Unwrap()
-	}
-	return result, nil
-}
-
-func (tr txResolver) AddResourceTypeProperty(ctx context.Context, resourceTypeID int, resourceProperties map[string]interface{}) (*ent.ResourceType, error) {
-	var result, zero *ent.ResourceType
-	if err := tr.WithTransaction(ctx, func(ctx context.Context, mr generated.MutationResolver) (err error) {
-		result, err = mr.AddResourceTypeProperty(ctx, resourceTypeID, resourceProperties)
-		return
-	}); err != nil {
-		return zero, err
-	}
-	if result != nil {
-		result = result.Unwrap()
-	}
-	return result, nil
-}
-
-func (tr txResolver) AddExistingPropertyToResourceType(ctx context.Context, resourceTypeID int, propertyTypeID int) (int, error) {
-	var result, zero int
-	if err := tr.WithTransaction(ctx, func(ctx context.Context, mr generated.MutationResolver) (err error) {
-		result, err = mr.AddExistingPropertyToResourceType(ctx, resourceTypeID, propertyTypeID)
-		return
-	}); err != nil {
-		return zero, err
-	}
-	return result, nil
-}
-
-func (tr txResolver) RemoveResourceTypeProperty(ctx context.Context, resourceTypeID int, propertyTypeID int) (*ent.ResourceType, error) {
-	var result, zero *ent.ResourceType
-	if err := tr.WithTransaction(ctx, func(ctx context.Context, mr generated.MutationResolver) (err error) {
-		result, err = mr.RemoveResourceTypeProperty(ctx, resourceTypeID, propertyTypeID)
 		return
 	}); err != nil {
 		return zero, err

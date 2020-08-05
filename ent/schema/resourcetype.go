@@ -51,7 +51,6 @@ type Label struct {
 	ent.Schema
 }
 
-// Fields of the ResourcePool.
 func (Label) Fields() []ent.Field {
 	return []ent.Field{
 		field.String("labl").
@@ -63,6 +62,31 @@ func (Label) Fields() []ent.Field {
 func (Label) Edges() []ent.Edge {
 	return []ent.Edge{
 		edge.To("pools", ResourcePool.Type),
+	}
+}
+
+type AllocationStrategy struct {
+	ent.Schema
+}
+
+// Fields of the ResourcePool.
+func (AllocationStrategy) Fields() []ent.Field {
+	return []ent.Field{
+		field.String("name").
+			NotEmpty().
+			Unique(),
+		field.Enum("lang").
+			Values("py", "js").
+			Default("js"),
+		field.String("script").
+			NotEmpty(),
+	}
+}
+
+func (AllocationStrategy) Edges() []ent.Edge {
+	return []ent.Edge{
+		edge.From("pools", ResourcePool.Type).
+			Ref("allocation_strategy"),
 	}
 }
 
@@ -78,7 +102,7 @@ func (ResourcePool) Fields() []ent.Field {
 			NotEmpty().
 			Unique(),
 		field.Enum("pool_type").
-			Values("singleton", "set"),
+			Values("singleton", "set", "allocating"),
 	}
 }
 
@@ -92,6 +116,8 @@ func (ResourcePool) Edges() []ent.Edge {
 			Ref("pools").
 			Unique(),
 		edge.To("claims", Resource.Type),
+		edge.To("allocation_strategy", AllocationStrategy.Type).
+			Unique(),
 	}
 }
 

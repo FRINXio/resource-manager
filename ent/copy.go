@@ -2,6 +2,22 @@
 
 package ent
 
+// Copy existing AllocationStrategy entity with all its fields and (eagerly loaded) edges ! into a new AllocationStrategyCreate builder.
+func (c *AllocationStrategyClient) CreateFrom(as *AllocationStrategy) *AllocationStrategyCreate {
+	mutation := newAllocationStrategyMutation(c.config, OpCreate, withAllocationStrategy(as))
+	mutation.name = &(as.Name)
+	mutation.lang = &(as.Lang)
+	mutation.script = &(as.Script)
+
+	createBuilder := &AllocationStrategyCreate{config: c.config, hooks: c.Hooks(), mutation: mutation}
+
+	if as.Edges.Pools != nil {
+		createBuilder.AddPools(as.Edges.Pools...)
+	}
+
+	return createBuilder
+}
+
 // Copy existing Label entity with all its fields and (eagerly loaded) edges ! into a new LabelCreate builder.
 func (c *LabelClient) CreateFrom(l *Label) *LabelCreate {
 	mutation := newLabelMutation(c.config, OpCreate, withLabel(l))
@@ -104,6 +120,10 @@ func (c *ResourcePoolClient) CreateFrom(rp *ResourcePool) *ResourcePoolCreate {
 
 	if rp.Edges.Claims != nil {
 		createBuilder.AddClaims(rp.Edges.Claims...)
+	}
+
+	if rp.Edges.AllocationStrategy != nil {
+		createBuilder.SetAllocationStrategy(rp.Edges.AllocationStrategy)
 	}
 
 	return createBuilder

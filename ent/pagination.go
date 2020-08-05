@@ -16,6 +16,7 @@ import (
 	"github.com/99designs/gqlgen/graphql"
 	"github.com/99designs/gqlgen/graphql/errcode"
 	"github.com/facebookincubator/ent/dialect/sql"
+	"github.com/net-auto/resourceManager/ent/allocationstrategy"
 	"github.com/net-auto/resourceManager/ent/label"
 	"github.com/net-auto/resourceManager/ent/property"
 	"github.com/net-auto/resourceManager/ent/propertytype"
@@ -241,6 +242,225 @@ const (
 	pageInfoField   = "pageInfo"
 	totalCountField = "totalCount"
 )
+
+// AllocationStrategyEdge is the edge representation of AllocationStrategy.
+type AllocationStrategyEdge struct {
+	Node   *AllocationStrategy `json:"node"`
+	Cursor Cursor              `json:"cursor"`
+}
+
+// AllocationStrategyConnection is the connection containing edges to AllocationStrategy.
+type AllocationStrategyConnection struct {
+	Edges      []*AllocationStrategyEdge `json:"edges"`
+	PageInfo   PageInfo                  `json:"pageInfo"`
+	TotalCount int                       `json:"totalCount"`
+}
+
+// AllocationStrategyPaginateOption enables pagination customization.
+type AllocationStrategyPaginateOption func(*allocationStrategyPager) error
+
+// WithAllocationStrategyOrder configures pagination ordering.
+func WithAllocationStrategyOrder(order *AllocationStrategyOrder) AllocationStrategyPaginateOption {
+	if order == nil {
+		order = DefaultAllocationStrategyOrder
+	}
+	o := *order
+	return func(pager *allocationStrategyPager) error {
+		if err := o.Direction.Validate(); err != nil {
+			return err
+		}
+		if o.Field == nil {
+			o.Field = DefaultAllocationStrategyOrder.Field
+		}
+		pager.order = &o
+		return nil
+	}
+}
+
+// WithAllocationStrategyFilter configures pagination filter.
+func WithAllocationStrategyFilter(filter func(*AllocationStrategyQuery) (*AllocationStrategyQuery, error)) AllocationStrategyPaginateOption {
+	return func(pager *allocationStrategyPager) error {
+		if filter == nil {
+			return errors.New("AllocationStrategyQuery filter cannot be nil")
+		}
+		pager.filter = filter
+		return nil
+	}
+}
+
+type allocationStrategyPager struct {
+	order  *AllocationStrategyOrder
+	filter func(*AllocationStrategyQuery) (*AllocationStrategyQuery, error)
+}
+
+func newAllocationStrategyPager(opts []AllocationStrategyPaginateOption) (*allocationStrategyPager, error) {
+	pager := &allocationStrategyPager{}
+	for _, opt := range opts {
+		if err := opt(pager); err != nil {
+			return nil, err
+		}
+	}
+	if pager.order == nil {
+		pager.order = DefaultAllocationStrategyOrder
+	}
+	return pager, nil
+}
+
+func (p *allocationStrategyPager) applyFilter(query *AllocationStrategyQuery) (*AllocationStrategyQuery, error) {
+	if p.filter != nil {
+		return p.filter(query)
+	}
+	return query, nil
+}
+
+func (p *allocationStrategyPager) toCursor(as *AllocationStrategy) Cursor {
+	return p.order.Field.toCursor(as)
+}
+
+func (p *allocationStrategyPager) applyCursors(query *AllocationStrategyQuery, after, before *Cursor) *AllocationStrategyQuery {
+	for _, predicate := range cursorsToPredicates(
+		p.order.Direction, after, before,
+		p.order.Field.field, DefaultAllocationStrategyOrder.Field.field,
+	) {
+		query = query.Where(predicate)
+	}
+	return query
+}
+
+func (p *allocationStrategyPager) applyOrder(query *AllocationStrategyQuery, reverse bool) *AllocationStrategyQuery {
+	direction := p.order.Direction
+	if reverse {
+		direction = direction.reverse()
+	}
+	query = query.Order(direction.orderFunc(p.order.Field.field))
+	if p.order.Field != DefaultAllocationStrategyOrder.Field {
+		query = query.Order(Asc(DefaultAllocationStrategyOrder.Field.field))
+	}
+	return query
+}
+
+// Paginate executes the query and returns a relay based cursor connection to AllocationStrategy.
+func (as *AllocationStrategyQuery) Paginate(
+	ctx context.Context, after *Cursor, first *int,
+	before *Cursor, last *int, opts ...AllocationStrategyPaginateOption,
+) (*AllocationStrategyConnection, error) {
+	if err := validateFirstLast(first, last); err != nil {
+		return nil, err
+	}
+	pager, err := newAllocationStrategyPager(opts)
+	if err != nil {
+		return nil, err
+	}
+
+	if as, err = pager.applyFilter(as); err != nil {
+		return nil, err
+	}
+
+	conn := &AllocationStrategyConnection{Edges: []*AllocationStrategyEdge{}}
+	if !hasCollectedField(ctx, edgesField) ||
+		first != nil && *first == 0 ||
+		last != nil && *last == 0 {
+		if hasCollectedField(ctx, totalCountField) ||
+			hasCollectedField(ctx, pageInfoField) {
+			count, err := as.Count(ctx)
+			if err != nil {
+				return nil, err
+			}
+			conn.TotalCount = count
+			conn.PageInfo.HasNextPage = first != nil && count > 0
+			conn.PageInfo.HasPreviousPage = last != nil && count > 0
+		}
+		return conn, nil
+	}
+
+	if (after != nil || first != nil || before != nil || last != nil) &&
+		hasCollectedField(ctx, totalCountField) {
+		count, err := as.Clone().Count(ctx)
+		if err != nil {
+			return nil, err
+		}
+		conn.TotalCount = count
+	}
+
+	as = pager.applyCursors(as, after, before)
+	as = pager.applyOrder(as, last != nil)
+	var limit int
+	if first != nil {
+		limit = *first + 1
+	} else if last != nil {
+		limit = *last + 1
+	}
+	if limit > 0 {
+		as = as.Limit(limit)
+	}
+
+	if field := getCollectedField(ctx, edgesField, nodeField); field != nil {
+		as = as.collectField(graphql.GetOperationContext(ctx), *field)
+	}
+
+	nodes, err := as.All(ctx)
+	if err != nil || len(nodes) == 0 {
+		return conn, err
+	}
+
+	if len(nodes) == limit {
+		conn.PageInfo.HasNextPage = first != nil
+		conn.PageInfo.HasPreviousPage = last != nil
+		nodes = nodes[:len(nodes)-1]
+	}
+
+	var nodeAt func(int) *AllocationStrategy
+	if last != nil {
+		n := len(nodes) - 1
+		nodeAt = func(i int) *AllocationStrategy {
+			return nodes[n-i]
+		}
+	} else {
+		nodeAt = func(i int) *AllocationStrategy {
+			return nodes[i]
+		}
+	}
+
+	conn.Edges = make([]*AllocationStrategyEdge, len(nodes))
+	for i := range nodes {
+		node := nodeAt(i)
+		conn.Edges[i] = &AllocationStrategyEdge{
+			Node:   node,
+			Cursor: pager.toCursor(node),
+		}
+	}
+
+	conn.PageInfo.StartCursor = &conn.Edges[0].Cursor
+	conn.PageInfo.EndCursor = &conn.Edges[len(conn.Edges)-1].Cursor
+	if conn.TotalCount == 0 {
+		conn.TotalCount = len(nodes)
+	}
+
+	return conn, nil
+}
+
+// AllocationStrategyOrderField defines the ordering field of AllocationStrategy.
+type AllocationStrategyOrderField struct {
+	field    string
+	toCursor func(*AllocationStrategy) Cursor
+}
+
+// AllocationStrategyOrder defines the ordering of AllocationStrategy.
+type AllocationStrategyOrder struct {
+	Direction OrderDirection                `json:"direction"`
+	Field     *AllocationStrategyOrderField `json:"field"`
+}
+
+// DefaultAllocationStrategyOrder is the default ordering of AllocationStrategy.
+var DefaultAllocationStrategyOrder = &AllocationStrategyOrder{
+	Direction: OrderDirectionAsc,
+	Field: &AllocationStrategyOrderField{
+		field: allocationstrategy.FieldID,
+		toCursor: func(as *AllocationStrategy) Cursor {
+			return Cursor{ID: as.ID}
+		},
+	},
+}
 
 // LabelEdge is the edge representation of Label.
 type LabelEdge struct {

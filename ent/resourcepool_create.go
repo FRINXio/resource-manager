@@ -9,6 +9,7 @@ import (
 
 	"github.com/facebookincubator/ent/dialect/sql/sqlgraph"
 	"github.com/facebookincubator/ent/schema/field"
+	"github.com/net-auto/resourceManager/ent/allocationstrategy"
 	"github.com/net-auto/resourceManager/ent/label"
 	"github.com/net-auto/resourceManager/ent/resource"
 	"github.com/net-auto/resourceManager/ent/resourcepool"
@@ -85,6 +86,25 @@ func (rpc *ResourcePoolCreate) AddClaims(r ...*Resource) *ResourcePoolCreate {
 		ids[i] = r[i].ID
 	}
 	return rpc.AddClaimIDs(ids...)
+}
+
+// SetAllocationStrategyID sets the allocation_strategy edge to AllocationStrategy by id.
+func (rpc *ResourcePoolCreate) SetAllocationStrategyID(id int) *ResourcePoolCreate {
+	rpc.mutation.SetAllocationStrategyID(id)
+	return rpc
+}
+
+// SetNillableAllocationStrategyID sets the allocation_strategy edge to AllocationStrategy by id if the given value is not nil.
+func (rpc *ResourcePoolCreate) SetNillableAllocationStrategyID(id *int) *ResourcePoolCreate {
+	if id != nil {
+		rpc = rpc.SetAllocationStrategyID(*id)
+	}
+	return rpc
+}
+
+// SetAllocationStrategy sets the allocation_strategy edge to AllocationStrategy.
+func (rpc *ResourcePoolCreate) SetAllocationStrategy(a *AllocationStrategy) *ResourcePoolCreate {
+	return rpc.SetAllocationStrategyID(a.ID)
 }
 
 // Mutation returns the ResourcePoolMutation object of the builder.
@@ -242,6 +262,25 @@ func (rpc *ResourcePoolCreate) createSpec() (*ResourcePool, *sqlgraph.CreateSpec
 				IDSpec: &sqlgraph.FieldSpec{
 					Type:   field.TypeInt,
 					Column: resource.FieldID,
+				},
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges = append(_spec.Edges, edge)
+	}
+	if nodes := rpc.mutation.AllocationStrategyIDs(); len(nodes) > 0 {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.M2O,
+			Inverse: false,
+			Table:   resourcepool.AllocationStrategyTable,
+			Columns: []string{resourcepool.AllocationStrategyColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: &sqlgraph.FieldSpec{
+					Type:   field.TypeInt,
+					Column: allocationstrategy.FieldID,
 				},
 			},
 		}

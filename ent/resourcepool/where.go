@@ -341,6 +341,34 @@ func HasClaimsWith(preds ...predicate.Resource) predicate.ResourcePool {
 	})
 }
 
+// HasAllocationStrategy applies the HasEdge predicate on the "allocation_strategy" edge.
+func HasAllocationStrategy() predicate.ResourcePool {
+	return predicate.ResourcePool(func(s *sql.Selector) {
+		step := sqlgraph.NewStep(
+			sqlgraph.From(Table, FieldID),
+			sqlgraph.To(AllocationStrategyTable, FieldID),
+			sqlgraph.Edge(sqlgraph.M2O, false, AllocationStrategyTable, AllocationStrategyColumn),
+		)
+		sqlgraph.HasNeighbors(s, step)
+	})
+}
+
+// HasAllocationStrategyWith applies the HasEdge predicate on the "allocation_strategy" edge with a given conditions (other predicates).
+func HasAllocationStrategyWith(preds ...predicate.AllocationStrategy) predicate.ResourcePool {
+	return predicate.ResourcePool(func(s *sql.Selector) {
+		step := sqlgraph.NewStep(
+			sqlgraph.From(Table, FieldID),
+			sqlgraph.To(AllocationStrategyInverseTable, FieldID),
+			sqlgraph.Edge(sqlgraph.M2O, false, AllocationStrategyTable, AllocationStrategyColumn),
+		)
+		sqlgraph.HasNeighborsWith(s, step, func(s *sql.Selector) {
+			for _, p := range preds {
+				p(s)
+			}
+		})
+	})
+}
+
 // And groups list of predicates with the AND operator between them.
 func And(predicates ...predicate.ResourcePool) predicate.ResourcePool {
 	return predicate.ResourcePool(func(s *sql.Selector) {

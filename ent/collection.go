@@ -9,6 +9,18 @@ import (
 )
 
 // CollectFields tells the query-builder to eagerly load connected nodes by resolver context.
+func (as *AllocationStrategyQuery) CollectFields(ctx context.Context, satisfies ...string) *AllocationStrategyQuery {
+	if fc := graphql.GetFieldContext(ctx); fc != nil {
+		as = as.collectField(graphql.GetOperationContext(ctx), fc.Field, satisfies...)
+	}
+	return as
+}
+
+func (as *AllocationStrategyQuery) collectField(ctx *graphql.OperationContext, field graphql.CollectedField, satisfies ...string) *AllocationStrategyQuery {
+	return as
+}
+
+// CollectFields tells the query-builder to eagerly load connected nodes by resolver context.
 func (l *LabelQuery) CollectFields(ctx context.Context, satisfies ...string) *LabelQuery {
 	if fc := graphql.GetFieldContext(ctx); fc != nil {
 		l = l.collectField(graphql.GetOperationContext(ctx), fc.Field, satisfies...)

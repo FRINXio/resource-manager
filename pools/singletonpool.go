@@ -25,13 +25,13 @@ func NewSingletonPoolWithMeta(
 	propertyValues RawResourceProps,
 	poolName string) (Pool, *ent.ResourcePool, error) {
 
-	pool, err := newPoolInner(ctx, client, resourceType, []RawResourceProps{propertyValues}, poolName, resourcePool.PoolTypeSingleton)
+	pool, err := newFixedPoolInner(ctx, client, resourceType, []RawResourceProps{propertyValues}, poolName, resourcePool.PoolTypeSingleton)
 
 	if err != nil {
 		return nil, nil, err
 	}
 
-	return &SingletonPool{SetPool{pool, ctx, client}}, pool, nil
+	return &SingletonPool{SetPool{poolBase{pool, ctx, client}}}, pool, nil
 }
 
 // ClaimResource returns always the same resource

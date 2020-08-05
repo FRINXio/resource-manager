@@ -20,6 +20,7 @@ type Resource
 @goModel(model: "github.com/net-auto/resourceManager/ent.Resource")
 {
     ID: Int!
+    Properties: Map!
 }
 
 type PropertyType
@@ -47,10 +48,29 @@ type Label
     Labl: String!
 }
 
+enum AllocationStrategyLang
+@goModel(
+    model: "github.com/net-auto/resourceManager/ent/allocationstrategy.Lang"
+)
+{
+    js
+    py
+}
+
+
+type AllocationStrategy
+@goModel(model: "github.com/net-auto/resourceManager/ent.AllocationStrategy"){
+    ID: Int!
+    Name: String!
+    Lang: AllocationStrategyLang!
+    Script: String!
+}
+
 type ResourcePoolEdges
 @goModel(model: "github.com/net-auto/resourceManager/ent.ResourcePoolEdges"){
     ResourceType: ResourceType!
     Labels: Label
+    AllocationStrategy: AllocationStrategy
 }
 
 type ResourceTypeEdges
@@ -69,6 +89,8 @@ type ResourceType
 type Query {
     QueryResource(input: Map!, poolName: String!): Resource!
     QueryResources(poolName: String!): [Resource]!
+    QueryAllocationStrategy(allocationStrategyName: String!): AllocationStrategy!
+    QueryAllocationStrategies: [AllocationStrategy]!
     QueryResourceTypes: [ResourceType]!
     QueryResourcePools: [ResourcePool]!
 }
@@ -76,19 +98,19 @@ type Query {
 #TODO missing CRUD for pools <-> labels
 
 type Mutation {
+    # Allocation strategy
+    CreateAllocationStrategy(name: String!, script: String!): AllocationStrategy!
+    DeleteAllocationStrategy(allocationStrategyId: Int!): AllocationStrategy!
+
     # managing resources via pools
     ClaimResource(poolName: String!): Resource!
     FreeResource(input: Map!, poolName: String!): String!
 
     # create/update/delete resource pool
-    CreatePool(poolType: PoolType, resourceTypeId: Int!, poolName: String!, poolValues: [Map], allocationScript: String!): ResourcePool!
+    CreateSetPool(resourceTypeId: Int!, poolName: String!, poolValues: [Map]): ResourcePool!
+    CreateSingletonPool(resourceTypeId: Int!, poolName: String!, poolValues: [Map]): ResourcePool!
+    CreateAllocatingPool(resourceTypeId: Int!, poolName: String!, allocationStrategyId: Int!): ResourcePool!
     DeleteResourcePool(resourcePoolId: Int!): String!
-
-    ## poolValues: [Map] - only NEW pool values are allowed, leave it empty if no values need to be added to the pool
-    ##                     old values cannot be deleted (maybe they should be deletable?)
-    ## poolName: String! - new pool name (if not changed send the current name)
-    ## allocationScript: String! - new allocation script, if not changed send the current one
-    UpdateResourcePool(resourcePoolId: Int!, poolName: String!, poolValues: [Map], allocationScript: String!): String!
 
     # create/update/delete resource type
     ## resourceName: String! - name of the resource type AND property type (should they be different?)
@@ -98,10 +120,4 @@ type Mutation {
     DeleteResourceType(resourceTypeId: Int!): String!
     ## it only changes the name of the resource type
     UpdateResourceTypeName(resourceTypeId: Int!, resourceName: String!): ResourceType!
-    ## I don't know if AddResourceTypeProperty is a legitimate case that we should support
-    AddResourceTypeProperty(resourceTypeId: Int!, resourceProperties: Map!): ResourceType! # new property type added
-    ## I don't know if AddExistingPropertyToResourceType is a legitimate case that we should support
-    AddExistingPropertyToResourceType(resourceTypeId: Int!, PropertyTypeId: Int!): Int! # existing property type added
-    ## I don't know if RemoveResourceTypeProperty is a legitimate case that we should support
-    RemoveResourceTypeProperty(resourceTypeId: Int!, PropertyTypeId: Int!): ResourceType! # remove property type
 }

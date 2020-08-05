@@ -24,6 +24,8 @@ const (
 	EdgeLabels = "labels"
 	// EdgeClaims holds the string denoting the claims edge name in mutations.
 	EdgeClaims = "claims"
+	// EdgeAllocationStrategy holds the string denoting the allocation_strategy edge name in mutations.
+	EdgeAllocationStrategy = "allocation_strategy"
 
 	// Table holds the table name of the resourcepool in the database.
 	Table = "resource_pools"
@@ -48,6 +50,13 @@ const (
 	ClaimsInverseTable = "resources"
 	// ClaimsColumn is the table column denoting the claims relation/edge.
 	ClaimsColumn = "resource_pool_claims"
+	// AllocationStrategyTable is the table the holds the allocation_strategy relation/edge.
+	AllocationStrategyTable = "resource_pools"
+	// AllocationStrategyInverseTable is the table name for the AllocationStrategy entity.
+	// It exists in this package in order to avoid circular dependency with the "allocationstrategy" package.
+	AllocationStrategyInverseTable = "allocation_strategies"
+	// AllocationStrategyColumn is the table column denoting the allocation_strategy relation/edge.
+	AllocationStrategyColumn = "resource_pool_allocation_strategy"
 )
 
 // Columns holds all SQL columns for resourcepool fields.
@@ -60,6 +69,7 @@ var Columns = []string{
 // ForeignKeys holds the SQL foreign-keys that are owned by the ResourcePool type.
 var ForeignKeys = []string{
 	"label_pools",
+	"resource_pool_allocation_strategy",
 	"resource_type_pools",
 }
 
@@ -73,8 +83,9 @@ type PoolType string
 
 // PoolType values.
 const (
-	PoolTypeSet       PoolType = "set"
-	PoolTypeSingleton PoolType = "singleton"
+	PoolTypeAllocating PoolType = "allocating"
+	PoolTypeSet        PoolType = "set"
+	PoolTypeSingleton  PoolType = "singleton"
 )
 
 func (pt PoolType) String() string {
@@ -84,7 +95,7 @@ func (pt PoolType) String() string {
 // PoolTypeValidator is a validator for the "pool_type" field enum values. It is called by the builders before save.
 func PoolTypeValidator(pt PoolType) error {
 	switch pt {
-	case PoolTypeSet, PoolTypeSingleton:
+	case PoolTypeAllocating, PoolTypeSet, PoolTypeSingleton:
 		return nil
 	default:
 		return fmt.Errorf("resourcepool: invalid enum value for pool_type field: %q", pt)

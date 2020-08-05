@@ -12,6 +12,7 @@ import (
 	"github.com/facebookincubator/ent/dialect/sql"
 	"github.com/facebookincubator/ent/dialect/sql/sqlgraph"
 	"github.com/facebookincubator/ent/schema/field"
+	"github.com/net-auto/resourceManager/ent/allocationstrategy"
 	"github.com/net-auto/resourceManager/ent/label"
 	"github.com/net-auto/resourceManager/ent/predicate"
 	"github.com/net-auto/resourceManager/ent/resource"
@@ -28,10 +29,11 @@ type ResourcePoolQuery struct {
 	unique     []string
 	predicates []predicate.ResourcePool
 	// eager-loading edges.
-	withResourceType *ResourceTypeQuery
-	withLabels       *LabelQuery
-	withClaims       *ResourceQuery
-	withFKs          bool
+	withResourceType       *ResourceTypeQuery
+	withLabels             *LabelQuery
+	withClaims             *ResourceQuery
+	withAllocationStrategy *AllocationStrategyQuery
+	withFKs                bool
 	// intermediate query (i.e. traversal path).
 	sql  *sql.Selector
 	path func(context.Context) (*sql.Selector, error)
@@ -108,6 +110,24 @@ func (rpq *ResourcePoolQuery) QueryClaims() *ResourceQuery {
 			sqlgraph.From(resourcepool.Table, resourcepool.FieldID, rpq.sqlQuery()),
 			sqlgraph.To(resource.Table, resource.FieldID),
 			sqlgraph.Edge(sqlgraph.O2M, false, resourcepool.ClaimsTable, resourcepool.ClaimsColumn),
+		)
+		fromU = sqlgraph.SetNeighbors(rpq.driver.Dialect(), step)
+		return fromU, nil
+	}
+	return query
+}
+
+// QueryAllocationStrategy chains the current query on the allocation_strategy edge.
+func (rpq *ResourcePoolQuery) QueryAllocationStrategy() *AllocationStrategyQuery {
+	query := &AllocationStrategyQuery{config: rpq.config}
+	query.path = func(ctx context.Context) (fromU *sql.Selector, err error) {
+		if err := rpq.prepareQuery(ctx); err != nil {
+			return nil, err
+		}
+		step := sqlgraph.NewStep(
+			sqlgraph.From(resourcepool.Table, resourcepool.FieldID, rpq.sqlQuery()),
+			sqlgraph.To(allocationstrategy.Table, allocationstrategy.FieldID),
+			sqlgraph.Edge(sqlgraph.M2O, false, resourcepool.AllocationStrategyTable, resourcepool.AllocationStrategyColumn),
 		)
 		fromU = sqlgraph.SetNeighbors(rpq.driver.Dialect(), step)
 		return fromU, nil
@@ -327,6 +347,17 @@ func (rpq *ResourcePoolQuery) WithClaims(opts ...func(*ResourceQuery)) *Resource
 	return rpq
 }
 
+//  WithAllocationStrategy tells the query-builder to eager-loads the nodes that are connected to
+// the "allocation_strategy" edge. The optional arguments used to configure the query builder of the edge.
+func (rpq *ResourcePoolQuery) WithAllocationStrategy(opts ...func(*AllocationStrategyQuery)) *ResourcePoolQuery {
+	query := &AllocationStrategyQuery{config: rpq.config}
+	for _, opt := range opts {
+		opt(query)
+	}
+	rpq.withAllocationStrategy = query
+	return rpq
+}
+
 // GroupBy used to group vertices by one or more fields/columns.
 // It is often used with aggregate functions, like: count, max, mean, min, sum.
 //
@@ -394,13 +425,14 @@ func (rpq *ResourcePoolQuery) sqlAll(ctx context.Context) ([]*ResourcePool, erro
 		nodes       = []*ResourcePool{}
 		withFKs     = rpq.withFKs
 		_spec       = rpq.querySpec()
-		loadedTypes = [3]bool{
+		loadedTypes = [4]bool{
 			rpq.withResourceType != nil,
 			rpq.withLabels != nil,
 			rpq.withClaims != nil,
+			rpq.withAllocationStrategy != nil,
 		}
 	)
-	if rpq.withResourceType != nil || rpq.withLabels != nil {
+	if rpq.withResourceType != nil || rpq.withLabels != nil || rpq.withAllocationStrategy != nil {
 		withFKs = true
 	}
 	if withFKs {
@@ -505,6 +537,31 @@ func (rpq *ResourcePoolQuery) sqlAll(ctx context.Context) ([]*ResourcePool, erro
 				return nil, fmt.Errorf(`unexpected foreign-key "resource_pool_claims" returned %v for node %v`, *fk, n.ID)
 			}
 			node.Edges.Claims = append(node.Edges.Claims, n)
+		}
+	}
+
+	if query := rpq.withAllocationStrategy; query != nil {
+		ids := make([]int, 0, len(nodes))
+		nodeids := make(map[int][]*ResourcePool)
+		for i := range nodes {
+			if fk := nodes[i].resource_pool_allocation_strategy; fk != nil {
+				ids = append(ids, *fk)
+				nodeids[*fk] = append(nodeids[*fk], nodes[i])
+			}
+		}
+		query.Where(allocationstrategy.IDIn(ids...))
+		neighbors, err := query.All(ctx)
+		if err != nil {
+			return nil, err
+		}
+		for _, n := range neighbors {
+			nodes, ok := nodeids[n.ID]
+			if !ok {
+				return nil, fmt.Errorf(`unexpected foreign-key "resource_pool_allocation_strategy" returned %v`, n.ID)
+			}
+			for i := range nodes {
+				nodes[i].Edges.AllocationStrategy = n
+			}
 		}
 	}
 

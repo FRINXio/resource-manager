@@ -9,6 +9,19 @@ import (
 	"github.com/net-auto/resourceManager/ent"
 )
 
+// The AllocationStrategyFunc type is an adapter to allow the use of ordinary
+// function as AllocationStrategy mutator.
+type AllocationStrategyFunc func(context.Context, *ent.AllocationStrategyMutation) (ent.Value, error)
+
+// Mutate calls f(ctx, m).
+func (f AllocationStrategyFunc) Mutate(ctx context.Context, m ent.Mutation) (ent.Value, error) {
+	mv, ok := m.(*ent.AllocationStrategyMutation)
+	if !ok {
+		return nil, fmt.Errorf("unexpected mutation type %T. expect *ent.AllocationStrategyMutation", m)
+	}
+	return f(ctx, mv)
+}
+
 // The LabelFunc type is an adapter to allow the use of ordinary
 // function as Label mutator.
 type LabelFunc func(context.Context, *ent.LabelMutation) (ent.Value, error)

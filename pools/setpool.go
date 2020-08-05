@@ -29,13 +29,13 @@ func NewSetPoolWithMeta(
 
 	// TODO check that propertyValues are unique
 
-	pool, err := newPoolInner(ctx, client, resourceType, propertyValues, poolName, resourcePool.PoolTypeSet)
+	pool, err := newFixedPoolInner(ctx, client, resourceType, propertyValues, poolName, resourcePool.PoolTypeSet)
 
 	if err != nil {
 		return nil, nil, err
 	}
 
-	return &SetPool{pool, ctx, client}, pool, nil
+	return &SetPool{poolBase{pool, ctx, client}}, pool, nil
 }
 
 // Destroy removes the pool from DB if there are no more claims

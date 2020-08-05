@@ -7,6 +7,7 @@ import (
 	"strings"
 
 	"github.com/facebookincubator/ent/dialect/sql"
+	"github.com/net-auto/resourceManager/ent/allocationstrategy"
 	"github.com/net-auto/resourceManager/ent/label"
 	"github.com/net-auto/resourceManager/ent/resourcepool"
 	"github.com/net-auto/resourceManager/ent/resourcetype"
@@ -23,9 +24,10 @@ type ResourcePool struct {
 	PoolType resourcepool.PoolType `json:"pool_type,omitempty"`
 	// Edges holds the relations/edges for other nodes in the graph.
 	// The values are being populated by the ResourcePoolQuery when eager-loading is set.
-	Edges               ResourcePoolEdges `json:"edges"`
-	label_pools         *int
-	resource_type_pools *int
+	Edges                             ResourcePoolEdges `json:"edges"`
+	label_pools                       *int
+	resource_pool_allocation_strategy *int
+	resource_type_pools               *int
 }
 
 // ResourcePoolEdges holds the relations/edges for other nodes in the graph.
@@ -36,9 +38,11 @@ type ResourcePoolEdges struct {
 	Labels *Label
 	// Claims holds the value of the claims edge.
 	Claims []*Resource
+	// AllocationStrategy holds the value of the allocation_strategy edge.
+	AllocationStrategy *AllocationStrategy
 	// loadedTypes holds the information for reporting if a
 	// type was loaded (or requested) in eager-loading or not.
-	loadedTypes [3]bool
+	loadedTypes [4]bool
 }
 
 // ResourceTypeOrErr returns the ResourceType value or an error if the edge
@@ -78,6 +82,20 @@ func (e ResourcePoolEdges) ClaimsOrErr() ([]*Resource, error) {
 	return nil, &NotLoadedError{edge: "claims"}
 }
 
+// AllocationStrategyOrErr returns the AllocationStrategy value or an error if the edge
+// was not loaded in eager-loading, or loaded but was not found.
+func (e ResourcePoolEdges) AllocationStrategyOrErr() (*AllocationStrategy, error) {
+	if e.loadedTypes[3] {
+		if e.AllocationStrategy == nil {
+			// The edge allocation_strategy was loaded in eager-loading,
+			// but was not found.
+			return nil, &NotFoundError{label: allocationstrategy.Label}
+		}
+		return e.AllocationStrategy, nil
+	}
+	return nil, &NotLoadedError{edge: "allocation_strategy"}
+}
+
 // scanValues returns the types for scanning values from sql.Rows.
 func (*ResourcePool) scanValues() []interface{} {
 	return []interface{}{
@@ -91,6 +109,7 @@ func (*ResourcePool) scanValues() []interface{} {
 func (*ResourcePool) fkValues() []interface{} {
 	return []interface{}{
 		&sql.NullInt64{}, // label_pools
+		&sql.NullInt64{}, // resource_pool_allocation_strategy
 		&sql.NullInt64{}, // resource_type_pools
 	}
 }
@@ -126,6 +145,12 @@ func (rp *ResourcePool) assignValues(values ...interface{}) error {
 			*rp.label_pools = int(value.Int64)
 		}
 		if value, ok := values[1].(*sql.NullInt64); !ok {
+			return fmt.Errorf("unexpected type %T for edge-field resource_pool_allocation_strategy", value)
+		} else if value.Valid {
+			rp.resource_pool_allocation_strategy = new(int)
+			*rp.resource_pool_allocation_strategy = int(value.Int64)
+		}
+		if value, ok := values[2].(*sql.NullInt64); !ok {
 			return fmt.Errorf("unexpected type %T for edge-field resource_type_pools", value)
 		} else if value.Valid {
 			rp.resource_type_pools = new(int)
@@ -148,6 +173,11 @@ func (rp *ResourcePool) QueryLabels() *LabelQuery {
 // QueryClaims queries the claims edge of the ResourcePool.
 func (rp *ResourcePool) QueryClaims() *ResourceQuery {
 	return (&ResourcePoolClient{config: rp.config}).QueryClaims(rp)
+}
+
+// QueryAllocationStrategy queries the allocation_strategy edge of the ResourcePool.
+func (rp *ResourcePool) QueryAllocationStrategy() *AllocationStrategyQuery {
+	return (&ResourcePoolClient{config: rp.config}).QueryAllocationStrategy(rp)
 }
 
 // Update returns a builder for updating this ResourcePool.

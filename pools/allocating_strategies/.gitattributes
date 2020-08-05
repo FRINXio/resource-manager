@@ -1,0 +1,3 @@
+# Ignore generated files by wire from diffs
+
+builtin_strategies.go -diff -merge linguist-generated=true

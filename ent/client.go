@@ -9,6 +9,7 @@ import (
 
 	"github.com/net-auto/resourceManager/ent/migrate"
 
+	"github.com/net-auto/resourceManager/ent/allocationstrategy"
 	"github.com/net-auto/resourceManager/ent/label"
 	"github.com/net-auto/resourceManager/ent/property"
 	"github.com/net-auto/resourceManager/ent/propertytype"
@@ -26,6 +27,8 @@ type Client struct {
 	config
 	// Schema is the client for creating, migrating and dropping schema.
 	Schema *migrate.Schema
+	// AllocationStrategy is the client for interacting with the AllocationStrategy builders.
+	AllocationStrategy *AllocationStrategyClient
 	// Label is the client for interacting with the Label builders.
 	Label *LabelClient
 	// Property is the client for interacting with the Property builders.
@@ -54,6 +57,7 @@ func NewClient(opts ...Option) *Client {
 
 func (c *Client) init() {
 	c.Schema = migrate.NewSchema(c.driver)
+	c.AllocationStrategy = NewAllocationStrategyClient(c.config)
 	c.Label = NewLabelClient(c.config)
 	c.Property = NewPropertyClient(c.config)
 	c.PropertyType = NewPropertyTypeClient(c.config)
@@ -90,14 +94,15 @@ func (c *Client) Tx(ctx context.Context) (*Tx, error) {
 	}
 	cfg := config{driver: tx, log: c.log, debug: c.debug, hooks: c.hooks}
 	return &Tx{
-		ctx:          ctx,
-		config:       cfg,
-		Label:        NewLabelClient(cfg),
-		Property:     NewPropertyClient(cfg),
-		PropertyType: NewPropertyTypeClient(cfg),
-		Resource:     NewResourceClient(cfg),
-		ResourcePool: NewResourcePoolClient(cfg),
-		ResourceType: NewResourceTypeClient(cfg),
+		ctx:                ctx,
+		config:             cfg,
+		AllocationStrategy: NewAllocationStrategyClient(cfg),
+		Label:              NewLabelClient(cfg),
+		Property:           NewPropertyClient(cfg),
+		PropertyType:       NewPropertyTypeClient(cfg),
+		Resource:           NewResourceClient(cfg),
+		ResourcePool:       NewResourcePoolClient(cfg),
+		ResourceType:       NewResourceTypeClient(cfg),
 	}, nil
 }
 
@@ -112,20 +117,21 @@ func (c *Client) BeginTx(ctx context.Context, opts *sql.TxOptions) (*Tx, error) 
 	}
 	cfg := config{driver: &txDriver{tx: tx, drv: c.driver}, log: c.log, debug: c.debug, hooks: c.hooks}
 	return &Tx{
-		config:       cfg,
-		Label:        NewLabelClient(cfg),
-		Property:     NewPropertyClient(cfg),
-		PropertyType: NewPropertyTypeClient(cfg),
-		Resource:     NewResourceClient(cfg),
-		ResourcePool: NewResourcePoolClient(cfg),
-		ResourceType: NewResourceTypeClient(cfg),
+		config:             cfg,
+		AllocationStrategy: NewAllocationStrategyClient(cfg),
+		Label:              NewLabelClient(cfg),
+		Property:           NewPropertyClient(cfg),
+		PropertyType:       NewPropertyTypeClient(cfg),
+		Resource:           NewResourceClient(cfg),
+		ResourcePool:       NewResourcePoolClient(cfg),
+		ResourceType:       NewResourceTypeClient(cfg),
 	}, nil
 }
 
 // Debug returns a new debug-client. It's used to get verbose logging on specific operations.
 //
 //	client.Debug().
-//		Label.
+//		AllocationStrategy.
 //		Query().
 //		Count(ctx)
 //
@@ -147,12 +153,117 @@ func (c *Client) Close() error {
 // Use adds the mutation hooks to all the entity clients.
 // In order to add hooks to a specific client, call: `client.Node.Use(...)`.
 func (c *Client) Use(hooks ...Hook) {
+	c.AllocationStrategy.Use(hooks...)
 	c.Label.Use(hooks...)
 	c.Property.Use(hooks...)
 	c.PropertyType.Use(hooks...)
 	c.Resource.Use(hooks...)
 	c.ResourcePool.Use(hooks...)
 	c.ResourceType.Use(hooks...)
+}
+
+// AllocationStrategyClient is a client for the AllocationStrategy schema.
+type AllocationStrategyClient struct {
+	config
+}
+
+// NewAllocationStrategyClient returns a client for the AllocationStrategy from the given config.
+func NewAllocationStrategyClient(c config) *AllocationStrategyClient {
+	return &AllocationStrategyClient{config: c}
+}
+
+// Use adds a list of mutation hooks to the hooks stack.
+// A call to `Use(f, g, h)` equals to `allocationstrategy.Hooks(f(g(h())))`.
+func (c *AllocationStrategyClient) Use(hooks ...Hook) {
+	c.hooks.AllocationStrategy = append(c.hooks.AllocationStrategy, hooks...)
+}
+
+// Create returns a create builder for AllocationStrategy.
+func (c *AllocationStrategyClient) Create() *AllocationStrategyCreate {
+	mutation := newAllocationStrategyMutation(c.config, OpCreate)
+	return &AllocationStrategyCreate{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// BulkCreate returns a builder for creating a bulk of AllocationStrategy entities.
+func (c *AllocationStrategyClient) CreateBulk(builders ...*AllocationStrategyCreate) *AllocationStrategyCreateBulk {
+	return &AllocationStrategyCreateBulk{config: c.config, builders: builders}
+}
+
+// Update returns an update builder for AllocationStrategy.
+func (c *AllocationStrategyClient) Update() *AllocationStrategyUpdate {
+	mutation := newAllocationStrategyMutation(c.config, OpUpdate)
+	return &AllocationStrategyUpdate{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// UpdateOne returns an update builder for the given entity.
+func (c *AllocationStrategyClient) UpdateOne(as *AllocationStrategy) *AllocationStrategyUpdateOne {
+	mutation := newAllocationStrategyMutation(c.config, OpUpdateOne, withAllocationStrategy(as))
+	return &AllocationStrategyUpdateOne{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// UpdateOneID returns an update builder for the given id.
+func (c *AllocationStrategyClient) UpdateOneID(id int) *AllocationStrategyUpdateOne {
+	mutation := newAllocationStrategyMutation(c.config, OpUpdateOne, withAllocationStrategyID(id))
+	return &AllocationStrategyUpdateOne{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// Delete returns a delete builder for AllocationStrategy.
+func (c *AllocationStrategyClient) Delete() *AllocationStrategyDelete {
+	mutation := newAllocationStrategyMutation(c.config, OpDelete)
+	return &AllocationStrategyDelete{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// DeleteOne returns a delete builder for the given entity.
+func (c *AllocationStrategyClient) DeleteOne(as *AllocationStrategy) *AllocationStrategyDeleteOne {
+	return c.DeleteOneID(as.ID)
+}
+
+// DeleteOneID returns a delete builder for the given id.
+func (c *AllocationStrategyClient) DeleteOneID(id int) *AllocationStrategyDeleteOne {
+	builder := c.Delete().Where(allocationstrategy.ID(id))
+	builder.mutation.id = &id
+	builder.mutation.op = OpDeleteOne
+	return &AllocationStrategyDeleteOne{builder}
+}
+
+// Create returns a query builder for AllocationStrategy.
+func (c *AllocationStrategyClient) Query() *AllocationStrategyQuery {
+	return &AllocationStrategyQuery{config: c.config}
+}
+
+// Get returns a AllocationStrategy entity by its id.
+func (c *AllocationStrategyClient) Get(ctx context.Context, id int) (*AllocationStrategy, error) {
+	return c.Query().Where(allocationstrategy.ID(id)).Only(ctx)
+}
+
+// GetX is like Get, but panics if an error occurs.
+func (c *AllocationStrategyClient) GetX(ctx context.Context, id int) *AllocationStrategy {
+	as, err := c.Get(ctx, id)
+	if err != nil {
+		panic(err)
+	}
+	return as
+}
+
+// QueryPools queries the pools edge of a AllocationStrategy.
+func (c *AllocationStrategyClient) QueryPools(as *AllocationStrategy) *ResourcePoolQuery {
+	query := &ResourcePoolQuery{config: c.config}
+	query.path = func(ctx context.Context) (fromV *sql.Selector, _ error) {
+		id := as.ID
+		step := sqlgraph.NewStep(
+			sqlgraph.From(allocationstrategy.Table, allocationstrategy.FieldID, id),
+			sqlgraph.To(resourcepool.Table, resourcepool.FieldID),
+			sqlgraph.Edge(sqlgraph.O2M, true, allocationstrategy.PoolsTable, allocationstrategy.PoolsColumn),
+		)
+		fromV = sqlgraph.Neighbors(as.driver.Dialect(), step)
+		return fromV, nil
+	}
+	return query
+}
+
+// Hooks returns the client hooks.
+func (c *AllocationStrategyClient) Hooks() []Hook {
+	return c.hooks.AllocationStrategy
 }
 
 // LabelClient is a client for the Label schema.
@@ -711,6 +822,22 @@ func (c *ResourcePoolClient) QueryClaims(rp *ResourcePool) *ResourceQuery {
 			sqlgraph.From(resourcepool.Table, resourcepool.FieldID, id),
 			sqlgraph.To(resource.Table, resource.FieldID),
 			sqlgraph.Edge(sqlgraph.O2M, false, resourcepool.ClaimsTable, resourcepool.ClaimsColumn),
+		)
+		fromV = sqlgraph.Neighbors(rp.driver.Dialect(), step)
+		return fromV, nil
+	}
+	return query
+}
+
+// QueryAllocationStrategy queries the allocation_strategy edge of a ResourcePool.
+func (c *ResourcePoolClient) QueryAllocationStrategy(rp *ResourcePool) *AllocationStrategyQuery {
+	query := &AllocationStrategyQuery{config: c.config}
+	query.path = func(ctx context.Context) (fromV *sql.Selector, _ error) {
+		id := rp.ID
+		step := sqlgraph.NewStep(
+			sqlgraph.From(resourcepool.Table, resourcepool.FieldID, id),
+			sqlgraph.To(allocationstrategy.Table, allocationstrategy.FieldID),
+			sqlgraph.Edge(sqlgraph.M2O, false, resourcepool.AllocationStrategyTable, resourcepool.AllocationStrategyColumn),
 		)
 		fromV = sqlgraph.Neighbors(rp.driver.Dialect(), step)
 		return fromV, nil
