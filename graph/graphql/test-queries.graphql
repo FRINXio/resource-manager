@@ -1,0 +1,65 @@
+mutation createNewResourceType {
+  CreateResourceType(
+    resourceName: "vlans",
+    resourceProperties: {
+      type: "int",
+      init: 1
+    }
+  ) {
+    ID
+    Name
+  }
+}
+
+query queryResourceTypes {
+  QueryResourceTypes{
+    ID
+    Name
+  }
+}
+
+mutation createNewPool {
+  CreatePool(
+    poolType: set,
+    resourceTypeId: 21474836480,
+    poolName: "vlan_test",
+    poolValues: [{vlans: 13}, {vlans: 14}],
+    allocationScript: "empty"
+  ){
+    ID
+    PoolType
+    Name
+  }
+}
+
+query QueryAllPools {
+  QueryResourcePools{
+    ID
+    Name
+  }
+}
+
+mutation ClaimResource {
+  ClaimResource(poolName:"vlan_test") {
+    ID
+  }
+}
+
+query QueryResources {
+  QueryResources(poolName:"vlan_test"){
+    ID
+  }
+}
+
+mutation updateExistingPool {
+  UpdateResourcePool(
+    resourcePoolId: 17179869184,
+    poolName: "vlan_test94updated",
+    poolValues: [{vlans: 16}, {vlans: 17}],
+    allocationScript: "empty"
+  )
+}
+
+mutation deleteResourcePool {
+  DeleteResourcePool(resourcePoolId: 17179869184)
+}

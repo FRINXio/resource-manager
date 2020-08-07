@@ -1,0 +1,107 @@
+directive @goModel(model: String, models: [String!]) on OBJECT
+    | INPUT_OBJECT
+    | SCALAR
+    | ENUM
+    | INTERFACE
+    | UNION
+
+enum PoolType
+@goModel(
+    model: "github.com/net-auto/resourceManager/ent/resourcepool.PoolType"
+)
+{
+    set
+    singleton
+}
+
+scalar Map
+
+type Resource
+@goModel(model: "github.com/net-auto/resourceManager/ent.Resource")
+{
+    ID: Int!
+}
+
+type PropertyType
+@goModel(model: "github.com/net-auto/resourceManager/ent.PropertyType"){
+    ID: Int!
+    Name: String!
+    Type: String!,
+    IntVal: Int!,
+    StringVal: String!,
+    FloatVal: Float!,
+    Mandatory: Boolean!
+}
+
+type ResourcePool
+@goModel(model: "github.com/net-auto/resourceManager/ent.ResourcePool"){
+    ID: Int!
+    Name: String!
+    PoolType: PoolType!
+    Edges: ResourcePoolEdges
+}
+
+type Label
+@goModel(model: "github.com/net-auto/resourceManager/ent.Label"){
+    ID: Int!
+    Labl: String!
+}
+
+type ResourcePoolEdges
+@goModel(model: "github.com/net-auto/resourceManager/ent.ResourcePoolEdges"){
+    ResourceType: ResourceType!
+    Labels: Label
+}
+
+type ResourceTypeEdges
+@goModel(model: "github.com/net-auto/resourceManager/ent.ResourceTypeEdges"){
+    PropertyTypes: [PropertyType]
+    Pools: [ResourcePool]
+}
+
+type ResourceType
+@goModel(model: "github.com/net-auto/resourceManager/ent.ResourceType"){
+    ID: Int!
+    Name: String!
+    Edges: ResourceTypeEdges
+}
+
+type Query {
+    QueryResource(input: Map!, poolName: String!): Resource!
+    QueryResources(poolName: String!): [Resource]!
+    QueryResourceTypes: [ResourceType]!
+    QueryResourcePools: [ResourcePool]!
+}
+
+#TODO missing CRUD for pools <-> labels
+
+type Mutation {
+    # managing resources via pools
+    ClaimResource(poolName: String!): Resource!
+    FreeResource(input: Map!, poolName: String!): String!
+
+    # create/update/delete resource pool
+    CreatePool(poolType: PoolType, resourceTypeId: Int!, poolName: String!, poolValues: [Map], allocationScript: String!): ResourcePool!
+    DeleteResourcePool(resourcePoolId: Int!): String!
+
+    ## poolValues: [Map] - only NEW pool values are allowed, leave it empty if no values need to be added to the pool
+    ##                     old values cannot be deleted (maybe they should be deletable?)
+    ## poolName: String! - new pool name (if not changed send the current name)
+    ## allocationScript: String! - new allocation script, if not changed send the current one
+    UpdateResourcePool(resourcePoolId: Int!, poolName: String!, poolValues: [Map], allocationScript: String!): String!
+
+    # create/update/delete resource type
+    ## resourceName: String! - name of the resource type AND property type (should they be different?)
+    ## resourceProperties: Map! - for key "init" the value is the initial value of the property type (like 7)
+    ##                            for key "type" the value is the name of the type like "int"
+    CreateResourceType(resourceName: String!, resourceProperties: Map!): ResourceType!
+    DeleteResourceType(resourceTypeId: Int!): String!
+    ## it only changes the name of the resource type
+    UpdateResourceTypeName(resourceTypeId: Int!, resourceName: String!): ResourceType!
+    ## I don't know if AddResourceTypeProperty is a legitimate case that we should support
+    AddResourceTypeProperty(resourceTypeId: Int!, resourceProperties: Map!): ResourceType! # new property type added
+    ## I don't know if AddExistingPropertyToResourceType is a legitimate case that we should support
+    AddExistingPropertyToResourceType(resourceTypeId: Int!, PropertyTypeId: Int!): Int! # existing property type added
+    ## I don't know if RemoveResourceTypeProperty is a legitimate case that we should support
+    RemoveResourceTypeProperty(resourceTypeId: Int!, PropertyTypeId: Int!): ResourceType! # remove property type
+}

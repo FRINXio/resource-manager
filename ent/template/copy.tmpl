@@ -1,0 +1,44 @@
+{{/*
+Copyright 2019-present Facebook Inc. All rights reserved.
+This source code is licensed under the Apache 2.0 license found
+in the LICENSE file in the root directory of this source tree.
+*/}}
+
+{{ define "copy" }}
+{{ template "header" $ }}
+
+import (
+	"fmt"
+	"context"
+)
+
+{{ range $node := $.Nodes -}}
+
+{{- $name := $node.Name }}
+{{- $client := print $name "Client" }}
+{{- $builder := print (pascal $node.Name) "Create" }}
+{{- $reciver := $node.Receiver }}{{ if eq $reciver "c" }}{{ $reciver = printf "%.2s" $name | lower }}{{ end }}
+{{- $builderReciver := print $reciver "Create" }}
+
+// Copy existing {{ $name }} entity with all its fields and (eagerly loaded) edges ! into a new {{ $builder }} builder.
+func (c *{{ $client }}) CreateFrom({{ $reciver }} *{{ $name }}) *{{ $builder }} {
+	mutation := new{{ $name }}Mutation(c.config, OpCreate, with{{ $name }}({{ $reciver }}))
+	{{- range $f := $node.Fields }}
+	mutation.{{ $f.BuilderField }} = {{ if not $f.Nillable }}&{{ end }}({{ $reciver }}.{{ $f.StructField }})
+	{{- end }}
+
+	createBuilder := &{{ $builder }}{config: c.config, hooks: c.Hooks(), mutation: mutation}
+
+	{{- range $e := $node.Edges }}
+	{{ $op := "add" }}{{ if $e.Unique }}{{ $op = "set" }}{{ end }}
+	{{ $func := print (pascal $op) $e.StructField }}
+	if {{ $reciver }}.Edges.{{ $e.StructField }} != nil {
+		createBuilder.{{$func }}({{ $reciver }}.Edges.{{ $e.StructField }}{{ if not $e.Unique }}...{{ end }})
+	}
+	{{- end }}
+
+	return createBuilder
+}
+
+{{ end }}
+{{ end }}

@@ -1,0 +1,4 @@
+# Ignore generated files by graphql gen from diff
+
+generated/* -diff -merge linguist-generated=true
+resolver/tx_generated.go -diff -merge linguist-generated=true
