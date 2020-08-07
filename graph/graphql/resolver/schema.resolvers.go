@@ -61,14 +61,11 @@ func (r *mutationResolver) FreeResource(ctx context.Context, input map[string]in
 	return err.Error(), err
 }
 
-func (r *mutationResolver) CreateSetPool(ctx context.Context, resourceTypeID int, poolName string, poolValues []map[string]interface{}) (*ent.ResourcePool, error) {
+func (r *mutationResolver) CreateSetPool(ctx context.Context, resourceTypeID int, poolName string, poolDealocationSafetyPeriod int, poolValues []map[string]interface{}) (*ent.ResourcePool, error) {
 	var client = r.ClientFrom(ctx)
 
 	resType, _ := client.ResourceType.Get(ctx, resourceTypeID)
-
-	var rawProps = p.ToRawTypes(poolValues)
-
-	_, rp, err := p.NewSetPoolWithMeta(ctx, client, resType, rawProps, poolName)
+	_, rp, err := p.NewSetPoolWithMeta(ctx, client, resType, p.ToRawTypes(poolValues), poolName, poolDealocationSafetyPeriod)
 	return rp, err
 }
 
@@ -76,18 +73,15 @@ func (r *mutationResolver) CreateSingletonPool(ctx context.Context, resourceType
 	var client = r.ClientFrom(ctx)
 
 	resType, _ := client.ResourceType.Get(ctx, resourceTypeID)
-
-	var rawProps = p.ToRawTypes(poolValues)
-
-	if len(rawProps) == 1 {
-		_, rp, err := p.NewSingletonPoolWithMeta(ctx, client, resType, rawProps[0], poolName)
+	if len(poolValues) == 1 {
+		_, rp, err := p.NewSingletonPoolWithMeta(ctx, client, resType, p.ToRawTypes(poolValues)[0], poolName)
 		return rp, err
 	} else {
 		return nil, fmt.Errorf("Cannot create singleton pool, no resource provided")
 	}
 }
 
-func (r *mutationResolver) CreateAllocatingPool(ctx context.Context, resourceTypeID int, poolName string, allocationStrategyID int) (*ent.ResourcePool, error) {
+func (r *mutationResolver) CreateAllocatingPool(ctx context.Context, resourceTypeID int, poolName string, allocationStrategyID int, poolDealocationSafetyPeriod int) (*ent.ResourcePool, error) {
 	var client = r.ClientFrom(ctx)
 
 	resType, errRes := client.ResourceType.Get(ctx, resourceTypeID)
@@ -99,7 +93,7 @@ func (r *mutationResolver) CreateAllocatingPool(ctx context.Context, resourceTyp
 		return nil, errAlloc
 	}
 
-	_, rp, err := p.NewAllocatingPoolWithMeta(ctx, client, resType, allocationStrat, poolName)
+	_, rp, err := p.NewAllocatingPoolWithMeta(ctx, client, resType, allocationStrat, poolName, poolDealocationSafetyPeriod)
 	return rp, err
 }
 

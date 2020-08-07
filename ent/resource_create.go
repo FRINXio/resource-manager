@@ -4,7 +4,9 @@ package ent
 
 import (
 	"context"
+	"errors"
 	"fmt"
+	"time"
 
 	"github.com/facebookincubator/ent/dialect/sql/sqlgraph"
 	"github.com/facebookincubator/ent/schema/field"
@@ -20,16 +22,22 @@ type ResourceCreate struct {
 	hooks    []Hook
 }
 
-// SetClaimed sets the claimed field.
-func (rc *ResourceCreate) SetClaimed(b bool) *ResourceCreate {
-	rc.mutation.SetClaimed(b)
+// SetStatus sets the status field.
+func (rc *ResourceCreate) SetStatus(r resource.Status) *ResourceCreate {
+	rc.mutation.SetStatus(r)
 	return rc
 }
 
-// SetNillableClaimed sets the claimed field if the given value is not nil.
-func (rc *ResourceCreate) SetNillableClaimed(b *bool) *ResourceCreate {
-	if b != nil {
-		rc.SetClaimed(*b)
+// SetUpdatedAt sets the updated_at field.
+func (rc *ResourceCreate) SetUpdatedAt(t time.Time) *ResourceCreate {
+	rc.mutation.SetUpdatedAt(t)
+	return rc
+}
+
+// SetNillableUpdatedAt sets the updated_at field if the given value is not nil.
+func (rc *ResourceCreate) SetNillableUpdatedAt(t *time.Time) *ResourceCreate {
+	if t != nil {
+		rc.SetUpdatedAt(*t)
 	}
 	return rc
 }
@@ -115,9 +123,17 @@ func (rc *ResourceCreate) SaveX(ctx context.Context) *Resource {
 }
 
 func (rc *ResourceCreate) preSave() error {
-	if _, ok := rc.mutation.Claimed(); !ok {
-		v := resource.DefaultClaimed
-		rc.mutation.SetClaimed(v)
+	if _, ok := rc.mutation.Status(); !ok {
+		return &ValidationError{Name: "status", err: errors.New("ent: missing required field \"status\"")}
+	}
+	if v, ok := rc.mutation.Status(); ok {
+		if err := resource.StatusValidator(v); err != nil {
+			return &ValidationError{Name: "status", err: fmt.Errorf("ent: validator failed for field \"status\": %w", err)}
+		}
+	}
+	if _, ok := rc.mutation.UpdatedAt(); !ok {
+		v := resource.DefaultUpdatedAt()
+		rc.mutation.SetUpdatedAt(v)
 	}
 	return nil
 }
@@ -146,13 +162,21 @@ func (rc *ResourceCreate) createSpec() (*Resource, *sqlgraph.CreateSpec) {
 			},
 		}
 	)
-	if value, ok := rc.mutation.Claimed(); ok {
+	if value, ok := rc.mutation.Status(); ok {
 		_spec.Fields = append(_spec.Fields, &sqlgraph.FieldSpec{
-			Type:   field.TypeBool,
+			Type:   field.TypeEnum,
 			Value:  value,
-			Column: resource.FieldClaimed,
+			Column: resource.FieldStatus,
 		})
-		r.Claimed = value
+		r.Status = value
+	}
+	if value, ok := rc.mutation.UpdatedAt(); ok {
+		_spec.Fields = append(_spec.Fields, &sqlgraph.FieldSpec{
+			Type:   field.TypeTime,
+			Value:  value,
+			Column: resource.FieldUpdatedAt,
+		})
+		r.UpdatedAt = value
 	}
 	if nodes := rc.mutation.PoolIDs(); len(nodes) > 0 {
 		edge := &sqlgraph.EdgeSpec{

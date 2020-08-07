@@ -5,7 +5,9 @@ import (
 	"github.com/net-auto/resourceManager/ent"
 	resource "github.com/net-auto/resourceManager/ent/resource"
 	resourcePool "github.com/net-auto/resourceManager/ent/resourcepool"
+	"github.com/net-auto/resourceManager/ent/schema"
 	"github.com/pkg/errors"
+	"time"
 )
 
 // NewSetPool creates a brand new pool allocating DB entities in the process
@@ -14,8 +16,9 @@ func NewSetPool(
 	client *ent.Client,
 	resourceType *ent.ResourceType,
 	propertyValues []RawResourceProps,
-	poolName string) (Pool, error) {
-	pool, _, err := NewSetPoolWithMeta(ctx, client, resourceType, propertyValues, poolName)
+	poolName string,
+	poolDealocationSafetyPeriod int) (Pool, error) {
+	pool, _, err := NewSetPoolWithMeta(ctx, client, resourceType, propertyValues, poolName, poolDealocationSafetyPeriod)
 	return pool, err
 }
 
@@ -25,11 +28,13 @@ func NewSetPoolWithMeta(
 	client *ent.Client,
 	resourceType *ent.ResourceType,
 	propertyValues []RawResourceProps,
-	poolName string) (Pool, *ent.ResourcePool, error) {
+	poolName string,
+	poolDealocationSafetyPeriod int) (Pool, *ent.ResourcePool, error) {
 
 	// TODO check that propertyValues are unique
 
-	pool, err := newFixedPoolInner(ctx, client, resourceType, propertyValues, poolName, resourcePool.PoolTypeSet)
+	pool, err := newFixedPoolInner(ctx, client, resourceType, propertyValues,
+		poolName, resourcePool.PoolTypeSet, poolDealocationSafetyPeriod)
 
 	if err != nil {
 		return nil, nil, err
@@ -99,7 +104,7 @@ func (pool SetPool) ClaimResource() (*ent.Resource, error) {
 			pool.Name)
 	}
 
-	err = pool.client.Resource.UpdateOne(unclaimedRes).SetClaimed(true).Exec(pool.ctx)
+	err = pool.client.Resource.UpdateOne(unclaimedRes).SetStatus(resource.StatusClaimed).Exec(pool.ctx)
 	if err != nil {
 		return nil, errors.Wrapf(err, "Unable to claim a resource in pool \"%s\"", pool.Name)
 	}
@@ -108,10 +113,14 @@ func (pool SetPool) ClaimResource() (*ent.Resource, error) {
 
 // FreeResource deallocates the resource identified by its properties
 func (pool SetPool) FreeResource(raw RawResourceProps) error {
-	return pool.freeResourceInner(raw)
+	return pool.freeResourceInner(raw, pool.retireResource, pool.freeResourceImmediately, pool.benchResource)
 }
 
-func (pool SetPool) freeResourceInner(raw RawResourceProps) error {
+func (pool SetPool) freeResourceInner(raw RawResourceProps,
+	retireResource func(res *ent.Resource) error,
+	freeResource func(res *ent.Resource) error,
+	benchResource func(res *ent.Resource) error,
+	) error {
 	query, err := pool.findResource(raw)
 	if err != nil {
 		return errors.Wrapf(err, "Unable to find resource in pool: \"%s\"", pool.Name)
@@ -124,11 +133,19 @@ func (pool SetPool) freeResourceInner(raw RawResourceProps) error {
 		return errors.Wrapf(err, "Unable to free a resource in pool \"%s\". Unable to find resource", pool.Name)
 	}
 
-	if res.Claimed == false {
+	if res.Status != resource.StatusClaimed {
 		return errors.Wrapf(err, "Unable to free a resource in pool \"%s\". It has not been claimed", pool.Name)
 	}
 
-	err = pool.client.Resource.UpdateOne(res).SetClaimed(false).Exec(pool.ctx)
+	switch pool.ResourcePool.DealocationSafetyPeriod {
+	case schema.ResourcePoolDealocationRetire:
+		err = retireResource(res)
+	case schema.ResourcePoolDealocationImmediatelly:
+		err = freeResource(res)
+	default:
+		err = benchResource(res)
+	}
+
 	if err != nil {
 		return errors.Wrapf(err, "Unable to free a resource in pool \"%s\". Unable to unclaim", pool.Name)
 	}
@@ -136,8 +153,20 @@ func (pool SetPool) freeResourceInner(raw RawResourceProps) error {
 	return nil
 }
 
+func (pool SetPool) benchResource(res *ent.Resource) error {
+	return pool.client.Resource.UpdateOne(res).SetStatus(resource.StatusBench).Exec(pool.ctx)
+}
+
+func (pool SetPool) freeResourceImmediately(res *ent.Resource) error {
+	return pool.client.Resource.UpdateOne(res).SetStatus(resource.StatusFree).Exec(pool.ctx)
+}
+
+func (pool SetPool) retireResource(res *ent.Resource) error {
+	return pool.client.Resource.UpdateOne(res).SetStatus(resource.StatusRetired).Exec(pool.ctx)
+}
+
 func (pool SetPool) findResource(raw RawResourceProps) (*ent.ResourceQuery, error) {
-	propComparator, err := compareProps(pool.ctx, pool.QueryResourceType().OnlyX(pool.ctx), raw)
+	propComparator, err := CompareProps(pool.ctx, pool.QueryResourceType().OnlyX(pool.ctx), raw)
 	if err != nil {
 		return nil, errors.Wrapf(err, "Unable to find resource in pool: \"%s\"", pool.Name)
 	}
@@ -153,7 +182,7 @@ func (pool SetPool) QueryResource(raw RawResourceProps) (*ent.Resource, error) {
 		return nil, err
 	}
 	return query.
-		Where(resource.Claimed(true)).
+		Where(resource.StatusEQ(resource.StatusClaimed)).
 		Only(pool.ctx)
 }
 
@@ -161,10 +190,18 @@ func (pool SetPool) QueryResource(raw RawResourceProps) (*ent.Resource, error) {
 func (pool SetPool) queryUnclaimedResourceEager() (*ent.Resource, error) {
 	// Find first unclaimed
 	res, err := pool.findResources().
-		Where(resource.Claimed(false)).
+		Where(resource.StatusEQ(resource.StatusFree)).
 		First(pool.ctx)
 
-	// No more unclaimed
+	// No more free, try benched that have been benched before NOW - dealocationSafetyPeriod
+	if ent.IsNotFound(err) {
+		res, err = pool.findResources().
+			Where(resource.StatusEQ(resource.StatusBench)).
+			Where(resource.UpdatedAtLT(time.Now().Add(time.Duration(-pool.ResourcePool.DealocationSafetyPeriod) * time.Second))).
+			First(pool.ctx)
+	}
+
+	// No more benched, its over
 	if ent.IsNotFound(err) {
 		return nil, errors.Wrapf(err, "No more free resources in the pool: \"%s\"", pool.Name)
 	}
@@ -180,7 +217,7 @@ func (pool SetPool) findResources() *ent.ResourceQuery {
 // QueryResources returns all allocated resources
 func (pool SetPool) QueryResources() (ent.Resources, error) {
 	res, err := pool.findResources().
-		Where(resource.Claimed(true)).
+		Where(resource.StatusEQ(resource.StatusClaimed)).
 		All(pool.ctx)
 
 	return res, err

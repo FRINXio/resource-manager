@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"github.com/net-auto/resourceManager/ent"
 	"github.com/net-auto/resourceManager/ent/allocationstrategy"
+	"github.com/net-auto/resourceManager/ent/schema"
 	"reflect"
 	"testing"
 
@@ -32,11 +33,12 @@ func TestAllocatingPool(t *testing.T) {
 	resType := getResourceType(ctx, client)
 
 	strat, _ := mockStrategy(client, ctx)
-	propsAsMap := map[string]interface{}{"vlan": 1}
+	propsAsMap := RawResourceProps{"vlan": 1}
 	mockInvoker := mockInvoker{propsAsMap, nil}
 
 	pool, _, err := newAllocatingPoolWithMetaInternal(
-		ctx, client, resType, strat, "testAllocatingPool", mockInvoker)
+		ctx, client, resType, strat, "testAllocatingPool",
+		mockInvoker, schema.ResourcePoolDealocationImmediatelly)
 
 	if err != nil {
 		t.Fatalf("Unable to create pool %s", err)
@@ -54,7 +56,7 @@ func TestAllocatingPool(t *testing.T) {
 	toMap, err := PropertiesToMap(props)
 
 	if !reflect.DeepEqual(toMap, propsAsMap) {
-		t.Fatalf("Unexpected props in claimed resource: %s, should be %s", toMap, propsAsMap)
+		t.Fatalf("Unexpected props in claimed resource: %v, should be %v", toMap, propsAsMap)
 	}
 
 	err = pool.FreeResource(propsAsMap)
@@ -83,7 +85,8 @@ func TestAllocatingPoolFailure(t *testing.T) {
 	mockInvoker := mockInvoker{nil, fmt.Errorf("Fail")}
 
 	pool, _, _ := newAllocatingPoolWithMetaInternal(
-		ctx, client, resType, strat, "testAllocatingPool", mockInvoker)
+		ctx, client, resType, strat, "testAllocatingPool",
+		mockInvoker, schema.ResourcePoolDealocationRetire)
 
 	_, err := pool.ClaimResource()
 	if err == nil {

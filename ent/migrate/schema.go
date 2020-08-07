@@ -111,7 +111,8 @@ var (
 	// ResourcesColumns holds the columns for the "resources" table.
 	ResourcesColumns = []*schema.Column{
 		{Name: "id", Type: field.TypeInt, Increment: true},
-		{Name: "claimed", Type: field.TypeBool},
+		{Name: "status", Type: field.TypeEnum, Enums: []string{"bench", "claimed", "free", "retired"}},
+		{Name: "updated_at", Type: field.TypeTime},
 		{Name: "resource_pool_claims", Type: field.TypeInt, Nullable: true},
 	}
 	// ResourcesTable holds the schema information for the "resources" table.
@@ -122,7 +123,7 @@ var (
 		ForeignKeys: []*schema.ForeignKey{
 			{
 				Symbol:  "resources_resource_pools_claims",
-				Columns: []*schema.Column{ResourcesColumns[2]},
+				Columns: []*schema.Column{ResourcesColumns[3]},
 
 				RefColumns: []*schema.Column{ResourcePoolsColumns[0]},
 				OnDelete:   schema.SetNull,
@@ -134,6 +135,7 @@ var (
 		{Name: "id", Type: field.TypeInt, Increment: true},
 		{Name: "name", Type: field.TypeString, Unique: true},
 		{Name: "pool_type", Type: field.TypeEnum, Enums: []string{"allocating", "set", "singleton"}},
+		{Name: "dealocation_safety_period", Type: field.TypeInt},
 		{Name: "label_pools", Type: field.TypeInt, Nullable: true},
 		{Name: "resource_pool_allocation_strategy", Type: field.TypeInt, Nullable: true},
 		{Name: "resource_type_pools", Type: field.TypeInt, Nullable: true},
@@ -146,21 +148,21 @@ var (
 		ForeignKeys: []*schema.ForeignKey{
 			{
 				Symbol:  "resource_pools_labels_pools",
-				Columns: []*schema.Column{ResourcePoolsColumns[3]},
+				Columns: []*schema.Column{ResourcePoolsColumns[4]},
 
 				RefColumns: []*schema.Column{LabelsColumns[0]},
 				OnDelete:   schema.SetNull,
 			},
 			{
 				Symbol:  "resource_pools_allocation_strategies_allocation_strategy",
-				Columns: []*schema.Column{ResourcePoolsColumns[4]},
+				Columns: []*schema.Column{ResourcePoolsColumns[5]},
 
 				RefColumns: []*schema.Column{AllocationStrategiesColumns[0]},
 				OnDelete:   schema.SetNull,
 			},
 			{
 				Symbol:  "resource_pools_resource_types_pools",
-				Columns: []*schema.Column{ResourcePoolsColumns[5]},
+				Columns: []*schema.Column{ResourcePoolsColumns[6]},
 
 				RefColumns: []*schema.Column{ResourceTypesColumns[0]},
 				OnDelete:   schema.SetNull,

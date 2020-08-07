@@ -93,10 +93,10 @@ func (tr txResolver) FreeResource(ctx context.Context, input map[string]interfac
 	return result, nil
 }
 
-func (tr txResolver) CreateSetPool(ctx context.Context, resourceTypeID int, poolName string, poolValues []map[string]interface{}) (*ent.ResourcePool, error) {
+func (tr txResolver) CreateSetPool(ctx context.Context, resourceTypeID int, poolName string, poolDealocationSafetyPeriod int, poolValues []map[string]interface{}) (*ent.ResourcePool, error) {
 	var result, zero *ent.ResourcePool
 	if err := tr.WithTransaction(ctx, func(ctx context.Context, mr generated.MutationResolver) (err error) {
-		result, err = mr.CreateSetPool(ctx, resourceTypeID, poolName, poolValues)
+		result, err = mr.CreateSetPool(ctx, resourceTypeID, poolName, poolDealocationSafetyPeriod, poolValues)
 		return
 	}); err != nil {
 		return zero, err
@@ -121,10 +121,10 @@ func (tr txResolver) CreateSingletonPool(ctx context.Context, resourceTypeID int
 	return result, nil
 }
 
-func (tr txResolver) CreateAllocatingPool(ctx context.Context, resourceTypeID int, poolName string, allocationStrategyID int) (*ent.ResourcePool, error) {
+func (tr txResolver) CreateAllocatingPool(ctx context.Context, resourceTypeID int, poolName string, allocationStrategyID int, poolDealocationSafetyPeriod int) (*ent.ResourcePool, error) {
 	var result, zero *ent.ResourcePool
 	if err := tr.WithTransaction(ctx, func(ctx context.Context, mr generated.MutationResolver) (err error) {
-		result, err = mr.CreateAllocatingPool(ctx, resourceTypeID, poolName, allocationStrategyID)
+		result, err = mr.CreateAllocatingPool(ctx, resourceTypeID, poolName, allocationStrategyID, poolDealocationSafetyPeriod)
 		return
 	}); err != nil {
 		return zero, err

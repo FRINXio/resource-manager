@@ -3,6 +3,8 @@
 package ent
 
 import (
+	"time"
+
 	"github.com/net-auto/resourceManager/ent/allocationstrategy"
 	"github.com/net-auto/resourceManager/ent/label"
 	"github.com/net-auto/resourceManager/ent/propertytype"
@@ -52,16 +54,22 @@ func init() {
 	propertytype.DefaultDeleted = propertytypeDescDeleted.Default.(bool)
 	resourceFields := schema.Resource{}.Fields()
 	_ = resourceFields
-	// resourceDescClaimed is the schema descriptor for claimed field.
-	resourceDescClaimed := resourceFields[0].Descriptor()
-	// resource.DefaultClaimed holds the default value on creation for the claimed field.
-	resource.DefaultClaimed = resourceDescClaimed.Default.(bool)
+	// resourceDescUpdatedAt is the schema descriptor for updated_at field.
+	resourceDescUpdatedAt := resourceFields[1].Descriptor()
+	// resource.DefaultUpdatedAt holds the default value on creation for the updated_at field.
+	resource.DefaultUpdatedAt = resourceDescUpdatedAt.Default.(func() time.Time)
+	// resource.UpdateDefaultUpdatedAt holds the default value on update for the updated_at field.
+	resource.UpdateDefaultUpdatedAt = resourceDescUpdatedAt.UpdateDefault.(func() time.Time)
 	resourcepoolFields := schema.ResourcePool{}.Fields()
 	_ = resourcepoolFields
 	// resourcepoolDescName is the schema descriptor for name field.
 	resourcepoolDescName := resourcepoolFields[0].Descriptor()
 	// resourcepool.NameValidator is a validator for the "name" field. It is called by the builders before save.
 	resourcepool.NameValidator = resourcepoolDescName.Validators[0].(func(string) error)
+	// resourcepoolDescDealocationSafetyPeriod is the schema descriptor for dealocation_safety_period field.
+	resourcepoolDescDealocationSafetyPeriod := resourcepoolFields[2].Descriptor()
+	// resourcepool.DefaultDealocationSafetyPeriod holds the default value on creation for the dealocation_safety_period field.
+	resourcepool.DefaultDealocationSafetyPeriod = resourcepoolDescDealocationSafetyPeriod.Default.(int)
 	resourcetypeFields := schema.ResourceType{}.Fields()
 	_ = resourcetypeFields
 	// resourcetypeDescName is the schema descriptor for name field.

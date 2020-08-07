@@ -22,6 +22,8 @@ type ResourcePool struct {
 	Name string `json:"name,omitempty"`
 	// PoolType holds the value of the "pool_type" field.
 	PoolType resourcepool.PoolType `json:"pool_type,omitempty"`
+	// DealocationSafetyPeriod holds the value of the "dealocation_safety_period" field.
+	DealocationSafetyPeriod int `json:"dealocation_safety_period,omitempty"`
 	// Edges holds the relations/edges for other nodes in the graph.
 	// The values are being populated by the ResourcePoolQuery when eager-loading is set.
 	Edges                             ResourcePoolEdges `json:"edges"`
@@ -102,6 +104,7 @@ func (*ResourcePool) scanValues() []interface{} {
 		&sql.NullInt64{},  // id
 		&sql.NullString{}, // name
 		&sql.NullString{}, // pool_type
+		&sql.NullInt64{},  // dealocation_safety_period
 	}
 }
 
@@ -136,7 +139,12 @@ func (rp *ResourcePool) assignValues(values ...interface{}) error {
 	} else if value.Valid {
 		rp.PoolType = resourcepool.PoolType(value.String)
 	}
-	values = values[2:]
+	if value, ok := values[2].(*sql.NullInt64); !ok {
+		return fmt.Errorf("unexpected type %T for field dealocation_safety_period", values[2])
+	} else if value.Valid {
+		rp.DealocationSafetyPeriod = int(value.Int64)
+	}
+	values = values[3:]
 	if len(values) == len(resourcepool.ForeignKeys) {
 		if value, ok := values[0].(*sql.NullInt64); !ok {
 			return fmt.Errorf("unexpected type %T for edge-field label_pools", value)
@@ -207,6 +215,8 @@ func (rp *ResourcePool) String() string {
 	builder.WriteString(rp.Name)
 	builder.WriteString(", pool_type=")
 	builder.WriteString(fmt.Sprintf("%v", rp.PoolType))
+	builder.WriteString(", dealocation_safety_period=")
+	builder.WriteString(fmt.Sprintf("%v", rp.DealocationSafetyPeriod))
 	builder.WriteByte(')')
 	return builder.String()
 }

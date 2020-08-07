@@ -6,6 +6,7 @@ import (
 	"github.com/facebookincubator/symphony/pkg/authz/models"
 	_ "github.com/mattn/go-sqlite3"
 	"github.com/net-auto/resourceManager/ent"
+	"github.com/net-auto/resourceManager/ent/resource"
 	_ "github.com/net-auto/resourceManager/ent/runtime"
 	"log"
 	"reflect"
@@ -58,6 +59,21 @@ func assertDb(ctx context.Context, client *ent.Client, t *testing.T, count ...in
 	assertInstancesInDb(client.Resource.Query().AllX(ctx), count[4], t)
 }
 
+func assertDbResourceStates(ctx context.Context, client *ent.Client, t *testing.T, count ...int) {
+	assertDbResourceState(ctx, client, t, count[0], resource.StatusFree)
+	assertDbResourceState(ctx, client, t, count[1], resource.StatusClaimed)
+	assertDbResourceState(ctx, client, t, count[2], resource.StatusBench)
+	assertDbResourceState(ctx, client, t, count[3], resource.StatusRetired)
+}
+
+func assertDbResourceState(ctx context.Context, client *ent.Client, t *testing.T, expected int, expectedStatus resource.Status) {
+	freeResourceCount, _ := client.Resource.Query().Where(resource.StatusEQ(expectedStatus)).Count(ctx)
+	if freeResourceCount != expected {
+		t.Fatalf("%d different instances of resources in state: %s expected, got: %d",
+			expected, expectedStatus.String(), freeResourceCount)
+	}
+}
+
 func assertInstancesInDb(instances interface{}, expected int, t *testing.T) {
 	slice := reflect.ValueOf(instances)
 	if slice.Kind() != reflect.Slice {
@@ -68,3 +84,25 @@ func assertInstancesInDb(instances interface{}, expected int, t *testing.T) {
 		t.Fatalf("%d different instances of %s expected, got: %s", expected, slice.Type(), slice)
 	}
 }
+
+func OpenTestDb(ctx context.Context) *ent.Client {
+	client, err := ent.Open("sqlite3", "file:ent?mode=memory&cache=shared&_fk=1")
+	if err != nil {
+		log.Fatalf("failed opening connection to sqlite: %v", err)
+	}
+	// run the auto migration tool.
+	if err := client.Schema.Create(ctx); err != nil {
+		log.Fatalf("failed creating schema resources: %v", err)
+	}
+
+	return client
+}
+
+func GetContext() context.Context {
+	ctx := context.Background()
+	ctx = authz.NewContext(ctx, &models.PermissionSettings{
+		CanWrite:        true,
+		WorkforcePolicy: authz.NewWorkforcePolicy(true, true)})
+	return ctx
+}
+

@@ -387,16 +387,24 @@ func (r *Resource) Node(ctx context.Context) (node *Node, err error) {
 	node = &Node{
 		ID:     r.ID,
 		Type:   "Resource",
-		Fields: make([]*Field, 1),
+		Fields: make([]*Field, 2),
 		Edges:  make([]*Edge, 2),
 	}
 	var buf []byte
-	if buf, err = json.Marshal(r.Claimed); err != nil {
+	if buf, err = json.Marshal(r.Status); err != nil {
 		return nil, err
 	}
 	node.Fields[0] = &Field{
-		Type:  "bool",
-		Name:  "claimed",
+		Type:  "resource.Status",
+		Name:  "status",
+		Value: string(buf),
+	}
+	if buf, err = json.Marshal(r.UpdatedAt); err != nil {
+		return nil, err
+	}
+	node.Fields[1] = &Field{
+		Type:  "time.Time",
+		Name:  "updated_at",
 		Value: string(buf),
 	}
 	var ids []int
@@ -429,7 +437,7 @@ func (rp *ResourcePool) Node(ctx context.Context) (node *Node, err error) {
 	node = &Node{
 		ID:     rp.ID,
 		Type:   "ResourcePool",
-		Fields: make([]*Field, 2),
+		Fields: make([]*Field, 3),
 		Edges:  make([]*Edge, 4),
 	}
 	var buf []byte
@@ -447,6 +455,14 @@ func (rp *ResourcePool) Node(ctx context.Context) (node *Node, err error) {
 	node.Fields[1] = &Field{
 		Type:  "resourcepool.PoolType",
 		Name:  "pool_type",
+		Value: string(buf),
+	}
+	if buf, err = json.Marshal(rp.DealocationSafetyPeriod); err != nil {
+		return nil, err
+	}
+	node.Fields[2] = &Field{
+		Type:  "int",
+		Name:  "dealocation_safety_period",
 		Value: string(buf),
 	}
 	var ids []int

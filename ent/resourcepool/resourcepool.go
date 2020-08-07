@@ -17,6 +17,8 @@ const (
 	FieldName = "name"
 	// FieldPoolType holds the string denoting the pool_type field in the database.
 	FieldPoolType = "pool_type"
+	// FieldDealocationSafetyPeriod holds the string denoting the dealocation_safety_period field in the database.
+	FieldDealocationSafetyPeriod = "dealocation_safety_period"
 
 	// EdgeResourceType holds the string denoting the resource_type edge name in mutations.
 	EdgeResourceType = "resource_type"
@@ -64,6 +66,7 @@ var Columns = []string{
 	FieldID,
 	FieldName,
 	FieldPoolType,
+	FieldDealocationSafetyPeriod,
 }
 
 // ForeignKeys holds the SQL foreign-keys that are owned by the ResourcePool type.
@@ -76,6 +79,8 @@ var ForeignKeys = []string{
 var (
 	// NameValidator is a validator for the "name" field. It is called by the builders before save.
 	NameValidator func(string) error
+	// DefaultDealocationSafetyPeriod holds the default value on creation for the dealocation_safety_period field.
+	DefaultDealocationSafetyPeriod int
 )
 
 // PoolType defines the type for the pool_type enum field.

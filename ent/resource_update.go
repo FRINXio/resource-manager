@@ -5,6 +5,7 @@ package ent
 import (
 	"context"
 	"fmt"
+	"time"
 
 	"github.com/facebookincubator/ent/dialect/sql"
 	"github.com/facebookincubator/ent/dialect/sql/sqlgraph"
@@ -29,17 +30,15 @@ func (ru *ResourceUpdate) Where(ps ...predicate.Resource) *ResourceUpdate {
 	return ru
 }
 
-// SetClaimed sets the claimed field.
-func (ru *ResourceUpdate) SetClaimed(b bool) *ResourceUpdate {
-	ru.mutation.SetClaimed(b)
+// SetStatus sets the status field.
+func (ru *ResourceUpdate) SetStatus(r resource.Status) *ResourceUpdate {
+	ru.mutation.SetStatus(r)
 	return ru
 }
 
-// SetNillableClaimed sets the claimed field if the given value is not nil.
-func (ru *ResourceUpdate) SetNillableClaimed(b *bool) *ResourceUpdate {
-	if b != nil {
-		ru.SetClaimed(*b)
-	}
+// SetUpdatedAt sets the updated_at field.
+func (ru *ResourceUpdate) SetUpdatedAt(t time.Time) *ResourceUpdate {
+	ru.mutation.SetUpdatedAt(t)
 	return ru
 }
 
@@ -105,6 +104,15 @@ func (ru *ResourceUpdate) RemoveProperties(p ...*Property) *ResourceUpdate {
 
 // Save executes the query and returns the number of rows/vertices matched by this operation.
 func (ru *ResourceUpdate) Save(ctx context.Context) (int, error) {
+	if v, ok := ru.mutation.Status(); ok {
+		if err := resource.StatusValidator(v); err != nil {
+			return 0, &ValidationError{Name: "status", err: fmt.Errorf("ent: validator failed for field \"status\": %w", err)}
+		}
+	}
+	if _, ok := ru.mutation.UpdatedAt(); !ok {
+		v := resource.UpdateDefaultUpdatedAt()
+		ru.mutation.SetUpdatedAt(v)
+	}
 
 	var (
 		err      error
@@ -173,11 +181,18 @@ func (ru *ResourceUpdate) sqlSave(ctx context.Context) (n int, err error) {
 			}
 		}
 	}
-	if value, ok := ru.mutation.Claimed(); ok {
+	if value, ok := ru.mutation.Status(); ok {
 		_spec.Fields.Set = append(_spec.Fields.Set, &sqlgraph.FieldSpec{
-			Type:   field.TypeBool,
+			Type:   field.TypeEnum,
 			Value:  value,
-			Column: resource.FieldClaimed,
+			Column: resource.FieldStatus,
+		})
+	}
+	if value, ok := ru.mutation.UpdatedAt(); ok {
+		_spec.Fields.Set = append(_spec.Fields.Set, &sqlgraph.FieldSpec{
+			Type:   field.TypeTime,
+			Value:  value,
+			Column: resource.FieldUpdatedAt,
 		})
 	}
 	if ru.mutation.PoolCleared() {
@@ -271,17 +286,15 @@ type ResourceUpdateOne struct {
 	mutation *ResourceMutation
 }
 
-// SetClaimed sets the claimed field.
-func (ruo *ResourceUpdateOne) SetClaimed(b bool) *ResourceUpdateOne {
-	ruo.mutation.SetClaimed(b)
+// SetStatus sets the status field.
+func (ruo *ResourceUpdateOne) SetStatus(r resource.Status) *ResourceUpdateOne {
+	ruo.mutation.SetStatus(r)
 	return ruo
 }
 
-// SetNillableClaimed sets the claimed field if the given value is not nil.
-func (ruo *ResourceUpdateOne) SetNillableClaimed(b *bool) *ResourceUpdateOne {
-	if b != nil {
-		ruo.SetClaimed(*b)
-	}
+// SetUpdatedAt sets the updated_at field.
+func (ruo *ResourceUpdateOne) SetUpdatedAt(t time.Time) *ResourceUpdateOne {
+	ruo.mutation.SetUpdatedAt(t)
 	return ruo
 }
 
@@ -347,6 +360,15 @@ func (ruo *ResourceUpdateOne) RemoveProperties(p ...*Property) *ResourceUpdateOn
 
 // Save executes the query and returns the updated entity.
 func (ruo *ResourceUpdateOne) Save(ctx context.Context) (*Resource, error) {
+	if v, ok := ruo.mutation.Status(); ok {
+		if err := resource.StatusValidator(v); err != nil {
+			return nil, &ValidationError{Name: "status", err: fmt.Errorf("ent: validator failed for field \"status\": %w", err)}
+		}
+	}
+	if _, ok := ruo.mutation.UpdatedAt(); !ok {
+		v := resource.UpdateDefaultUpdatedAt()
+		ruo.mutation.SetUpdatedAt(v)
+	}
 
 	var (
 		err  error
@@ -413,11 +435,18 @@ func (ruo *ResourceUpdateOne) sqlSave(ctx context.Context) (r *Resource, err err
 		return nil, &ValidationError{Name: "ID", err: fmt.Errorf("missing Resource.ID for update")}
 	}
 	_spec.Node.ID.Value = id
-	if value, ok := ruo.mutation.Claimed(); ok {
+	if value, ok := ruo.mutation.Status(); ok {
 		_spec.Fields.Set = append(_spec.Fields.Set, &sqlgraph.FieldSpec{
-			Type:   field.TypeBool,
+			Type:   field.TypeEnum,
 			Value:  value,
-			Column: resource.FieldClaimed,
+			Column: resource.FieldStatus,
+		})
+	}
+	if value, ok := ruo.mutation.UpdatedAt(); ok {
+		_spec.Fields.Set = append(_spec.Fields.Set, &sqlgraph.FieldSpec{
+			Type:   field.TypeTime,
+			Value:  value,
+			Column: resource.FieldUpdatedAt,
 		})
 	}
 	if ruo.mutation.PoolCleared() {

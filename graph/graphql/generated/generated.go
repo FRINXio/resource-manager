@@ -61,10 +61,10 @@ type ComplexityRoot struct {
 
 	Mutation struct {
 		ClaimResource            func(childComplexity int, poolName string) int
-		CreateAllocatingPool     func(childComplexity int, resourceTypeID int, poolName string, allocationStrategyID int) int
+		CreateAllocatingPool     func(childComplexity int, resourceTypeID int, poolName string, allocationStrategyID int, poolDealocationSafetyPeriod int) int
 		CreateAllocationStrategy func(childComplexity int, name string, script string) int
 		CreateResourceType       func(childComplexity int, resourceName string, resourceProperties map[string]interface{}) int
-		CreateSetPool            func(childComplexity int, resourceTypeID int, poolName string, poolValues []map[string]interface{}) int
+		CreateSetPool            func(childComplexity int, resourceTypeID int, poolName string, poolDealocationSafetyPeriod int, poolValues []map[string]interface{}) int
 		CreateSingletonPool      func(childComplexity int, resourceTypeID int, poolName string, poolValues []map[string]interface{}) int
 		DeleteAllocationStrategy func(childComplexity int, allocationStrategyID int) int
 		DeleteResourcePool       func(childComplexity int, resourcePoolID int) int
@@ -127,9 +127,9 @@ type MutationResolver interface {
 	DeleteAllocationStrategy(ctx context.Context, allocationStrategyID int) (*ent.AllocationStrategy, error)
 	ClaimResource(ctx context.Context, poolName string) (*ent.Resource, error)
 	FreeResource(ctx context.Context, input map[string]interface{}, poolName string) (string, error)
-	CreateSetPool(ctx context.Context, resourceTypeID int, poolName string, poolValues []map[string]interface{}) (*ent.ResourcePool, error)
+	CreateSetPool(ctx context.Context, resourceTypeID int, poolName string, poolDealocationSafetyPeriod int, poolValues []map[string]interface{}) (*ent.ResourcePool, error)
 	CreateSingletonPool(ctx context.Context, resourceTypeID int, poolName string, poolValues []map[string]interface{}) (*ent.ResourcePool, error)
-	CreateAllocatingPool(ctx context.Context, resourceTypeID int, poolName string, allocationStrategyID int) (*ent.ResourcePool, error)
+	CreateAllocatingPool(ctx context.Context, resourceTypeID int, poolName string, allocationStrategyID int, poolDealocationSafetyPeriod int) (*ent.ResourcePool, error)
 	DeleteResourcePool(ctx context.Context, resourcePoolID int) (string, error)
 	CreateResourceType(ctx context.Context, resourceName string, resourceProperties map[string]interface{}) (*ent.ResourceType, error)
 	DeleteResourceType(ctx context.Context, resourceTypeID int) (string, error)
@@ -229,7 +229,7 @@ func (e *executableSchema) Complexity(typeName, field string, childComplexity in
 			return 0, false
 		}
 
-		return e.complexity.Mutation.CreateAllocatingPool(childComplexity, args["resourceTypeId"].(int), args["poolName"].(string), args["allocationStrategyId"].(int)), true
+		return e.complexity.Mutation.CreateAllocatingPool(childComplexity, args["resourceTypeId"].(int), args["poolName"].(string), args["allocationStrategyId"].(int), args["poolDealocationSafetyPeriod"].(int)), true
 
 	case "Mutation.CreateAllocationStrategy":
 		if e.complexity.Mutation.CreateAllocationStrategy == nil {
@@ -265,7 +265,7 @@ func (e *executableSchema) Complexity(typeName, field string, childComplexity in
 			return 0, false
 		}
 
-		return e.complexity.Mutation.CreateSetPool(childComplexity, args["resourceTypeId"].(int), args["poolName"].(string), args["poolValues"].([]map[string]interface{})), true
+		return e.complexity.Mutation.CreateSetPool(childComplexity, args["resourceTypeId"].(int), args["poolName"].(string), args["poolDealocationSafetyPeriod"].(int), args["poolValues"].([]map[string]interface{})), true
 
 	case "Mutation.CreateSingletonPool":
 		if e.complexity.Mutation.CreateSingletonPool == nil {
@@ -716,9 +716,9 @@ type Mutation {
     FreeResource(input: Map!, poolName: String!): String!
 
     # create/update/delete resource pool
-    CreateSetPool(resourceTypeId: Int!, poolName: String!, poolValues: [Map]): ResourcePool!
+    CreateSetPool(resourceTypeId: Int!, poolName: String!, poolDealocationSafetyPeriod: Int!, poolValues: [Map]): ResourcePool!
     CreateSingletonPool(resourceTypeId: Int!, poolName: String!, poolValues: [Map]): ResourcePool!
-    CreateAllocatingPool(resourceTypeId: Int!, poolName: String!, allocationStrategyId: Int!): ResourcePool!
+    CreateAllocatingPool(resourceTypeId: Int!, poolName: String!, allocationStrategyId: Int!, poolDealocationSafetyPeriod: Int!): ResourcePool!
     DeleteResourcePool(resourcePoolId: Int!): String!
 
     # create/update/delete resource type
@@ -778,6 +778,14 @@ func (ec *executionContext) field_Mutation_CreateAllocatingPool_args(ctx context
 		}
 	}
 	args["allocationStrategyId"] = arg2
+	var arg3 int
+	if tmp, ok := rawArgs["poolDealocationSafetyPeriod"]; ok {
+		arg3, err = ec.unmarshalNInt2int(ctx, tmp)
+		if err != nil {
+			return nil, err
+		}
+	}
+	args["poolDealocationSafetyPeriod"] = arg3
 	return args, nil
 }
 
@@ -844,14 +852,22 @@ func (ec *executionContext) field_Mutation_CreateSetPool_args(ctx context.Contex
 		}
 	}
 	args["poolName"] = arg1
-	var arg2 []map[string]interface{}
-	if tmp, ok := rawArgs["poolValues"]; ok {
-		arg2, err = ec.unmarshalOMap2ᚕmap(ctx, tmp)
+	var arg2 int
+	if tmp, ok := rawArgs["poolDealocationSafetyPeriod"]; ok {
+		arg2, err = ec.unmarshalNInt2int(ctx, tmp)
 		if err != nil {
 			return nil, err
 		}
 	}
-	args["poolValues"] = arg2
+	args["poolDealocationSafetyPeriod"] = arg2
+	var arg3 []map[string]interface{}
+	if tmp, ok := rawArgs["poolValues"]; ok {
+		arg3, err = ec.unmarshalOMap2ᚕmap(ctx, tmp)
+		if err != nil {
+			return nil, err
+		}
+	}
+	args["poolValues"] = arg3
 	return args, nil
 }
 
@@ -1463,7 +1479,7 @@ func (ec *executionContext) _Mutation_CreateSetPool(ctx context.Context, field g
 	fc.Args = args
 	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
 		ctx = rctx // use context from middleware stack in children
-		return ec.resolvers.Mutation().CreateSetPool(rctx, args["resourceTypeId"].(int), args["poolName"].(string), args["poolValues"].([]map[string]interface{}))
+		return ec.resolvers.Mutation().CreateSetPool(rctx, args["resourceTypeId"].(int), args["poolName"].(string), args["poolDealocationSafetyPeriod"].(int), args["poolValues"].([]map[string]interface{}))
 	})
 	if err != nil {
 		ec.Error(ctx, err)
@@ -1545,7 +1561,7 @@ func (ec *executionContext) _Mutation_CreateAllocatingPool(ctx context.Context, 
 	fc.Args = args
 	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
 		ctx = rctx // use context from middleware stack in children
-		return ec.resolvers.Mutation().CreateAllocatingPool(rctx, args["resourceTypeId"].(int), args["poolName"].(string), args["allocationStrategyId"].(int))
+		return ec.resolvers.Mutation().CreateAllocatingPool(rctx, args["resourceTypeId"].(int), args["poolName"].(string), args["allocationStrategyId"].(int), args["poolDealocationSafetyPeriod"].(int))
 	})
 	if err != nil {
 		ec.Error(ctx, err)

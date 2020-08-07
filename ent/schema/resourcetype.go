@@ -8,6 +8,8 @@ import (
 	"github.com/facebookincubator/ent"
 	"github.com/facebookincubator/ent/schema/edge"
 	"github.com/facebookincubator/ent/schema/field"
+	"time"
+
 	// "github.com/facebookincubator/symphony/pkg/authz"
 	// "github.com/net-auto/resourceManager/ent/privacy"
 	// "github.com/net-auto/resourceManager/ent/privacy"
@@ -95,6 +97,9 @@ type ResourcePool struct {
 	ent.Schema
 }
 
+const ResourcePoolDealocationRetire = -1
+const ResourcePoolDealocationImmediatelly = 0
+
 // Fields of the ResourcePool.
 func (ResourcePool) Fields() []ent.Field {
 	return []ent.Field{
@@ -103,6 +108,10 @@ func (ResourcePool) Fields() []ent.Field {
 			Unique(),
 		field.Enum("pool_type").
 			Values("singleton", "set", "allocating"),
+		field.Int("dealocation_safety_period").
+			Default(0).
+			Comment("How long to keep resources unavailable after dealocation (in seconds)." +
+				" -1 release never, 0 release immediately"),
 	}
 }
 
@@ -129,8 +138,11 @@ type Resource struct {
 // Fields of the Resource.
 func (Resource) Fields() []ent.Field {
 	return []ent.Field{
-		field.Bool("claimed").
-			Default(false),
+		field.Enum("status").
+			Values("free", "claimed", "retired", "bench"),
+		field.Time("updated_at").
+			Default(time.Now).
+			UpdateDefault(time.Now),
 	}
 }
 

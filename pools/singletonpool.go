@@ -4,6 +4,7 @@ import (
 	"context"
 	"github.com/net-auto/resourceManager/ent"
 	resourcePool "github.com/net-auto/resourceManager/ent/resourcepool"
+	"github.com/net-auto/resourceManager/ent/schema"
 )
 
 // NewSingletonPool creates a brand new pool allocating DB entities in the process
@@ -25,7 +26,8 @@ func NewSingletonPoolWithMeta(
 	propertyValues RawResourceProps,
 	poolName string) (Pool, *ent.ResourcePool, error) {
 
-	pool, err := newFixedPoolInner(ctx, client, resourceType, []RawResourceProps{propertyValues}, poolName, resourcePool.PoolTypeSingleton)
+	pool, err := newFixedPoolInner(ctx, client, resourceType, []RawResourceProps{propertyValues},
+		poolName, resourcePool.PoolTypeSingleton, schema.ResourcePoolDealocationImmediatelly)
 
 	if err != nil {
 		return nil, nil, err

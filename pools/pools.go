@@ -2,13 +2,8 @@ package pools
 
 import (
 	"context"
-	"fmt"
-	"strconv"
-
 	"github.com/net-auto/resourceManager/ent"
-	"github.com/net-auto/resourceManager/ent/predicate"
-	property "github.com/net-auto/resourceManager/ent/property"
-	propertyType "github.com/net-auto/resourceManager/ent/propertytype"
+	"github.com/net-auto/resourceManager/ent/resource"
 	resourcePool "github.com/net-auto/resourceManager/ent/resourcepool"
 	"github.com/pkg/errors"
 )
@@ -55,7 +50,7 @@ type SingletonPool struct {
 
 // AllocatingPool provides resources based on allocation strategy
 type AllocatingPool struct {
-	poolBase
+	SetPool
 	invoker ScriptInvoker
 }
 
@@ -67,11 +62,13 @@ func newFixedPoolInner(ctx context.Context,
 	resourceType *ent.ResourceType,
 	propertyValues []RawResourceProps,
 	poolName string,
-	poolType resourcePool.PoolType) (*ent.ResourcePool, error) {
+	poolType resourcePool.PoolType,
+	poolDealocationSafetyPeriod int) (*ent.ResourcePool, error) {
 	pool, err := client.ResourcePool.Create().
 		SetName(poolName).
 		SetPoolType(poolType).
 		SetResourceType(resourceType).
+		SetDealocationSafetyPeriod(poolDealocationSafetyPeriod).
 		Save(ctx)
 
 	if err != nil {
@@ -79,7 +76,7 @@ func newFixedPoolInner(ctx context.Context,
 	}
 
 	// Pre-create all resources
-	_, resourceErr := PreCreateResources(ctx, client, propertyValues, pool, resourceType, false)
+	_, resourceErr := PreCreateResources(ctx, client, propertyValues, pool, resourceType, resource.StatusFree)
 
 	if resourceErr != nil {
 		return nil, errors.Wrapf(resourceErr, "Unable to create pool")
@@ -133,95 +130,9 @@ func existingPool(
 	case resourcePool.PoolTypeSet:
 		return &SetPool{poolBase{pool, ctx, client}}, nil
 	case resourcePool.PoolTypeAllocating:
-		return &AllocatingPool{poolBase{pool, ctx, client}, NewWasmerDefault()}, nil
+		return &AllocatingPool{SetPool{poolBase{pool, ctx, client}}, NewWasmerDefault()}, nil
 	default:
 		return nil, errors.Errorf("Unknown pool type \"%s\"", pool.PoolType)
 	}
 }
 
-// ParseProps turns a map such as ["a": 3, "b": "value"] into a list of properties and stores them in DB
-//  uses resource type to find out what are the predefined types for each value
-func ParseProps(
-	ctx context.Context,
-	tx *ent.Client,
-	resourceType *ent.ResourceType,
-	propertyValues RawResourceProps) (ent.Properties, error) {
-
-	var props ent.Properties
-	propTypes, err := resourceType.QueryPropertyTypes().All(ctx)
-	if err != nil {
-		return nil, errors.Wrapf(err, "Unable to determine property types for \"%s\"", resourceType)
-	}
-
-	for _, pt := range propTypes {
-		pv := propertyValues[pt.Name]
-
-		if pt.Mandatory {
-			if pv == nil {
-				return nil, errors.Errorf("Missing mandatory property \"%s\"", pt.Name)
-			}
-		} else {
-			if pv == nil {
-				continue
-			}
-		}
-
-		ppBuilder := tx.Property.Create().SetType(pt)
-
-		// TODO is there a better way of parsing individual types ? Reuse something from inv ?
-		// TODO add additional types
-		switch pt.Type {
-		case "int":
-			// Parse the int from string to be sure
-			atoi, err := strconv.Atoi(fmt.Sprintf("%v", pv))
-			if err != nil {
-				return nil, errors.Wrapf(err, "Unable to parse int value from \"%s\"", pv)
-			}
-			ppBuilder.SetIntVal(atoi)
-		case "string":
-			ppBuilder.SetStringVal(pv.(string))
-		default:
-			return nil, errors.Errorf("Unsupported property type \"%s\"", pt.Type)
-		}
-
-		pp, err := ppBuilder.Save(ctx)
-		if err != nil {
-			return nil, errors.Wrapf(err, "Unable to instantiate property of type \"%s\"", pt.Type)
-		}
-		props = append(props, pp)
-	}
-
-	return props, nil
-}
-
-func compareProps(
-	ctx context.Context,
-	resourceType *ent.ResourceType,
-	propertyValues RawResourceProps) ([]predicate.Property, error) {
-
-	var predicates []predicate.Property
-	for pN, pV := range propertyValues {
-		pT, err := resourceType.QueryPropertyTypes().Where(propertyType.NameEQ(pN)).Only(ctx)
-		if err != nil {
-			return nil, errors.Wrapf(err, "Unknown property: \"%s\" for resource type: \"%s\"", pN, resourceType)
-		}
-
-		predicate := property.HasTypeWith(propertyType.ID(pT.ID))
-
-		// TODO is there a better way of parsing individual types ? Reuse something from inv ?
-		// TODO add additional types
-		// TODO we have this switch in 2 places
-		switch pT.Type {
-		case "int":
-			predicate = property.And(predicate, property.IntValEQ(pV.(int)))
-		case "string":
-			predicate = property.And(predicate, property.StringValEQ(pV.(string)))
-		default:
-			return nil, errors.Errorf("Unsupported property type \"%s\"", pT.Type)
-		}
-
-		predicates = append(predicates, predicate)
-	}
-
-	return predicates, nil
-}

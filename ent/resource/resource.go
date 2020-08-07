@@ -2,13 +2,22 @@
 
 package resource
 
+import (
+	"fmt"
+	"io"
+	"strconv"
+	"time"
+)
+
 const (
 	// Label holds the string label denoting the resource type in the database.
 	Label = "resource"
 	// FieldID holds the string denoting the id field in the database.
 	FieldID = "id"
-	// FieldClaimed holds the string denoting the claimed field in the database.
-	FieldClaimed = "claimed"
+	// FieldStatus holds the string denoting the status field in the database.
+	FieldStatus = "status"
+	// FieldUpdatedAt holds the string denoting the updated_at field in the database.
+	FieldUpdatedAt = "updated_at"
 
 	// EdgePool holds the string denoting the pool edge name in mutations.
 	EdgePool = "pool"
@@ -36,7 +45,8 @@ const (
 // Columns holds all SQL columns for resource fields.
 var Columns = []string{
 	FieldID,
-	FieldClaimed,
+	FieldStatus,
+	FieldUpdatedAt,
 }
 
 // ForeignKeys holds the SQL foreign-keys that are owned by the Resource type.
@@ -45,6 +55,51 @@ var ForeignKeys = []string{
 }
 
 var (
-	// DefaultClaimed holds the default value on creation for the claimed field.
-	DefaultClaimed bool
+	// DefaultUpdatedAt holds the default value on creation for the updated_at field.
+	DefaultUpdatedAt func() time.Time
+	// UpdateDefaultUpdatedAt holds the default value on update for the updated_at field.
+	UpdateDefaultUpdatedAt func() time.Time
 )
+
+// Status defines the type for the status enum field.
+type Status string
+
+// Status values.
+const (
+	StatusBench   Status = "bench"
+	StatusClaimed Status = "claimed"
+	StatusFree    Status = "free"
+	StatusRetired Status = "retired"
+)
+
+func (s Status) String() string {
+	return string(s)
+}
+
+// StatusValidator is a validator for the "status" field enum values. It is called by the builders before save.
+func StatusValidator(s Status) error {
+	switch s {
+	case StatusBench, StatusClaimed, StatusFree, StatusRetired:
+		return nil
+	default:
+		return fmt.Errorf("resource: invalid enum value for status field: %q", s)
+	}
+}
+
+// MarshalGQL implements graphql.Marshaler interface.
+func (s Status) MarshalGQL(w io.Writer) {
+	io.WriteString(w, strconv.Quote(s.String()))
+}
+
+// UnmarshalGQL implements graphql.Unmarshaler interface.
+func (s *Status) UnmarshalGQL(v interface{}) error {
+	str, ok := v.(string)
+	if !ok {
+		return fmt.Errorf("enum %T must be a string", v)
+	}
+	*s = Status(str)
+	if err := StatusValidator(*s); err != nil {
+		return fmt.Errorf("%s is not a valid Status", str)
+	}
+	return nil
+}

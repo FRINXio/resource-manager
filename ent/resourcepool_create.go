@@ -35,6 +35,20 @@ func (rpc *ResourcePoolCreate) SetPoolType(rt resourcepool.PoolType) *ResourcePo
 	return rpc
 }
 
+// SetDealocationSafetyPeriod sets the dealocation_safety_period field.
+func (rpc *ResourcePoolCreate) SetDealocationSafetyPeriod(i int) *ResourcePoolCreate {
+	rpc.mutation.SetDealocationSafetyPeriod(i)
+	return rpc
+}
+
+// SetNillableDealocationSafetyPeriod sets the dealocation_safety_period field if the given value is not nil.
+func (rpc *ResourcePoolCreate) SetNillableDealocationSafetyPeriod(i *int) *ResourcePoolCreate {
+	if i != nil {
+		rpc.SetDealocationSafetyPeriod(*i)
+	}
+	return rpc
+}
+
 // SetResourceTypeID sets the resource_type edge to ResourceType by id.
 func (rpc *ResourcePoolCreate) SetResourceTypeID(id int) *ResourcePoolCreate {
 	rpc.mutation.SetResourceTypeID(id)
@@ -170,6 +184,10 @@ func (rpc *ResourcePoolCreate) preSave() error {
 			return &ValidationError{Name: "pool_type", err: fmt.Errorf("ent: validator failed for field \"pool_type\": %w", err)}
 		}
 	}
+	if _, ok := rpc.mutation.DealocationSafetyPeriod(); !ok {
+		v := resourcepool.DefaultDealocationSafetyPeriod
+		rpc.mutation.SetDealocationSafetyPeriod(v)
+	}
 	return nil
 }
 
@@ -212,6 +230,14 @@ func (rpc *ResourcePoolCreate) createSpec() (*ResourcePool, *sqlgraph.CreateSpec
 			Column: resourcepool.FieldPoolType,
 		})
 		rp.PoolType = value
+	}
+	if value, ok := rpc.mutation.DealocationSafetyPeriod(); ok {
+		_spec.Fields = append(_spec.Fields, &sqlgraph.FieldSpec{
+			Type:   field.TypeInt,
+			Value:  value,
+			Column: resourcepool.FieldDealocationSafetyPeriod,
+		})
+		rp.DealocationSafetyPeriod = value
 	}
 	if nodes := rpc.mutation.ResourceTypeIDs(); len(nodes) > 0 {
 		edge := &sqlgraph.EdgeSpec{

@@ -87,7 +87,8 @@ func (c *PropertyTypeClient) CreateFrom(pt *PropertyType) *PropertyTypeCreate {
 // Copy existing Resource entity with all its fields and (eagerly loaded) edges ! into a new ResourceCreate builder.
 func (c *ResourceClient) CreateFrom(r *Resource) *ResourceCreate {
 	mutation := newResourceMutation(c.config, OpCreate, withResource(r))
-	mutation.claimed = &(r.Claimed)
+	mutation.status = &(r.Status)
+	mutation.updated_at = &(r.UpdatedAt)
 
 	createBuilder := &ResourceCreate{config: c.config, hooks: c.Hooks(), mutation: mutation}
 
@@ -107,6 +108,7 @@ func (c *ResourcePoolClient) CreateFrom(rp *ResourcePool) *ResourcePoolCreate {
 	mutation := newResourcePoolMutation(c.config, OpCreate, withResourcePool(rp))
 	mutation.name = &(rp.Name)
 	mutation.pool_type = &(rp.PoolType)
+	mutation.dealocation_safety_period = &(rp.DealocationSafetyPeriod)
 
 	createBuilder := &ResourcePoolCreate{config: c.config, hooks: c.Hooks(), mutation: mutation}
 

@@ -107,9 +107,9 @@ type Mutation {
     FreeResource(input: Map!, poolName: String!): String!
 
     # create/update/delete resource pool
-    CreateSetPool(resourceTypeId: Int!, poolName: String!, poolValues: [Map]): ResourcePool!
+    CreateSetPool(resourceTypeId: Int!, poolName: String!, poolDealocationSafetyPeriod: Int!, poolValues: [Map]): ResourcePool!
     CreateSingletonPool(resourceTypeId: Int!, poolName: String!, poolValues: [Map]): ResourcePool!
-    CreateAllocatingPool(resourceTypeId: Int!, poolName: String!, allocationStrategyId: Int!): ResourcePool!
+    CreateAllocatingPool(resourceTypeId: Int!, poolName: String!, allocationStrategyId: Int!, poolDealocationSafetyPeriod: Int!): ResourcePool!
     DeleteResourcePool(resourcePoolId: Int!): String!
 
     # create/update/delete resource type

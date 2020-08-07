@@ -98,6 +98,13 @@ func Name(v string) predicate.ResourcePool {
 	})
 }
 
+// DealocationSafetyPeriod applies equality check predicate on the "dealocation_safety_period" field. It's identical to DealocationSafetyPeriodEQ.
+func DealocationSafetyPeriod(v int) predicate.ResourcePool {
+	return predicate.ResourcePool(func(s *sql.Selector) {
+		s.Where(sql.EQ(s.C(FieldDealocationSafetyPeriod), v))
+	})
+}
+
 // NameEQ applies the EQ predicate on the "name" field.
 func NameEQ(v string) predicate.ResourcePool {
 	return predicate.ResourcePool(func(s *sql.Selector) {
@@ -254,6 +261,82 @@ func PoolTypeNotIn(vs ...PoolType) predicate.ResourcePool {
 			return
 		}
 		s.Where(sql.NotIn(s.C(FieldPoolType), v...))
+	})
+}
+
+// DealocationSafetyPeriodEQ applies the EQ predicate on the "dealocation_safety_period" field.
+func DealocationSafetyPeriodEQ(v int) predicate.ResourcePool {
+	return predicate.ResourcePool(func(s *sql.Selector) {
+		s.Where(sql.EQ(s.C(FieldDealocationSafetyPeriod), v))
+	})
+}
+
+// DealocationSafetyPeriodNEQ applies the NEQ predicate on the "dealocation_safety_period" field.
+func DealocationSafetyPeriodNEQ(v int) predicate.ResourcePool {
+	return predicate.ResourcePool(func(s *sql.Selector) {
+		s.Where(sql.NEQ(s.C(FieldDealocationSafetyPeriod), v))
+	})
+}
+
+// DealocationSafetyPeriodIn applies the In predicate on the "dealocation_safety_period" field.
+func DealocationSafetyPeriodIn(vs ...int) predicate.ResourcePool {
+	v := make([]interface{}, len(vs))
+	for i := range v {
+		v[i] = vs[i]
+	}
+	return predicate.ResourcePool(func(s *sql.Selector) {
+		// if not arguments were provided, append the FALSE constants,
+		// since we can't apply "IN ()". This will make this predicate falsy.
+		if len(v) == 0 {
+			s.Where(sql.False())
+			return
+		}
+		s.Where(sql.In(s.C(FieldDealocationSafetyPeriod), v...))
+	})
+}
+
+// DealocationSafetyPeriodNotIn applies the NotIn predicate on the "dealocation_safety_period" field.
+func DealocationSafetyPeriodNotIn(vs ...int) predicate.ResourcePool {
+	v := make([]interface{}, len(vs))
+	for i := range v {
+		v[i] = vs[i]
+	}
+	return predicate.ResourcePool(func(s *sql.Selector) {
+		// if not arguments were provided, append the FALSE constants,
+		// since we can't apply "IN ()". This will make this predicate falsy.
+		if len(v) == 0 {
+			s.Where(sql.False())
+			return
+		}
+		s.Where(sql.NotIn(s.C(FieldDealocationSafetyPeriod), v...))
+	})
+}
+
+// DealocationSafetyPeriodGT applies the GT predicate on the "dealocation_safety_period" field.
+func DealocationSafetyPeriodGT(v int) predicate.ResourcePool {
+	return predicate.ResourcePool(func(s *sql.Selector) {
+		s.Where(sql.GT(s.C(FieldDealocationSafetyPeriod), v))
+	})
+}
+
+// DealocationSafetyPeriodGTE applies the GTE predicate on the "dealocation_safety_period" field.
+func DealocationSafetyPeriodGTE(v int) predicate.ResourcePool {
+	return predicate.ResourcePool(func(s *sql.Selector) {
+		s.Where(sql.GTE(s.C(FieldDealocationSafetyPeriod), v))
+	})
+}
+
+// DealocationSafetyPeriodLT applies the LT predicate on the "dealocation_safety_period" field.
+func DealocationSafetyPeriodLT(v int) predicate.ResourcePool {
+	return predicate.ResourcePool(func(s *sql.Selector) {
+		s.Where(sql.LT(s.C(FieldDealocationSafetyPeriod), v))
+	})
+}
+
+// DealocationSafetyPeriodLTE applies the LTE predicate on the "dealocation_safety_period" field.
+func DealocationSafetyPeriodLTE(v int) predicate.ResourcePool {
+	return predicate.ResourcePool(func(s *sql.Selector) {
+		s.Where(sql.LTE(s.C(FieldDealocationSafetyPeriod), v))
 	})
 }
 

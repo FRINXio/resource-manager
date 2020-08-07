@@ -40,7 +40,8 @@ mutation createSetPool {
     CreateSetPool(
         resourceTypeId: 25769803776,
         poolName: "vlan_test4",
-        poolValues: [{vlan: 13}, {vlan: 14}],
+        poolValues: [{vlan: 13}, {vlan: 14},],
+        poolDealocationSafetyPeriod: 0
     ){
         ID
         PoolType
@@ -74,6 +75,7 @@ mutation createAllocationPool {
         resourceTypeId: 25769803776,
         poolName: "vlan_allocating",
         allocationStrategyId: 1,
+        poolDealocationSafetyPeriod: 0
     ){
         ID
         PoolType

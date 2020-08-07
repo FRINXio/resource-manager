@@ -6,6 +6,7 @@ import (
 	"context"
 	"fmt"
 	"sync"
+	"time"
 
 	"github.com/net-auto/resourceManager/ent/allocationstrategy"
 	"github.com/net-auto/resourceManager/ent/label"
@@ -3773,7 +3774,8 @@ type ResourceMutation struct {
 	op                Op
 	typ               string
 	id                *int
-	claimed           *bool
+	status            *resource.Status
+	updated_at        *time.Time
 	clearedFields     map[string]struct{}
 	pool              *int
 	clearedpool       bool
@@ -3862,41 +3864,78 @@ func (m *ResourceMutation) ID() (id int, exists bool) {
 	return *m.id, true
 }
 
-// SetClaimed sets the claimed field.
-func (m *ResourceMutation) SetClaimed(b bool) {
-	m.claimed = &b
+// SetStatus sets the status field.
+func (m *ResourceMutation) SetStatus(r resource.Status) {
+	m.status = &r
 }
 
-// Claimed returns the claimed value in the mutation.
-func (m *ResourceMutation) Claimed() (r bool, exists bool) {
-	v := m.claimed
+// Status returns the status value in the mutation.
+func (m *ResourceMutation) Status() (r resource.Status, exists bool) {
+	v := m.status
 	if v == nil {
 		return
 	}
 	return *v, true
 }
 
-// OldClaimed returns the old claimed value of the Resource.
+// OldStatus returns the old status value of the Resource.
 // If the Resource object wasn't provided to the builder, the object is fetched
 // from the database.
 // An error is returned if the mutation operation is not UpdateOne, or database query fails.
-func (m *ResourceMutation) OldClaimed(ctx context.Context) (v bool, err error) {
+func (m *ResourceMutation) OldStatus(ctx context.Context) (v resource.Status, err error) {
 	if !m.op.Is(OpUpdateOne) {
-		return v, fmt.Errorf("OldClaimed is allowed only on UpdateOne operations")
+		return v, fmt.Errorf("OldStatus is allowed only on UpdateOne operations")
 	}
 	if m.id == nil || m.oldValue == nil {
-		return v, fmt.Errorf("OldClaimed requires an ID field in the mutation")
+		return v, fmt.Errorf("OldStatus requires an ID field in the mutation")
 	}
 	oldValue, err := m.oldValue(ctx)
 	if err != nil {
-		return v, fmt.Errorf("querying old value for OldClaimed: %w", err)
+		return v, fmt.Errorf("querying old value for OldStatus: %w", err)
 	}
-	return oldValue.Claimed, nil
+	return oldValue.Status, nil
 }
 
-// ResetClaimed reset all changes of the "claimed" field.
-func (m *ResourceMutation) ResetClaimed() {
-	m.claimed = nil
+// ResetStatus reset all changes of the "status" field.
+func (m *ResourceMutation) ResetStatus() {
+	m.status = nil
+}
+
+// SetUpdatedAt sets the updated_at field.
+func (m *ResourceMutation) SetUpdatedAt(t time.Time) {
+	m.updated_at = &t
+}
+
+// UpdatedAt returns the updated_at value in the mutation.
+func (m *ResourceMutation) UpdatedAt() (r time.Time, exists bool) {
+	v := m.updated_at
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldUpdatedAt returns the old updated_at value of the Resource.
+// If the Resource object wasn't provided to the builder, the object is fetched
+// from the database.
+// An error is returned if the mutation operation is not UpdateOne, or database query fails.
+func (m *ResourceMutation) OldUpdatedAt(ctx context.Context) (v time.Time, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, fmt.Errorf("OldUpdatedAt is allowed only on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, fmt.Errorf("OldUpdatedAt requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldUpdatedAt: %w", err)
+	}
+	return oldValue.UpdatedAt, nil
+}
+
+// ResetUpdatedAt reset all changes of the "updated_at" field.
+func (m *ResourceMutation) ResetUpdatedAt() {
+	m.updated_at = nil
 }
 
 // SetPoolID sets the pool edge to ResourcePool by id.
@@ -3994,9 +4033,12 @@ func (m *ResourceMutation) Type() string {
 // this mutation. Note that, in order to get all numeric
 // fields that were in/decremented, call AddedFields().
 func (m *ResourceMutation) Fields() []string {
-	fields := make([]string, 0, 1)
-	if m.claimed != nil {
-		fields = append(fields, resource.FieldClaimed)
+	fields := make([]string, 0, 2)
+	if m.status != nil {
+		fields = append(fields, resource.FieldStatus)
+	}
+	if m.updated_at != nil {
+		fields = append(fields, resource.FieldUpdatedAt)
 	}
 	return fields
 }
@@ -4006,8 +4048,10 @@ func (m *ResourceMutation) Fields() []string {
 // not set, or was not define in the schema.
 func (m *ResourceMutation) Field(name string) (ent.Value, bool) {
 	switch name {
-	case resource.FieldClaimed:
-		return m.Claimed()
+	case resource.FieldStatus:
+		return m.Status()
+	case resource.FieldUpdatedAt:
+		return m.UpdatedAt()
 	}
 	return nil, false
 }
@@ -4017,8 +4061,10 @@ func (m *ResourceMutation) Field(name string) (ent.Value, bool) {
 // or the query to the database was failed.
 func (m *ResourceMutation) OldField(ctx context.Context, name string) (ent.Value, error) {
 	switch name {
-	case resource.FieldClaimed:
-		return m.OldClaimed(ctx)
+	case resource.FieldStatus:
+		return m.OldStatus(ctx)
+	case resource.FieldUpdatedAt:
+		return m.OldUpdatedAt(ctx)
 	}
 	return nil, fmt.Errorf("unknown Resource field %s", name)
 }
@@ -4028,12 +4074,19 @@ func (m *ResourceMutation) OldField(ctx context.Context, name string) (ent.Value
 // type mismatch the field type.
 func (m *ResourceMutation) SetField(name string, value ent.Value) error {
 	switch name {
-	case resource.FieldClaimed:
-		v, ok := value.(bool)
+	case resource.FieldStatus:
+		v, ok := value.(resource.Status)
 		if !ok {
 			return fmt.Errorf("unexpected type %T for field %s", value, name)
 		}
-		m.SetClaimed(v)
+		m.SetStatus(v)
+		return nil
+	case resource.FieldUpdatedAt:
+		v, ok := value.(time.Time)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetUpdatedAt(v)
 		return nil
 	}
 	return fmt.Errorf("unknown Resource field %s", name)
@@ -4085,8 +4138,11 @@ func (m *ResourceMutation) ClearField(name string) error {
 // defined in the schema.
 func (m *ResourceMutation) ResetField(name string) error {
 	switch name {
-	case resource.FieldClaimed:
-		m.ResetClaimed()
+	case resource.FieldStatus:
+		m.ResetStatus()
+		return nil
+	case resource.FieldUpdatedAt:
+		m.ResetUpdatedAt()
 		return nil
 	}
 	return fmt.Errorf("unknown Resource field %s", name)
@@ -4197,22 +4253,24 @@ func (m *ResourceMutation) ResetEdge(name string) error {
 // nodes in the graph.
 type ResourcePoolMutation struct {
 	config
-	op                         Op
-	typ                        string
-	id                         *int
-	name                       *string
-	pool_type                  *resourcepool.PoolType
-	clearedFields              map[string]struct{}
-	resource_type              *int
-	clearedresource_type       bool
-	labels                     *int
-	clearedlabels              bool
-	claims                     map[int]struct{}
-	removedclaims              map[int]struct{}
-	allocation_strategy        *int
-	clearedallocation_strategy bool
-	done                       bool
-	oldValue                   func(context.Context) (*ResourcePool, error)
+	op                           Op
+	typ                          string
+	id                           *int
+	name                         *string
+	pool_type                    *resourcepool.PoolType
+	dealocation_safety_period    *int
+	adddealocation_safety_period *int
+	clearedFields                map[string]struct{}
+	resource_type                *int
+	clearedresource_type         bool
+	labels                       *int
+	clearedlabels                bool
+	claims                       map[int]struct{}
+	removedclaims                map[int]struct{}
+	allocation_strategy          *int
+	clearedallocation_strategy   bool
+	done                         bool
+	oldValue                     func(context.Context) (*ResourcePool, error)
 }
 
 var _ ent.Mutation = (*ResourcePoolMutation)(nil)
@@ -4366,6 +4424,63 @@ func (m *ResourcePoolMutation) OldPoolType(ctx context.Context) (v resourcepool.
 // ResetPoolType reset all changes of the "pool_type" field.
 func (m *ResourcePoolMutation) ResetPoolType() {
 	m.pool_type = nil
+}
+
+// SetDealocationSafetyPeriod sets the dealocation_safety_period field.
+func (m *ResourcePoolMutation) SetDealocationSafetyPeriod(i int) {
+	m.dealocation_safety_period = &i
+	m.adddealocation_safety_period = nil
+}
+
+// DealocationSafetyPeriod returns the dealocation_safety_period value in the mutation.
+func (m *ResourcePoolMutation) DealocationSafetyPeriod() (r int, exists bool) {
+	v := m.dealocation_safety_period
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldDealocationSafetyPeriod returns the old dealocation_safety_period value of the ResourcePool.
+// If the ResourcePool object wasn't provided to the builder, the object is fetched
+// from the database.
+// An error is returned if the mutation operation is not UpdateOne, or database query fails.
+func (m *ResourcePoolMutation) OldDealocationSafetyPeriod(ctx context.Context) (v int, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, fmt.Errorf("OldDealocationSafetyPeriod is allowed only on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, fmt.Errorf("OldDealocationSafetyPeriod requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldDealocationSafetyPeriod: %w", err)
+	}
+	return oldValue.DealocationSafetyPeriod, nil
+}
+
+// AddDealocationSafetyPeriod adds i to dealocation_safety_period.
+func (m *ResourcePoolMutation) AddDealocationSafetyPeriod(i int) {
+	if m.adddealocation_safety_period != nil {
+		*m.adddealocation_safety_period += i
+	} else {
+		m.adddealocation_safety_period = &i
+	}
+}
+
+// AddedDealocationSafetyPeriod returns the value that was added to the dealocation_safety_period field in this mutation.
+func (m *ResourcePoolMutation) AddedDealocationSafetyPeriod() (r int, exists bool) {
+	v := m.adddealocation_safety_period
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// ResetDealocationSafetyPeriod reset all changes of the "dealocation_safety_period" field.
+func (m *ResourcePoolMutation) ResetDealocationSafetyPeriod() {
+	m.dealocation_safety_period = nil
+	m.adddealocation_safety_period = nil
 }
 
 // SetResourceTypeID sets the resource_type edge to ResourceType by id.
@@ -4541,12 +4656,15 @@ func (m *ResourcePoolMutation) Type() string {
 // this mutation. Note that, in order to get all numeric
 // fields that were in/decremented, call AddedFields().
 func (m *ResourcePoolMutation) Fields() []string {
-	fields := make([]string, 0, 2)
+	fields := make([]string, 0, 3)
 	if m.name != nil {
 		fields = append(fields, resourcepool.FieldName)
 	}
 	if m.pool_type != nil {
 		fields = append(fields, resourcepool.FieldPoolType)
+	}
+	if m.dealocation_safety_period != nil {
+		fields = append(fields, resourcepool.FieldDealocationSafetyPeriod)
 	}
 	return fields
 }
@@ -4560,6 +4678,8 @@ func (m *ResourcePoolMutation) Field(name string) (ent.Value, bool) {
 		return m.Name()
 	case resourcepool.FieldPoolType:
 		return m.PoolType()
+	case resourcepool.FieldDealocationSafetyPeriod:
+		return m.DealocationSafetyPeriod()
 	}
 	return nil, false
 }
@@ -4573,6 +4693,8 @@ func (m *ResourcePoolMutation) OldField(ctx context.Context, name string) (ent.V
 		return m.OldName(ctx)
 	case resourcepool.FieldPoolType:
 		return m.OldPoolType(ctx)
+	case resourcepool.FieldDealocationSafetyPeriod:
+		return m.OldDealocationSafetyPeriod(ctx)
 	}
 	return nil, fmt.Errorf("unknown ResourcePool field %s", name)
 }
@@ -4596,6 +4718,13 @@ func (m *ResourcePoolMutation) SetField(name string, value ent.Value) error {
 		}
 		m.SetPoolType(v)
 		return nil
+	case resourcepool.FieldDealocationSafetyPeriod:
+		v, ok := value.(int)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetDealocationSafetyPeriod(v)
+		return nil
 	}
 	return fmt.Errorf("unknown ResourcePool field %s", name)
 }
@@ -4603,13 +4732,21 @@ func (m *ResourcePoolMutation) SetField(name string, value ent.Value) error {
 // AddedFields returns all numeric fields that were incremented
 // or decremented during this mutation.
 func (m *ResourcePoolMutation) AddedFields() []string {
-	return nil
+	var fields []string
+	if m.adddealocation_safety_period != nil {
+		fields = append(fields, resourcepool.FieldDealocationSafetyPeriod)
+	}
+	return fields
 }
 
 // AddedField returns the numeric value that was in/decremented
 // from a field with the given name. The second value indicates
 // that this field was not set, or was not define in the schema.
 func (m *ResourcePoolMutation) AddedField(name string) (ent.Value, bool) {
+	switch name {
+	case resourcepool.FieldDealocationSafetyPeriod:
+		return m.AddedDealocationSafetyPeriod()
+	}
 	return nil, false
 }
 
@@ -4618,6 +4755,13 @@ func (m *ResourcePoolMutation) AddedField(name string) (ent.Value, bool) {
 // type mismatch the field type.
 func (m *ResourcePoolMutation) AddField(name string, value ent.Value) error {
 	switch name {
+	case resourcepool.FieldDealocationSafetyPeriod:
+		v, ok := value.(int)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.AddDealocationSafetyPeriod(v)
+		return nil
 	}
 	return fmt.Errorf("unknown ResourcePool numeric field %s", name)
 }
@@ -4651,6 +4795,9 @@ func (m *ResourcePoolMutation) ResetField(name string) error {
 		return nil
 	case resourcepool.FieldPoolType:
 		m.ResetPoolType()
+		return nil
+	case resourcepool.FieldDealocationSafetyPeriod:
+		m.ResetDealocationSafetyPeriod()
 		return nil
 	}
 	return fmt.Errorf("unknown ResourcePool field %s", name)

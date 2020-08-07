@@ -43,6 +43,27 @@ func (rpu *ResourcePoolUpdate) SetPoolType(rt resourcepool.PoolType) *ResourcePo
 	return rpu
 }
 
+// SetDealocationSafetyPeriod sets the dealocation_safety_period field.
+func (rpu *ResourcePoolUpdate) SetDealocationSafetyPeriod(i int) *ResourcePoolUpdate {
+	rpu.mutation.ResetDealocationSafetyPeriod()
+	rpu.mutation.SetDealocationSafetyPeriod(i)
+	return rpu
+}
+
+// SetNillableDealocationSafetyPeriod sets the dealocation_safety_period field if the given value is not nil.
+func (rpu *ResourcePoolUpdate) SetNillableDealocationSafetyPeriod(i *int) *ResourcePoolUpdate {
+	if i != nil {
+		rpu.SetDealocationSafetyPeriod(*i)
+	}
+	return rpu
+}
+
+// AddDealocationSafetyPeriod adds i to dealocation_safety_period.
+func (rpu *ResourcePoolUpdate) AddDealocationSafetyPeriod(i int) *ResourcePoolUpdate {
+	rpu.mutation.AddDealocationSafetyPeriod(i)
+	return rpu
+}
+
 // SetResourceTypeID sets the resource_type edge to ResourceType by id.
 func (rpu *ResourcePoolUpdate) SetResourceTypeID(id int) *ResourcePoolUpdate {
 	rpu.mutation.SetResourceTypeID(id)
@@ -247,6 +268,20 @@ func (rpu *ResourcePoolUpdate) sqlSave(ctx context.Context) (n int, err error) {
 			Column: resourcepool.FieldPoolType,
 		})
 	}
+	if value, ok := rpu.mutation.DealocationSafetyPeriod(); ok {
+		_spec.Fields.Set = append(_spec.Fields.Set, &sqlgraph.FieldSpec{
+			Type:   field.TypeInt,
+			Value:  value,
+			Column: resourcepool.FieldDealocationSafetyPeriod,
+		})
+	}
+	if value, ok := rpu.mutation.AddedDealocationSafetyPeriod(); ok {
+		_spec.Fields.Add = append(_spec.Fields.Add, &sqlgraph.FieldSpec{
+			Type:   field.TypeInt,
+			Value:  value,
+			Column: resourcepool.FieldDealocationSafetyPeriod,
+		})
+	}
 	if rpu.mutation.ResourceTypeCleared() {
 		edge := &sqlgraph.EdgeSpec{
 			Rel:     sqlgraph.M2O,
@@ -417,6 +452,27 @@ func (rpuo *ResourcePoolUpdateOne) SetName(s string) *ResourcePoolUpdateOne {
 // SetPoolType sets the pool_type field.
 func (rpuo *ResourcePoolUpdateOne) SetPoolType(rt resourcepool.PoolType) *ResourcePoolUpdateOne {
 	rpuo.mutation.SetPoolType(rt)
+	return rpuo
+}
+
+// SetDealocationSafetyPeriod sets the dealocation_safety_period field.
+func (rpuo *ResourcePoolUpdateOne) SetDealocationSafetyPeriod(i int) *ResourcePoolUpdateOne {
+	rpuo.mutation.ResetDealocationSafetyPeriod()
+	rpuo.mutation.SetDealocationSafetyPeriod(i)
+	return rpuo
+}
+
+// SetNillableDealocationSafetyPeriod sets the dealocation_safety_period field if the given value is not nil.
+func (rpuo *ResourcePoolUpdateOne) SetNillableDealocationSafetyPeriod(i *int) *ResourcePoolUpdateOne {
+	if i != nil {
+		rpuo.SetDealocationSafetyPeriod(*i)
+	}
+	return rpuo
+}
+
+// AddDealocationSafetyPeriod adds i to dealocation_safety_period.
+func (rpuo *ResourcePoolUpdateOne) AddDealocationSafetyPeriod(i int) *ResourcePoolUpdateOne {
+	rpuo.mutation.AddDealocationSafetyPeriod(i)
 	return rpuo
 }
 
@@ -620,6 +676,20 @@ func (rpuo *ResourcePoolUpdateOne) sqlSave(ctx context.Context) (rp *ResourcePoo
 			Type:   field.TypeEnum,
 			Value:  value,
 			Column: resourcepool.FieldPoolType,
+		})
+	}
+	if value, ok := rpuo.mutation.DealocationSafetyPeriod(); ok {
+		_spec.Fields.Set = append(_spec.Fields.Set, &sqlgraph.FieldSpec{
+			Type:   field.TypeInt,
+			Value:  value,
+			Column: resourcepool.FieldDealocationSafetyPeriod,
+		})
+	}
+	if value, ok := rpuo.mutation.AddedDealocationSafetyPeriod(); ok {
+		_spec.Fields.Add = append(_spec.Fields.Add, &sqlgraph.FieldSpec{
+			Type:   field.TypeInt,
+			Value:  value,
+			Column: resourcepool.FieldDealocationSafetyPeriod,
 		})
 	}
 	if rpuo.mutation.ResourceTypeCleared() {

@@ -302,12 +302,12 @@ func (rq *ResourceQuery) WithProperties(opts ...func(*PropertyQuery)) *ResourceQ
 // Example:
 //
 //	var v []struct {
-//		Claimed bool `json:"claimed,omitempty"`
+//		Status resource.Status `json:"status,omitempty"`
 //		Count int `json:"count,omitempty"`
 //	}
 //
 //	client.Resource.Query().
-//		GroupBy(resource.FieldClaimed).
+//		GroupBy(resource.FieldStatus).
 //		Aggregate(ent.Count()).
 //		Scan(ctx, &v)
 //
@@ -328,11 +328,11 @@ func (rq *ResourceQuery) GroupBy(field string, fields ...string) *ResourceGroupB
 // Example:
 //
 //	var v []struct {
-//		Claimed bool `json:"claimed,omitempty"`
+//		Status resource.Status `json:"status,omitempty"`
 //	}
 //
 //	client.Resource.Query().
-//		Select(resource.FieldClaimed).
+//		Select(resource.FieldStatus).
 //		Scan(ctx, &v)
 //
 func (rq *ResourceQuery) Select(field string, fields ...string) *ResourceSelect {

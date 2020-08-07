@@ -5,6 +5,7 @@ package ent
 import (
 	"fmt"
 	"strings"
+	"time"
 
 	"github.com/facebookincubator/ent/dialect/sql"
 	"github.com/net-auto/resourceManager/ent/resource"
@@ -16,8 +17,10 @@ type Resource struct {
 	config `json:"-"`
 	// ID of the ent.
 	ID int `json:"id,omitempty"`
-	// Claimed holds the value of the "claimed" field.
-	Claimed bool `json:"claimed,omitempty"`
+	// Status holds the value of the "status" field.
+	Status resource.Status `json:"status,omitempty"`
+	// UpdatedAt holds the value of the "updated_at" field.
+	UpdatedAt time.Time `json:"updated_at,omitempty"`
 	// Edges holds the relations/edges for other nodes in the graph.
 	// The values are being populated by the ResourceQuery when eager-loading is set.
 	Edges                ResourceEdges `json:"edges"`
@@ -61,8 +64,9 @@ func (e ResourceEdges) PropertiesOrErr() ([]*Property, error) {
 // scanValues returns the types for scanning values from sql.Rows.
 func (*Resource) scanValues() []interface{} {
 	return []interface{}{
-		&sql.NullInt64{}, // id
-		&sql.NullBool{},  // claimed
+		&sql.NullInt64{},  // id
+		&sql.NullString{}, // status
+		&sql.NullTime{},   // updated_at
 	}
 }
 
@@ -85,12 +89,17 @@ func (r *Resource) assignValues(values ...interface{}) error {
 	}
 	r.ID = int(value.Int64)
 	values = values[1:]
-	if value, ok := values[0].(*sql.NullBool); !ok {
-		return fmt.Errorf("unexpected type %T for field claimed", values[0])
+	if value, ok := values[0].(*sql.NullString); !ok {
+		return fmt.Errorf("unexpected type %T for field status", values[0])
 	} else if value.Valid {
-		r.Claimed = value.Bool
+		r.Status = resource.Status(value.String)
 	}
-	values = values[1:]
+	if value, ok := values[1].(*sql.NullTime); !ok {
+		return fmt.Errorf("unexpected type %T for field updated_at", values[1])
+	} else if value.Valid {
+		r.UpdatedAt = value.Time
+	}
+	values = values[2:]
 	if len(values) == len(resource.ForeignKeys) {
 		if value, ok := values[0].(*sql.NullInt64); !ok {
 			return fmt.Errorf("unexpected type %T for edge-field resource_pool_claims", value)
@@ -135,8 +144,10 @@ func (r *Resource) String() string {
 	var builder strings.Builder
 	builder.WriteString("Resource(")
 	builder.WriteString(fmt.Sprintf("id=%v", r.ID))
-	builder.WriteString(", claimed=")
-	builder.WriteString(fmt.Sprintf("%v", r.Claimed))
+	builder.WriteString(", status=")
+	builder.WriteString(fmt.Sprintf("%v", r.Status))
+	builder.WriteString(", updated_at=")
+	builder.WriteString(r.UpdatedAt.Format(time.ANSIC))
 	builder.WriteByte(')')
 	return builder.String()
 }
