@@ -2,9 +2,10 @@ package pools
 
 import (
 	"encoding/json"
+	"os/exec"
+
 	pools "github.com/net-auto/resourceManager/pools/allocating_strategies"
 	"github.com/pkg/errors"
-	"os/exec"
 )
 
 type Wasmer struct {
@@ -36,6 +37,7 @@ func (wasmer Wasmer) invokeJs(strategyScript string) (map[string]interface{}, er
 	scriptWithInvoker := strategyScript + wasmer.strategyInvokerScript
 	command := exec.Command(wasmer.wasmerBin, wasmer.jsBin, "--", "--std", "-e", scriptWithInvoker)
 	output, err := command.CombinedOutput()
+	// TODO Add logging string(output[:])
 	if err != nil {
 		return nil, errors.Wrapf(err,
 			"Error invoking allocation strategy. Output: \"%s\"", output)
