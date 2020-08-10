@@ -2,7 +2,6 @@
 
 set +x
 
-go build -o ./entCmd ./graph/cmd/entscript/
 go build -o ./resourceManager
 
 # to make sure mysql is ready

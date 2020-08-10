@@ -7,12 +7,10 @@ export GOPRIVATE="github.com/facebookincubator"
 git config --global url."https://${GITHUB_TOKEN}:x-oauth-basic@github.com/facebookincubator".insteadOf "https://github.com/facebookincubator"
 
 go generate ./pools/...
-go generate ./ent
 go generate ./graph/graphql
 
 echo ""
 echo "------> Building"
-go build -o ./entCmd ./graph/cmd/entscript/
 go build -o ./resourceManager
 
 echo ""

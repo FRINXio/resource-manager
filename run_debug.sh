@@ -2,7 +2,6 @@
 
 set +x
 
-go build -o ./entCmd ./graph/cmd/entscript/
 go build -gcflags \"all=-N\" -o ./resourceManager
 
 sleep 15
