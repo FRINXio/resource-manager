@@ -2,22 +2,27 @@ package pools
 
 import (
 	"bytes"
+	"context"
 	"encoding/json"
 	"fmt"
 	"os"
 	"os/exec"
+	"strconv"
 	"strings"
+	"time"
 
 	"github.com/pkg/errors"
 )
 
 type Wasmer struct {
+	maxTimeout    time.Duration
 	wasmerBinPath string
 	jsBinPath     string
 	pythonBinPath string
 	pythonLibPath string
 }
 
+const wasmerMaxTimeoutMillisDefault = "1000"
 const wasmerBinDefault = "./.wasmer/bin/wasmer"
 const jsBinDefault = "./wasm/quickjs/quickjs.wasm"
 const pyBinDefault = "./wasm/python/bin/python.wasm"
@@ -35,6 +40,17 @@ func loadEnvVar(key string, defaultValue string) (string, error) {
 }
 
 func NewWasmerUsingEnvVars() (*Wasmer, error) {
+
+	maxTimeoutMillisStr, err := loadEnvVar("WASMER_MAX_TIMEOUT_MILLIS", wasmerMaxTimeoutMillisDefault)
+	if err != nil {
+		return nil, err
+	}
+	maxTimeoutMillis, err := strconv.Atoi(maxTimeoutMillisStr)
+	if err != nil {
+		return nil, errors.Wrapf(err, "Cannot convert \"%s\" to int", maxTimeoutMillisStr)
+	}
+	maxTimeout := time.Duration(maxTimeoutMillis) * time.Millisecond
+
 	wasmerPath, err := loadEnvVar("WASMER_BIN", wasmerBinDefault)
 	if err != nil {
 		return nil, err
@@ -52,12 +68,12 @@ func NewWasmerUsingEnvVars() (*Wasmer, error) {
 		return nil, err
 	}
 
-	wasmer := NewWasmer(wasmerPath, jsPath, pyPath, pyLibPath)
+	wasmer := NewWasmer(maxTimeout, wasmerPath, jsPath, pyPath, pyLibPath)
 	return &wasmer, nil
 }
 
-func NewWasmer(wasmerBinPath string, jsBinPath string, pythonBinPath string, pythonLibPath string) Wasmer {
-	return Wasmer{wasmerBinPath, jsBinPath, pythonBinPath, pythonLibPath}
+func NewWasmer(maxTimeout time.Duration, wasmerBinPath string, jsBinPath string, pythonBinPath string, pythonLibPath string) Wasmer {
+	return Wasmer{maxTimeout, wasmerBinPath, jsBinPath, pythonBinPath, pythonLibPath}
 }
 
 type ScriptInvoker interface {
@@ -87,11 +103,14 @@ if (result != null) {
 }
 `
 	scriptWithInvoker := header + strategyScript + footer
-	command := exec.Command(wasmer.wasmerBinPath, wasmer.jsBinPath, "--", "--std", "-e", scriptWithInvoker)
-	return invoke(command)
+	return wasmer.invoke(wasmer.wasmerBinPath, wasmer.jsBinPath, "--", "--std", "-e", scriptWithInvoker)
 }
 
-func invoke(command *exec.Cmd) (map[string]interface{}, string, error) {
+func (wasmer Wasmer) invoke(name string, arg ...string) (map[string]interface{}, string, error) {
+	ctx, cancel := context.WithTimeout(context.Background(), wasmer.maxTimeout)
+	defer cancel()
+
+	command := exec.CommandContext(ctx, name, arg...)
 	var stdoutBuffer bytes.Buffer
 	var stderrBuffer bytes.Buffer
 	command.Stdout = &stdoutBuffer
@@ -101,14 +120,14 @@ func invoke(command *exec.Cmd) (map[string]interface{}, string, error) {
 	stdout := stdoutBuffer.Bytes()
 	stderr := string(stderrBuffer.Bytes())
 
-	// TODO logging
+	if err != nil {
+		return nil, "", errors.Wrapf(err,
+			"Error invoking user script. Stdout: \"%s\", Stderr: \"%s\"", string(stdout), stderr)
+	}
+
 	fmt.Println("Stdout:" + string(stdout[:]))
 	fmt.Println("Stderr:" + stderr[:])
 
-	if err != nil {
-		return nil, stderr, errors.Wrapf(err,
-			"Error invoking allocation strategy. Stdout: \"%s\", Stderr: \"%s\"", string(stdout), stderr)
-	}
 	m := make(map[string]interface{})
 	if err := json.Unmarshal(stdout, &m); err != nil {
 		return nil, stderr, errors.Wrapf(err,
@@ -150,7 +169,7 @@ if not result is None:
 	// -q: quiet, do not print python version
 	// -B: do not write .pyc files on import
 	// -c script: execute passed script
-	command := exec.Command(wasmer.wasmerBinPath,
+	return wasmer.invoke(wasmer.wasmerBinPath,
 		wasmer.pythonBinPath,
 		"--mapdir=lib:"+wasmer.pythonLibPath,
 		"--",
@@ -159,5 +178,4 @@ if not result is None:
 		"-c",
 		script,
 	)
-	return invoke(command)
 }
