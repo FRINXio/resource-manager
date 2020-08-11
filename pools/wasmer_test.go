@@ -14,16 +14,25 @@ func TestWasmerInvokeJsIntegration(t *testing.T) {
 	if err != nil {
 		t.Fatalf("Unable create wasmer - %s", err)
 	}
-	actual, err := wasmer.invokeJs("const invoke = function() {return {result: 1};}")
+	script := `
+function invoke() {
+	log('log');
+	return {"result":1};
+}
+`
+	actual, stderr, err := wasmer.invokeJs(script)
 	if err != nil {
 		t.Fatalf("Unable run - %s", err)
 	}
 	expected := make(map[string]interface{})
-	if err := json.Unmarshal([]byte("{\"result\":1}"), &expected); err != nil {
+	if err := json.Unmarshal([]byte(`{"result":1}`), &expected); err != nil {
 		t.Fatalf("Cannot unmarshal expected response - %s", err)
 	}
 	if !reflect.DeepEqual(actual, expected) {
 		t.Fatalf("Unexpected evaluation response: %v, should be %v", actual, expected)
+	}
+	if stderr != "log\n" {
+		t.Fatalf("Unexpected logging result: \"%s\"", stderr)
 	}
 }
 
@@ -43,15 +52,22 @@ func TestWasmerInvokePyIntegration(t *testing.T) {
 	if err != nil {
 		t.Fatalf("Unable create wasmer - %s", err)
 	}
-	actual, err := wasmer.invokePy("return {'result': 1}")
+	script := `
+	log('log')
+	return {"result":1}
+`
+	actual, stderr, err := wasmer.invokePy(script)
 	if err != nil {
 		t.Fatalf("Unable run - %s", err)
 	}
 	expected := make(map[string]interface{})
-	if err := json.Unmarshal([]byte("{\"result\":1}"), &expected); err != nil {
+	if err := json.Unmarshal([]byte(`{"result":1}`), &expected); err != nil {
 		t.Fatalf("Cannot unmarshal expected response - %s", err)
 	}
 	if !reflect.DeepEqual(actual, expected) {
 		t.Fatalf("Unexpected evaluation response: %v, should be %v", actual, expected)
+	}
+	if stderr != "log\n" {
+		t.Fatalf("Unexpected logging result: \"%s\"", stderr)
 	}
 }

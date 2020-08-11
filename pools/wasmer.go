@@ -1,13 +1,13 @@
 package pools
 
 import (
+	"bytes"
 	"encoding/json"
 	"fmt"
 	"os"
 	"os/exec"
 	"strings"
 
-	pools "github.com/net-auto/resourceManager/pools/allocating_strategies"
 	"github.com/pkg/errors"
 )
 
@@ -61,33 +61,60 @@ func NewWasmer(wasmerBinPath string, jsBinPath string, pythonBinPath string, pyt
 }
 
 type ScriptInvoker interface {
-	invokeJs(strategyScript string) (map[string]interface{}, error)
-	invokePy(strategyScript string) (map[string]interface{}, error)
+	invokeJs(strategyScript string) (map[string]interface{}, string, error)
+	invokePy(strategyScript string) (map[string]interface{}, string, error)
 }
 
 // TODO implement killing the wasmer process after max timeout
-func (wasmer Wasmer) invokeJs(strategyScript string) (map[string]interface{}, error) {
+func (wasmer Wasmer) invokeJs(strategyScript string) (map[string]interface{}, string, error) {
 	// TODO pass additional inputs
 
 	// Append script to invoke the function, parse inputs and serialize outputs
-	scriptWithInvoker := strategyScript + pools.STRATEGY_INVOKER
+	header := `
+console.error = function(...args) {
+	std.err.puts(args.join(' '));
+	std.err.puts('\n');
+}
+log = console.error;
+`
+	footer := `
+let result = invoke()
+if (result != null) {
+	if (typeof result === 'object') {
+		result = JSON.stringify(result);
+	}
+	std.out.puts(result);
+}
+`
+	scriptWithInvoker := header + strategyScript + footer
 	command := exec.Command(wasmer.wasmerBinPath, wasmer.jsBinPath, "--", "--std", "-e", scriptWithInvoker)
 	return invoke(command)
 }
 
-func invoke(command *exec.Cmd) (map[string]interface{}, error) {
-	output, err := command.CombinedOutput()
-	// TODO Add logging string(output[:])
+func invoke(command *exec.Cmd) (map[string]interface{}, string, error) {
+	var stdoutBuffer bytes.Buffer
+	var stderrBuffer bytes.Buffer
+	command.Stdout = &stdoutBuffer
+	command.Stderr = &stderrBuffer
+
+	err := command.Run()
+	stdout := stdoutBuffer.Bytes()
+	stderr := string(stderrBuffer.Bytes())
+
+	// TODO logging
+	fmt.Println("Stdout:" + string(stdout[:]))
+	fmt.Println("Stderr:" + stderr[:])
+
 	if err != nil {
-		return nil, errors.Wrapf(err,
-			"Error invoking allocation strategy. Output: \"%s\"", output)
+		return nil, stderr, errors.Wrapf(err,
+			"Error invoking allocation strategy. Stdout: \"%s\", Stderr: \"%s\"", string(stdout), stderr)
 	}
 	m := make(map[string]interface{})
-	if err := json.Unmarshal(output, &m); err != nil {
-		return nil, errors.Wrapf(err,
-			"Unable to parse allocation function output as flat JSON: \"%s\"", output)
+	if err := json.Unmarshal(stdout, &m); err != nil {
+		return nil, stderr, errors.Wrapf(err,
+			"Unable to parse allocation function output as flat JSON: \"%s\"", string(stdout))
 	}
-	return m, nil
+	return m, stderr, nil
 }
 
 func prefixLines(str string, prefix string) string {
@@ -99,7 +126,7 @@ func prefixLines(str string, prefix string) string {
 	return result
 }
 
-func (wasmer Wasmer) invokePy(script string) (map[string]interface{}, error) {
+func (wasmer Wasmer) invokePy(script string) (map[string]interface{}, string, error) {
 	head := `
 import sys,json
 def log(*args, **kwargs):

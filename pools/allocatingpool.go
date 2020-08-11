@@ -106,7 +106,7 @@ func (pool AllocatingPool) ClaimResource() (*ent.Resource, error) {
 			"Unable to claim resource from pool \"%s\", resource type loading error ", pool.Name)
 	}
 
-	parsedOutputFromStrat, err := pool.invokeAllocationStrategy(strat)
+	parsedOutputFromStrat, _ /*TODO do something with stderr */, err := pool.invokeAllocationStrategy(strat)
 	if err != nil {
 		return nil, errors.Wrapf(err,
 			"Unable to claim resource from pool \"%s\", allocation strategy \"%s\" failed", pool.Name, strat.Name)
@@ -121,14 +121,14 @@ func (pool AllocatingPool) ClaimResource() (*ent.Resource, error) {
 	return created[0], nil
 }
 
-func (pool AllocatingPool) invokeAllocationStrategy(strat *ent.AllocationStrategy) (map[string]interface{}, error) {
+func (pool AllocatingPool) invokeAllocationStrategy(strat *ent.AllocationStrategy) (map[string]interface{}, string, error) {
 	switch strat.Lang {
 	case allocationStrategy.LangJs:
 		return pool.invoker.invokeJs(strat.Script)
 	case allocationStrategy.LangPy:
 		return pool.invoker.invokePy(strat.Script)
 	default:
-		return nil, errors.Errorf("Unknown language \"%s\" for strategy \"%s\"", strat.Lang, strat.Name)
+		return nil, "", errors.Errorf("Unknown language \"%s\" for strategy \"%s\"", strat.Lang, strat.Name)
 	}
 }
 

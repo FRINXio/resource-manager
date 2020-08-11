@@ -19,19 +19,19 @@ type mockInvoker struct {
 	toBeReturnedError error
 }
 
-func (m mockInvoker) invokeJs(strategyScript string) (map[string]interface{}, error) {
+func (m mockInvoker) invokeJs(strategyScript string) (map[string]interface{}, string, error) {
 	if m.toBeReturnedError != nil {
-		return nil, m.toBeReturnedError
+		return nil, "", m.toBeReturnedError
 	} else {
-		return m.toBeReturned, nil
+		return m.toBeReturned, "", nil
 	}
 }
 
-func (m mockInvoker) invokePy(strategyScript string) (map[string]interface{}, error) {
+func (m mockInvoker) invokePy(strategyScript string) (map[string]interface{}, string, error) {
 	if m.toBeReturnedError != nil {
-		return nil, m.toBeReturnedError
+		return nil, "", m.toBeReturnedError
 	} else {
-		return m.toBeReturned, nil
+		return m.toBeReturned, "", nil
 	}
 }
 
