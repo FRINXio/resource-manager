@@ -3,11 +3,12 @@ package pools
 import (
 	"context"
 	"fmt"
+	"reflect"
+	"testing"
+
 	"github.com/net-auto/resourceManager/ent"
 	"github.com/net-auto/resourceManager/ent/allocationstrategy"
 	"github.com/net-auto/resourceManager/ent/schema"
-	"reflect"
-	"testing"
 
 	_ "github.com/mattn/go-sqlite3"
 	_ "github.com/net-auto/resourceManager/ent/runtime"
@@ -19,6 +20,14 @@ type mockInvoker struct {
 }
 
 func (m mockInvoker) invokeJs(strategyScript string) (map[string]interface{}, error) {
+	if m.toBeReturnedError != nil {
+		return nil, m.toBeReturnedError
+	} else {
+		return m.toBeReturned, nil
+	}
+}
+
+func (m mockInvoker) invokePy(strategyScript string) (map[string]interface{}, error) {
 	if m.toBeReturnedError != nil {
 		return nil, m.toBeReturnedError
 	} else {

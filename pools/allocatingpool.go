@@ -2,6 +2,7 @@ package pools
 
 import (
 	"context"
+
 	"github.com/net-auto/resourceManager/ent"
 	allocationStrategy "github.com/net-auto/resourceManager/ent/allocationstrategy"
 	"github.com/net-auto/resourceManager/ent/resource"
@@ -30,8 +31,12 @@ func NewAllocatingPoolWithMeta(
 	poolName string,
 	poolDealocationSafetyPeriod int) (Pool, *ent.ResourcePool, error) {
 
+	wasmer, err := NewWasmerUsingEnvVars()
+	if err != nil {
+		return nil, nil, errors.Wrap(err, "Cannot create resource pool")
+	}
 	return newAllocatingPoolWithMetaInternal(
-		ctx, client, resourceType, allocationStrategy, poolName, NewWasmerDefault(), poolDealocationSafetyPeriod)
+		ctx, client, resourceType, allocationStrategy, poolName, wasmer, poolDealocationSafetyPeriod)
 }
 
 func newAllocatingPoolWithMetaInternal(
@@ -52,7 +57,7 @@ func newAllocatingPoolWithMetaInternal(
 		Save(ctx)
 
 	if err != nil {
-		return nil, nil, err
+		return nil, nil, errors.Wrap(err, "Cannot create resource pool")
 	}
 
 	return &AllocatingPool{
@@ -120,7 +125,8 @@ func (pool AllocatingPool) invokeAllocationStrategy(strat *ent.AllocationStrateg
 	switch strat.Lang {
 	case allocationStrategy.LangJs:
 		return pool.invoker.invokeJs(strat.Script)
-	// TODO Python
+	case allocationStrategy.LangPy:
+		return pool.invoker.invokePy(strat.Script)
 	default:
 		return nil, errors.Errorf("Unknown language \"%s\" for strategy \"%s\"", strat.Lang, strat.Name)
 	}

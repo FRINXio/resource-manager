@@ -14,6 +14,22 @@ Subsequently, you can use test-queries.graphql to exercise the APIs
 
 Note: .graphqlconfig can be used to point graphql client tools to the right direction
 
+### Unit tests
+```sh
+go test -v -short ./pools/...
+```
+
+### Integration tests
+Requirements: wasmer, quickjs and python packages available.
+Example execution:
+```sh
+export WASMER_BIN=~/.wasmer/wasmer
+export WASMER_JS=~/.wasmer/globals/wapm_packages/_/quickjs@0.0.3/build/qjs.wasm
+export WASMER_PY=~/.wasmer/globals/wapm_packages/_/python@0.1.0/bin/python.wasm
+export WASMER_PY_LIB=~/.wasmer/globals/wapm_packages/_/python@0.1.0/lib/
+go test -run Integration ./pools/...
+```
+
 ## TODOs
 
 * !! Unify property (de)serialisation across the pool package
@@ -35,8 +51,8 @@ Note: .graphqlconfig can be used to point graphql client tools to the right dire
 * Directive - Custom extension to graphql schema for graphqlgen framework. Needs to be defined in the schema and implemented as go code. Example: IntRange restriction directive. Not used yet
 * Actions -
 * Triggers -
-* Events - 
-* Jobs - 
+* Events -
+* Jobs -
 * Exporter - batch export/import of data (CSV). Not used in RM
 
 ## Features
@@ -69,7 +85,7 @@ GraphQL server switches to appropriate tenant context using TenantHandler baked 
 ### RBAC
 Privacy rules attached to ent.go schema definitions define the permissions. They can be anything from alwaysAllow, alwaysDeny, but usually they are tied to user role e.g. only a superuser can CUD and entity.
 
-There are also additional optional features coming in as HTTP headers that can alter the permissions granted from user's role. 
+There are also additional optional features coming in as HTTP headers that can alter the permissions granted from user's role.
 
 ### Logging
 zap logging framework is used. Main parameters allow control over logging level and format.
@@ -88,7 +104,7 @@ Basic health info of the app (also checks if mysql connection is healthy)
 # server can serve requests
 http://localhost:8884/healthz/liveness
 # server works fine
-http://localhost:8884/healthz/readiness 
+http://localhost:8884/healthz/readiness
 ```
 
 #### Metrics

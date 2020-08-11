@@ -2,6 +2,7 @@ package pools
 
 import (
 	"context"
+
 	"github.com/net-auto/resourceManager/ent"
 	"github.com/net-auto/resourceManager/ent/resource"
 	resourcePool "github.com/net-auto/resourceManager/ent/resourcepool"
@@ -130,9 +131,12 @@ func existingPool(
 	case resourcePool.PoolTypeSet:
 		return &SetPool{poolBase{pool, ctx, client}}, nil
 	case resourcePool.PoolTypeAllocating:
-		return &AllocatingPool{SetPool{poolBase{pool, ctx, client}}, NewWasmerDefault()}, nil
+		wasmer, err := NewWasmerUsingEnvVars()
+		if err != nil {
+			return nil, err
+		}
+		return &AllocatingPool{SetPool{poolBase{pool, ctx, client}}, wasmer}, nil
 	default:
 		return nil, errors.Errorf("Unknown pool type \"%s\"", pool.PoolType)
 	}
 }
-
