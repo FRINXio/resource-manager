@@ -2,9 +2,9 @@ package resolver
 
 import (
 	"context"
-
 	"github.com/facebookincubator/symphony/pkg/log"
 	"github.com/net-auto/resourceManager/ent"
+	"github.com/net-auto/resourceManager/graph/graphql/generated"
 )
 
 type (
@@ -37,6 +37,17 @@ func New(cfg Config, opts ...Option) *Resolver {
 func WithTransaction(b bool) Option {
 	return func(r *Resolver) {
 		r.mutation.transactional = b
+	}
+}
+
+// Mutation returns generated.MutationResolver implementation encapsulated in txResolver if requested
+func (r *Resolver) Mutation() generated.MutationResolver {
+	mr := mutationResolver{r}
+	if r.mutation.transactional {
+		// Wraps each mutation call in a tx
+		return txResolver{&mr}
+	} else {
+		return &mr
 	}
 }
 

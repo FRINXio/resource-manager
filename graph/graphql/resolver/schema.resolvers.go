@@ -261,7 +261,7 @@ func (r *resourceResolver) Properties(ctx context.Context, obj *ent.Resource) (m
 }
 
 // Mutation returns generated.MutationResolver implementation.
-func (r *Resolver) Mutation() generated.MutationResolver { return &mutationResolver{r} }
+//  Mutation() function removed in favour of resolver.go.Mutation()
 
 // PropertyType returns generated.PropertyTypeResolver implementation.
 func (r *Resolver) PropertyType() generated.PropertyTypeResolver { return &propertyTypeResolver{r} }
