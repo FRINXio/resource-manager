@@ -52,7 +52,7 @@ mutation createSetPool {
 mutation createAllocationStrat {
     CreateAllocationStrategy(
         name: "helloWorld",
-        script: "function invoke() { return {\"vlan\" : 101}; }"
+        script: "function invoke() { return {\"vlan\" : userInput.vlan}; }"
     ){
         ID
         Name
@@ -91,14 +91,14 @@ query QueryAllPools {
 }
 
 mutation ClaimResource {
-    ClaimResource(poolId:21474836480) {
+    ClaimResource(poolId:21474836480, userInput: {}) {
         ID
         Properties
     }
 }
 
 mutation ClaimResourceFromAllocatingPool {
-    ClaimResource(poolId:21474836481) {
+    ClaimResource(poolId:21474836481, userInput: {vlan: 10}) {
         ID
         Properties
     }

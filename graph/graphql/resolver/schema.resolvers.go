@@ -41,13 +41,13 @@ func (r *mutationResolver) DeleteAllocationStrategy(ctx context.Context, allocat
 	}
 }
 
-func (r *mutationResolver) ClaimResource(ctx context.Context, poolID int) (*ent.Resource, error) {
+func (r *mutationResolver) ClaimResource(ctx context.Context, poolID int, userInput map[string]interface{}) (*ent.Resource, error) {
 	pool, err := p.ExistingPoolFromId(ctx, r.ClientFrom(ctx), poolID)
 	if err != nil {
 		return nil, gqlerror.Errorf("Unable to claim resource: %v", err)
 	}
 
-	if res, err := pool.ClaimResource(); err != nil {
+	if res, err := pool.ClaimResource(userInput); err != nil {
 		return nil, gqlerror.Errorf("Unable to claim resource: %v", err)
 	} else {
 		return res, nil

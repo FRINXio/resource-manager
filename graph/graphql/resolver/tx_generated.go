@@ -68,10 +68,10 @@ func (tr txResolver) DeleteAllocationStrategy(ctx context.Context, allocationStr
 	return result, nil
 }
 
-func (tr txResolver) ClaimResource(ctx context.Context, poolID int) (*ent.Resource, error) {
+func (tr txResolver) ClaimResource(ctx context.Context, poolID int, userInput map[string]interface{}) (*ent.Resource, error) {
 	var result, zero *ent.Resource
 	if err := tr.WithTransaction(ctx, func(ctx context.Context, mr generated.MutationResolver) (err error) {
-		result, err = mr.ClaimResource(ctx, poolID)
+		result, err = mr.ClaimResource(ctx, poolID, userInput)
 		return
 	}); err != nil {
 		return zero, err

@@ -60,7 +60,7 @@ type ComplexityRoot struct {
 	}
 
 	Mutation struct {
-		ClaimResource            func(childComplexity int, poolID int) int
+		ClaimResource            func(childComplexity int, poolID int, userInput map[string]interface{}) int
 		CreateAllocatingPool     func(childComplexity int, resourceTypeID int, poolName string, allocationStrategyID int, poolDealocationSafetyPeriod int) int
 		CreateAllocationStrategy func(childComplexity int, name string, script string) int
 		CreateResourceType       func(childComplexity int, resourceName string, resourceProperties map[string]interface{}) int
@@ -125,7 +125,7 @@ type ComplexityRoot struct {
 type MutationResolver interface {
 	CreateAllocationStrategy(ctx context.Context, name string, script string) (*ent.AllocationStrategy, error)
 	DeleteAllocationStrategy(ctx context.Context, allocationStrategyID int) (*ent.AllocationStrategy, error)
-	ClaimResource(ctx context.Context, poolID int) (*ent.Resource, error)
+	ClaimResource(ctx context.Context, poolID int, userInput map[string]interface{}) (*ent.Resource, error)
 	FreeResource(ctx context.Context, input map[string]interface{}, poolID int) (string, error)
 	CreateSetPool(ctx context.Context, resourceTypeID int, poolName string, poolDealocationSafetyPeriod int, poolValues []map[string]interface{}) (*ent.ResourcePool, error)
 	CreateSingletonPool(ctx context.Context, resourceTypeID int, poolName string, poolValues []map[string]interface{}) (*ent.ResourcePool, error)
@@ -217,7 +217,7 @@ func (e *executableSchema) Complexity(typeName, field string, childComplexity in
 			return 0, false
 		}
 
-		return e.complexity.Mutation.ClaimResource(childComplexity, args["poolId"].(int)), true
+		return e.complexity.Mutation.ClaimResource(childComplexity, args["poolId"].(int), args["userInput"].(map[string]interface{})), true
 
 	case "Mutation.CreateAllocatingPool":
 		if e.complexity.Mutation.CreateAllocatingPool == nil {
@@ -712,7 +712,7 @@ type Mutation {
     DeleteAllocationStrategy(allocationStrategyId: ID!): AllocationStrategy!
 
     # managing resources via pools
-    ClaimResource(poolId: ID!): Resource!
+    ClaimResource(poolId: ID!, userInput: Map!): Resource!
     FreeResource(input: Map!, poolId: ID!): String!
 
     # create/update/delete resource pool
@@ -729,7 +729,8 @@ type Mutation {
     DeleteResourceType(resourceTypeId: ID!): String!
     ## it only changes the name of the resource type
     UpdateResourceTypeName(resourceTypeId: ID!, resourceName: String!): ResourceType!
-}`, BuiltIn: false},
+}
+`, BuiltIn: false},
 }
 var parsedSchema = gqlparser.MustLoadSchema(sources...)
 
@@ -748,6 +749,14 @@ func (ec *executionContext) field_Mutation_ClaimResource_args(ctx context.Contex
 		}
 	}
 	args["poolId"] = arg0
+	var arg1 map[string]interface{}
+	if tmp, ok := rawArgs["userInput"]; ok {
+		arg1, err = ec.unmarshalNMap2map(ctx, tmp)
+		if err != nil {
+			return nil, err
+		}
+	}
+	args["userInput"] = arg1
 	return args, nil
 }
 
@@ -1397,7 +1406,7 @@ func (ec *executionContext) _Mutation_ClaimResource(ctx context.Context, field g
 	fc.Args = args
 	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
 		ctx = rctx // use context from middleware stack in children
-		return ec.resolvers.Mutation().ClaimResource(rctx, args["poolId"].(int))
+		return ec.resolvers.Mutation().ClaimResource(rctx, args["poolId"].(int), args["userInput"].(map[string]interface{}))
 	})
 	if err != nil {
 		ec.Error(ctx, err)

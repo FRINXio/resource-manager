@@ -103,7 +103,7 @@ type Mutation {
     DeleteAllocationStrategy(allocationStrategyId: ID!): AllocationStrategy!
 
     # managing resources via pools
-    ClaimResource(poolId: ID!): Resource!
+    ClaimResource(poolId: ID!, userInput: Map!): Resource!
     FreeResource(input: Map!, poolId: ID!): String!
 
     # create/update/delete resource pool
