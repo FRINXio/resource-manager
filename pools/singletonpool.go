@@ -2,6 +2,7 @@ package pools
 
 import (
 	"context"
+
 	"github.com/net-auto/resourceManager/ent"
 	resourcePool "github.com/net-auto/resourceManager/ent/resourcepool"
 	"github.com/net-auto/resourceManager/ent/schema"
@@ -37,7 +38,7 @@ func NewSingletonPoolWithMeta(
 }
 
 // ClaimResource returns always the same resource
-func (pool SingletonPool) ClaimResource() (*ent.Resource, error) {
+func (pool SingletonPool) ClaimResource(userInput map[string]interface{}) (*ent.Resource, error) {
 	return pool.queryUnclaimedResourceEager()
 }
 

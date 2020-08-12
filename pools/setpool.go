@@ -2,12 +2,13 @@ package pools
 
 import (
 	"context"
+	"time"
+
 	"github.com/net-auto/resourceManager/ent"
 	resource "github.com/net-auto/resourceManager/ent/resource"
 	resourcePool "github.com/net-auto/resourceManager/ent/resourcepool"
 	"github.com/net-auto/resourceManager/ent/schema"
 	"github.com/pkg/errors"
-	"time"
 )
 
 // NewSetPool creates a brand new pool allocating DB entities in the process
@@ -96,7 +97,7 @@ func (pool SetPool) AddLabel(label PoolLabel) error {
 }
 
 // ClaimResource allocates the next available resource
-func (pool SetPool) ClaimResource() (*ent.Resource, error) {
+func (pool SetPool) ClaimResource(userInput map[string]interface{}) (*ent.Resource, error) {
 	// Allocate new resource for this tag
 	unclaimedRes, err := pool.queryUnclaimedResourceEager()
 	if err != nil {
@@ -120,7 +121,7 @@ func (pool SetPool) freeResourceInner(raw RawResourceProps,
 	retireResource func(res *ent.Resource) error,
 	freeResource func(res *ent.Resource) error,
 	benchResource func(res *ent.Resource) error,
-	) error {
+) error {
 	query, err := pool.findResource(raw)
 	if err != nil {
 		return errors.Wrapf(err, "Unable to find resource in pool: \"%s\"", pool.Name)

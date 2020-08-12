@@ -16,7 +16,7 @@ type PoolLabel struct {
 // Pool is a resource provider
 type Pool interface {
 	LabeledPool
-	ClaimResource() (*ent.Resource, error)
+	ClaimResource(map[string]interface{}) (*ent.Resource, error)
 	FreeResource(RawResourceProps) error
 	QueryResource(RawResourceProps) (*ent.Resource, error)
 	QueryResources() (ent.Resources, error)

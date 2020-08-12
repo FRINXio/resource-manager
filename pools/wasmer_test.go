@@ -17,15 +17,17 @@ func TestWasmerInvokeJsIntegration(t *testing.T) {
 	script := `
 function invoke() {
 	log('log');
-	return {"result":1};
+	return {"result": userInput['name']};
 }
 `
-	actual, stderr, err := wasmer.invokeJs(script)
+	userInput := make(map[string]interface{})
+	userInput["name"] = "Alice"
+	actual, stderr, err := wasmer.invokeJs(script, userInput)
 	if err != nil {
 		t.Fatalf("Unable run - %s", err)
 	}
 	expected := make(map[string]interface{})
-	if err := json.Unmarshal([]byte(`{"result":1}`), &expected); err != nil {
+	if err := json.Unmarshal([]byte(`{"result": "Alice"}`), &expected); err != nil {
 		t.Fatalf("Cannot unmarshal expected response - %s", err)
 	}
 	if !reflect.DeepEqual(actual, expected) {
@@ -53,15 +55,17 @@ func TestWasmerInvokePyIntegration(t *testing.T) {
 		t.Fatalf("Unable create wasmer - %s", err)
 	}
 	script := `
-	log('log')
-	return {"result":1}
+log('log')
+return {"result": "Alice"}
 `
-	actual, stderr, err := wasmer.invokePy(script)
+	userInput := make(map[string]interface{})
+	userInput["name"] = "Alice"
+	actual, stderr, err := wasmer.invokePy(script, userInput)
 	if err != nil {
 		t.Fatalf("Unable run - %s", err)
 	}
 	expected := make(map[string]interface{})
-	if err := json.Unmarshal([]byte(`{"result":1}`), &expected); err != nil {
+	if err := json.Unmarshal([]byte(`{"result": "Alice"}`), &expected); err != nil {
 		t.Fatalf("Cannot unmarshal expected response - %s", err)
 	}
 	if !reflect.DeepEqual(actual, expected) {

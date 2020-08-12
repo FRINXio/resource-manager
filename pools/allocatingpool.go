@@ -93,7 +93,7 @@ func (pool AllocatingPool) AllocationStrategy() (*ent.AllocationStrategy, error)
 }
 
 // ClaimResource allocates the next available resource
-func (pool AllocatingPool) ClaimResource() (*ent.Resource, error) {
+func (pool AllocatingPool) ClaimResource(userInput map[string]interface{}) (*ent.Resource, error) {
 
 	strat, err := pool.AllocationStrategy()
 	if err != nil {
@@ -106,7 +106,7 @@ func (pool AllocatingPool) ClaimResource() (*ent.Resource, error) {
 			"Unable to claim resource from pool \"%s\", resource type loading error ", pool.Name)
 	}
 
-	parsedOutputFromStrat, _ /*TODO do something with stderr */, err := pool.invokeAllocationStrategy(strat)
+	parsedOutputFromStrat, _ /*TODO do something with stderr */, err := pool.invokeAllocationStrategy(strat, userInput)
 	if err != nil {
 		return nil, errors.Wrapf(err,
 			"Unable to claim resource from pool \"%s\", allocation strategy \"%s\" failed", pool.Name, strat.Name)
@@ -121,12 +121,15 @@ func (pool AllocatingPool) ClaimResource() (*ent.Resource, error) {
 	return created[0], nil
 }
 
-func (pool AllocatingPool) invokeAllocationStrategy(strat *ent.AllocationStrategy) (map[string]interface{}, string, error) {
+func (pool AllocatingPool) invokeAllocationStrategy(
+	strat *ent.AllocationStrategy,
+	userInput map[string]interface{},
+) (map[string]interface{}, string, error) {
 	switch strat.Lang {
 	case allocationStrategy.LangJs:
-		return pool.invoker.invokeJs(strat.Script)
+		return pool.invoker.invokeJs(strat.Script, userInput)
 	case allocationStrategy.LangPy:
-		return pool.invoker.invokePy(strat.Script)
+		return pool.invoker.invokePy(strat.Script, userInput)
 	default:
 		return nil, "", errors.Errorf("Unknown language \"%s\" for strategy \"%s\"", strat.Lang, strat.Name)
 	}

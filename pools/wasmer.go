@@ -77,13 +77,11 @@ func NewWasmer(maxTimeout time.Duration, wasmerBinPath string, jsBinPath string,
 }
 
 type ScriptInvoker interface {
-	invokeJs(strategyScript string) (map[string]interface{}, string, error)
-	invokePy(strategyScript string) (map[string]interface{}, string, error)
+	invokeJs(strategyScript string, userInput map[string]interface{}) (map[string]interface{}, string, error)
+	invokePy(strategyScript string, userInput map[string]interface{}) (map[string]interface{}, string, error)
 }
 
-// TODO implement killing the wasmer process after max timeout
-func (wasmer Wasmer) invokeJs(strategyScript string) (map[string]interface{}, string, error) {
-	// TODO pass additional inputs
+func (wasmer Wasmer) invokeJs(strategyScript string, userInput map[string]interface{}) (map[string]interface{}, string, error) {
 
 	// Append script to invoke the function, parse inputs and serialize outputs
 	header := `
@@ -91,8 +89,16 @@ console.error = function(...args) {
 	std.err.puts(args.join(' '));
 	std.err.puts('\n');
 }
-log = console.error;
+const log = console.error;
 `
+	header += "const userInput = "
+	userInputBytes, err := json.Marshal(userInput)
+	if err != nil {
+		return nil, "", errors.Wrap(err, "Cannot serialize userInput into json")
+	}
+	header += string(userInputBytes[:])
+	header += ";\n"
+
 	footer := `
 let result = invoke()
 if (result != null) {
@@ -145,15 +151,23 @@ func prefixLines(str string, prefix string) string {
 	return result
 }
 
-func (wasmer Wasmer) invokePy(script string) (map[string]interface{}, string, error) {
-	head := `
+func (wasmer Wasmer) invokePy(script string, userInput map[string]interface{}) (map[string]interface{}, string, error) {
+	header := `
 import sys,json
 def log(*args, **kwargs):
   print(*args, file=sys.stderr, **kwargs)
-
+`
+	userInputBytes, err := json.Marshal(userInput)
+	if err != nil {
+		return nil, "", errors.Wrap(err, "Cannot serialize userInput into json")
+	}
+	// Encode twice so that the result starts and ends with a quote. All inner quotes will be escaped.
+	userInputBytes, err = json.Marshal(string(userInputBytes[:]))
+	header += "userInput=" + string(userInputBytes[:]) + "\n"
+	header += `
 def script_fun():
 `
-	foot := `
+	footer := `
 result = script_fun()
 if not result is None:
   if isinstance(result, str):
@@ -161,7 +175,7 @@ if not result is None:
   else:
     sys.stdout.write(json.dumps(result))
 `
-	script = head + prefixLines(script, "  ") + foot
+	script = header + prefixLines(script, "  ") + footer
 
 	fmt.Println("Executing\n" + script)
 

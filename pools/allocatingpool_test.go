@@ -19,7 +19,10 @@ type mockInvoker struct {
 	toBeReturnedError error
 }
 
-func (m mockInvoker) invokeJs(strategyScript string) (map[string]interface{}, string, error) {
+func (m mockInvoker) invokeJs(
+	strategyScript string,
+	userInput map[string]interface{},
+) (map[string]interface{}, string, error) {
 	if m.toBeReturnedError != nil {
 		return nil, "", m.toBeReturnedError
 	} else {
@@ -27,7 +30,10 @@ func (m mockInvoker) invokeJs(strategyScript string) (map[string]interface{}, st
 	}
 }
 
-func (m mockInvoker) invokePy(strategyScript string) (map[string]interface{}, string, error) {
+func (m mockInvoker) invokePy(
+	strategyScript string,
+	userInput map[string]interface{},
+) (map[string]interface{}, string, error) {
 	if m.toBeReturnedError != nil {
 		return nil, "", m.toBeReturnedError
 	} else {
@@ -54,8 +60,8 @@ func TestAllocatingPool(t *testing.T) {
 	}
 
 	assertDb(ctx, client, t, 1, 1, 1, 0, 0)
-
-	resource, err := pool.ClaimResource()
+	userInput := make(map[string]interface{})
+	resource, err := pool.ClaimResource(userInput)
 	if err != nil {
 		t.Fatalf("Unable to claim resource: %s", err)
 	}
@@ -97,7 +103,8 @@ func TestAllocatingPoolFailure(t *testing.T) {
 		ctx, client, resType, strat, "testAllocatingPool",
 		mockInvoker, schema.ResourcePoolDealocationRetire)
 
-	_, err := pool.ClaimResource()
+	userInput := make(map[string]interface{})
+	_, err := pool.ClaimResource(userInput)
 	if err == nil {
 		t.Fatalf("Resource claim should have failed")
 	}
