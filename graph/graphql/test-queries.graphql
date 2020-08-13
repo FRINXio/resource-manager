@@ -91,30 +91,28 @@ query QueryAllPools {
 }
 
 mutation ClaimResource {
-    ClaimResource(poolName:"vlan_test4") {
+    ClaimResource(poolId:21474836480) {
         ID
         Properties
     }
 }
 
 mutation ClaimResourceFromAllocatingPool {
-    ClaimResource(poolName:"vlan_allocating") {
+    ClaimResource(poolId:21474836481) {
         ID
         Properties
     }
 }
 
 query QueryResources {
-    QueryResources(poolName:"vlan_allocating"){
+    QueryResources(poolId:21474836481){
         ID
         Properties
     }
 }
 
 mutation deleteResourcePool {
-    DeleteAllocationStrategy(allocationStrategyId: 10) {
-        Name
-    }
+    DeleteResourcePool(resourcePoolId:21474836481)
 }
 
 mutation deleteAllocationStrat {

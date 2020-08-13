@@ -19,13 +19,13 @@ scalar Map
 type Resource
 @goModel(model: "github.com/net-auto/resourceManager/ent.Resource")
 {
-    ID: Int!
+    ID: ID!
     Properties: Map!
 }
 
 type PropertyType
 @goModel(model: "github.com/net-auto/resourceManager/ent.PropertyType"){
-    ID: Int!
+    ID: ID!
     Name: String!
     Type: String!,
     IntVal: Int!,
@@ -36,7 +36,7 @@ type PropertyType
 
 type ResourcePool
 @goModel(model: "github.com/net-auto/resourceManager/ent.ResourcePool"){
-    ID: Int!
+    ID: ID!
     Name: String!
     PoolType: PoolType!
     Edges: ResourcePoolEdges
@@ -44,7 +44,7 @@ type ResourcePool
 
 type Label
 @goModel(model: "github.com/net-auto/resourceManager/ent.Label"){
-    ID: Int!
+    ID: ID!
     Labl: String!
 }
 
@@ -60,7 +60,7 @@ enum AllocationStrategyLang
 
 type AllocationStrategy
 @goModel(model: "github.com/net-auto/resourceManager/ent.AllocationStrategy"){
-    ID: Int!
+    ID: ID!
     Name: String!
     Lang: AllocationStrategyLang!
     Script: String!
@@ -81,15 +81,15 @@ type ResourceTypeEdges
 
 type ResourceType
 @goModel(model: "github.com/net-auto/resourceManager/ent.ResourceType"){
-    ID: Int!
+    ID: ID!
     Name: String!
     Edges: ResourceTypeEdges
 }
 
 type Query {
-    QueryResource(input: Map!, poolName: String!): Resource!
-    QueryResources(poolName: String!): [Resource]!
-    QueryAllocationStrategy(allocationStrategyName: String!): AllocationStrategy!
+    QueryResource(input: Map!, poolId: ID!): Resource!
+    QueryResources(poolId: ID!): [Resource]!
+    QueryAllocationStrategy(allocationStrategyId: ID!): AllocationStrategy!
     QueryAllocationStrategies: [AllocationStrategy]!
     QueryResourceTypes: [ResourceType]!
     QueryResourcePools: [ResourcePool]!
@@ -100,24 +100,24 @@ type Query {
 type Mutation {
     # Allocation strategy
     CreateAllocationStrategy(name: String!, script: String!): AllocationStrategy!
-    DeleteAllocationStrategy(allocationStrategyId: Int!): AllocationStrategy!
+    DeleteAllocationStrategy(allocationStrategyId: ID!): AllocationStrategy!
 
     # managing resources via pools
-    ClaimResource(poolName: String!): Resource!
-    FreeResource(input: Map!, poolName: String!): String!
+    ClaimResource(poolId: ID!): Resource!
+    FreeResource(input: Map!, poolId: ID!): String!
 
     # create/update/delete resource pool
-    CreateSetPool(resourceTypeId: Int!, poolName: String!, poolDealocationSafetyPeriod: Int!, poolValues: [Map]): ResourcePool!
-    CreateSingletonPool(resourceTypeId: Int!, poolName: String!, poolValues: [Map]): ResourcePool!
-    CreateAllocatingPool(resourceTypeId: Int!, poolName: String!, allocationStrategyId: Int!, poolDealocationSafetyPeriod: Int!): ResourcePool!
-    DeleteResourcePool(resourcePoolId: Int!): String!
+    CreateSetPool(resourceTypeId: ID!, poolName: String!, poolDealocationSafetyPeriod: Int!, poolValues: [Map]): ResourcePool!
+    CreateSingletonPool(resourceTypeId: ID!, poolName: String!, poolValues: [Map]): ResourcePool!
+    CreateAllocatingPool(resourceTypeId: ID!, poolName: String!, allocationStrategyId: ID!, poolDealocationSafetyPeriod: Int!): ResourcePool!
+    DeleteResourcePool(resourcePoolId: ID!): String!
 
     # create/update/delete resource type
     ## resourceName: String! - name of the resource type AND property type (should they be different?)
     ## resourceProperties: Map! - for key "init" the value is the initial value of the property type (like 7)
     ##                            for key "type" the value is the name of the type like "int"
     CreateResourceType(resourceName: String!, resourceProperties: Map!): ResourceType!
-    DeleteResourceType(resourceTypeId: Int!): String!
+    DeleteResourceType(resourceTypeId: ID!): String!
     ## it only changes the name of the resource type
-    UpdateResourceTypeName(resourceTypeId: Int!, resourceName: String!): ResourceType!
+    UpdateResourceTypeName(resourceTypeId: ID!, resourceName: String!): ResourceType!
 }

@@ -5,12 +5,12 @@ package resolver
 
 import (
 	"context"
-	"github.com/vektah/gqlparser/v2/gqlerror"
 
 	"github.com/net-auto/resourceManager/ent"
 	"github.com/net-auto/resourceManager/ent/allocationstrategy"
 	"github.com/net-auto/resourceManager/graph/graphql/generated"
 	p "github.com/net-auto/resourceManager/pools"
+	"github.com/vektah/gqlparser/v2/gqlerror"
 )
 
 func (r *mutationResolver) CreateAllocationStrategy(ctx context.Context, name string, script string) (*ent.AllocationStrategy, error) {
@@ -41,8 +41,8 @@ func (r *mutationResolver) DeleteAllocationStrategy(ctx context.Context, allocat
 	}
 }
 
-func (r *mutationResolver) ClaimResource(ctx context.Context, poolName string) (*ent.Resource, error) {
-	pool, err := p.ExistingPool(ctx, r.ClientFrom(ctx), poolName)
+func (r *mutationResolver) ClaimResource(ctx context.Context, poolID int) (*ent.Resource, error) {
+	pool, err := p.ExistingPoolFromId(ctx, r.ClientFrom(ctx), poolID)
 	if err != nil {
 		return nil, gqlerror.Errorf("Unable to claim resource: %v", err)
 	}
@@ -54,8 +54,8 @@ func (r *mutationResolver) ClaimResource(ctx context.Context, poolName string) (
 	}
 }
 
-func (r *mutationResolver) FreeResource(ctx context.Context, input map[string]interface{}, poolName string) (string, error) {
-	pool, err := p.ExistingPool(ctx, r.ClientFrom(ctx), poolName)
+func (r *mutationResolver) FreeResource(ctx context.Context, input map[string]interface{}, poolID int) (string, error) {
+	pool, err := p.ExistingPoolFromId(ctx, r.ClientFrom(ctx), poolID)
 	if err != nil {
 		return "", gqlerror.Errorf("Unable to free resource: %v", err)
 	}
@@ -195,25 +195,25 @@ func (r *propertyTypeResolver) Type(ctx context.Context, obj *ent.PropertyType) 
 	return obj.Type.String(), nil
 }
 
-func (r *queryResolver) QueryResource(ctx context.Context, input map[string]interface{}, poolName string) (*ent.Resource, error) {
-	pool, err := p.ExistingPool(ctx, r.ClientFrom(ctx), poolName)
+func (r *queryResolver) QueryResource(ctx context.Context, input map[string]interface{}, poolID int) (*ent.Resource, error) {
+	pool, err := p.ExistingPoolFromId(ctx, r.ClientFrom(ctx), poolID)
 	if err != nil {
 		return nil, gqlerror.Errorf("Unable to query resource: %v", err)
 	}
 	return pool.QueryResource(input)
 }
 
-func (r *queryResolver) QueryResources(ctx context.Context, poolName string) ([]*ent.Resource, error) {
-	pool, err := p.ExistingPool(ctx, r.ClientFrom(ctx), poolName)
+func (r *queryResolver) QueryResources(ctx context.Context, poolID int) ([]*ent.Resource, error) {
+	pool, err := p.ExistingPoolFromId(ctx, r.ClientFrom(ctx), poolID)
 	if err != nil {
 		return nil, gqlerror.Errorf("Unable to query resources: %v", err)
 	}
 	return pool.QueryResources()
 }
 
-func (r *queryResolver) QueryAllocationStrategy(ctx context.Context, allocationStrategyName string) (*ent.AllocationStrategy, error) {
+func (r *queryResolver) QueryAllocationStrategy(ctx context.Context, allocationStrategyID int) (*ent.AllocationStrategy, error) {
 	client := r.ClientFrom(ctx)
-	if strats, err := client.AllocationStrategy.Query().Where(allocationstrategy.Name(allocationStrategyName)).Only(ctx); err != nil {
+	if strats, err := client.AllocationStrategy.Query().Where(allocationstrategy.ID(allocationStrategyID)).Only(ctx); err != nil {
 		return nil, gqlerror.Errorf("Unable to query strategy: %v", err)
 	} else {
 		return strats, nil
