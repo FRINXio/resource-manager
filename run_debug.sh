@@ -4,8 +4,6 @@ set -x
 
 go build -gcflags \"all=-N\" -o ./resourceManager
 
-sleep 15
-
 RM_DB_CONNECTION_STRING_DEFAULT="root:root@tcp(localhost:3306)/?charset=utf8&parseTime=true&interpolateParams=true"
 RM_API_PORT_DEFAULT=8884
 

@@ -4,9 +4,6 @@ set -x
 
 go build -o ./resourceManager
 
-# to make sure mysql is ready
-sleep 15
-
 RM_DB_CONNECTION_STRING_DEFAULT="root:root@tcp(localhost:3306)/?charset=utf8&parseTime=true&interpolateParams=true"
 RM_API_PORT_DEFAULT=8884
 
