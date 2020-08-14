@@ -6,12 +6,12 @@ import (
 	"time"
 
 	"github.com/net-auto/resourceManager/ent/allocationstrategy"
-	"github.com/net-auto/resourceManager/ent/label"
 	"github.com/net-auto/resourceManager/ent/propertytype"
 	"github.com/net-auto/resourceManager/ent/resource"
 	"github.com/net-auto/resourceManager/ent/resourcepool"
 	"github.com/net-auto/resourceManager/ent/resourcetype"
 	"github.com/net-auto/resourceManager/ent/schema"
+	"github.com/net-auto/resourceManager/ent/tag"
 )
 
 // The init function reads all schema descriptors with runtime
@@ -28,12 +28,6 @@ func init() {
 	allocationstrategyDescScript := allocationstrategyFields[2].Descriptor()
 	// allocationstrategy.ScriptValidator is a validator for the "script" field. It is called by the builders before save.
 	allocationstrategy.ScriptValidator = allocationstrategyDescScript.Validators[0].(func(string) error)
-	labelFields := schema.Label{}.Fields()
-	_ = labelFields
-	// labelDescLabl is the schema descriptor for labl field.
-	labelDescLabl := labelFields[0].Descriptor()
-	// label.LablValidator is a validator for the "labl" field. It is called by the builders before save.
-	label.LablValidator = labelDescLabl.Validators[0].(func(string) error)
 	propertytypeFields := schema.PropertyType{}.Fields()
 	_ = propertytypeFields
 	// propertytypeDescIsInstanceProperty is the schema descriptor for is_instance_property field.
@@ -76,4 +70,10 @@ func init() {
 	resourcetypeDescName := resourcetypeFields[0].Descriptor()
 	// resourcetype.NameValidator is a validator for the "name" field. It is called by the builders before save.
 	resourcetype.NameValidator = resourcetypeDescName.Validators[0].(func(string) error)
+	tagFields := schema.Tag{}.Fields()
+	_ = tagFields
+	// tagDescTag is the schema descriptor for tag field.
+	tagDescTag := tagFields[0].Descriptor()
+	// tag.TagValidator is a validator for the "tag" field. It is called by the builders before save.
+	tag.TagValidator = tagDescTag.Validators[0].(func(string) error)
 }

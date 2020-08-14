@@ -91,11 +91,6 @@ func (pool SetPool) Destroy() error {
 	return nil
 }
 
-func (pool SetPool) AddLabel(label PoolLabel) error {
-	// TODO implement labeling
-	return errors.Errorf("NOT IMPLEMENTED")
-}
-
 // ClaimResource allocates the next available resource
 func (pool SetPool) ClaimResource(userInput map[string]interface{}) (*ent.Resource, error) {
 	// Allocate new resource for this tag

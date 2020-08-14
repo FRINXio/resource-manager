@@ -21,18 +21,6 @@ func (as *AllocationStrategyQuery) collectField(ctx *graphql.OperationContext, f
 }
 
 // CollectFields tells the query-builder to eagerly load connected nodes by resolver context.
-func (l *LabelQuery) CollectFields(ctx context.Context, satisfies ...string) *LabelQuery {
-	if fc := graphql.GetFieldContext(ctx); fc != nil {
-		l = l.collectField(graphql.GetOperationContext(ctx), fc.Field, satisfies...)
-	}
-	return l
-}
-
-func (l *LabelQuery) collectField(ctx *graphql.OperationContext, field graphql.CollectedField, satisfies ...string) *LabelQuery {
-	return l
-}
-
-// CollectFields tells the query-builder to eagerly load connected nodes by resolver context.
 func (pr *PropertyQuery) CollectFields(ctx context.Context, satisfies ...string) *PropertyQuery {
 	if fc := graphql.GetFieldContext(ctx); fc != nil {
 		pr = pr.collectField(graphql.GetOperationContext(ctx), fc.Field, satisfies...)
@@ -98,4 +86,16 @@ func (rt *ResourceTypeQuery) CollectFields(ctx context.Context, satisfies ...str
 
 func (rt *ResourceTypeQuery) collectField(ctx *graphql.OperationContext, field graphql.CollectedField, satisfies ...string) *ResourceTypeQuery {
 	return rt
+}
+
+// CollectFields tells the query-builder to eagerly load connected nodes by resolver context.
+func (t *TagQuery) CollectFields(ctx context.Context, satisfies ...string) *TagQuery {
+	if fc := graphql.GetFieldContext(ctx); fc != nil {
+		t = t.collectField(graphql.GetOperationContext(ctx), fc.Field, satisfies...)
+	}
+	return t
+}
+
+func (t *TagQuery) collectField(ctx *graphql.OperationContext, field graphql.CollectedField, satisfies ...string) *TagQuery {
+	return t
 }

@@ -42,6 +42,62 @@ func (tr txResolver) WithTransaction(ctx context.Context, f func(context.Context
 	return nil
 }
 
+func (tr txResolver) CreateTag(ctx context.Context, tag string) (*ent.Tag, error) {
+	var result, zero *ent.Tag
+	if err := tr.WithTransaction(ctx, func(ctx context.Context, mr generated.MutationResolver) (err error) {
+		result, err = mr.CreateTag(ctx, tag)
+		return
+	}); err != nil {
+		return zero, err
+	}
+	if result != nil {
+		result = result.Unwrap()
+	}
+	return result, nil
+}
+
+func (tr txResolver) UpdateTag(ctx context.Context, tagID int, tag string) (*ent.Tag, error) {
+	var result, zero *ent.Tag
+	if err := tr.WithTransaction(ctx, func(ctx context.Context, mr generated.MutationResolver) (err error) {
+		result, err = mr.UpdateTag(ctx, tagID, tag)
+		return
+	}); err != nil {
+		return zero, err
+	}
+	if result != nil {
+		result = result.Unwrap()
+	}
+	return result, nil
+}
+
+func (tr txResolver) DeleteTag(ctx context.Context, tagID int) (*ent.Tag, error) {
+	var result, zero *ent.Tag
+	if err := tr.WithTransaction(ctx, func(ctx context.Context, mr generated.MutationResolver) (err error) {
+		result, err = mr.DeleteTag(ctx, tagID)
+		return
+	}); err != nil {
+		return zero, err
+	}
+	if result != nil {
+		result = result.Unwrap()
+	}
+	return result, nil
+}
+
+func (tr txResolver) TagPool(ctx context.Context, tagID int, poolID int) (*ent.Tag, error) {
+	var result, zero *ent.Tag
+	if err := tr.WithTransaction(ctx, func(ctx context.Context, mr generated.MutationResolver) (err error) {
+		result, err = mr.TagPool(ctx, tagID, poolID)
+		return
+	}); err != nil {
+		return zero, err
+	}
+	if result != nil {
+		result = result.Unwrap()
+	}
+	return result, nil
+}
+
 func (tr txResolver) CreateAllocationStrategy(ctx context.Context, name string, script string, lang allocationstrategy.Lang) (*ent.AllocationStrategy, error) {
 	var result, zero *ent.AllocationStrategy
 	if err := tr.WithTransaction(ctx, func(ctx context.Context, mr generated.MutationResolver) (err error) {

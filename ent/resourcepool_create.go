@@ -10,10 +10,10 @@ import (
 	"github.com/facebookincubator/ent/dialect/sql/sqlgraph"
 	"github.com/facebookincubator/ent/schema/field"
 	"github.com/net-auto/resourceManager/ent/allocationstrategy"
-	"github.com/net-auto/resourceManager/ent/label"
 	"github.com/net-auto/resourceManager/ent/resource"
 	"github.com/net-auto/resourceManager/ent/resourcepool"
 	"github.com/net-auto/resourceManager/ent/resourcetype"
+	"github.com/net-auto/resourceManager/ent/tag"
 )
 
 // ResourcePoolCreate is the builder for creating a ResourcePool entity.
@@ -68,23 +68,19 @@ func (rpc *ResourcePoolCreate) SetResourceType(r *ResourceType) *ResourcePoolCre
 	return rpc.SetResourceTypeID(r.ID)
 }
 
-// SetLabelsID sets the labels edge to Label by id.
-func (rpc *ResourcePoolCreate) SetLabelsID(id int) *ResourcePoolCreate {
-	rpc.mutation.SetLabelsID(id)
+// AddTagIDs adds the tags edge to Tag by ids.
+func (rpc *ResourcePoolCreate) AddTagIDs(ids ...int) *ResourcePoolCreate {
+	rpc.mutation.AddTagIDs(ids...)
 	return rpc
 }
 
-// SetNillableLabelsID sets the labels edge to Label by id if the given value is not nil.
-func (rpc *ResourcePoolCreate) SetNillableLabelsID(id *int) *ResourcePoolCreate {
-	if id != nil {
-		rpc = rpc.SetLabelsID(*id)
+// AddTags adds the tags edges to Tag.
+func (rpc *ResourcePoolCreate) AddTags(t ...*Tag) *ResourcePoolCreate {
+	ids := make([]int, len(t))
+	for i := range t {
+		ids[i] = t[i].ID
 	}
-	return rpc
-}
-
-// SetLabels sets the labels edge to Label.
-func (rpc *ResourcePoolCreate) SetLabels(l *Label) *ResourcePoolCreate {
-	return rpc.SetLabelsID(l.ID)
+	return rpc.AddTagIDs(ids...)
 }
 
 // AddClaimIDs adds the claims edge to Resource by ids.
@@ -258,17 +254,17 @@ func (rpc *ResourcePoolCreate) createSpec() (*ResourcePool, *sqlgraph.CreateSpec
 		}
 		_spec.Edges = append(_spec.Edges, edge)
 	}
-	if nodes := rpc.mutation.LabelsIDs(); len(nodes) > 0 {
+	if nodes := rpc.mutation.TagsIDs(); len(nodes) > 0 {
 		edge := &sqlgraph.EdgeSpec{
-			Rel:     sqlgraph.M2O,
+			Rel:     sqlgraph.M2M,
 			Inverse: true,
-			Table:   resourcepool.LabelsTable,
-			Columns: []string{resourcepool.LabelsColumn},
+			Table:   resourcepool.TagsTable,
+			Columns: resourcepool.TagsPrimaryKey,
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
 				IDSpec: &sqlgraph.FieldSpec{
 					Type:   field.TypeInt,
-					Column: label.FieldID,
+					Column: tag.FieldID,
 				},
 			},
 		}

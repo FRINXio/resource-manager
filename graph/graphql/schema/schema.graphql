@@ -43,12 +43,6 @@ type ResourcePool
     Edges: ResourcePoolEdges
 }
 
-type Label
-@goModel(model: "github.com/net-auto/resourceManager/ent.Label"){
-    ID: ID!
-    Labl: String!
-}
-
 enum AllocationStrategyLang
 @goModel(
     model: "github.com/net-auto/resourceManager/ent/allocationstrategy.Lang"
@@ -70,7 +64,7 @@ type AllocationStrategy
 type ResourcePoolEdges
 @goModel(model: "github.com/net-auto/resourceManager/ent.ResourcePoolEdges"){
     ResourceType: ResourceType!
-    Labels: Label
+    Tags: [Tag]!
     AllocationStrategy: AllocationStrategy
 }
 
@@ -85,6 +79,26 @@ type ResourceType
     ID: ID!
     Name: String!
     Edges: ResourceTypeEdges
+}
+
+type Tag
+@goModel(model: "github.com/net-auto/resourceManager/ent.Tag"){
+    ID: ID!
+    Tag: String!
+    Edges: TagEdges
+}
+
+type TagEdges
+@goModel(model: "github.com/net-auto/resourceManager/ent.TagEdges"){
+    Pools: [ResourcePool]
+}
+
+input TagAnd {
+    tags: [String!]!
+}
+
+input TagOr {
+    tags: [TagAnd!]!
 }
 
 input ResourcePoolInput {
@@ -102,11 +116,17 @@ type Query {
     QueryAllocationStrategies: [AllocationStrategy]!
     QueryResourceTypes: [ResourceType]!
     QueryResourcePools: [ResourcePool]!
+    SearchPoolsByTags(tags: TagOr): [ResourcePool]!
+    QueryTags: [Tag]!
 }
 
-#TODO missing CRUD for pools <-> labels
-
 type Mutation {
+    # Tagging
+    CreateTag(tag: String!): Tag!
+    UpdateTag(tagId: ID!, tag: String!): Tag!
+    DeleteTag(tagId: ID!): Tag!
+    TagPool(tagId: ID!, poolId: ID!): Tag!
+
     # Allocation strategy
     CreateAllocationStrategy(name: String!, script: String!, lang: AllocationStrategyLang!): AllocationStrategy!
     DeleteAllocationStrategy(allocationStrategyId: ID!): AllocationStrategy!

@@ -9,12 +9,12 @@ import (
 	"time"
 
 	"github.com/net-auto/resourceManager/ent/allocationstrategy"
-	"github.com/net-auto/resourceManager/ent/label"
 	"github.com/net-auto/resourceManager/ent/property"
 	"github.com/net-auto/resourceManager/ent/propertytype"
 	"github.com/net-auto/resourceManager/ent/resource"
 	"github.com/net-auto/resourceManager/ent/resourcepool"
 	"github.com/net-auto/resourceManager/ent/resourcetype"
+	"github.com/net-auto/resourceManager/ent/tag"
 
 	"github.com/facebookincubator/ent"
 )
@@ -29,12 +29,12 @@ const (
 
 	// Node types.
 	TypeAllocationStrategy = "AllocationStrategy"
-	TypeLabel              = "Label"
 	TypeProperty           = "Property"
 	TypePropertyType       = "PropertyType"
 	TypeResource           = "Resource"
 	TypeResourcePool       = "ResourcePool"
 	TypeResourceType       = "ResourceType"
+	TypeTag                = "Tag"
 )
 
 // AllocationStrategyMutation represents an operation that mutate the AllocationStrategies
@@ -513,374 +513,6 @@ func (m *AllocationStrategyMutation) ResetEdge(name string) error {
 		return nil
 	}
 	return fmt.Errorf("unknown AllocationStrategy edge %s", name)
-}
-
-// LabelMutation represents an operation that mutate the Labels
-// nodes in the graph.
-type LabelMutation struct {
-	config
-	op            Op
-	typ           string
-	id            *int
-	labl          *string
-	clearedFields map[string]struct{}
-	pools         map[int]struct{}
-	removedpools  map[int]struct{}
-	done          bool
-	oldValue      func(context.Context) (*Label, error)
-}
-
-var _ ent.Mutation = (*LabelMutation)(nil)
-
-// labelOption allows to manage the mutation configuration using functional options.
-type labelOption func(*LabelMutation)
-
-// newLabelMutation creates new mutation for $n.Name.
-func newLabelMutation(c config, op Op, opts ...labelOption) *LabelMutation {
-	m := &LabelMutation{
-		config:        c,
-		op:            op,
-		typ:           TypeLabel,
-		clearedFields: make(map[string]struct{}),
-	}
-	for _, opt := range opts {
-		opt(m)
-	}
-	return m
-}
-
-// withLabelID sets the id field of the mutation.
-func withLabelID(id int) labelOption {
-	return func(m *LabelMutation) {
-		var (
-			err   error
-			once  sync.Once
-			value *Label
-		)
-		m.oldValue = func(ctx context.Context) (*Label, error) {
-			once.Do(func() {
-				if m.done {
-					err = fmt.Errorf("querying old values post mutation is not allowed")
-				} else {
-					value, err = m.Client().Label.Get(ctx, id)
-				}
-			})
-			return value, err
-		}
-		m.id = &id
-	}
-}
-
-// withLabel sets the old Label of the mutation.
-func withLabel(node *Label) labelOption {
-	return func(m *LabelMutation) {
-		m.oldValue = func(context.Context) (*Label, error) {
-			return node, nil
-		}
-		m.id = &node.ID
-	}
-}
-
-// Client returns a new `ent.Client` from the mutation. If the mutation was
-// executed in a transaction (ent.Tx), a transactional client is returned.
-func (m LabelMutation) Client() *Client {
-	client := &Client{config: m.config}
-	client.init()
-	return client
-}
-
-// Tx returns an `ent.Tx` for mutations that were executed in transactions;
-// it returns an error otherwise.
-func (m LabelMutation) Tx() (*Tx, error) {
-	if _, ok := m.driver.(*txDriver); !ok {
-		return nil, fmt.Errorf("ent: mutation is not running in a transaction")
-	}
-	tx := &Tx{config: m.config}
-	tx.init()
-	return tx, nil
-}
-
-// ID returns the id value in the mutation. Note that, the id
-// is available only if it was provided to the builder.
-func (m *LabelMutation) ID() (id int, exists bool) {
-	if m.id == nil {
-		return
-	}
-	return *m.id, true
-}
-
-// SetLabl sets the labl field.
-func (m *LabelMutation) SetLabl(s string) {
-	m.labl = &s
-}
-
-// Labl returns the labl value in the mutation.
-func (m *LabelMutation) Labl() (r string, exists bool) {
-	v := m.labl
-	if v == nil {
-		return
-	}
-	return *v, true
-}
-
-// OldLabl returns the old labl value of the Label.
-// If the Label object wasn't provided to the builder, the object is fetched
-// from the database.
-// An error is returned if the mutation operation is not UpdateOne, or database query fails.
-func (m *LabelMutation) OldLabl(ctx context.Context) (v string, err error) {
-	if !m.op.Is(OpUpdateOne) {
-		return v, fmt.Errorf("OldLabl is allowed only on UpdateOne operations")
-	}
-	if m.id == nil || m.oldValue == nil {
-		return v, fmt.Errorf("OldLabl requires an ID field in the mutation")
-	}
-	oldValue, err := m.oldValue(ctx)
-	if err != nil {
-		return v, fmt.Errorf("querying old value for OldLabl: %w", err)
-	}
-	return oldValue.Labl, nil
-}
-
-// ResetLabl reset all changes of the "labl" field.
-func (m *LabelMutation) ResetLabl() {
-	m.labl = nil
-}
-
-// AddPoolIDs adds the pools edge to ResourcePool by ids.
-func (m *LabelMutation) AddPoolIDs(ids ...int) {
-	if m.pools == nil {
-		m.pools = make(map[int]struct{})
-	}
-	for i := range ids {
-		m.pools[ids[i]] = struct{}{}
-	}
-}
-
-// RemovePoolIDs removes the pools edge to ResourcePool by ids.
-func (m *LabelMutation) RemovePoolIDs(ids ...int) {
-	if m.removedpools == nil {
-		m.removedpools = make(map[int]struct{})
-	}
-	for i := range ids {
-		m.removedpools[ids[i]] = struct{}{}
-	}
-}
-
-// RemovedPools returns the removed ids of pools.
-func (m *LabelMutation) RemovedPoolsIDs() (ids []int) {
-	for id := range m.removedpools {
-		ids = append(ids, id)
-	}
-	return
-}
-
-// PoolsIDs returns the pools ids in the mutation.
-func (m *LabelMutation) PoolsIDs() (ids []int) {
-	for id := range m.pools {
-		ids = append(ids, id)
-	}
-	return
-}
-
-// ResetPools reset all changes of the "pools" edge.
-func (m *LabelMutation) ResetPools() {
-	m.pools = nil
-	m.removedpools = nil
-}
-
-// Op returns the operation name.
-func (m *LabelMutation) Op() Op {
-	return m.op
-}
-
-// Type returns the node type of this mutation (Label).
-func (m *LabelMutation) Type() string {
-	return m.typ
-}
-
-// Fields returns all fields that were changed during
-// this mutation. Note that, in order to get all numeric
-// fields that were in/decremented, call AddedFields().
-func (m *LabelMutation) Fields() []string {
-	fields := make([]string, 0, 1)
-	if m.labl != nil {
-		fields = append(fields, label.FieldLabl)
-	}
-	return fields
-}
-
-// Field returns the value of a field with the given name.
-// The second boolean value indicates that this field was
-// not set, or was not define in the schema.
-func (m *LabelMutation) Field(name string) (ent.Value, bool) {
-	switch name {
-	case label.FieldLabl:
-		return m.Labl()
-	}
-	return nil, false
-}
-
-// OldField returns the old value of the field from the database.
-// An error is returned if the mutation operation is not UpdateOne,
-// or the query to the database was failed.
-func (m *LabelMutation) OldField(ctx context.Context, name string) (ent.Value, error) {
-	switch name {
-	case label.FieldLabl:
-		return m.OldLabl(ctx)
-	}
-	return nil, fmt.Errorf("unknown Label field %s", name)
-}
-
-// SetField sets the value for the given name. It returns an
-// error if the field is not defined in the schema, or if the
-// type mismatch the field type.
-func (m *LabelMutation) SetField(name string, value ent.Value) error {
-	switch name {
-	case label.FieldLabl:
-		v, ok := value.(string)
-		if !ok {
-			return fmt.Errorf("unexpected type %T for field %s", value, name)
-		}
-		m.SetLabl(v)
-		return nil
-	}
-	return fmt.Errorf("unknown Label field %s", name)
-}
-
-// AddedFields returns all numeric fields that were incremented
-// or decremented during this mutation.
-func (m *LabelMutation) AddedFields() []string {
-	return nil
-}
-
-// AddedField returns the numeric value that was in/decremented
-// from a field with the given name. The second value indicates
-// that this field was not set, or was not define in the schema.
-func (m *LabelMutation) AddedField(name string) (ent.Value, bool) {
-	return nil, false
-}
-
-// AddField adds the value for the given name. It returns an
-// error if the field is not defined in the schema, or if the
-// type mismatch the field type.
-func (m *LabelMutation) AddField(name string, value ent.Value) error {
-	switch name {
-	}
-	return fmt.Errorf("unknown Label numeric field %s", name)
-}
-
-// ClearedFields returns all nullable fields that were cleared
-// during this mutation.
-func (m *LabelMutation) ClearedFields() []string {
-	return nil
-}
-
-// FieldCleared returns a boolean indicates if this field was
-// cleared in this mutation.
-func (m *LabelMutation) FieldCleared(name string) bool {
-	_, ok := m.clearedFields[name]
-	return ok
-}
-
-// ClearField clears the value for the given name. It returns an
-// error if the field is not defined in the schema.
-func (m *LabelMutation) ClearField(name string) error {
-	return fmt.Errorf("unknown Label nullable field %s", name)
-}
-
-// ResetField resets all changes in the mutation regarding the
-// given field name. It returns an error if the field is not
-// defined in the schema.
-func (m *LabelMutation) ResetField(name string) error {
-	switch name {
-	case label.FieldLabl:
-		m.ResetLabl()
-		return nil
-	}
-	return fmt.Errorf("unknown Label field %s", name)
-}
-
-// AddedEdges returns all edge names that were set/added in this
-// mutation.
-func (m *LabelMutation) AddedEdges() []string {
-	edges := make([]string, 0, 1)
-	if m.pools != nil {
-		edges = append(edges, label.EdgePools)
-	}
-	return edges
-}
-
-// AddedIDs returns all ids (to other nodes) that were added for
-// the given edge name.
-func (m *LabelMutation) AddedIDs(name string) []ent.Value {
-	switch name {
-	case label.EdgePools:
-		ids := make([]ent.Value, 0, len(m.pools))
-		for id := range m.pools {
-			ids = append(ids, id)
-		}
-		return ids
-	}
-	return nil
-}
-
-// RemovedEdges returns all edge names that were removed in this
-// mutation.
-func (m *LabelMutation) RemovedEdges() []string {
-	edges := make([]string, 0, 1)
-	if m.removedpools != nil {
-		edges = append(edges, label.EdgePools)
-	}
-	return edges
-}
-
-// RemovedIDs returns all ids (to other nodes) that were removed for
-// the given edge name.
-func (m *LabelMutation) RemovedIDs(name string) []ent.Value {
-	switch name {
-	case label.EdgePools:
-		ids := make([]ent.Value, 0, len(m.removedpools))
-		for id := range m.removedpools {
-			ids = append(ids, id)
-		}
-		return ids
-	}
-	return nil
-}
-
-// ClearedEdges returns all edge names that were cleared in this
-// mutation.
-func (m *LabelMutation) ClearedEdges() []string {
-	edges := make([]string, 0, 1)
-	return edges
-}
-
-// EdgeCleared returns a boolean indicates if this edge was
-// cleared in this mutation.
-func (m *LabelMutation) EdgeCleared(name string) bool {
-	switch name {
-	}
-	return false
-}
-
-// ClearEdge clears the value for the given name. It returns an
-// error if the edge name is not defined in the schema.
-func (m *LabelMutation) ClearEdge(name string) error {
-	switch name {
-	}
-	return fmt.Errorf("unknown Label unique edge %s", name)
-}
-
-// ResetEdge resets all changes in the mutation regarding the
-// given edge name. It returns an error if the edge is not
-// defined in the schema.
-func (m *LabelMutation) ResetEdge(name string) error {
-	switch name {
-	case label.EdgePools:
-		m.ResetPools()
-		return nil
-	}
-	return fmt.Errorf("unknown Label edge %s", name)
 }
 
 // PropertyMutation represents an operation that mutate the Properties
@@ -4263,8 +3895,8 @@ type ResourcePoolMutation struct {
 	clearedFields                map[string]struct{}
 	resource_type                *int
 	clearedresource_type         bool
-	labels                       *int
-	clearedlabels                bool
+	tags                         map[int]struct{}
+	removedtags                  map[int]struct{}
 	claims                       map[int]struct{}
 	removedclaims                map[int]struct{}
 	allocation_strategy          *int
@@ -4522,43 +4154,46 @@ func (m *ResourcePoolMutation) ResetResourceType() {
 	m.clearedresource_type = false
 }
 
-// SetLabelsID sets the labels edge to Label by id.
-func (m *ResourcePoolMutation) SetLabelsID(id int) {
-	m.labels = &id
+// AddTagIDs adds the tags edge to Tag by ids.
+func (m *ResourcePoolMutation) AddTagIDs(ids ...int) {
+	if m.tags == nil {
+		m.tags = make(map[int]struct{})
+	}
+	for i := range ids {
+		m.tags[ids[i]] = struct{}{}
+	}
 }
 
-// ClearLabels clears the labels edge to Label.
-func (m *ResourcePoolMutation) ClearLabels() {
-	m.clearedlabels = true
+// RemoveTagIDs removes the tags edge to Tag by ids.
+func (m *ResourcePoolMutation) RemoveTagIDs(ids ...int) {
+	if m.removedtags == nil {
+		m.removedtags = make(map[int]struct{})
+	}
+	for i := range ids {
+		m.removedtags[ids[i]] = struct{}{}
+	}
 }
 
-// LabelsCleared returns if the edge labels was cleared.
-func (m *ResourcePoolMutation) LabelsCleared() bool {
-	return m.clearedlabels
-}
-
-// LabelsID returns the labels id in the mutation.
-func (m *ResourcePoolMutation) LabelsID() (id int, exists bool) {
-	if m.labels != nil {
-		return *m.labels, true
+// RemovedTags returns the removed ids of tags.
+func (m *ResourcePoolMutation) RemovedTagsIDs() (ids []int) {
+	for id := range m.removedtags {
+		ids = append(ids, id)
 	}
 	return
 }
 
-// LabelsIDs returns the labels ids in the mutation.
-// Note that ids always returns len(ids) <= 1 for unique edges, and you should use
-// LabelsID instead. It exists only for internal usage by the builders.
-func (m *ResourcePoolMutation) LabelsIDs() (ids []int) {
-	if id := m.labels; id != nil {
-		ids = append(ids, *id)
+// TagsIDs returns the tags ids in the mutation.
+func (m *ResourcePoolMutation) TagsIDs() (ids []int) {
+	for id := range m.tags {
+		ids = append(ids, id)
 	}
 	return
 }
 
-// ResetLabels reset all changes of the "labels" edge.
-func (m *ResourcePoolMutation) ResetLabels() {
-	m.labels = nil
-	m.clearedlabels = false
+// ResetTags reset all changes of the "tags" edge.
+func (m *ResourcePoolMutation) ResetTags() {
+	m.tags = nil
+	m.removedtags = nil
 }
 
 // AddClaimIDs adds the claims edge to Resource by ids.
@@ -4810,8 +4445,8 @@ func (m *ResourcePoolMutation) AddedEdges() []string {
 	if m.resource_type != nil {
 		edges = append(edges, resourcepool.EdgeResourceType)
 	}
-	if m.labels != nil {
-		edges = append(edges, resourcepool.EdgeLabels)
+	if m.tags != nil {
+		edges = append(edges, resourcepool.EdgeTags)
 	}
 	if m.claims != nil {
 		edges = append(edges, resourcepool.EdgeClaims)
@@ -4830,10 +4465,12 @@ func (m *ResourcePoolMutation) AddedIDs(name string) []ent.Value {
 		if id := m.resource_type; id != nil {
 			return []ent.Value{*id}
 		}
-	case resourcepool.EdgeLabels:
-		if id := m.labels; id != nil {
-			return []ent.Value{*id}
+	case resourcepool.EdgeTags:
+		ids := make([]ent.Value, 0, len(m.tags))
+		for id := range m.tags {
+			ids = append(ids, id)
 		}
+		return ids
 	case resourcepool.EdgeClaims:
 		ids := make([]ent.Value, 0, len(m.claims))
 		for id := range m.claims {
@@ -4852,6 +4489,9 @@ func (m *ResourcePoolMutation) AddedIDs(name string) []ent.Value {
 // mutation.
 func (m *ResourcePoolMutation) RemovedEdges() []string {
 	edges := make([]string, 0, 4)
+	if m.removedtags != nil {
+		edges = append(edges, resourcepool.EdgeTags)
+	}
 	if m.removedclaims != nil {
 		edges = append(edges, resourcepool.EdgeClaims)
 	}
@@ -4862,6 +4502,12 @@ func (m *ResourcePoolMutation) RemovedEdges() []string {
 // the given edge name.
 func (m *ResourcePoolMutation) RemovedIDs(name string) []ent.Value {
 	switch name {
+	case resourcepool.EdgeTags:
+		ids := make([]ent.Value, 0, len(m.removedtags))
+		for id := range m.removedtags {
+			ids = append(ids, id)
+		}
+		return ids
 	case resourcepool.EdgeClaims:
 		ids := make([]ent.Value, 0, len(m.removedclaims))
 		for id := range m.removedclaims {
@@ -4879,9 +4525,6 @@ func (m *ResourcePoolMutation) ClearedEdges() []string {
 	if m.clearedresource_type {
 		edges = append(edges, resourcepool.EdgeResourceType)
 	}
-	if m.clearedlabels {
-		edges = append(edges, resourcepool.EdgeLabels)
-	}
 	if m.clearedallocation_strategy {
 		edges = append(edges, resourcepool.EdgeAllocationStrategy)
 	}
@@ -4894,8 +4537,6 @@ func (m *ResourcePoolMutation) EdgeCleared(name string) bool {
 	switch name {
 	case resourcepool.EdgeResourceType:
 		return m.clearedresource_type
-	case resourcepool.EdgeLabels:
-		return m.clearedlabels
 	case resourcepool.EdgeAllocationStrategy:
 		return m.clearedallocation_strategy
 	}
@@ -4908,9 +4549,6 @@ func (m *ResourcePoolMutation) ClearEdge(name string) error {
 	switch name {
 	case resourcepool.EdgeResourceType:
 		m.ClearResourceType()
-		return nil
-	case resourcepool.EdgeLabels:
-		m.ClearLabels()
 		return nil
 	case resourcepool.EdgeAllocationStrategy:
 		m.ClearAllocationStrategy()
@@ -4927,8 +4565,8 @@ func (m *ResourcePoolMutation) ResetEdge(name string) error {
 	case resourcepool.EdgeResourceType:
 		m.ResetResourceType()
 		return nil
-	case resourcepool.EdgeLabels:
-		m.ResetLabels()
+	case resourcepool.EdgeTags:
+		m.ResetTags()
 		return nil
 	case resourcepool.EdgeClaims:
 		m.ResetClaims()
@@ -5371,4 +5009,372 @@ func (m *ResourceTypeMutation) ResetEdge(name string) error {
 		return nil
 	}
 	return fmt.Errorf("unknown ResourceType edge %s", name)
+}
+
+// TagMutation represents an operation that mutate the Tags
+// nodes in the graph.
+type TagMutation struct {
+	config
+	op            Op
+	typ           string
+	id            *int
+	tag           *string
+	clearedFields map[string]struct{}
+	pools         map[int]struct{}
+	removedpools  map[int]struct{}
+	done          bool
+	oldValue      func(context.Context) (*Tag, error)
+}
+
+var _ ent.Mutation = (*TagMutation)(nil)
+
+// tagOption allows to manage the mutation configuration using functional options.
+type tagOption func(*TagMutation)
+
+// newTagMutation creates new mutation for $n.Name.
+func newTagMutation(c config, op Op, opts ...tagOption) *TagMutation {
+	m := &TagMutation{
+		config:        c,
+		op:            op,
+		typ:           TypeTag,
+		clearedFields: make(map[string]struct{}),
+	}
+	for _, opt := range opts {
+		opt(m)
+	}
+	return m
+}
+
+// withTagID sets the id field of the mutation.
+func withTagID(id int) tagOption {
+	return func(m *TagMutation) {
+		var (
+			err   error
+			once  sync.Once
+			value *Tag
+		)
+		m.oldValue = func(ctx context.Context) (*Tag, error) {
+			once.Do(func() {
+				if m.done {
+					err = fmt.Errorf("querying old values post mutation is not allowed")
+				} else {
+					value, err = m.Client().Tag.Get(ctx, id)
+				}
+			})
+			return value, err
+		}
+		m.id = &id
+	}
+}
+
+// withTag sets the old Tag of the mutation.
+func withTag(node *Tag) tagOption {
+	return func(m *TagMutation) {
+		m.oldValue = func(context.Context) (*Tag, error) {
+			return node, nil
+		}
+		m.id = &node.ID
+	}
+}
+
+// Client returns a new `ent.Client` from the mutation. If the mutation was
+// executed in a transaction (ent.Tx), a transactional client is returned.
+func (m TagMutation) Client() *Client {
+	client := &Client{config: m.config}
+	client.init()
+	return client
+}
+
+// Tx returns an `ent.Tx` for mutations that were executed in transactions;
+// it returns an error otherwise.
+func (m TagMutation) Tx() (*Tx, error) {
+	if _, ok := m.driver.(*txDriver); !ok {
+		return nil, fmt.Errorf("ent: mutation is not running in a transaction")
+	}
+	tx := &Tx{config: m.config}
+	tx.init()
+	return tx, nil
+}
+
+// ID returns the id value in the mutation. Note that, the id
+// is available only if it was provided to the builder.
+func (m *TagMutation) ID() (id int, exists bool) {
+	if m.id == nil {
+		return
+	}
+	return *m.id, true
+}
+
+// SetTag sets the tag field.
+func (m *TagMutation) SetTag(s string) {
+	m.tag = &s
+}
+
+// Tag returns the tag value in the mutation.
+func (m *TagMutation) Tag() (r string, exists bool) {
+	v := m.tag
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldTag returns the old tag value of the Tag.
+// If the Tag object wasn't provided to the builder, the object is fetched
+// from the database.
+// An error is returned if the mutation operation is not UpdateOne, or database query fails.
+func (m *TagMutation) OldTag(ctx context.Context) (v string, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, fmt.Errorf("OldTag is allowed only on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, fmt.Errorf("OldTag requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldTag: %w", err)
+	}
+	return oldValue.Tag, nil
+}
+
+// ResetTag reset all changes of the "tag" field.
+func (m *TagMutation) ResetTag() {
+	m.tag = nil
+}
+
+// AddPoolIDs adds the pools edge to ResourcePool by ids.
+func (m *TagMutation) AddPoolIDs(ids ...int) {
+	if m.pools == nil {
+		m.pools = make(map[int]struct{})
+	}
+	for i := range ids {
+		m.pools[ids[i]] = struct{}{}
+	}
+}
+
+// RemovePoolIDs removes the pools edge to ResourcePool by ids.
+func (m *TagMutation) RemovePoolIDs(ids ...int) {
+	if m.removedpools == nil {
+		m.removedpools = make(map[int]struct{})
+	}
+	for i := range ids {
+		m.removedpools[ids[i]] = struct{}{}
+	}
+}
+
+// RemovedPools returns the removed ids of pools.
+func (m *TagMutation) RemovedPoolsIDs() (ids []int) {
+	for id := range m.removedpools {
+		ids = append(ids, id)
+	}
+	return
+}
+
+// PoolsIDs returns the pools ids in the mutation.
+func (m *TagMutation) PoolsIDs() (ids []int) {
+	for id := range m.pools {
+		ids = append(ids, id)
+	}
+	return
+}
+
+// ResetPools reset all changes of the "pools" edge.
+func (m *TagMutation) ResetPools() {
+	m.pools = nil
+	m.removedpools = nil
+}
+
+// Op returns the operation name.
+func (m *TagMutation) Op() Op {
+	return m.op
+}
+
+// Type returns the node type of this mutation (Tag).
+func (m *TagMutation) Type() string {
+	return m.typ
+}
+
+// Fields returns all fields that were changed during
+// this mutation. Note that, in order to get all numeric
+// fields that were in/decremented, call AddedFields().
+func (m *TagMutation) Fields() []string {
+	fields := make([]string, 0, 1)
+	if m.tag != nil {
+		fields = append(fields, tag.FieldTag)
+	}
+	return fields
+}
+
+// Field returns the value of a field with the given name.
+// The second boolean value indicates that this field was
+// not set, or was not define in the schema.
+func (m *TagMutation) Field(name string) (ent.Value, bool) {
+	switch name {
+	case tag.FieldTag:
+		return m.Tag()
+	}
+	return nil, false
+}
+
+// OldField returns the old value of the field from the database.
+// An error is returned if the mutation operation is not UpdateOne,
+// or the query to the database was failed.
+func (m *TagMutation) OldField(ctx context.Context, name string) (ent.Value, error) {
+	switch name {
+	case tag.FieldTag:
+		return m.OldTag(ctx)
+	}
+	return nil, fmt.Errorf("unknown Tag field %s", name)
+}
+
+// SetField sets the value for the given name. It returns an
+// error if the field is not defined in the schema, or if the
+// type mismatch the field type.
+func (m *TagMutation) SetField(name string, value ent.Value) error {
+	switch name {
+	case tag.FieldTag:
+		v, ok := value.(string)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetTag(v)
+		return nil
+	}
+	return fmt.Errorf("unknown Tag field %s", name)
+}
+
+// AddedFields returns all numeric fields that were incremented
+// or decremented during this mutation.
+func (m *TagMutation) AddedFields() []string {
+	return nil
+}
+
+// AddedField returns the numeric value that was in/decremented
+// from a field with the given name. The second value indicates
+// that this field was not set, or was not define in the schema.
+func (m *TagMutation) AddedField(name string) (ent.Value, bool) {
+	return nil, false
+}
+
+// AddField adds the value for the given name. It returns an
+// error if the field is not defined in the schema, or if the
+// type mismatch the field type.
+func (m *TagMutation) AddField(name string, value ent.Value) error {
+	switch name {
+	}
+	return fmt.Errorf("unknown Tag numeric field %s", name)
+}
+
+// ClearedFields returns all nullable fields that were cleared
+// during this mutation.
+func (m *TagMutation) ClearedFields() []string {
+	return nil
+}
+
+// FieldCleared returns a boolean indicates if this field was
+// cleared in this mutation.
+func (m *TagMutation) FieldCleared(name string) bool {
+	_, ok := m.clearedFields[name]
+	return ok
+}
+
+// ClearField clears the value for the given name. It returns an
+// error if the field is not defined in the schema.
+func (m *TagMutation) ClearField(name string) error {
+	return fmt.Errorf("unknown Tag nullable field %s", name)
+}
+
+// ResetField resets all changes in the mutation regarding the
+// given field name. It returns an error if the field is not
+// defined in the schema.
+func (m *TagMutation) ResetField(name string) error {
+	switch name {
+	case tag.FieldTag:
+		m.ResetTag()
+		return nil
+	}
+	return fmt.Errorf("unknown Tag field %s", name)
+}
+
+// AddedEdges returns all edge names that were set/added in this
+// mutation.
+func (m *TagMutation) AddedEdges() []string {
+	edges := make([]string, 0, 1)
+	if m.pools != nil {
+		edges = append(edges, tag.EdgePools)
+	}
+	return edges
+}
+
+// AddedIDs returns all ids (to other nodes) that were added for
+// the given edge name.
+func (m *TagMutation) AddedIDs(name string) []ent.Value {
+	switch name {
+	case tag.EdgePools:
+		ids := make([]ent.Value, 0, len(m.pools))
+		for id := range m.pools {
+			ids = append(ids, id)
+		}
+		return ids
+	}
+	return nil
+}
+
+// RemovedEdges returns all edge names that were removed in this
+// mutation.
+func (m *TagMutation) RemovedEdges() []string {
+	edges := make([]string, 0, 1)
+	if m.removedpools != nil {
+		edges = append(edges, tag.EdgePools)
+	}
+	return edges
+}
+
+// RemovedIDs returns all ids (to other nodes) that were removed for
+// the given edge name.
+func (m *TagMutation) RemovedIDs(name string) []ent.Value {
+	switch name {
+	case tag.EdgePools:
+		ids := make([]ent.Value, 0, len(m.removedpools))
+		for id := range m.removedpools {
+			ids = append(ids, id)
+		}
+		return ids
+	}
+	return nil
+}
+
+// ClearedEdges returns all edge names that were cleared in this
+// mutation.
+func (m *TagMutation) ClearedEdges() []string {
+	edges := make([]string, 0, 1)
+	return edges
+}
+
+// EdgeCleared returns a boolean indicates if this edge was
+// cleared in this mutation.
+func (m *TagMutation) EdgeCleared(name string) bool {
+	switch name {
+	}
+	return false
+}
+
+// ClearEdge clears the value for the given name. It returns an
+// error if the edge name is not defined in the schema.
+func (m *TagMutation) ClearEdge(name string) error {
+	switch name {
+	}
+	return fmt.Errorf("unknown Tag unique edge %s", name)
+}
+
+// ResetEdge resets all changes in the mutation regarding the
+// given edge name. It returns an error if the edge is not
+// defined in the schema.
+func (m *TagMutation) ResetEdge(name string) error {
+	switch name {
+	case tag.EdgePools:
+		m.ResetPools()
+		return nil
+	}
+	return fmt.Errorf("unknown Tag edge %s", name)
 }

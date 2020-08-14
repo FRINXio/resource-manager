@@ -9,9 +9,6 @@ import (
 // AllocationStrategy is the predicate function for allocationstrategy builders.
 type AllocationStrategy func(*sql.Selector)
 
-// Label is the predicate function for label builders.
-type Label func(*sql.Selector)
-
 // Property is the predicate function for property builders.
 type Property func(*sql.Selector)
 
@@ -26,3 +23,6 @@ type ResourcePool func(*sql.Selector)
 
 // ResourceType is the predicate function for resourcetype builders.
 type ResourceType func(*sql.Selector)
+
+// Tag is the predicate function for tag builders.
+type Tag func(*sql.Selector)

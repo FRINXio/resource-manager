@@ -9,3 +9,11 @@ type ResourceInput struct {
 type ResourcePoolInput struct {
 	ResourcePoolName string `json:"ResourcePoolName"`
 }
+
+type TagAnd struct {
+	Tags []string `json:"tags"`
+}
+
+type TagOr struct {
+	Tags []*TagAnd `json:"tags"`
+}

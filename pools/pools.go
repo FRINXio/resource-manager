@@ -9,23 +9,14 @@ import (
 	"github.com/pkg/errors"
 )
 
-type PoolLabel struct {
-	PoolLabel string
-}
-
 // Pool is a resource provider
 type Pool interface {
-	LabeledPool
-	ClaimResource(map[string]interface{}) (*ent.Resource, error)
+	ClaimResource(userInput map[string]interface{}) (*ent.Resource, error)
 	FreeResource(RawResourceProps) error
 	QueryResource(RawResourceProps) (*ent.Resource, error)
 	QueryResources() (ent.Resources, error)
 	Destroy() error
 	ResourceType() (*ent.ResourceType, error)
-}
-
-type LabeledPool interface {
-	AddLabel(label PoolLabel) error
 }
 
 type poolBase struct {

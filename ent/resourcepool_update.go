@@ -10,11 +10,11 @@ import (
 	"github.com/facebookincubator/ent/dialect/sql/sqlgraph"
 	"github.com/facebookincubator/ent/schema/field"
 	"github.com/net-auto/resourceManager/ent/allocationstrategy"
-	"github.com/net-auto/resourceManager/ent/label"
 	"github.com/net-auto/resourceManager/ent/predicate"
 	"github.com/net-auto/resourceManager/ent/resource"
 	"github.com/net-auto/resourceManager/ent/resourcepool"
 	"github.com/net-auto/resourceManager/ent/resourcetype"
+	"github.com/net-auto/resourceManager/ent/tag"
 )
 
 // ResourcePoolUpdate is the builder for updating ResourcePool entities.
@@ -83,23 +83,19 @@ func (rpu *ResourcePoolUpdate) SetResourceType(r *ResourceType) *ResourcePoolUpd
 	return rpu.SetResourceTypeID(r.ID)
 }
 
-// SetLabelsID sets the labels edge to Label by id.
-func (rpu *ResourcePoolUpdate) SetLabelsID(id int) *ResourcePoolUpdate {
-	rpu.mutation.SetLabelsID(id)
+// AddTagIDs adds the tags edge to Tag by ids.
+func (rpu *ResourcePoolUpdate) AddTagIDs(ids ...int) *ResourcePoolUpdate {
+	rpu.mutation.AddTagIDs(ids...)
 	return rpu
 }
 
-// SetNillableLabelsID sets the labels edge to Label by id if the given value is not nil.
-func (rpu *ResourcePoolUpdate) SetNillableLabelsID(id *int) *ResourcePoolUpdate {
-	if id != nil {
-		rpu = rpu.SetLabelsID(*id)
+// AddTags adds the tags edges to Tag.
+func (rpu *ResourcePoolUpdate) AddTags(t ...*Tag) *ResourcePoolUpdate {
+	ids := make([]int, len(t))
+	for i := range t {
+		ids[i] = t[i].ID
 	}
-	return rpu
-}
-
-// SetLabels sets the labels edge to Label.
-func (rpu *ResourcePoolUpdate) SetLabels(l *Label) *ResourcePoolUpdate {
-	return rpu.SetLabelsID(l.ID)
+	return rpu.AddTagIDs(ids...)
 }
 
 // AddClaimIDs adds the claims edge to Resource by ids.
@@ -147,10 +143,19 @@ func (rpu *ResourcePoolUpdate) ClearResourceType() *ResourcePoolUpdate {
 	return rpu
 }
 
-// ClearLabels clears the labels edge to Label.
-func (rpu *ResourcePoolUpdate) ClearLabels() *ResourcePoolUpdate {
-	rpu.mutation.ClearLabels()
+// RemoveTagIDs removes the tags edge to Tag by ids.
+func (rpu *ResourcePoolUpdate) RemoveTagIDs(ids ...int) *ResourcePoolUpdate {
+	rpu.mutation.RemoveTagIDs(ids...)
 	return rpu
+}
+
+// RemoveTags removes tags edges to Tag.
+func (rpu *ResourcePoolUpdate) RemoveTags(t ...*Tag) *ResourcePoolUpdate {
+	ids := make([]int, len(t))
+	for i := range t {
+		ids[i] = t[i].ID
+	}
+	return rpu.RemoveTagIDs(ids...)
 }
 
 // RemoveClaimIDs removes the claims edge to Resource by ids.
@@ -317,33 +322,36 @@ func (rpu *ResourcePoolUpdate) sqlSave(ctx context.Context) (n int, err error) {
 		}
 		_spec.Edges.Add = append(_spec.Edges.Add, edge)
 	}
-	if rpu.mutation.LabelsCleared() {
+	if nodes := rpu.mutation.RemovedTagsIDs(); len(nodes) > 0 {
 		edge := &sqlgraph.EdgeSpec{
-			Rel:     sqlgraph.M2O,
+			Rel:     sqlgraph.M2M,
 			Inverse: true,
-			Table:   resourcepool.LabelsTable,
-			Columns: []string{resourcepool.LabelsColumn},
+			Table:   resourcepool.TagsTable,
+			Columns: resourcepool.TagsPrimaryKey,
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
 				IDSpec: &sqlgraph.FieldSpec{
 					Type:   field.TypeInt,
-					Column: label.FieldID,
+					Column: tag.FieldID,
 				},
 			},
 		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
 		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
 	}
-	if nodes := rpu.mutation.LabelsIDs(); len(nodes) > 0 {
+	if nodes := rpu.mutation.TagsIDs(); len(nodes) > 0 {
 		edge := &sqlgraph.EdgeSpec{
-			Rel:     sqlgraph.M2O,
+			Rel:     sqlgraph.M2M,
 			Inverse: true,
-			Table:   resourcepool.LabelsTable,
-			Columns: []string{resourcepool.LabelsColumn},
+			Table:   resourcepool.TagsTable,
+			Columns: resourcepool.TagsPrimaryKey,
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
 				IDSpec: &sqlgraph.FieldSpec{
 					Type:   field.TypeInt,
-					Column: label.FieldID,
+					Column: tag.FieldID,
 				},
 			},
 		}
@@ -495,23 +503,19 @@ func (rpuo *ResourcePoolUpdateOne) SetResourceType(r *ResourceType) *ResourcePoo
 	return rpuo.SetResourceTypeID(r.ID)
 }
 
-// SetLabelsID sets the labels edge to Label by id.
-func (rpuo *ResourcePoolUpdateOne) SetLabelsID(id int) *ResourcePoolUpdateOne {
-	rpuo.mutation.SetLabelsID(id)
+// AddTagIDs adds the tags edge to Tag by ids.
+func (rpuo *ResourcePoolUpdateOne) AddTagIDs(ids ...int) *ResourcePoolUpdateOne {
+	rpuo.mutation.AddTagIDs(ids...)
 	return rpuo
 }
 
-// SetNillableLabelsID sets the labels edge to Label by id if the given value is not nil.
-func (rpuo *ResourcePoolUpdateOne) SetNillableLabelsID(id *int) *ResourcePoolUpdateOne {
-	if id != nil {
-		rpuo = rpuo.SetLabelsID(*id)
+// AddTags adds the tags edges to Tag.
+func (rpuo *ResourcePoolUpdateOne) AddTags(t ...*Tag) *ResourcePoolUpdateOne {
+	ids := make([]int, len(t))
+	for i := range t {
+		ids[i] = t[i].ID
 	}
-	return rpuo
-}
-
-// SetLabels sets the labels edge to Label.
-func (rpuo *ResourcePoolUpdateOne) SetLabels(l *Label) *ResourcePoolUpdateOne {
-	return rpuo.SetLabelsID(l.ID)
+	return rpuo.AddTagIDs(ids...)
 }
 
 // AddClaimIDs adds the claims edge to Resource by ids.
@@ -559,10 +563,19 @@ func (rpuo *ResourcePoolUpdateOne) ClearResourceType() *ResourcePoolUpdateOne {
 	return rpuo
 }
 
-// ClearLabels clears the labels edge to Label.
-func (rpuo *ResourcePoolUpdateOne) ClearLabels() *ResourcePoolUpdateOne {
-	rpuo.mutation.ClearLabels()
+// RemoveTagIDs removes the tags edge to Tag by ids.
+func (rpuo *ResourcePoolUpdateOne) RemoveTagIDs(ids ...int) *ResourcePoolUpdateOne {
+	rpuo.mutation.RemoveTagIDs(ids...)
 	return rpuo
+}
+
+// RemoveTags removes tags edges to Tag.
+func (rpuo *ResourcePoolUpdateOne) RemoveTags(t ...*Tag) *ResourcePoolUpdateOne {
+	ids := make([]int, len(t))
+	for i := range t {
+		ids[i] = t[i].ID
+	}
+	return rpuo.RemoveTagIDs(ids...)
 }
 
 // RemoveClaimIDs removes the claims edge to Resource by ids.
@@ -727,33 +740,36 @@ func (rpuo *ResourcePoolUpdateOne) sqlSave(ctx context.Context) (rp *ResourcePoo
 		}
 		_spec.Edges.Add = append(_spec.Edges.Add, edge)
 	}
-	if rpuo.mutation.LabelsCleared() {
+	if nodes := rpuo.mutation.RemovedTagsIDs(); len(nodes) > 0 {
 		edge := &sqlgraph.EdgeSpec{
-			Rel:     sqlgraph.M2O,
+			Rel:     sqlgraph.M2M,
 			Inverse: true,
-			Table:   resourcepool.LabelsTable,
-			Columns: []string{resourcepool.LabelsColumn},
+			Table:   resourcepool.TagsTable,
+			Columns: resourcepool.TagsPrimaryKey,
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
 				IDSpec: &sqlgraph.FieldSpec{
 					Type:   field.TypeInt,
-					Column: label.FieldID,
+					Column: tag.FieldID,
 				},
 			},
 		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
 		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
 	}
-	if nodes := rpuo.mutation.LabelsIDs(); len(nodes) > 0 {
+	if nodes := rpuo.mutation.TagsIDs(); len(nodes) > 0 {
 		edge := &sqlgraph.EdgeSpec{
-			Rel:     sqlgraph.M2O,
+			Rel:     sqlgraph.M2M,
 			Inverse: true,
-			Table:   resourcepool.LabelsTable,
-			Columns: []string{resourcepool.LabelsColumn},
+			Table:   resourcepool.TagsTable,
+			Columns: resourcepool.TagsPrimaryKey,
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
 				IDSpec: &sqlgraph.FieldSpec{
 					Type:   field.TypeInt,
-					Column: label.FieldID,
+					Column: tag.FieldID,
 				},
 			},
 		}

@@ -22,8 +22,8 @@ const (
 
 	// EdgeResourceType holds the string denoting the resource_type edge name in mutations.
 	EdgeResourceType = "resource_type"
-	// EdgeLabels holds the string denoting the labels edge name in mutations.
-	EdgeLabels = "labels"
+	// EdgeTags holds the string denoting the tags edge name in mutations.
+	EdgeTags = "tags"
 	// EdgeClaims holds the string denoting the claims edge name in mutations.
 	EdgeClaims = "claims"
 	// EdgeAllocationStrategy holds the string denoting the allocation_strategy edge name in mutations.
@@ -38,13 +38,11 @@ const (
 	ResourceTypeInverseTable = "resource_types"
 	// ResourceTypeColumn is the table column denoting the resource_type relation/edge.
 	ResourceTypeColumn = "resource_type_pools"
-	// LabelsTable is the table the holds the labels relation/edge.
-	LabelsTable = "resource_pools"
-	// LabelsInverseTable is the table name for the Label entity.
-	// It exists in this package in order to avoid circular dependency with the "label" package.
-	LabelsInverseTable = "labels"
-	// LabelsColumn is the table column denoting the labels relation/edge.
-	LabelsColumn = "label_pools"
+	// TagsTable is the table the holds the tags relation/edge. The primary key declared below.
+	TagsTable = "tag_pools"
+	// TagsInverseTable is the table name for the Tag entity.
+	// It exists in this package in order to avoid circular dependency with the "tag" package.
+	TagsInverseTable = "tags"
 	// ClaimsTable is the table the holds the claims relation/edge.
 	ClaimsTable = "resources"
 	// ClaimsInverseTable is the table name for the Resource entity.
@@ -71,10 +69,15 @@ var Columns = []string{
 
 // ForeignKeys holds the SQL foreign-keys that are owned by the ResourcePool type.
 var ForeignKeys = []string{
-	"label_pools",
 	"resource_pool_allocation_strategy",
 	"resource_type_pools",
 }
+
+var (
+	// TagsPrimaryKey and TagsColumn2 are the table columns denoting the
+	// primary key for the tags relation (M2M).
+	TagsPrimaryKey = []string{"tag_id", "resource_pool_id"}
+)
 
 var (
 	// NameValidator is a validator for the "name" field. It is called by the builders before save.

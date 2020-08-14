@@ -368,25 +368,25 @@ func HasResourceTypeWith(preds ...predicate.ResourceType) predicate.ResourcePool
 	})
 }
 
-// HasLabels applies the HasEdge predicate on the "labels" edge.
-func HasLabels() predicate.ResourcePool {
+// HasTags applies the HasEdge predicate on the "tags" edge.
+func HasTags() predicate.ResourcePool {
 	return predicate.ResourcePool(func(s *sql.Selector) {
 		step := sqlgraph.NewStep(
 			sqlgraph.From(Table, FieldID),
-			sqlgraph.To(LabelsTable, FieldID),
-			sqlgraph.Edge(sqlgraph.M2O, true, LabelsTable, LabelsColumn),
+			sqlgraph.To(TagsTable, FieldID),
+			sqlgraph.Edge(sqlgraph.M2M, true, TagsTable, TagsPrimaryKey...),
 		)
 		sqlgraph.HasNeighbors(s, step)
 	})
 }
 
-// HasLabelsWith applies the HasEdge predicate on the "labels" edge with a given conditions (other predicates).
-func HasLabelsWith(preds ...predicate.Label) predicate.ResourcePool {
+// HasTagsWith applies the HasEdge predicate on the "tags" edge with a given conditions (other predicates).
+func HasTagsWith(preds ...predicate.Tag) predicate.ResourcePool {
 	return predicate.ResourcePool(func(s *sql.Selector) {
 		step := sqlgraph.NewStep(
 			sqlgraph.From(Table, FieldID),
-			sqlgraph.To(LabelsInverseTable, FieldID),
-			sqlgraph.Edge(sqlgraph.M2O, true, LabelsTable, LabelsColumn),
+			sqlgraph.To(TagsInverseTable, FieldID),
+			sqlgraph.Edge(sqlgraph.M2M, true, TagsTable, TagsPrimaryKey...),
 		)
 		sqlgraph.HasNeighborsWith(s, step, func(s *sql.Selector) {
 			for _, p := range preds {

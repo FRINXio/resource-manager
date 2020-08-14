@@ -234,30 +234,6 @@ func (f AllocationStrategyMutationRuleFunc) EvalMutation(ctx context.Context, m 
 	return Denyf("ent/privacy: unexpected mutation type %T, expect *ent.AllocationStrategyMutation", m)
 }
 
-// The LabelQueryRuleFunc type is an adapter to allow the use of ordinary
-// functions as a query rule.
-type LabelQueryRuleFunc func(context.Context, *ent.LabelQuery) error
-
-// EvalQuery return f(ctx, q).
-func (f LabelQueryRuleFunc) EvalQuery(ctx context.Context, q ent.Query) error {
-	if q, ok := q.(*ent.LabelQuery); ok {
-		return f(ctx, q)
-	}
-	return Denyf("ent/privacy: unexpected query type %T, expect *ent.LabelQuery", q)
-}
-
-// The LabelMutationRuleFunc type is an adapter to allow the use of ordinary
-// functions as a mutation rule.
-type LabelMutationRuleFunc func(context.Context, *ent.LabelMutation) error
-
-// EvalMutation calls f(ctx, m).
-func (f LabelMutationRuleFunc) EvalMutation(ctx context.Context, m ent.Mutation) error {
-	if m, ok := m.(*ent.LabelMutation); ok {
-		return f(ctx, m)
-	}
-	return Denyf("ent/privacy: unexpected mutation type %T, expect *ent.LabelMutation", m)
-}
-
 // The PropertyQueryRuleFunc type is an adapter to allow the use of ordinary
 // functions as a query rule.
 type PropertyQueryRuleFunc func(context.Context, *ent.PropertyQuery) error
@@ -376,4 +352,28 @@ func (f ResourceTypeMutationRuleFunc) EvalMutation(ctx context.Context, m ent.Mu
 		return f(ctx, m)
 	}
 	return Denyf("ent/privacy: unexpected mutation type %T, expect *ent.ResourceTypeMutation", m)
+}
+
+// The TagQueryRuleFunc type is an adapter to allow the use of ordinary
+// functions as a query rule.
+type TagQueryRuleFunc func(context.Context, *ent.TagQuery) error
+
+// EvalQuery return f(ctx, q).
+func (f TagQueryRuleFunc) EvalQuery(ctx context.Context, q ent.Query) error {
+	if q, ok := q.(*ent.TagQuery); ok {
+		return f(ctx, q)
+	}
+	return Denyf("ent/privacy: unexpected query type %T, expect *ent.TagQuery", q)
+}
+
+// The TagMutationRuleFunc type is an adapter to allow the use of ordinary
+// functions as a mutation rule.
+type TagMutationRuleFunc func(context.Context, *ent.TagMutation) error
+
+// EvalMutation calls f(ctx, m).
+func (f TagMutationRuleFunc) EvalMutation(ctx context.Context, m ent.Mutation) error {
+	if m, ok := m.(*ent.TagMutation); ok {
+		return f(ctx, m)
+	}
+	return Denyf("ent/privacy: unexpected mutation type %T, expect *ent.TagMutation", m)
 }

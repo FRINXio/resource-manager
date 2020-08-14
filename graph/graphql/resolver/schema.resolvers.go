@@ -8,11 +8,50 @@ import (
 
 	"github.com/net-auto/resourceManager/ent"
 	"github.com/net-auto/resourceManager/ent/allocationstrategy"
+	"github.com/net-auto/resourceManager/ent/predicate"
+	resourcePool "github.com/net-auto/resourceManager/ent/resourcepool"
+	tagWhere "github.com/net-auto/resourceManager/ent/tag"
 	"github.com/net-auto/resourceManager/graph/graphql/generated"
 	"github.com/net-auto/resourceManager/graph/graphql/model"
 	p "github.com/net-auto/resourceManager/pools"
 	"github.com/vektah/gqlparser/v2/gqlerror"
 )
+
+func (r *mutationResolver) CreateTag(ctx context.Context, tag string) (*ent.Tag, error) {
+	var client = r.ClientFrom(ctx)
+	tagEnt, err := client.Tag.Create().SetTag(tag).Save(ctx)
+	if err != nil {
+		return nil, gqlerror.Errorf("Unable to create tag: %v", err)
+	}
+	return tagEnt, err
+}
+
+func (r *mutationResolver) UpdateTag(ctx context.Context, tagID int, tag string) (*ent.Tag, error) {
+	var client = r.ClientFrom(ctx)
+	tagEnt, err := client.Tag.UpdateOneID(tagID).SetTag(tag).Save(ctx)
+	if err != nil {
+		return nil, gqlerror.Errorf("Unable to update tag: %v", err)
+	}
+	return tagEnt, nil
+}
+
+func (r *mutationResolver) DeleteTag(ctx context.Context, tagID int) (*ent.Tag, error) {
+	var client = r.ClientFrom(ctx)
+	err := client.Tag.DeleteOneID(tagID).Exec(ctx)
+	if err != nil {
+		return nil, gqlerror.Errorf("Unable to delete tag: %v", err)
+	}
+	return nil, nil
+}
+
+func (r *mutationResolver) TagPool(ctx context.Context, tagID int, poolID int) (*ent.Tag, error) {
+	var client = r.ClientFrom(ctx)
+	tag, err := client.Tag.UpdateOneID(tagID).AddPoolIDs(poolID).Save(ctx)
+	if err != nil {
+		return nil, gqlerror.Errorf("Unable to tag pool: %v", err)
+	}
+	return tag, nil
+}
 
 func (r *mutationResolver) CreateAllocationStrategy(ctx context.Context, name string, script string, lang allocationstrategy.Lang) (*ent.AllocationStrategy, error) {
 	var client = r.ClientFrom(ctx)
@@ -270,6 +309,44 @@ func (r *queryResolver) QueryResourcePools(ctx context.Context) ([]*ent.Resource
 	} else {
 		return resourcePools, nil
 	}
+}
+
+func (r *queryResolver) SearchPoolsByTags(ctx context.Context, tags *model.TagOr) ([]*ent.ResourcePool, error) {
+	var client = r.ClientFrom(ctx)
+	var predicateOr predicate.ResourcePool
+
+	// TODO make sure all tags exist
+
+	for _, tagOr := range tags.Tags {
+		// Join queries where tag equals to input by AND operation
+		predicateAnd := resourcePool.HasTags()
+		for _, tagAnd := range tagOr.Tags {
+			predicateAnd = resourcePool.And(predicateAnd, resourcePool.HasTagsWith(tagWhere.Tag(tagAnd)))
+		}
+
+		// Join multiple AND tag queries with OR
+		if predicateOr == nil {
+			// If this is the first AND query, use the AND query as a starting point
+			predicateOr = predicateAnd
+		} else {
+			predicateOr = resourcePool.Or(predicateOr, predicateAnd)
+		}
+	}
+
+	matchedPools, err := client.ResourcePool.Query().Where(predicateOr).All(ctx)
+	if err != nil {
+		return nil, gqlerror.Errorf("Unable to query pools: %v", err)
+	}
+	return matchedPools, nil
+}
+
+func (r *queryResolver) QueryTags(ctx context.Context) ([]*ent.Tag, error) {
+	var client = r.ClientFrom(ctx)
+	tags, err := client.Tag.Query().All(ctx)
+	if err != nil {
+		return nil, gqlerror.Errorf("Unable to query tags: %v", err)
+	}
+	return tags, nil
 }
 
 func (r *resourceResolver) Properties(ctx context.Context, obj *ent.Resource) (map[string]interface{}, error) {

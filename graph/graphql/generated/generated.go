@@ -55,11 +55,6 @@ type ComplexityRoot struct {
 		Script func(childComplexity int) int
 	}
 
-	Label struct {
-		ID   func(childComplexity int) int
-		Labl func(childComplexity int) int
-	}
-
 	Mutation struct {
 		ClaimResource            func(childComplexity int, poolID int, userInput map[string]interface{}) int
 		CreateAllocatingPool     func(childComplexity int, resourceTypeID int, poolName string, allocationStrategyID int, poolDealocationSafetyPeriod int) int
@@ -67,12 +62,16 @@ type ComplexityRoot struct {
 		CreateResourceType       func(childComplexity int, resourceName string, resourceProperties map[string]interface{}) int
 		CreateSetPool            func(childComplexity int, resourceTypeID int, poolName string, poolDealocationSafetyPeriod int, poolValues []map[string]interface{}) int
 		CreateSingletonPool      func(childComplexity int, resourceTypeID int, poolName string, poolValues []map[string]interface{}) int
+		CreateTag                func(childComplexity int, tag string) int
 		DeleteAllocationStrategy func(childComplexity int, allocationStrategyID int) int
 		DeleteResourcePool       func(childComplexity int, resourcePoolID int) int
 		DeleteResourceType       func(childComplexity int, resourceTypeID int) int
+		DeleteTag                func(childComplexity int, tagID int) int
 		FreeResource             func(childComplexity int, input map[string]interface{}, poolID int) int
+		TagPool                  func(childComplexity int, tagID int, poolID int) int
 		TestAllocationStrategy   func(childComplexity int, allocationStrategyID int, resourcePool model.ResourcePoolInput, currentResources []*model.ResourceInput, userInput map[string]interface{}) int
 		UpdateResourceTypeName   func(childComplexity int, resourceTypeID int, resourceName string) int
+		UpdateTag                func(childComplexity int, tagID int, tag string) int
 	}
 
 	PropertyType struct {
@@ -92,6 +91,8 @@ type ComplexityRoot struct {
 		QueryResourcePools        func(childComplexity int) int
 		QueryResourceTypes        func(childComplexity int) int
 		QueryResources            func(childComplexity int, poolID int) int
+		QueryTags                 func(childComplexity int) int
+		SearchPoolsByTags         func(childComplexity int, tags *model.TagOr) int
 	}
 
 	Resource struct {
@@ -108,8 +109,8 @@ type ComplexityRoot struct {
 
 	ResourcePoolEdges struct {
 		AllocationStrategy func(childComplexity int) int
-		Labels             func(childComplexity int) int
 		ResourceType       func(childComplexity int) int
+		Tags               func(childComplexity int) int
 	}
 
 	ResourceType struct {
@@ -122,9 +123,23 @@ type ComplexityRoot struct {
 		Pools         func(childComplexity int) int
 		PropertyTypes func(childComplexity int) int
 	}
+
+	Tag struct {
+		Edges func(childComplexity int) int
+		ID    func(childComplexity int) int
+		Tag   func(childComplexity int) int
+	}
+
+	TagEdges struct {
+		Pools func(childComplexity int) int
+	}
 }
 
 type MutationResolver interface {
+	CreateTag(ctx context.Context, tag string) (*ent.Tag, error)
+	UpdateTag(ctx context.Context, tagID int, tag string) (*ent.Tag, error)
+	DeleteTag(ctx context.Context, tagID int) (*ent.Tag, error)
+	TagPool(ctx context.Context, tagID int, poolID int) (*ent.Tag, error)
 	CreateAllocationStrategy(ctx context.Context, name string, script string, lang allocationstrategy.Lang) (*ent.AllocationStrategy, error)
 	DeleteAllocationStrategy(ctx context.Context, allocationStrategyID int) (*ent.AllocationStrategy, error)
 	TestAllocationStrategy(ctx context.Context, allocationStrategyID int, resourcePool model.ResourcePoolInput, currentResources []*model.ResourceInput, userInput map[string]interface{}) (map[string]interface{}, error)
@@ -148,6 +163,8 @@ type QueryResolver interface {
 	QueryAllocationStrategies(ctx context.Context) ([]*ent.AllocationStrategy, error)
 	QueryResourceTypes(ctx context.Context) ([]*ent.ResourceType, error)
 	QueryResourcePools(ctx context.Context) ([]*ent.ResourcePool, error)
+	SearchPoolsByTags(ctx context.Context, tags *model.TagOr) ([]*ent.ResourcePool, error)
+	QueryTags(ctx context.Context) ([]*ent.Tag, error)
 }
 type ResourceResolver interface {
 	Properties(ctx context.Context, obj *ent.Resource) (map[string]interface{}, error)
@@ -195,20 +212,6 @@ func (e *executableSchema) Complexity(typeName, field string, childComplexity in
 		}
 
 		return e.complexity.AllocationStrategy.Script(childComplexity), true
-
-	case "Label.ID":
-		if e.complexity.Label.ID == nil {
-			break
-		}
-
-		return e.complexity.Label.ID(childComplexity), true
-
-	case "Label.Labl":
-		if e.complexity.Label.Labl == nil {
-			break
-		}
-
-		return e.complexity.Label.Labl(childComplexity), true
 
 	case "Mutation.ClaimResource":
 		if e.complexity.Mutation.ClaimResource == nil {
@@ -282,6 +285,18 @@ func (e *executableSchema) Complexity(typeName, field string, childComplexity in
 
 		return e.complexity.Mutation.CreateSingletonPool(childComplexity, args["resourceTypeId"].(int), args["poolName"].(string), args["poolValues"].([]map[string]interface{})), true
 
+	case "Mutation.CreateTag":
+		if e.complexity.Mutation.CreateTag == nil {
+			break
+		}
+
+		args, err := ec.field_Mutation_CreateTag_args(context.TODO(), rawArgs)
+		if err != nil {
+			return 0, false
+		}
+
+		return e.complexity.Mutation.CreateTag(childComplexity, args["tag"].(string)), true
+
 	case "Mutation.DeleteAllocationStrategy":
 		if e.complexity.Mutation.DeleteAllocationStrategy == nil {
 			break
@@ -318,6 +333,18 @@ func (e *executableSchema) Complexity(typeName, field string, childComplexity in
 
 		return e.complexity.Mutation.DeleteResourceType(childComplexity, args["resourceTypeId"].(int)), true
 
+	case "Mutation.DeleteTag":
+		if e.complexity.Mutation.DeleteTag == nil {
+			break
+		}
+
+		args, err := ec.field_Mutation_DeleteTag_args(context.TODO(), rawArgs)
+		if err != nil {
+			return 0, false
+		}
+
+		return e.complexity.Mutation.DeleteTag(childComplexity, args["tagId"].(int)), true
+
 	case "Mutation.FreeResource":
 		if e.complexity.Mutation.FreeResource == nil {
 			break
@@ -329,6 +356,18 @@ func (e *executableSchema) Complexity(typeName, field string, childComplexity in
 		}
 
 		return e.complexity.Mutation.FreeResource(childComplexity, args["input"].(map[string]interface{}), args["poolId"].(int)), true
+
+	case "Mutation.TagPool":
+		if e.complexity.Mutation.TagPool == nil {
+			break
+		}
+
+		args, err := ec.field_Mutation_TagPool_args(context.TODO(), rawArgs)
+		if err != nil {
+			return 0, false
+		}
+
+		return e.complexity.Mutation.TagPool(childComplexity, args["tagId"].(int), args["poolId"].(int)), true
 
 	case "Mutation.TestAllocationStrategy":
 		if e.complexity.Mutation.TestAllocationStrategy == nil {
@@ -353,6 +392,18 @@ func (e *executableSchema) Complexity(typeName, field string, childComplexity in
 		}
 
 		return e.complexity.Mutation.UpdateResourceTypeName(childComplexity, args["resourceTypeId"].(int), args["resourceName"].(string)), true
+
+	case "Mutation.UpdateTag":
+		if e.complexity.Mutation.UpdateTag == nil {
+			break
+		}
+
+		args, err := ec.field_Mutation_UpdateTag_args(context.TODO(), rawArgs)
+		if err != nil {
+			return 0, false
+		}
+
+		return e.complexity.Mutation.UpdateTag(childComplexity, args["tagId"].(int), args["tag"].(string)), true
 
 	case "PropertyType.FloatVal":
 		if e.complexity.PropertyType.FloatVal == nil {
@@ -460,6 +511,25 @@ func (e *executableSchema) Complexity(typeName, field string, childComplexity in
 
 		return e.complexity.Query.QueryResources(childComplexity, args["poolId"].(int)), true
 
+	case "Query.QueryTags":
+		if e.complexity.Query.QueryTags == nil {
+			break
+		}
+
+		return e.complexity.Query.QueryTags(childComplexity), true
+
+	case "Query.SearchPoolsByTags":
+		if e.complexity.Query.SearchPoolsByTags == nil {
+			break
+		}
+
+		args, err := ec.field_Query_SearchPoolsByTags_args(context.TODO(), rawArgs)
+		if err != nil {
+			return 0, false
+		}
+
+		return e.complexity.Query.SearchPoolsByTags(childComplexity, args["tags"].(*model.TagOr)), true
+
 	case "Resource.ID":
 		if e.complexity.Resource.ID == nil {
 			break
@@ -509,19 +579,19 @@ func (e *executableSchema) Complexity(typeName, field string, childComplexity in
 
 		return e.complexity.ResourcePoolEdges.AllocationStrategy(childComplexity), true
 
-	case "ResourcePoolEdges.Labels":
-		if e.complexity.ResourcePoolEdges.Labels == nil {
-			break
-		}
-
-		return e.complexity.ResourcePoolEdges.Labels(childComplexity), true
-
 	case "ResourcePoolEdges.ResourceType":
 		if e.complexity.ResourcePoolEdges.ResourceType == nil {
 			break
 		}
 
 		return e.complexity.ResourcePoolEdges.ResourceType(childComplexity), true
+
+	case "ResourcePoolEdges.Tags":
+		if e.complexity.ResourcePoolEdges.Tags == nil {
+			break
+		}
+
+		return e.complexity.ResourcePoolEdges.Tags(childComplexity), true
 
 	case "ResourceType.Edges":
 		if e.complexity.ResourceType.Edges == nil {
@@ -557,6 +627,34 @@ func (e *executableSchema) Complexity(typeName, field string, childComplexity in
 		}
 
 		return e.complexity.ResourceTypeEdges.PropertyTypes(childComplexity), true
+
+	case "Tag.Edges":
+		if e.complexity.Tag.Edges == nil {
+			break
+		}
+
+		return e.complexity.Tag.Edges(childComplexity), true
+
+	case "Tag.ID":
+		if e.complexity.Tag.ID == nil {
+			break
+		}
+
+		return e.complexity.Tag.ID(childComplexity), true
+
+	case "Tag.Tag":
+		if e.complexity.Tag.Tag == nil {
+			break
+		}
+
+		return e.complexity.Tag.Tag(childComplexity), true
+
+	case "TagEdges.Pools":
+		if e.complexity.TagEdges.Pools == nil {
+			break
+		}
+
+		return e.complexity.TagEdges.Pools(childComplexity), true
 
 	}
 	return 0, false
@@ -667,12 +765,6 @@ type ResourcePool
     Edges: ResourcePoolEdges
 }
 
-type Label
-@goModel(model: "github.com/net-auto/resourceManager/ent.Label"){
-    ID: ID!
-    Labl: String!
-}
-
 enum AllocationStrategyLang
 @goModel(
     model: "github.com/net-auto/resourceManager/ent/allocationstrategy.Lang"
@@ -694,7 +786,7 @@ type AllocationStrategy
 type ResourcePoolEdges
 @goModel(model: "github.com/net-auto/resourceManager/ent.ResourcePoolEdges"){
     ResourceType: ResourceType!
-    Labels: Label
+    Tags: [Tag]!
     AllocationStrategy: AllocationStrategy
 }
 
@@ -709,6 +801,26 @@ type ResourceType
     ID: ID!
     Name: String!
     Edges: ResourceTypeEdges
+}
+
+type Tag
+@goModel(model: "github.com/net-auto/resourceManager/ent.Tag"){
+    ID: ID!
+    Tag: String!
+    Edges: TagEdges
+}
+
+type TagEdges
+@goModel(model: "github.com/net-auto/resourceManager/ent.TagEdges"){
+    Pools: [ResourcePool]
+}
+
+input TagAnd {
+    tags: [String!]!
+}
+
+input TagOr {
+    tags: [TagAnd!]!
 }
 
 input ResourcePoolInput {
@@ -726,11 +838,17 @@ type Query {
     QueryAllocationStrategies: [AllocationStrategy]!
     QueryResourceTypes: [ResourceType]!
     QueryResourcePools: [ResourcePool]!
+    SearchPoolsByTags(tags: TagOr): [ResourcePool]!
+    QueryTags: [Tag]!
 }
 
-#TODO missing CRUD for pools <-> labels
-
 type Mutation {
+    # Tagging
+    CreateTag(tag: String!): Tag!
+    UpdateTag(tagId: ID!, tag: String!): Tag!
+    DeleteTag(tagId: ID!): Tag!
+    TagPool(tagId: ID!, poolId: ID!): Tag!
+
     # Allocation strategy
     CreateAllocationStrategy(name: String!, script: String!, lang: AllocationStrategyLang!): AllocationStrategy!
     DeleteAllocationStrategy(allocationStrategyId: ID!): AllocationStrategy!
@@ -944,6 +1062,20 @@ func (ec *executionContext) field_Mutation_CreateSingletonPool_args(ctx context.
 	return args, nil
 }
 
+func (ec *executionContext) field_Mutation_CreateTag_args(ctx context.Context, rawArgs map[string]interface{}) (map[string]interface{}, error) {
+	var err error
+	args := map[string]interface{}{}
+	var arg0 string
+	if tmp, ok := rawArgs["tag"]; ok {
+		arg0, err = ec.unmarshalNString2string(ctx, tmp)
+		if err != nil {
+			return nil, err
+		}
+	}
+	args["tag"] = arg0
+	return args, nil
+}
+
 func (ec *executionContext) field_Mutation_DeleteAllocationStrategy_args(ctx context.Context, rawArgs map[string]interface{}) (map[string]interface{}, error) {
 	var err error
 	args := map[string]interface{}{}
@@ -986,6 +1118,20 @@ func (ec *executionContext) field_Mutation_DeleteResourceType_args(ctx context.C
 	return args, nil
 }
 
+func (ec *executionContext) field_Mutation_DeleteTag_args(ctx context.Context, rawArgs map[string]interface{}) (map[string]interface{}, error) {
+	var err error
+	args := map[string]interface{}{}
+	var arg0 int
+	if tmp, ok := rawArgs["tagId"]; ok {
+		arg0, err = ec.unmarshalNID2int(ctx, tmp)
+		if err != nil {
+			return nil, err
+		}
+	}
+	args["tagId"] = arg0
+	return args, nil
+}
+
 func (ec *executionContext) field_Mutation_FreeResource_args(ctx context.Context, rawArgs map[string]interface{}) (map[string]interface{}, error) {
 	var err error
 	args := map[string]interface{}{}
@@ -997,6 +1143,28 @@ func (ec *executionContext) field_Mutation_FreeResource_args(ctx context.Context
 		}
 	}
 	args["input"] = arg0
+	var arg1 int
+	if tmp, ok := rawArgs["poolId"]; ok {
+		arg1, err = ec.unmarshalNID2int(ctx, tmp)
+		if err != nil {
+			return nil, err
+		}
+	}
+	args["poolId"] = arg1
+	return args, nil
+}
+
+func (ec *executionContext) field_Mutation_TagPool_args(ctx context.Context, rawArgs map[string]interface{}) (map[string]interface{}, error) {
+	var err error
+	args := map[string]interface{}{}
+	var arg0 int
+	if tmp, ok := rawArgs["tagId"]; ok {
+		arg0, err = ec.unmarshalNID2int(ctx, tmp)
+		if err != nil {
+			return nil, err
+		}
+	}
+	args["tagId"] = arg0
 	var arg1 int
 	if tmp, ok := rawArgs["poolId"]; ok {
 		arg1, err = ec.unmarshalNID2int(ctx, tmp)
@@ -1068,6 +1236,28 @@ func (ec *executionContext) field_Mutation_UpdateResourceTypeName_args(ctx conte
 	return args, nil
 }
 
+func (ec *executionContext) field_Mutation_UpdateTag_args(ctx context.Context, rawArgs map[string]interface{}) (map[string]interface{}, error) {
+	var err error
+	args := map[string]interface{}{}
+	var arg0 int
+	if tmp, ok := rawArgs["tagId"]; ok {
+		arg0, err = ec.unmarshalNID2int(ctx, tmp)
+		if err != nil {
+			return nil, err
+		}
+	}
+	args["tagId"] = arg0
+	var arg1 string
+	if tmp, ok := rawArgs["tag"]; ok {
+		arg1, err = ec.unmarshalNString2string(ctx, tmp)
+		if err != nil {
+			return nil, err
+		}
+	}
+	args["tag"] = arg1
+	return args, nil
+}
+
 func (ec *executionContext) field_Query_QueryAllocationStrategy_args(ctx context.Context, rawArgs map[string]interface{}) (map[string]interface{}, error) {
 	var err error
 	args := map[string]interface{}{}
@@ -1115,6 +1305,20 @@ func (ec *executionContext) field_Query_QueryResources_args(ctx context.Context,
 		}
 	}
 	args["poolId"] = arg0
+	return args, nil
+}
+
+func (ec *executionContext) field_Query_SearchPoolsByTags_args(ctx context.Context, rawArgs map[string]interface{}) (map[string]interface{}, error) {
+	var err error
+	args := map[string]interface{}{}
+	var arg0 *model.TagOr
+	if tmp, ok := rawArgs["tags"]; ok {
+		arg0, err = ec.unmarshalOTagOr2ᚖgithubᚗcomᚋnetᚑautoᚋresourceManagerᚋgraphᚋgraphqlᚋmodelᚐTagOr(ctx, tmp)
+		if err != nil {
+			return nil, err
+		}
+	}
+	args["tags"] = arg0
 	return args, nil
 }
 
@@ -1304,7 +1508,7 @@ func (ec *executionContext) _AllocationStrategy_Script(ctx context.Context, fiel
 	return ec.marshalNString2string(ctx, field.Selections, res)
 }
 
-func (ec *executionContext) _Label_ID(ctx context.Context, field graphql.CollectedField, obj *ent.Label) (ret graphql.Marshaler) {
+func (ec *executionContext) _Mutation_CreateTag(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
 	defer func() {
 		if r := recover(); r != nil {
 			ec.Error(ctx, ec.Recover(ctx, r))
@@ -1312,16 +1516,23 @@ func (ec *executionContext) _Label_ID(ctx context.Context, field graphql.Collect
 		}
 	}()
 	fc := &graphql.FieldContext{
-		Object:   "Label",
+		Object:   "Mutation",
 		Field:    field,
 		Args:     nil,
-		IsMethod: false,
+		IsMethod: true,
 	}
 
 	ctx = graphql.WithFieldContext(ctx, fc)
+	rawArgs := field.ArgumentMap(ec.Variables)
+	args, err := ec.field_Mutation_CreateTag_args(ctx, rawArgs)
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	fc.Args = args
 	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
 		ctx = rctx // use context from middleware stack in children
-		return obj.ID, nil
+		return ec.resolvers.Mutation().CreateTag(rctx, args["tag"].(string))
 	})
 	if err != nil {
 		ec.Error(ctx, err)
@@ -1333,12 +1544,12 @@ func (ec *executionContext) _Label_ID(ctx context.Context, field graphql.Collect
 		}
 		return graphql.Null
 	}
-	res := resTmp.(int)
+	res := resTmp.(*ent.Tag)
 	fc.Result = res
-	return ec.marshalNID2int(ctx, field.Selections, res)
+	return ec.marshalNTag2ᚖgithubᚗcomᚋnetᚑautoᚋresourceManagerᚋentᚐTag(ctx, field.Selections, res)
 }
 
-func (ec *executionContext) _Label_Labl(ctx context.Context, field graphql.CollectedField, obj *ent.Label) (ret graphql.Marshaler) {
+func (ec *executionContext) _Mutation_UpdateTag(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
 	defer func() {
 		if r := recover(); r != nil {
 			ec.Error(ctx, ec.Recover(ctx, r))
@@ -1346,16 +1557,23 @@ func (ec *executionContext) _Label_Labl(ctx context.Context, field graphql.Colle
 		}
 	}()
 	fc := &graphql.FieldContext{
-		Object:   "Label",
+		Object:   "Mutation",
 		Field:    field,
 		Args:     nil,
-		IsMethod: false,
+		IsMethod: true,
 	}
 
 	ctx = graphql.WithFieldContext(ctx, fc)
+	rawArgs := field.ArgumentMap(ec.Variables)
+	args, err := ec.field_Mutation_UpdateTag_args(ctx, rawArgs)
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	fc.Args = args
 	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
 		ctx = rctx // use context from middleware stack in children
-		return obj.Labl, nil
+		return ec.resolvers.Mutation().UpdateTag(rctx, args["tagId"].(int), args["tag"].(string))
 	})
 	if err != nil {
 		ec.Error(ctx, err)
@@ -1367,9 +1585,91 @@ func (ec *executionContext) _Label_Labl(ctx context.Context, field graphql.Colle
 		}
 		return graphql.Null
 	}
-	res := resTmp.(string)
+	res := resTmp.(*ent.Tag)
 	fc.Result = res
-	return ec.marshalNString2string(ctx, field.Selections, res)
+	return ec.marshalNTag2ᚖgithubᚗcomᚋnetᚑautoᚋresourceManagerᚋentᚐTag(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) _Mutation_DeleteTag(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	fc := &graphql.FieldContext{
+		Object:   "Mutation",
+		Field:    field,
+		Args:     nil,
+		IsMethod: true,
+	}
+
+	ctx = graphql.WithFieldContext(ctx, fc)
+	rawArgs := field.ArgumentMap(ec.Variables)
+	args, err := ec.field_Mutation_DeleteTag_args(ctx, rawArgs)
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	fc.Args = args
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return ec.resolvers.Mutation().DeleteTag(rctx, args["tagId"].(int))
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(*ent.Tag)
+	fc.Result = res
+	return ec.marshalNTag2ᚖgithubᚗcomᚋnetᚑautoᚋresourceManagerᚋentᚐTag(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) _Mutation_TagPool(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	fc := &graphql.FieldContext{
+		Object:   "Mutation",
+		Field:    field,
+		Args:     nil,
+		IsMethod: true,
+	}
+
+	ctx = graphql.WithFieldContext(ctx, fc)
+	rawArgs := field.ArgumentMap(ec.Variables)
+	args, err := ec.field_Mutation_TagPool_args(ctx, rawArgs)
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	fc.Args = args
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return ec.resolvers.Mutation().TagPool(rctx, args["tagId"].(int), args["poolId"].(int))
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(*ent.Tag)
+	fc.Result = res
+	return ec.marshalNTag2ᚖgithubᚗcomᚋnetᚑautoᚋresourceManagerᚋentᚐTag(ctx, field.Selections, res)
 }
 
 func (ec *executionContext) _Mutation_CreateAllocationStrategy(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
@@ -2327,6 +2627,81 @@ func (ec *executionContext) _Query_QueryResourcePools(ctx context.Context, field
 	return ec.marshalNResourcePool2ᚕᚖgithubᚗcomᚋnetᚑautoᚋresourceManagerᚋentᚐResourcePool(ctx, field.Selections, res)
 }
 
+func (ec *executionContext) _Query_SearchPoolsByTags(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	fc := &graphql.FieldContext{
+		Object:   "Query",
+		Field:    field,
+		Args:     nil,
+		IsMethod: true,
+	}
+
+	ctx = graphql.WithFieldContext(ctx, fc)
+	rawArgs := field.ArgumentMap(ec.Variables)
+	args, err := ec.field_Query_SearchPoolsByTags_args(ctx, rawArgs)
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	fc.Args = args
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return ec.resolvers.Query().SearchPoolsByTags(rctx, args["tags"].(*model.TagOr))
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.([]*ent.ResourcePool)
+	fc.Result = res
+	return ec.marshalNResourcePool2ᚕᚖgithubᚗcomᚋnetᚑautoᚋresourceManagerᚋentᚐResourcePool(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) _Query_QueryTags(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	fc := &graphql.FieldContext{
+		Object:   "Query",
+		Field:    field,
+		Args:     nil,
+		IsMethod: true,
+	}
+
+	ctx = graphql.WithFieldContext(ctx, fc)
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return ec.resolvers.Query().QueryTags(rctx)
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.([]*ent.Tag)
+	fc.Result = res
+	return ec.marshalNTag2ᚕᚖgithubᚗcomᚋnetᚑautoᚋresourceManagerᚋentᚐTag(ctx, field.Selections, res)
+}
+
 func (ec *executionContext) _Query___type(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
 	defer func() {
 		if r := recover(); r != nil {
@@ -2631,7 +3006,7 @@ func (ec *executionContext) _ResourcePoolEdges_ResourceType(ctx context.Context,
 	return ec.marshalNResourceType2ᚖgithubᚗcomᚋnetᚑautoᚋresourceManagerᚋentᚐResourceType(ctx, field.Selections, res)
 }
 
-func (ec *executionContext) _ResourcePoolEdges_Labels(ctx context.Context, field graphql.CollectedField, obj *ent.ResourcePoolEdges) (ret graphql.Marshaler) {
+func (ec *executionContext) _ResourcePoolEdges_Tags(ctx context.Context, field graphql.CollectedField, obj *ent.ResourcePoolEdges) (ret graphql.Marshaler) {
 	defer func() {
 		if r := recover(); r != nil {
 			ec.Error(ctx, ec.Recover(ctx, r))
@@ -2648,18 +3023,21 @@ func (ec *executionContext) _ResourcePoolEdges_Labels(ctx context.Context, field
 	ctx = graphql.WithFieldContext(ctx, fc)
 	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
 		ctx = rctx // use context from middleware stack in children
-		return obj.Labels, nil
+		return obj.Tags, nil
 	})
 	if err != nil {
 		ec.Error(ctx, err)
 		return graphql.Null
 	}
 	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
 		return graphql.Null
 	}
-	res := resTmp.(*ent.Label)
+	res := resTmp.([]*ent.Tag)
 	fc.Result = res
-	return ec.marshalOLabel2ᚖgithubᚗcomᚋnetᚑautoᚋresourceManagerᚋentᚐLabel(ctx, field.Selections, res)
+	return ec.marshalNTag2ᚕᚖgithubᚗcomᚋnetᚑautoᚋresourceManagerᚋentᚐTag(ctx, field.Selections, res)
 }
 
 func (ec *executionContext) _ResourcePoolEdges_AllocationStrategy(ctx context.Context, field graphql.CollectedField, obj *ent.ResourcePoolEdges) (ret graphql.Marshaler) {
@@ -2832,6 +3210,136 @@ func (ec *executionContext) _ResourceTypeEdges_Pools(ctx context.Context, field 
 	}()
 	fc := &graphql.FieldContext{
 		Object:   "ResourceTypeEdges",
+		Field:    field,
+		Args:     nil,
+		IsMethod: false,
+	}
+
+	ctx = graphql.WithFieldContext(ctx, fc)
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.Pools, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		return graphql.Null
+	}
+	res := resTmp.([]*ent.ResourcePool)
+	fc.Result = res
+	return ec.marshalOResourcePool2ᚕᚖgithubᚗcomᚋnetᚑautoᚋresourceManagerᚋentᚐResourcePool(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) _Tag_ID(ctx context.Context, field graphql.CollectedField, obj *ent.Tag) (ret graphql.Marshaler) {
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	fc := &graphql.FieldContext{
+		Object:   "Tag",
+		Field:    field,
+		Args:     nil,
+		IsMethod: false,
+	}
+
+	ctx = graphql.WithFieldContext(ctx, fc)
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.ID, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(int)
+	fc.Result = res
+	return ec.marshalNID2int(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) _Tag_Tag(ctx context.Context, field graphql.CollectedField, obj *ent.Tag) (ret graphql.Marshaler) {
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	fc := &graphql.FieldContext{
+		Object:   "Tag",
+		Field:    field,
+		Args:     nil,
+		IsMethod: false,
+	}
+
+	ctx = graphql.WithFieldContext(ctx, fc)
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.Tag, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(string)
+	fc.Result = res
+	return ec.marshalNString2string(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) _Tag_Edges(ctx context.Context, field graphql.CollectedField, obj *ent.Tag) (ret graphql.Marshaler) {
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	fc := &graphql.FieldContext{
+		Object:   "Tag",
+		Field:    field,
+		Args:     nil,
+		IsMethod: false,
+	}
+
+	ctx = graphql.WithFieldContext(ctx, fc)
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.Edges, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		return graphql.Null
+	}
+	res := resTmp.(ent.TagEdges)
+	fc.Result = res
+	return ec.marshalOTagEdges2githubᚗcomᚋnetᚑautoᚋresourceManagerᚋentᚐTagEdges(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) _TagEdges_Pools(ctx context.Context, field graphql.CollectedField, obj *ent.TagEdges) (ret graphql.Marshaler) {
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	fc := &graphql.FieldContext{
+		Object:   "TagEdges",
 		Field:    field,
 		Args:     nil,
 		IsMethod: false,
@@ -3945,6 +4453,42 @@ func (ec *executionContext) unmarshalInputResourcePoolInput(ctx context.Context,
 	return it, nil
 }
 
+func (ec *executionContext) unmarshalInputTagAnd(ctx context.Context, obj interface{}) (model.TagAnd, error) {
+	var it model.TagAnd
+	var asMap = obj.(map[string]interface{})
+
+	for k, v := range asMap {
+		switch k {
+		case "tags":
+			var err error
+			it.Tags, err = ec.unmarshalNString2ᚕstringᚄ(ctx, v)
+			if err != nil {
+				return it, err
+			}
+		}
+	}
+
+	return it, nil
+}
+
+func (ec *executionContext) unmarshalInputTagOr(ctx context.Context, obj interface{}) (model.TagOr, error) {
+	var it model.TagOr
+	var asMap = obj.(map[string]interface{})
+
+	for k, v := range asMap {
+		switch k {
+		case "tags":
+			var err error
+			it.Tags, err = ec.unmarshalNTagAnd2ᚕᚖgithubᚗcomᚋnetᚑautoᚋresourceManagerᚋgraphᚋgraphqlᚋmodelᚐTagAndᚄ(ctx, v)
+			if err != nil {
+				return it, err
+			}
+		}
+	}
+
+	return it, nil
+}
+
 // endregion **************************** input.gotpl *****************************
 
 // region    ************************** interface.gotpl ***************************
@@ -3995,38 +4539,6 @@ func (ec *executionContext) _AllocationStrategy(ctx context.Context, sel ast.Sel
 	return out
 }
 
-var labelImplementors = []string{"Label"}
-
-func (ec *executionContext) _Label(ctx context.Context, sel ast.SelectionSet, obj *ent.Label) graphql.Marshaler {
-	fields := graphql.CollectFields(ec.OperationContext, sel, labelImplementors)
-
-	out := graphql.NewFieldSet(fields)
-	var invalids uint32
-	for i, field := range fields {
-		switch field.Name {
-		case "__typename":
-			out.Values[i] = graphql.MarshalString("Label")
-		case "ID":
-			out.Values[i] = ec._Label_ID(ctx, field, obj)
-			if out.Values[i] == graphql.Null {
-				invalids++
-			}
-		case "Labl":
-			out.Values[i] = ec._Label_Labl(ctx, field, obj)
-			if out.Values[i] == graphql.Null {
-				invalids++
-			}
-		default:
-			panic("unknown field " + strconv.Quote(field.Name))
-		}
-	}
-	out.Dispatch()
-	if invalids > 0 {
-		return graphql.Null
-	}
-	return out
-}
-
 var mutationImplementors = []string{"Mutation"}
 
 func (ec *executionContext) _Mutation(ctx context.Context, sel ast.SelectionSet) graphql.Marshaler {
@@ -4042,6 +4554,26 @@ func (ec *executionContext) _Mutation(ctx context.Context, sel ast.SelectionSet)
 		switch field.Name {
 		case "__typename":
 			out.Values[i] = graphql.MarshalString("Mutation")
+		case "CreateTag":
+			out.Values[i] = ec._Mutation_CreateTag(ctx, field)
+			if out.Values[i] == graphql.Null {
+				invalids++
+			}
+		case "UpdateTag":
+			out.Values[i] = ec._Mutation_UpdateTag(ctx, field)
+			if out.Values[i] == graphql.Null {
+				invalids++
+			}
+		case "DeleteTag":
+			out.Values[i] = ec._Mutation_DeleteTag(ctx, field)
+			if out.Values[i] == graphql.Null {
+				invalids++
+			}
+		case "TagPool":
+			out.Values[i] = ec._Mutation_TagPool(ctx, field)
+			if out.Values[i] == graphql.Null {
+				invalids++
+			}
 		case "CreateAllocationStrategy":
 			out.Values[i] = ec._Mutation_CreateAllocationStrategy(ctx, field)
 			if out.Values[i] == graphql.Null {
@@ -4278,6 +4810,34 @@ func (ec *executionContext) _Query(ctx context.Context, sel ast.SelectionSet) gr
 				}
 				return res
 			})
+		case "SearchPoolsByTags":
+			field := field
+			out.Concurrently(i, func() (res graphql.Marshaler) {
+				defer func() {
+					if r := recover(); r != nil {
+						ec.Error(ctx, ec.Recover(ctx, r))
+					}
+				}()
+				res = ec._Query_SearchPoolsByTags(ctx, field)
+				if res == graphql.Null {
+					atomic.AddUint32(&invalids, 1)
+				}
+				return res
+			})
+		case "QueryTags":
+			field := field
+			out.Concurrently(i, func() (res graphql.Marshaler) {
+				defer func() {
+					if r := recover(); r != nil {
+						ec.Error(ctx, ec.Recover(ctx, r))
+					}
+				}()
+				res = ec._Query_QueryTags(ctx, field)
+				if res == graphql.Null {
+					atomic.AddUint32(&invalids, 1)
+				}
+				return res
+			})
 		case "__type":
 			out.Values[i] = ec._Query___type(ctx, field)
 		case "__schema":
@@ -4389,8 +4949,11 @@ func (ec *executionContext) _ResourcePoolEdges(ctx context.Context, sel ast.Sele
 			if out.Values[i] == graphql.Null {
 				invalids++
 			}
-		case "Labels":
-			out.Values[i] = ec._ResourcePoolEdges_Labels(ctx, field, obj)
+		case "Tags":
+			out.Values[i] = ec._ResourcePoolEdges_Tags(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				invalids++
+			}
 		case "AllocationStrategy":
 			out.Values[i] = ec._ResourcePoolEdges_AllocationStrategy(ctx, field, obj)
 		default:
@@ -4453,6 +5016,64 @@ func (ec *executionContext) _ResourceTypeEdges(ctx context.Context, sel ast.Sele
 			out.Values[i] = ec._ResourceTypeEdges_PropertyTypes(ctx, field, obj)
 		case "Pools":
 			out.Values[i] = ec._ResourceTypeEdges_Pools(ctx, field, obj)
+		default:
+			panic("unknown field " + strconv.Quote(field.Name))
+		}
+	}
+	out.Dispatch()
+	if invalids > 0 {
+		return graphql.Null
+	}
+	return out
+}
+
+var tagImplementors = []string{"Tag"}
+
+func (ec *executionContext) _Tag(ctx context.Context, sel ast.SelectionSet, obj *ent.Tag) graphql.Marshaler {
+	fields := graphql.CollectFields(ec.OperationContext, sel, tagImplementors)
+
+	out := graphql.NewFieldSet(fields)
+	var invalids uint32
+	for i, field := range fields {
+		switch field.Name {
+		case "__typename":
+			out.Values[i] = graphql.MarshalString("Tag")
+		case "ID":
+			out.Values[i] = ec._Tag_ID(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				invalids++
+			}
+		case "Tag":
+			out.Values[i] = ec._Tag_Tag(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				invalids++
+			}
+		case "Edges":
+			out.Values[i] = ec._Tag_Edges(ctx, field, obj)
+		default:
+			panic("unknown field " + strconv.Quote(field.Name))
+		}
+	}
+	out.Dispatch()
+	if invalids > 0 {
+		return graphql.Null
+	}
+	return out
+}
+
+var tagEdgesImplementors = []string{"TagEdges"}
+
+func (ec *executionContext) _TagEdges(ctx context.Context, sel ast.SelectionSet, obj *ent.TagEdges) graphql.Marshaler {
+	fields := graphql.CollectFields(ec.OperationContext, sel, tagEdgesImplementors)
+
+	out := graphql.NewFieldSet(fields)
+	var invalids uint32
+	for i, field := range fields {
+		switch field.Name {
+		case "__typename":
+			out.Values[i] = graphql.MarshalString("TagEdges")
+		case "Pools":
+			out.Values[i] = ec._TagEdges_Pools(ctx, field, obj)
 		default:
 			panic("unknown field " + strconv.Quote(field.Name))
 		}
@@ -5084,6 +5705,35 @@ func (ec *executionContext) marshalNString2string(ctx context.Context, sel ast.S
 	return res
 }
 
+func (ec *executionContext) unmarshalNString2ᚕstringᚄ(ctx context.Context, v interface{}) ([]string, error) {
+	var vSlice []interface{}
+	if v != nil {
+		if tmp1, ok := v.([]interface{}); ok {
+			vSlice = tmp1
+		} else {
+			vSlice = []interface{}{v}
+		}
+	}
+	var err error
+	res := make([]string, len(vSlice))
+	for i := range vSlice {
+		res[i], err = ec.unmarshalNString2string(ctx, vSlice[i])
+		if err != nil {
+			return nil, err
+		}
+	}
+	return res, nil
+}
+
+func (ec *executionContext) marshalNString2ᚕstringᚄ(ctx context.Context, sel ast.SelectionSet, v []string) graphql.Marshaler {
+	ret := make(graphql.Array, len(v))
+	for i := range v {
+		ret[i] = ec.marshalNString2string(ctx, sel, v[i])
+	}
+
+	return ret
+}
+
 func (ec *executionContext) unmarshalNString2ᚖstring(ctx context.Context, v interface{}) (*string, error) {
 	if v == nil {
 		return nil, nil
@@ -5100,6 +5750,89 @@ func (ec *executionContext) marshalNString2ᚖstring(ctx context.Context, sel as
 		return graphql.Null
 	}
 	return ec.marshalNString2string(ctx, sel, *v)
+}
+
+func (ec *executionContext) marshalNTag2githubᚗcomᚋnetᚑautoᚋresourceManagerᚋentᚐTag(ctx context.Context, sel ast.SelectionSet, v ent.Tag) graphql.Marshaler {
+	return ec._Tag(ctx, sel, &v)
+}
+
+func (ec *executionContext) marshalNTag2ᚕᚖgithubᚗcomᚋnetᚑautoᚋresourceManagerᚋentᚐTag(ctx context.Context, sel ast.SelectionSet, v []*ent.Tag) graphql.Marshaler {
+	ret := make(graphql.Array, len(v))
+	var wg sync.WaitGroup
+	isLen1 := len(v) == 1
+	if !isLen1 {
+		wg.Add(len(v))
+	}
+	for i := range v {
+		i := i
+		fc := &graphql.FieldContext{
+			Index:  &i,
+			Result: &v[i],
+		}
+		ctx := graphql.WithFieldContext(ctx, fc)
+		f := func(i int) {
+			defer func() {
+				if r := recover(); r != nil {
+					ec.Error(ctx, ec.Recover(ctx, r))
+					ret = nil
+				}
+			}()
+			if !isLen1 {
+				defer wg.Done()
+			}
+			ret[i] = ec.marshalOTag2ᚖgithubᚗcomᚋnetᚑautoᚋresourceManagerᚋentᚐTag(ctx, sel, v[i])
+		}
+		if isLen1 {
+			f(i)
+		} else {
+			go f(i)
+		}
+
+	}
+	wg.Wait()
+	return ret
+}
+
+func (ec *executionContext) marshalNTag2ᚖgithubᚗcomᚋnetᚑautoᚋresourceManagerᚋentᚐTag(ctx context.Context, sel ast.SelectionSet, v *ent.Tag) graphql.Marshaler {
+	if v == nil {
+		if !graphql.HasFieldError(ctx, graphql.GetFieldContext(ctx)) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	return ec._Tag(ctx, sel, v)
+}
+
+func (ec *executionContext) unmarshalNTagAnd2githubᚗcomᚋnetᚑautoᚋresourceManagerᚋgraphᚋgraphqlᚋmodelᚐTagAnd(ctx context.Context, v interface{}) (model.TagAnd, error) {
+	return ec.unmarshalInputTagAnd(ctx, v)
+}
+
+func (ec *executionContext) unmarshalNTagAnd2ᚕᚖgithubᚗcomᚋnetᚑautoᚋresourceManagerᚋgraphᚋgraphqlᚋmodelᚐTagAndᚄ(ctx context.Context, v interface{}) ([]*model.TagAnd, error) {
+	var vSlice []interface{}
+	if v != nil {
+		if tmp1, ok := v.([]interface{}); ok {
+			vSlice = tmp1
+		} else {
+			vSlice = []interface{}{v}
+		}
+	}
+	var err error
+	res := make([]*model.TagAnd, len(vSlice))
+	for i := range vSlice {
+		res[i], err = ec.unmarshalNTagAnd2ᚖgithubᚗcomᚋnetᚑautoᚋresourceManagerᚋgraphᚋgraphqlᚋmodelᚐTagAnd(ctx, vSlice[i])
+		if err != nil {
+			return nil, err
+		}
+	}
+	return res, nil
+}
+
+func (ec *executionContext) unmarshalNTagAnd2ᚖgithubᚗcomᚋnetᚑautoᚋresourceManagerᚋgraphᚋgraphqlᚋmodelᚐTagAnd(ctx context.Context, v interface{}) (*model.TagAnd, error) {
+	if v == nil {
+		return nil, nil
+	}
+	res, err := ec.unmarshalNTagAnd2githubᚗcomᚋnetᚑautoᚋresourceManagerᚋgraphᚋgraphqlᚋmodelᚐTagAnd(ctx, v)
+	return &res, err
 }
 
 func (ec *executionContext) marshalN__Directive2githubᚗcomᚋ99designsᚋgqlgenᚋgraphqlᚋintrospectionᚐDirective(ctx context.Context, sel ast.SelectionSet, v introspection.Directive) graphql.Marshaler {
@@ -5362,17 +6095,6 @@ func (ec *executionContext) marshalOBoolean2ᚖbool(ctx context.Context, sel ast
 	return ec.marshalOBoolean2bool(ctx, sel, *v)
 }
 
-func (ec *executionContext) marshalOLabel2githubᚗcomᚋnetᚑautoᚋresourceManagerᚋentᚐLabel(ctx context.Context, sel ast.SelectionSet, v ent.Label) graphql.Marshaler {
-	return ec._Label(ctx, sel, &v)
-}
-
-func (ec *executionContext) marshalOLabel2ᚖgithubᚗcomᚋnetᚑautoᚋresourceManagerᚋentᚐLabel(ctx context.Context, sel ast.SelectionSet, v *ent.Label) graphql.Marshaler {
-	if v == nil {
-		return graphql.Null
-	}
-	return ec._Label(ctx, sel, v)
-}
-
 func (ec *executionContext) unmarshalOMap2map(ctx context.Context, v interface{}) (map[string]interface{}, error) {
 	if v == nil {
 		return nil, nil
@@ -5616,6 +6338,33 @@ func (ec *executionContext) marshalOString2ᚖstring(ctx context.Context, sel as
 		return graphql.Null
 	}
 	return ec.marshalOString2string(ctx, sel, *v)
+}
+
+func (ec *executionContext) marshalOTag2githubᚗcomᚋnetᚑautoᚋresourceManagerᚋentᚐTag(ctx context.Context, sel ast.SelectionSet, v ent.Tag) graphql.Marshaler {
+	return ec._Tag(ctx, sel, &v)
+}
+
+func (ec *executionContext) marshalOTag2ᚖgithubᚗcomᚋnetᚑautoᚋresourceManagerᚋentᚐTag(ctx context.Context, sel ast.SelectionSet, v *ent.Tag) graphql.Marshaler {
+	if v == nil {
+		return graphql.Null
+	}
+	return ec._Tag(ctx, sel, v)
+}
+
+func (ec *executionContext) marshalOTagEdges2githubᚗcomᚋnetᚑautoᚋresourceManagerᚋentᚐTagEdges(ctx context.Context, sel ast.SelectionSet, v ent.TagEdges) graphql.Marshaler {
+	return ec._TagEdges(ctx, sel, &v)
+}
+
+func (ec *executionContext) unmarshalOTagOr2githubᚗcomᚋnetᚑautoᚋresourceManagerᚋgraphᚋgraphqlᚋmodelᚐTagOr(ctx context.Context, v interface{}) (model.TagOr, error) {
+	return ec.unmarshalInputTagOr(ctx, v)
+}
+
+func (ec *executionContext) unmarshalOTagOr2ᚖgithubᚗcomᚋnetᚑautoᚋresourceManagerᚋgraphᚋgraphqlᚋmodelᚐTagOr(ctx context.Context, v interface{}) (*model.TagOr, error) {
+	if v == nil {
+		return nil, nil
+	}
+	res, err := ec.unmarshalOTagOr2githubᚗcomᚋnetᚑautoᚋresourceManagerᚋgraphᚋgraphqlᚋmodelᚐTagOr(ctx, v)
+	return &res, err
 }
 
 func (ec *executionContext) marshalO__EnumValue2ᚕgithubᚗcomᚋ99designsᚋgqlgenᚋgraphqlᚋintrospectionᚐEnumValueᚄ(ctx context.Context, sel ast.SelectionSet, v []introspection.EnumValue) graphql.Marshaler {

@@ -13,11 +13,11 @@ import (
 	"github.com/facebookincubator/ent/dialect/sql/sqlgraph"
 	"github.com/facebookincubator/ent/schema/field"
 	"github.com/net-auto/resourceManager/ent/allocationstrategy"
-	"github.com/net-auto/resourceManager/ent/label"
 	"github.com/net-auto/resourceManager/ent/predicate"
 	"github.com/net-auto/resourceManager/ent/resource"
 	"github.com/net-auto/resourceManager/ent/resourcepool"
 	"github.com/net-auto/resourceManager/ent/resourcetype"
+	"github.com/net-auto/resourceManager/ent/tag"
 )
 
 // ResourcePoolQuery is the builder for querying ResourcePool entities.
@@ -30,7 +30,7 @@ type ResourcePoolQuery struct {
 	predicates []predicate.ResourcePool
 	// eager-loading edges.
 	withResourceType       *ResourceTypeQuery
-	withLabels             *LabelQuery
+	withTags               *TagQuery
 	withClaims             *ResourceQuery
 	withAllocationStrategy *AllocationStrategyQuery
 	withFKs                bool
@@ -81,17 +81,17 @@ func (rpq *ResourcePoolQuery) QueryResourceType() *ResourceTypeQuery {
 	return query
 }
 
-// QueryLabels chains the current query on the labels edge.
-func (rpq *ResourcePoolQuery) QueryLabels() *LabelQuery {
-	query := &LabelQuery{config: rpq.config}
+// QueryTags chains the current query on the tags edge.
+func (rpq *ResourcePoolQuery) QueryTags() *TagQuery {
+	query := &TagQuery{config: rpq.config}
 	query.path = func(ctx context.Context) (fromU *sql.Selector, err error) {
 		if err := rpq.prepareQuery(ctx); err != nil {
 			return nil, err
 		}
 		step := sqlgraph.NewStep(
 			sqlgraph.From(resourcepool.Table, resourcepool.FieldID, rpq.sqlQuery()),
-			sqlgraph.To(label.Table, label.FieldID),
-			sqlgraph.Edge(sqlgraph.M2O, true, resourcepool.LabelsTable, resourcepool.LabelsColumn),
+			sqlgraph.To(tag.Table, tag.FieldID),
+			sqlgraph.Edge(sqlgraph.M2M, true, resourcepool.TagsTable, resourcepool.TagsPrimaryKey...),
 		)
 		fromU = sqlgraph.SetNeighbors(rpq.driver.Dialect(), step)
 		return fromU, nil
@@ -325,14 +325,14 @@ func (rpq *ResourcePoolQuery) WithResourceType(opts ...func(*ResourceTypeQuery))
 	return rpq
 }
 
-//  WithLabels tells the query-builder to eager-loads the nodes that are connected to
-// the "labels" edge. The optional arguments used to configure the query builder of the edge.
-func (rpq *ResourcePoolQuery) WithLabels(opts ...func(*LabelQuery)) *ResourcePoolQuery {
-	query := &LabelQuery{config: rpq.config}
+//  WithTags tells the query-builder to eager-loads the nodes that are connected to
+// the "tags" edge. The optional arguments used to configure the query builder of the edge.
+func (rpq *ResourcePoolQuery) WithTags(opts ...func(*TagQuery)) *ResourcePoolQuery {
+	query := &TagQuery{config: rpq.config}
 	for _, opt := range opts {
 		opt(query)
 	}
-	rpq.withLabels = query
+	rpq.withTags = query
 	return rpq
 }
 
@@ -427,12 +427,12 @@ func (rpq *ResourcePoolQuery) sqlAll(ctx context.Context) ([]*ResourcePool, erro
 		_spec       = rpq.querySpec()
 		loadedTypes = [4]bool{
 			rpq.withResourceType != nil,
-			rpq.withLabels != nil,
+			rpq.withTags != nil,
 			rpq.withClaims != nil,
 			rpq.withAllocationStrategy != nil,
 		}
 	)
-	if rpq.withResourceType != nil || rpq.withLabels != nil || rpq.withAllocationStrategy != nil {
+	if rpq.withResourceType != nil || rpq.withAllocationStrategy != nil {
 		withFKs = true
 	}
 	if withFKs {
@@ -487,27 +487,65 @@ func (rpq *ResourcePoolQuery) sqlAll(ctx context.Context) ([]*ResourcePool, erro
 		}
 	}
 
-	if query := rpq.withLabels; query != nil {
-		ids := make([]int, 0, len(nodes))
-		nodeids := make(map[int][]*ResourcePool)
-		for i := range nodes {
-			if fk := nodes[i].label_pools; fk != nil {
-				ids = append(ids, *fk)
-				nodeids[*fk] = append(nodeids[*fk], nodes[i])
-			}
+	if query := rpq.withTags; query != nil {
+		fks := make([]driver.Value, 0, len(nodes))
+		ids := make(map[int]*ResourcePool, len(nodes))
+		for _, node := range nodes {
+			ids[node.ID] = node
+			fks = append(fks, node.ID)
 		}
-		query.Where(label.IDIn(ids...))
+		var (
+			edgeids []int
+			edges   = make(map[int][]*ResourcePool)
+		)
+		_spec := &sqlgraph.EdgeQuerySpec{
+			Edge: &sqlgraph.EdgeSpec{
+				Inverse: true,
+				Table:   resourcepool.TagsTable,
+				Columns: resourcepool.TagsPrimaryKey,
+			},
+			Predicate: func(s *sql.Selector) {
+				s.Where(sql.InValues(resourcepool.TagsPrimaryKey[1], fks...))
+			},
+
+			ScanValues: func() [2]interface{} {
+				return [2]interface{}{&sql.NullInt64{}, &sql.NullInt64{}}
+			},
+			Assign: func(out, in interface{}) error {
+				eout, ok := out.(*sql.NullInt64)
+				if !ok || eout == nil {
+					return fmt.Errorf("unexpected id value for edge-out")
+				}
+				ein, ok := in.(*sql.NullInt64)
+				if !ok || ein == nil {
+					return fmt.Errorf("unexpected id value for edge-in")
+				}
+				outValue := int(eout.Int64)
+				inValue := int(ein.Int64)
+				node, ok := ids[outValue]
+				if !ok {
+					return fmt.Errorf("unexpected node id in edges: %v", outValue)
+				}
+				edgeids = append(edgeids, inValue)
+				edges[inValue] = append(edges[inValue], node)
+				return nil
+			},
+		}
+		if err := sqlgraph.QueryEdges(ctx, rpq.driver, _spec); err != nil {
+			return nil, fmt.Errorf(`query edges "tags": %v`, err)
+		}
+		query.Where(tag.IDIn(edgeids...))
 		neighbors, err := query.All(ctx)
 		if err != nil {
 			return nil, err
 		}
 		for _, n := range neighbors {
-			nodes, ok := nodeids[n.ID]
+			nodes, ok := edges[n.ID]
 			if !ok {
-				return nil, fmt.Errorf(`unexpected foreign-key "label_pools" returned %v`, n.ID)
+				return nil, fmt.Errorf(`unexpected "tags" node returned %v`, n.ID)
 			}
 			for i := range nodes {
-				nodes[i].Edges.Labels = n
+				nodes[i].Edges.Tags = append(nodes[i].Edges.Tags, n)
 			}
 		}
 	}

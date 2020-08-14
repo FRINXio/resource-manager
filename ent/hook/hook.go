@@ -22,19 +22,6 @@ func (f AllocationStrategyFunc) Mutate(ctx context.Context, m ent.Mutation) (ent
 	return f(ctx, mv)
 }
 
-// The LabelFunc type is an adapter to allow the use of ordinary
-// function as Label mutator.
-type LabelFunc func(context.Context, *ent.LabelMutation) (ent.Value, error)
-
-// Mutate calls f(ctx, m).
-func (f LabelFunc) Mutate(ctx context.Context, m ent.Mutation) (ent.Value, error) {
-	mv, ok := m.(*ent.LabelMutation)
-	if !ok {
-		return nil, fmt.Errorf("unexpected mutation type %T. expect *ent.LabelMutation", m)
-	}
-	return f(ctx, mv)
-}
-
 // The PropertyFunc type is an adapter to allow the use of ordinary
 // function as Property mutator.
 type PropertyFunc func(context.Context, *ent.PropertyMutation) (ent.Value, error)
@@ -96,6 +83,19 @@ func (f ResourceTypeFunc) Mutate(ctx context.Context, m ent.Mutation) (ent.Value
 	mv, ok := m.(*ent.ResourceTypeMutation)
 	if !ok {
 		return nil, fmt.Errorf("unexpected mutation type %T. expect *ent.ResourceTypeMutation", m)
+	}
+	return f(ctx, mv)
+}
+
+// The TagFunc type is an adapter to allow the use of ordinary
+// function as Tag mutator.
+type TagFunc func(context.Context, *ent.TagMutation) (ent.Value, error)
+
+// Mutate calls f(ctx, m).
+func (f TagFunc) Mutate(ctx context.Context, m ent.Mutation) (ent.Value, error) {
+	mv, ok := m.(*ent.TagMutation)
+	if !ok {
+		return nil, fmt.Errorf("unexpected mutation type %T. expect *ent.TagMutation", m)
 	}
 	return f(ctx, mv)
 }

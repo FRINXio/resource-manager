@@ -10,12 +10,12 @@ import (
 	"github.com/net-auto/resourceManager/ent/migrate"
 
 	"github.com/net-auto/resourceManager/ent/allocationstrategy"
-	"github.com/net-auto/resourceManager/ent/label"
 	"github.com/net-auto/resourceManager/ent/property"
 	"github.com/net-auto/resourceManager/ent/propertytype"
 	"github.com/net-auto/resourceManager/ent/resource"
 	"github.com/net-auto/resourceManager/ent/resourcepool"
 	"github.com/net-auto/resourceManager/ent/resourcetype"
+	"github.com/net-auto/resourceManager/ent/tag"
 
 	"github.com/facebookincubator/ent/dialect"
 	"github.com/facebookincubator/ent/dialect/sql"
@@ -29,8 +29,6 @@ type Client struct {
 	Schema *migrate.Schema
 	// AllocationStrategy is the client for interacting with the AllocationStrategy builders.
 	AllocationStrategy *AllocationStrategyClient
-	// Label is the client for interacting with the Label builders.
-	Label *LabelClient
 	// Property is the client for interacting with the Property builders.
 	Property *PropertyClient
 	// PropertyType is the client for interacting with the PropertyType builders.
@@ -41,6 +39,8 @@ type Client struct {
 	ResourcePool *ResourcePoolClient
 	// ResourceType is the client for interacting with the ResourceType builders.
 	ResourceType *ResourceTypeClient
+	// Tag is the client for interacting with the Tag builders.
+	Tag *TagClient
 
 	// additional fields for node api
 	tables tables
@@ -58,12 +58,12 @@ func NewClient(opts ...Option) *Client {
 func (c *Client) init() {
 	c.Schema = migrate.NewSchema(c.driver)
 	c.AllocationStrategy = NewAllocationStrategyClient(c.config)
-	c.Label = NewLabelClient(c.config)
 	c.Property = NewPropertyClient(c.config)
 	c.PropertyType = NewPropertyTypeClient(c.config)
 	c.Resource = NewResourceClient(c.config)
 	c.ResourcePool = NewResourcePoolClient(c.config)
 	c.ResourceType = NewResourceTypeClient(c.config)
+	c.Tag = NewTagClient(c.config)
 }
 
 // Open opens a database/sql.DB specified by the driver name and
@@ -97,12 +97,12 @@ func (c *Client) Tx(ctx context.Context) (*Tx, error) {
 		ctx:                ctx,
 		config:             cfg,
 		AllocationStrategy: NewAllocationStrategyClient(cfg),
-		Label:              NewLabelClient(cfg),
 		Property:           NewPropertyClient(cfg),
 		PropertyType:       NewPropertyTypeClient(cfg),
 		Resource:           NewResourceClient(cfg),
 		ResourcePool:       NewResourcePoolClient(cfg),
 		ResourceType:       NewResourceTypeClient(cfg),
+		Tag:                NewTagClient(cfg),
 	}, nil
 }
 
@@ -119,12 +119,12 @@ func (c *Client) BeginTx(ctx context.Context, opts *sql.TxOptions) (*Tx, error) 
 	return &Tx{
 		config:             cfg,
 		AllocationStrategy: NewAllocationStrategyClient(cfg),
-		Label:              NewLabelClient(cfg),
 		Property:           NewPropertyClient(cfg),
 		PropertyType:       NewPropertyTypeClient(cfg),
 		Resource:           NewResourceClient(cfg),
 		ResourcePool:       NewResourcePoolClient(cfg),
 		ResourceType:       NewResourceTypeClient(cfg),
+		Tag:                NewTagClient(cfg),
 	}, nil
 }
 
@@ -154,12 +154,12 @@ func (c *Client) Close() error {
 // In order to add hooks to a specific client, call: `client.Node.Use(...)`.
 func (c *Client) Use(hooks ...Hook) {
 	c.AllocationStrategy.Use(hooks...)
-	c.Label.Use(hooks...)
 	c.Property.Use(hooks...)
 	c.PropertyType.Use(hooks...)
 	c.Resource.Use(hooks...)
 	c.ResourcePool.Use(hooks...)
 	c.ResourceType.Use(hooks...)
+	c.Tag.Use(hooks...)
 }
 
 // AllocationStrategyClient is a client for the AllocationStrategy schema.
@@ -264,110 +264,6 @@ func (c *AllocationStrategyClient) QueryPools(as *AllocationStrategy) *ResourceP
 // Hooks returns the client hooks.
 func (c *AllocationStrategyClient) Hooks() []Hook {
 	return c.hooks.AllocationStrategy
-}
-
-// LabelClient is a client for the Label schema.
-type LabelClient struct {
-	config
-}
-
-// NewLabelClient returns a client for the Label from the given config.
-func NewLabelClient(c config) *LabelClient {
-	return &LabelClient{config: c}
-}
-
-// Use adds a list of mutation hooks to the hooks stack.
-// A call to `Use(f, g, h)` equals to `label.Hooks(f(g(h())))`.
-func (c *LabelClient) Use(hooks ...Hook) {
-	c.hooks.Label = append(c.hooks.Label, hooks...)
-}
-
-// Create returns a create builder for Label.
-func (c *LabelClient) Create() *LabelCreate {
-	mutation := newLabelMutation(c.config, OpCreate)
-	return &LabelCreate{config: c.config, hooks: c.Hooks(), mutation: mutation}
-}
-
-// BulkCreate returns a builder for creating a bulk of Label entities.
-func (c *LabelClient) CreateBulk(builders ...*LabelCreate) *LabelCreateBulk {
-	return &LabelCreateBulk{config: c.config, builders: builders}
-}
-
-// Update returns an update builder for Label.
-func (c *LabelClient) Update() *LabelUpdate {
-	mutation := newLabelMutation(c.config, OpUpdate)
-	return &LabelUpdate{config: c.config, hooks: c.Hooks(), mutation: mutation}
-}
-
-// UpdateOne returns an update builder for the given entity.
-func (c *LabelClient) UpdateOne(l *Label) *LabelUpdateOne {
-	mutation := newLabelMutation(c.config, OpUpdateOne, withLabel(l))
-	return &LabelUpdateOne{config: c.config, hooks: c.Hooks(), mutation: mutation}
-}
-
-// UpdateOneID returns an update builder for the given id.
-func (c *LabelClient) UpdateOneID(id int) *LabelUpdateOne {
-	mutation := newLabelMutation(c.config, OpUpdateOne, withLabelID(id))
-	return &LabelUpdateOne{config: c.config, hooks: c.Hooks(), mutation: mutation}
-}
-
-// Delete returns a delete builder for Label.
-func (c *LabelClient) Delete() *LabelDelete {
-	mutation := newLabelMutation(c.config, OpDelete)
-	return &LabelDelete{config: c.config, hooks: c.Hooks(), mutation: mutation}
-}
-
-// DeleteOne returns a delete builder for the given entity.
-func (c *LabelClient) DeleteOne(l *Label) *LabelDeleteOne {
-	return c.DeleteOneID(l.ID)
-}
-
-// DeleteOneID returns a delete builder for the given id.
-func (c *LabelClient) DeleteOneID(id int) *LabelDeleteOne {
-	builder := c.Delete().Where(label.ID(id))
-	builder.mutation.id = &id
-	builder.mutation.op = OpDeleteOne
-	return &LabelDeleteOne{builder}
-}
-
-// Create returns a query builder for Label.
-func (c *LabelClient) Query() *LabelQuery {
-	return &LabelQuery{config: c.config}
-}
-
-// Get returns a Label entity by its id.
-func (c *LabelClient) Get(ctx context.Context, id int) (*Label, error) {
-	return c.Query().Where(label.ID(id)).Only(ctx)
-}
-
-// GetX is like Get, but panics if an error occurs.
-func (c *LabelClient) GetX(ctx context.Context, id int) *Label {
-	l, err := c.Get(ctx, id)
-	if err != nil {
-		panic(err)
-	}
-	return l
-}
-
-// QueryPools queries the pools edge of a Label.
-func (c *LabelClient) QueryPools(l *Label) *ResourcePoolQuery {
-	query := &ResourcePoolQuery{config: c.config}
-	query.path = func(ctx context.Context) (fromV *sql.Selector, _ error) {
-		id := l.ID
-		step := sqlgraph.NewStep(
-			sqlgraph.From(label.Table, label.FieldID, id),
-			sqlgraph.To(resourcepool.Table, resourcepool.FieldID),
-			sqlgraph.Edge(sqlgraph.O2M, false, label.PoolsTable, label.PoolsColumn),
-		)
-		fromV = sqlgraph.Neighbors(l.driver.Dialect(), step)
-		return fromV, nil
-	}
-	return query
-}
-
-// Hooks returns the client hooks.
-func (c *LabelClient) Hooks() []Hook {
-	return c.hooks.Label
 }
 
 // PropertyClient is a client for the Property schema.
@@ -797,15 +693,15 @@ func (c *ResourcePoolClient) QueryResourceType(rp *ResourcePool) *ResourceTypeQu
 	return query
 }
 
-// QueryLabels queries the labels edge of a ResourcePool.
-func (c *ResourcePoolClient) QueryLabels(rp *ResourcePool) *LabelQuery {
-	query := &LabelQuery{config: c.config}
+// QueryTags queries the tags edge of a ResourcePool.
+func (c *ResourcePoolClient) QueryTags(rp *ResourcePool) *TagQuery {
+	query := &TagQuery{config: c.config}
 	query.path = func(ctx context.Context) (fromV *sql.Selector, _ error) {
 		id := rp.ID
 		step := sqlgraph.NewStep(
 			sqlgraph.From(resourcepool.Table, resourcepool.FieldID, id),
-			sqlgraph.To(label.Table, label.FieldID),
-			sqlgraph.Edge(sqlgraph.M2O, true, resourcepool.LabelsTable, resourcepool.LabelsColumn),
+			sqlgraph.To(tag.Table, tag.FieldID),
+			sqlgraph.Edge(sqlgraph.M2M, true, resourcepool.TagsTable, resourcepool.TagsPrimaryKey...),
 		)
 		fromV = sqlgraph.Neighbors(rp.driver.Dialect(), step)
 		return fromV, nil
@@ -968,4 +864,108 @@ func (c *ResourceTypeClient) QueryPools(rt *ResourceType) *ResourcePoolQuery {
 // Hooks returns the client hooks.
 func (c *ResourceTypeClient) Hooks() []Hook {
 	return c.hooks.ResourceType
+}
+
+// TagClient is a client for the Tag schema.
+type TagClient struct {
+	config
+}
+
+// NewTagClient returns a client for the Tag from the given config.
+func NewTagClient(c config) *TagClient {
+	return &TagClient{config: c}
+}
+
+// Use adds a list of mutation hooks to the hooks stack.
+// A call to `Use(f, g, h)` equals to `tag.Hooks(f(g(h())))`.
+func (c *TagClient) Use(hooks ...Hook) {
+	c.hooks.Tag = append(c.hooks.Tag, hooks...)
+}
+
+// Create returns a create builder for Tag.
+func (c *TagClient) Create() *TagCreate {
+	mutation := newTagMutation(c.config, OpCreate)
+	return &TagCreate{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// BulkCreate returns a builder for creating a bulk of Tag entities.
+func (c *TagClient) CreateBulk(builders ...*TagCreate) *TagCreateBulk {
+	return &TagCreateBulk{config: c.config, builders: builders}
+}
+
+// Update returns an update builder for Tag.
+func (c *TagClient) Update() *TagUpdate {
+	mutation := newTagMutation(c.config, OpUpdate)
+	return &TagUpdate{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// UpdateOne returns an update builder for the given entity.
+func (c *TagClient) UpdateOne(t *Tag) *TagUpdateOne {
+	mutation := newTagMutation(c.config, OpUpdateOne, withTag(t))
+	return &TagUpdateOne{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// UpdateOneID returns an update builder for the given id.
+func (c *TagClient) UpdateOneID(id int) *TagUpdateOne {
+	mutation := newTagMutation(c.config, OpUpdateOne, withTagID(id))
+	return &TagUpdateOne{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// Delete returns a delete builder for Tag.
+func (c *TagClient) Delete() *TagDelete {
+	mutation := newTagMutation(c.config, OpDelete)
+	return &TagDelete{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// DeleteOne returns a delete builder for the given entity.
+func (c *TagClient) DeleteOne(t *Tag) *TagDeleteOne {
+	return c.DeleteOneID(t.ID)
+}
+
+// DeleteOneID returns a delete builder for the given id.
+func (c *TagClient) DeleteOneID(id int) *TagDeleteOne {
+	builder := c.Delete().Where(tag.ID(id))
+	builder.mutation.id = &id
+	builder.mutation.op = OpDeleteOne
+	return &TagDeleteOne{builder}
+}
+
+// Create returns a query builder for Tag.
+func (c *TagClient) Query() *TagQuery {
+	return &TagQuery{config: c.config}
+}
+
+// Get returns a Tag entity by its id.
+func (c *TagClient) Get(ctx context.Context, id int) (*Tag, error) {
+	return c.Query().Where(tag.ID(id)).Only(ctx)
+}
+
+// GetX is like Get, but panics if an error occurs.
+func (c *TagClient) GetX(ctx context.Context, id int) *Tag {
+	t, err := c.Get(ctx, id)
+	if err != nil {
+		panic(err)
+	}
+	return t
+}
+
+// QueryPools queries the pools edge of a Tag.
+func (c *TagClient) QueryPools(t *Tag) *ResourcePoolQuery {
+	query := &ResourcePoolQuery{config: c.config}
+	query.path = func(ctx context.Context) (fromV *sql.Selector, _ error) {
+		id := t.ID
+		step := sqlgraph.NewStep(
+			sqlgraph.From(tag.Table, tag.FieldID, id),
+			sqlgraph.To(resourcepool.Table, resourcepool.FieldID),
+			sqlgraph.Edge(sqlgraph.M2M, false, tag.PoolsTable, tag.PoolsPrimaryKey...),
+		)
+		fromV = sqlgraph.Neighbors(t.driver.Dialect(), step)
+		return fromV, nil
+	}
+	return query
+}
+
+// Hooks returns the client hooks.
+func (c *TagClient) Hooks() []Hook {
+	return c.hooks.Tag
 }

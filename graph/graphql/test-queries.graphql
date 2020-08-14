@@ -39,7 +39,7 @@ query queryResourceTypes {
 
 mutation createSetPool {
     CreateSetPool(
-        resourceTypeId: 25769803776,
+        resourceTypeId: 21474836480,
         poolName: "vlan_test4",
         poolValues: [{vlan: 13}, {vlan: 14},],
         poolDealocationSafetyPeriod: 0
@@ -119,7 +119,7 @@ query queryAllocationStrats {
 
 mutation createAllocationPool {
     CreateAllocatingPool(
-        resourceTypeId: 25769803776,
+        resourceTypeId: 21474836480,
         poolName: "vlan_allocating",
         allocationStrategyId: 1,
         poolDealocationSafetyPeriod: 0
@@ -170,6 +170,91 @@ mutation freeResource {
         poolId: 21474836481,
         input: {vlan: 10}
     )
+}
+
+mutation CreateTag {
+    CreateTag(tag: "fb-connectivity") {
+        ID
+        Tag
+    }
+}
+
+mutation CreateTag {
+    CreateTag(tag: "tip") {
+        ID
+        Tag
+    }
+}
+
+query Tags {
+    QueryTags {
+        ID
+        Tag
+        Edges {
+            Pools {
+                ID
+                Name
+            }
+        }
+    }
+}
+
+mutation TagSetPoolWithFb {
+    TagPool(tagId: 25769803776, poolId: 17179869184) {
+        Tag
+        Edges {
+            Pools {
+                ID
+            }
+        }
+    }
+}
+
+mutation TagSetPoolWithTip {
+    TagPool(tagId: 25769803777, poolId: 17179869184) {
+        Tag
+    }
+}
+
+mutation UpdateTagTip {
+    UpdateTag(tagId: 25769803777, tag: "tipIsTheBest") {
+        ID
+        Tag
+    }
+}
+
+mutation TagAllocatingPoolWithTip {
+    TagPool(tagId: 25769803777, poolId: 17179869185) {
+        Tag
+    }
+}
+
+query searchPoolsByBothTags {
+    SearchPoolsByTags(tags: {tags: [{tags: ["fb-connectivity", "tipIsTheBest"]}]}) {
+        ID
+        Name
+    }
+}
+
+query searchPoolsByOneOrTheOtherTag {
+    SearchPoolsByTags(tags: {tags: [{tags: ["fb-connectivity"]}, {tags: ["tipIsTheBest"]}]}) {
+        ID
+        Name
+    }
+}
+
+query searchPoolsByTipTag {
+    SearchPoolsByTags(tags: {tags: [{tags: ["tipIsTheBest"]}]}) {
+        ID
+        Name
+    }
+}
+
+query searchPoolsByFbTag {
+    SearchPoolsByTags(tags: {tags: [{tags: ["fb-connectivity"]}]}) {
+        ID
+        Name
+    }
 }
 
 mutation deleteResourcePool {

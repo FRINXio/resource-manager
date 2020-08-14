@@ -49,19 +49,19 @@ func (ResourceType) Policy() ent.Policy {
 	return nil
 }
 
-type Label struct {
+type Tag struct {
 	ent.Schema
 }
 
-func (Label) Fields() []ent.Field {
+func (Tag) Fields() []ent.Field {
 	return []ent.Field{
-		field.String("labl").
+		field.String("tag").
 			NotEmpty().
 			Unique(),
 	}
 }
 
-func (Label) Edges() []ent.Edge {
+func (Tag) Edges() []ent.Edge {
 	return []ent.Edge{
 		edge.To("pools", ResourcePool.Type),
 	}
@@ -121,9 +121,8 @@ func (ResourcePool) Edges() []ent.Edge {
 		edge.From("resource_type", ResourceType.Type).
 			Ref("pools").
 			Unique(),
-		edge.From("labels", Label.Type).
-			Ref("pools").
-			Unique(),
+		edge.From("tags", Tag.Type).
+			Ref("pools"),
 		edge.To("claims", Resource.Type),
 		edge.To("allocation_strategy", AllocationStrategy.Type).
 			Unique(),

@@ -22,18 +22,6 @@ var (
 		PrimaryKey:  []*schema.Column{AllocationStrategiesColumns[0]},
 		ForeignKeys: []*schema.ForeignKey{},
 	}
-	// LabelsColumns holds the columns for the "labels" table.
-	LabelsColumns = []*schema.Column{
-		{Name: "id", Type: field.TypeInt, Increment: true},
-		{Name: "labl", Type: field.TypeString, Unique: true},
-	}
-	// LabelsTable holds the schema information for the "labels" table.
-	LabelsTable = &schema.Table{
-		Name:        "labels",
-		Columns:     LabelsColumns,
-		PrimaryKey:  []*schema.Column{LabelsColumns[0]},
-		ForeignKeys: []*schema.ForeignKey{},
-	}
 	// PropertiesColumns holds the columns for the "properties" table.
 	PropertiesColumns = []*schema.Column{
 		{Name: "id", Type: field.TypeInt, Increment: true},
@@ -136,7 +124,6 @@ var (
 		{Name: "name", Type: field.TypeString, Unique: true},
 		{Name: "pool_type", Type: field.TypeEnum, Enums: []string{"allocating", "set", "singleton"}},
 		{Name: "dealocation_safety_period", Type: field.TypeInt},
-		{Name: "label_pools", Type: field.TypeInt, Nullable: true},
 		{Name: "resource_pool_allocation_strategy", Type: field.TypeInt, Nullable: true},
 		{Name: "resource_type_pools", Type: field.TypeInt, Nullable: true},
 	}
@@ -147,22 +134,15 @@ var (
 		PrimaryKey: []*schema.Column{ResourcePoolsColumns[0]},
 		ForeignKeys: []*schema.ForeignKey{
 			{
-				Symbol:  "resource_pools_labels_pools",
-				Columns: []*schema.Column{ResourcePoolsColumns[4]},
-
-				RefColumns: []*schema.Column{LabelsColumns[0]},
-				OnDelete:   schema.SetNull,
-			},
-			{
 				Symbol:  "resource_pools_allocation_strategies_allocation_strategy",
-				Columns: []*schema.Column{ResourcePoolsColumns[5]},
+				Columns: []*schema.Column{ResourcePoolsColumns[4]},
 
 				RefColumns: []*schema.Column{AllocationStrategiesColumns[0]},
 				OnDelete:   schema.SetNull,
 			},
 			{
 				Symbol:  "resource_pools_resource_types_pools",
-				Columns: []*schema.Column{ResourcePoolsColumns[6]},
+				Columns: []*schema.Column{ResourcePoolsColumns[5]},
 
 				RefColumns: []*schema.Column{ResourceTypesColumns[0]},
 				OnDelete:   schema.SetNull,
@@ -181,15 +161,55 @@ var (
 		PrimaryKey:  []*schema.Column{ResourceTypesColumns[0]},
 		ForeignKeys: []*schema.ForeignKey{},
 	}
+	// TagsColumns holds the columns for the "tags" table.
+	TagsColumns = []*schema.Column{
+		{Name: "id", Type: field.TypeInt, Increment: true},
+		{Name: "tag", Type: field.TypeString, Unique: true},
+	}
+	// TagsTable holds the schema information for the "tags" table.
+	TagsTable = &schema.Table{
+		Name:        "tags",
+		Columns:     TagsColumns,
+		PrimaryKey:  []*schema.Column{TagsColumns[0]},
+		ForeignKeys: []*schema.ForeignKey{},
+	}
+	// TagPoolsColumns holds the columns for the "tag_pools" table.
+	TagPoolsColumns = []*schema.Column{
+		{Name: "tag_id", Type: field.TypeInt},
+		{Name: "resource_pool_id", Type: field.TypeInt},
+	}
+	// TagPoolsTable holds the schema information for the "tag_pools" table.
+	TagPoolsTable = &schema.Table{
+		Name:       "tag_pools",
+		Columns:    TagPoolsColumns,
+		PrimaryKey: []*schema.Column{TagPoolsColumns[0], TagPoolsColumns[1]},
+		ForeignKeys: []*schema.ForeignKey{
+			{
+				Symbol:  "tag_pools_tag_id",
+				Columns: []*schema.Column{TagPoolsColumns[0]},
+
+				RefColumns: []*schema.Column{TagsColumns[0]},
+				OnDelete:   schema.Cascade,
+			},
+			{
+				Symbol:  "tag_pools_resource_pool_id",
+				Columns: []*schema.Column{TagPoolsColumns[1]},
+
+				RefColumns: []*schema.Column{ResourcePoolsColumns[0]},
+				OnDelete:   schema.Cascade,
+			},
+		},
+	}
 	// Tables holds all the tables in the schema.
 	Tables = []*schema.Table{
 		AllocationStrategiesTable,
-		LabelsTable,
 		PropertiesTable,
 		PropertyTypesTable,
 		ResourcesTable,
 		ResourcePoolsTable,
 		ResourceTypesTable,
+		TagsTable,
+		TagPoolsTable,
 	}
 )
 
@@ -198,7 +218,8 @@ func init() {
 	PropertiesTable.ForeignKeys[1].RefTable = ResourcesTable
 	PropertyTypesTable.ForeignKeys[0].RefTable = ResourceTypesTable
 	ResourcesTable.ForeignKeys[0].RefTable = ResourcePoolsTable
-	ResourcePoolsTable.ForeignKeys[0].RefTable = LabelsTable
-	ResourcePoolsTable.ForeignKeys[1].RefTable = AllocationStrategiesTable
-	ResourcePoolsTable.ForeignKeys[2].RefTable = ResourceTypesTable
+	ResourcePoolsTable.ForeignKeys[0].RefTable = AllocationStrategiesTable
+	ResourcePoolsTable.ForeignKeys[1].RefTable = ResourceTypesTable
+	TagPoolsTable.ForeignKeys[0].RefTable = TagsTable
+	TagPoolsTable.ForeignKeys[1].RefTable = ResourcePoolsTable
 }

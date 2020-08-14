@@ -18,20 +18,6 @@ func (c *AllocationStrategyClient) CreateFrom(as *AllocationStrategy) *Allocatio
 	return createBuilder
 }
 
-// Copy existing Label entity with all its fields and (eagerly loaded) edges ! into a new LabelCreate builder.
-func (c *LabelClient) CreateFrom(l *Label) *LabelCreate {
-	mutation := newLabelMutation(c.config, OpCreate, withLabel(l))
-	mutation.labl = &(l.Labl)
-
-	createBuilder := &LabelCreate{config: c.config, hooks: c.Hooks(), mutation: mutation}
-
-	if l.Edges.Pools != nil {
-		createBuilder.AddPools(l.Edges.Pools...)
-	}
-
-	return createBuilder
-}
-
 // Copy existing Property entity with all its fields and (eagerly loaded) edges ! into a new PropertyCreate builder.
 func (c *PropertyClient) CreateFrom(pr *Property) *PropertyCreate {
 	mutation := newPropertyMutation(c.config, OpCreate, withProperty(pr))
@@ -116,8 +102,8 @@ func (c *ResourcePoolClient) CreateFrom(rp *ResourcePool) *ResourcePoolCreate {
 		createBuilder.SetResourceType(rp.Edges.ResourceType)
 	}
 
-	if rp.Edges.Labels != nil {
-		createBuilder.SetLabels(rp.Edges.Labels)
+	if rp.Edges.Tags != nil {
+		createBuilder.AddTags(rp.Edges.Tags...)
 	}
 
 	if rp.Edges.Claims != nil {
@@ -144,6 +130,20 @@ func (c *ResourceTypeClient) CreateFrom(rt *ResourceType) *ResourceTypeCreate {
 
 	if rt.Edges.Pools != nil {
 		createBuilder.AddPools(rt.Edges.Pools...)
+	}
+
+	return createBuilder
+}
+
+// Copy existing Tag entity with all its fields and (eagerly loaded) edges ! into a new TagCreate builder.
+func (c *TagClient) CreateFrom(t *Tag) *TagCreate {
+	mutation := newTagMutation(c.config, OpCreate, withTag(t))
+	mutation.tag = &(t.Tag)
+
+	createBuilder := &TagCreate{config: c.config, hooks: c.Hooks(), mutation: mutation}
+
+	if t.Edges.Pools != nil {
+		createBuilder.AddPools(t.Edges.Pools...)
 	}
 
 	return createBuilder

@@ -14,8 +14,6 @@ type Tx struct {
 	config
 	// AllocationStrategy is the client for interacting with the AllocationStrategy builders.
 	AllocationStrategy *AllocationStrategyClient
-	// Label is the client for interacting with the Label builders.
-	Label *LabelClient
 	// Property is the client for interacting with the Property builders.
 	Property *PropertyClient
 	// PropertyType is the client for interacting with the PropertyType builders.
@@ -26,6 +24,8 @@ type Tx struct {
 	ResourcePool *ResourcePoolClient
 	// ResourceType is the client for interacting with the ResourceType builders.
 	ResourceType *ResourceTypeClient
+	// Tag is the client for interacting with the Tag builders.
+	Tag *TagClient
 
 	// lazily loaded.
 	client     *Client
@@ -162,12 +162,12 @@ func (tx *Tx) Client() *Client {
 
 func (tx *Tx) init() {
 	tx.AllocationStrategy = NewAllocationStrategyClient(tx.config)
-	tx.Label = NewLabelClient(tx.config)
 	tx.Property = NewPropertyClient(tx.config)
 	tx.PropertyType = NewPropertyTypeClient(tx.config)
 	tx.Resource = NewResourceClient(tx.config)
 	tx.ResourcePool = NewResourcePoolClient(tx.config)
 	tx.ResourceType = NewResourceTypeClient(tx.config)
+	tx.Tag = NewTagClient(tx.config)
 }
 
 // txDriver wraps the given dialect.Tx with a nop dialect.Driver implementation.

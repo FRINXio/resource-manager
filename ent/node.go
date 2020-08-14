@@ -14,12 +14,12 @@ import (
 	"github.com/facebookincubator/ent/dialect/sql/schema"
 	"github.com/hashicorp/go-multierror"
 	"github.com/net-auto/resourceManager/ent/allocationstrategy"
-	"github.com/net-auto/resourceManager/ent/label"
 	"github.com/net-auto/resourceManager/ent/property"
 	"github.com/net-auto/resourceManager/ent/propertytype"
 	"github.com/net-auto/resourceManager/ent/resource"
 	"github.com/net-auto/resourceManager/ent/resourcepool"
 	"github.com/net-auto/resourceManager/ent/resourcetype"
+	"github.com/net-auto/resourceManager/ent/tag"
 	"github.com/vektah/gqlparser/v2/gqlerror"
 	"golang.org/x/sync/semaphore"
 )
@@ -85,37 +85,6 @@ func (as *AllocationStrategy) Node(ctx context.Context) (node *Node, err error) 
 	}
 	var ids []int
 	ids, err = as.QueryPools().
-		Select(resourcepool.FieldID).
-		Ints(ctx)
-	if err != nil {
-		return nil, err
-	}
-	node.Edges[0] = &Edge{
-		IDs:  ids,
-		Type: "ResourcePool",
-		Name: "pools",
-	}
-	return node, nil
-}
-
-func (l *Label) Node(ctx context.Context) (node *Node, err error) {
-	node = &Node{
-		ID:     l.ID,
-		Type:   "Label",
-		Fields: make([]*Field, 1),
-		Edges:  make([]*Edge, 1),
-	}
-	var buf []byte
-	if buf, err = json.Marshal(l.Labl); err != nil {
-		return nil, err
-	}
-	node.Fields[0] = &Field{
-		Type:  "string",
-		Name:  "labl",
-		Value: string(buf),
-	}
-	var ids []int
-	ids, err = l.QueryPools().
 		Select(resourcepool.FieldID).
 		Ints(ctx)
 	if err != nil {
@@ -477,16 +446,16 @@ func (rp *ResourcePool) Node(ctx context.Context) (node *Node, err error) {
 		Type: "ResourceType",
 		Name: "resource_type",
 	}
-	ids, err = rp.QueryLabels().
-		Select(label.FieldID).
+	ids, err = rp.QueryTags().
+		Select(tag.FieldID).
 		Ints(ctx)
 	if err != nil {
 		return nil, err
 	}
 	node.Edges[1] = &Edge{
 		IDs:  ids,
-		Type: "Label",
-		Name: "labels",
+		Type: "Tag",
+		Name: "tags",
 	}
 	ids, err = rp.QueryClaims().
 		Select(resource.FieldID).
@@ -555,6 +524,37 @@ func (rt *ResourceType) Node(ctx context.Context) (node *Node, err error) {
 	return node, nil
 }
 
+func (t *Tag) Node(ctx context.Context) (node *Node, err error) {
+	node = &Node{
+		ID:     t.ID,
+		Type:   "Tag",
+		Fields: make([]*Field, 1),
+		Edges:  make([]*Edge, 1),
+	}
+	var buf []byte
+	if buf, err = json.Marshal(t.Tag); err != nil {
+		return nil, err
+	}
+	node.Fields[0] = &Field{
+		Type:  "string",
+		Name:  "tag",
+		Value: string(buf),
+	}
+	var ids []int
+	ids, err = t.QueryPools().
+		Select(resourcepool.FieldID).
+		Ints(ctx)
+	if err != nil {
+		return nil, err
+	}
+	node.Edges[0] = &Edge{
+		IDs:  ids,
+		Type: "ResourcePool",
+		Name: "pools",
+	}
+	return node, nil
+}
+
 func (c *Client) Node(ctx context.Context, id int) (*Node, error) {
 	n, err := c.Noder(ctx, id)
 	if err != nil {
@@ -594,15 +594,6 @@ func (c *Client) noder(ctx context.Context, tbl string, id int) (Noder, error) {
 		n, err := c.AllocationStrategy.Query().
 			Where(allocationstrategy.ID(id)).
 			CollectFields(ctx, "AllocationStrategy").
-			Only(ctx)
-		if err != nil {
-			return nil, err
-		}
-		return n, nil
-	case label.Table:
-		n, err := c.Label.Query().
-			Where(label.ID(id)).
-			CollectFields(ctx, "Label").
 			Only(ctx)
 		if err != nil {
 			return nil, err
@@ -648,6 +639,15 @@ func (c *Client) noder(ctx context.Context, tbl string, id int) (Noder, error) {
 		n, err := c.ResourceType.Query().
 			Where(resourcetype.ID(id)).
 			CollectFields(ctx, "ResourceType").
+			Only(ctx)
+		if err != nil {
+			return nil, err
+		}
+		return n, nil
+	case tag.Table:
+		n, err := c.Tag.Query().
+			Where(tag.ID(id)).
+			CollectFields(ctx, "Tag").
 			Only(ctx)
 		if err != nil {
 			return nil, err
