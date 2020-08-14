@@ -4,7 +4,6 @@ import (
 	"context"
 
 	"github.com/net-auto/resourceManager/ent"
-	allocationStrategy "github.com/net-auto/resourceManager/ent/allocationstrategy"
 	"github.com/net-auto/resourceManager/ent/resource"
 	resourcePool "github.com/net-auto/resourceManager/ent/resourcepool"
 	"github.com/pkg/errors"
@@ -31,6 +30,7 @@ func NewAllocatingPoolWithMeta(
 	poolName string,
 	poolDealocationSafetyPeriod int) (Pool, *ent.ResourcePool, error) {
 
+	// TODO keep just single instance
 	wasmer, err := NewWasmerUsingEnvVars()
 	if err != nil {
 		return nil, nil, errors.Wrap(err, "Cannot create resource pool")
@@ -106,7 +106,7 @@ func (pool AllocatingPool) ClaimResource(userInput map[string]interface{}) (*ent
 			"Unable to claim resource from pool \"%s\", resource type loading error ", pool.Name)
 	}
 
-	parsedOutputFromStrat, _ /*TODO do something with stderr */, err := pool.invokeAllocationStrategy(strat, userInput)
+	parsedOutputFromStrat, _ /*TODO do something with stderr */, err := InvokeAllocationStrategy(pool.invoker, strat, userInput)
 	if err != nil {
 		return nil, errors.Wrapf(err,
 			"Unable to claim resource from pool \"%s\", allocation strategy \"%s\" failed", pool.Name, strat.Name)
@@ -119,20 +119,6 @@ func (pool AllocatingPool) ClaimResource(userInput map[string]interface{}) (*ent
 				"returned more than 1 result \"%s\"", pool.Name, strat.Name, created)
 	}
 	return created[0], nil
-}
-
-func (pool AllocatingPool) invokeAllocationStrategy(
-	strat *ent.AllocationStrategy,
-	userInput map[string]interface{},
-) (map[string]interface{}, string, error) {
-	switch strat.Lang {
-	case allocationStrategy.LangJs:
-		return pool.invoker.invokeJs(strat.Script, userInput)
-	case allocationStrategy.LangPy:
-		return pool.invoker.invokePy(strat.Script, userInput)
-	default:
-		return nil, "", errors.Errorf("Unknown language \"%s\" for strategy \"%s\"", strat.Lang, strat.Name)
-	}
 }
 
 // FreeResource deallocates the resource identified by its properties

@@ -61,6 +61,14 @@ mutation createAllocationStrat {
     }
 }
 
+mutation TestAllocationStrategy {
+    TestAllocationStrategy(
+        allocationStrategyId: 1,
+        resourcePool: { ResourcePoolName: "name", ResourceTypeName: [] },
+        currentResources: [{Properties: { value:"1.2.3.1"}}],
+        userInput: {vlan: 11})
+}
+
 query queryAllocationStrats {
     QueryAllocationStrategies{
         ID

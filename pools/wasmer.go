@@ -11,6 +11,8 @@ import (
 	"strings"
 	"time"
 
+	"github.com/net-auto/resourceManager/ent"
+	"github.com/net-auto/resourceManager/ent/allocationstrategy"
 	"github.com/pkg/errors"
 )
 
@@ -22,7 +24,7 @@ type Wasmer struct {
 	pythonLibPath string
 }
 
-const wasmerMaxTimeoutMillisDefault = "1000"
+const wasmerMaxTimeoutMillisDefault = "5000"
 const wasmerBinDefault = "./.wasmer/bin/wasmer"
 const jsBinDefault = "./wasm/quickjs/quickjs.wasm"
 const pyBinDefault = "./wasm/python/bin/python.wasm"
@@ -79,6 +81,21 @@ func NewWasmer(maxTimeout time.Duration, wasmerBinPath string, jsBinPath string,
 type ScriptInvoker interface {
 	invokeJs(strategyScript string, userInput map[string]interface{}) (map[string]interface{}, string, error)
 	invokePy(strategyScript string, userInput map[string]interface{}) (map[string]interface{}, string, error)
+}
+
+func InvokeAllocationStrategy(
+	invoker ScriptInvoker,
+	strat *ent.AllocationStrategy,
+	userInput map[string]interface{},
+) (map[string]interface{}, string, error) {
+	switch strat.Lang {
+	case allocationstrategy.LangJs:
+		return invoker.invokeJs(strat.Script, userInput)
+	case allocationstrategy.LangPy:
+		return invoker.invokePy(strat.Script, userInput)
+	default:
+		return nil, "", errors.Errorf("Unknown language \"%s\" for strategy \"%s\"", strat.Lang, strat.Name)
+	}
 }
 
 func (wasmer Wasmer) invokeJs(strategyScript string, userInput map[string]interface{}) (map[string]interface{}, string, error) {

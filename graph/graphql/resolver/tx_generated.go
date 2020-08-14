@@ -8,6 +8,7 @@ import (
 
 	"github.com/net-auto/resourceManager/graph/graphql/generated"
 	"github.com/net-auto/resourceManager/ent"
+	"github.com/net-auto/resourceManager/graph/graphql/model"
 )
 
 // txResolver wraps a mutation resolver and executes every mutation under a transaction.
@@ -64,6 +65,17 @@ func (tr txResolver) DeleteAllocationStrategy(ctx context.Context, allocationStr
 	}
 	if result != nil {
 		result = result.Unwrap()
+	}
+	return result, nil
+}
+
+func (tr txResolver) TestAllocationStrategy(ctx context.Context, allocationStrategyID int, resourcePool model.ResourcePoolInput, currentResources []*model.ResourceInput, userInput map[string]interface{}) (map[string]interface{}, error) {
+	var result, zero map[string]interface{}
+	if err := tr.WithTransaction(ctx, func(ctx context.Context, mr generated.MutationResolver) (err error) {
+		result, err = mr.TestAllocationStrategy(ctx, allocationStrategyID, resourcePool, currentResources, userInput)
+		return
+	}); err != nil {
+		return zero, err
 	}
 	return result, nil
 }

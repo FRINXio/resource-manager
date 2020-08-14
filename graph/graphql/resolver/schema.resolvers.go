@@ -9,6 +9,7 @@ import (
 	"github.com/net-auto/resourceManager/ent"
 	"github.com/net-auto/resourceManager/ent/allocationstrategy"
 	"github.com/net-auto/resourceManager/graph/graphql/generated"
+	"github.com/net-auto/resourceManager/graph/graphql/model"
 	p "github.com/net-auto/resourceManager/pools"
 	"github.com/vektah/gqlparser/v2/gqlerror"
 )
@@ -39,6 +40,30 @@ func (r *mutationResolver) DeleteAllocationStrategy(ctx context.Context, allocat
 		}
 		return strat, nil
 	}
+}
+
+func (r *mutationResolver) TestAllocationStrategy(ctx context.Context, allocationStrategyID int, resourcePool model.ResourcePoolInput, currentResources []*model.ResourceInput, userInput map[string]interface{}) (map[string]interface{}, error) {
+	var client = r.ClientFrom(ctx)
+	strat, err := client.AllocationStrategy.Query().
+		Where(allocationstrategy.ID(allocationStrategyID)).
+		Only(ctx)
+	if err != nil {
+		return nil, gqlerror.Errorf("Unable to delete strategy: %v", err)
+	}
+	// TODO keep just single instance
+	wasmer, err := p.NewWasmerUsingEnvVars()
+	if err != nil {
+		return nil, gqlerror.Errorf("Unable to create scripting engine: %v", err)
+	}
+
+	parsedOutputFromStrat, stdErr, err := p.InvokeAllocationStrategy(wasmer, strat, userInput)
+	if err != nil {
+		return nil, gqlerror.Errorf("Error while running the script: %v", err)
+	}
+	result := make(map[string]interface{})
+	result["stdout"] = parsedOutputFromStrat
+	result["stderr"] = stdErr
+	return result, nil
 }
 
 func (r *mutationResolver) ClaimResource(ctx context.Context, poolID int, userInput map[string]interface{}) (*ent.Resource, error) {

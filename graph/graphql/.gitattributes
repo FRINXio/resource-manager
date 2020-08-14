@@ -2,3 +2,4 @@
 
 generated/* -diff -merge linguist-generated=true
 resolver/tx_generated.go -diff -merge linguist-generated=true
+model/* -diff -merge linguist-generated=true
