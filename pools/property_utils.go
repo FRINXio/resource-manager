@@ -3,12 +3,13 @@ package pools
 import (
 	"context"
 	"fmt"
+	"strconv"
+
 	"github.com/net-auto/resourceManager/ent"
 	"github.com/net-auto/resourceManager/ent/predicate"
 	"github.com/net-auto/resourceManager/ent/property"
 	"github.com/net-auto/resourceManager/ent/propertytype"
 	"github.com/pkg/errors"
-	"strconv"
 )
 
 func PropertiesToMap(props []*ent.Property) (RawResourceProps, error) {
@@ -42,10 +43,12 @@ func CompareProps(
 
 	var predicates []predicate.Property
 	for pN, pV := range propertyValues {
+		// FIXME: N+1 selects problem
 		pT, err := resourceType.QueryPropertyTypes().Where(propertytype.NameEQ(pN)).Only(ctx)
 		if err != nil {
 			return nil, errors.Wrapf(err, "Unknown property: \"%s\" for resource type: \"%s\"", pN, resourceType)
 		}
+		// TODO nil handling
 
 		propPredict := property.HasTypeWith(propertytype.ID(pT.ID))
 
@@ -54,7 +57,18 @@ func CompareProps(
 		// TODO we have this switch in 2 places
 		switch pT.Type {
 		case "int":
-			propPredict = property.And(propPredict, property.IntValEQ(pV.(int)))
+			var intVal int
+			switch t := pV.(type) {
+			case int:
+				intVal = t
+			case int32:
+				intVal = int(t)
+			case int64:
+				intVal = int(t)
+			default:
+				return nil, errors.Errorf("Unsupported int conversion from %T", t)
+			}
+			propPredict = property.And(propPredict, property.IntValEQ(intVal))
 		case "string":
 			propPredict = property.And(propPredict, property.StringValEQ(pV.(string)))
 		case "float":
