@@ -13,6 +13,7 @@ import (
 
 	"github.com/net-auto/resourceManager/ent"
 	"github.com/net-auto/resourceManager/ent/allocationstrategy"
+	"github.com/net-auto/resourceManager/graph/graphql/model"
 	"github.com/pkg/errors"
 )
 
@@ -79,26 +80,48 @@ func NewWasmer(maxTimeout time.Duration, wasmerBinPath string, jsBinPath string,
 }
 
 type ScriptInvoker interface {
-	invokeJs(strategyScript string, userInput map[string]interface{}) (map[string]interface{}, string, error)
-	invokePy(strategyScript string, userInput map[string]interface{}) (map[string]interface{}, string, error)
+	invokeJs(strategyScript string, userInput map[string]interface{},
+		resourcePool model.ResourcePoolInput,
+		currentResources []*model.ResourceInput,
+	) (map[string]interface{}, string, error)
+	invokePy(strategyScript string, userInput map[string]interface{},
+		resourcePool model.ResourcePoolInput,
+		currentResources []*model.ResourceInput,
+	) (map[string]interface{}, string, error)
 }
 
 func InvokeAllocationStrategy(
 	invoker ScriptInvoker,
 	strat *ent.AllocationStrategy,
 	userInput map[string]interface{},
+	resourcePool model.ResourcePoolInput,
+	currentResources []*model.ResourceInput,
 ) (map[string]interface{}, string, error) {
+
 	switch strat.Lang {
 	case allocationstrategy.LangJs:
-		return invoker.invokeJs(strat.Script, userInput)
+		return invoker.invokeJs(strat.Script, userInput, resourcePool, currentResources)
 	case allocationstrategy.LangPy:
-		return invoker.invokePy(strat.Script, userInput)
+		return invoker.invokePy(strat.Script, userInput, resourcePool, currentResources)
 	default:
 		return nil, "", errors.Errorf("Unknown language \"%s\" for strategy \"%s\"", strat.Lang, strat.Name)
 	}
 }
 
-func (wasmer Wasmer) invokeJs(strategyScript string, userInput map[string]interface{}) (map[string]interface{}, string, error) {
+func serializeJsVariable(name string, data interface{}) (string, error) {
+	userInputBytes, err := json.Marshal(data)
+	if err != nil {
+		return "", errors.Wrap(err, "Cannot serialize userInput into json")
+	}
+	return "const " + name + " = " + string(userInputBytes[:]) + ";\n", nil
+}
+
+func (wasmer Wasmer) invokeJs(
+	strategyScript string,
+	userInput map[string]interface{},
+	resourcePool model.ResourcePoolInput,
+	currentResources []*model.ResourceInput,
+) (map[string]interface{}, string, error) {
 
 	// Append script to invoke the function, parse inputs and serialize outputs
 	header := `
@@ -108,13 +131,23 @@ console.error = function(...args) {
 }
 const log = console.error;
 `
-	header += "const userInput = "
-	userInputBytes, err := json.Marshal(userInput)
+	addition, err := serializeJsVariable("userInput", userInput)
 	if err != nil {
-		return nil, "", errors.Wrap(err, "Cannot serialize userInput into json")
+		return nil, "", err
 	}
-	header += string(userInputBytes[:])
-	header += ";\n"
+	header += addition
+
+	addition, err = serializeJsVariable("resourcePool", resourcePool)
+	if err != nil {
+		return nil, "", err
+	}
+	header += addition
+
+	addition, err = serializeJsVariable("currentResources", currentResources)
+	if err != nil {
+		return nil, "", err
+	}
+	header += addition
 
 	footer := `
 let result = invoke()
@@ -125,7 +158,10 @@ if (result != null) {
 	std.out.puts(result);
 }
 `
+
 	scriptWithInvoker := header + strategyScript + footer
+	// TODO logging
+	fmt.Println("Executing\n" + scriptWithInvoker)
 	return wasmer.invoke(wasmer.wasmerBinPath, wasmer.jsBinPath, "--", "--std", "-e", scriptWithInvoker)
 }
 
@@ -148,8 +184,8 @@ func (wasmer Wasmer) invoke(name string, arg ...string) (map[string]interface{},
 			"Error invoking user script. Stdout: \"%s\", Stderr: \"%s\"", string(stdout), stderr)
 	}
 
-	fmt.Println("Stdout:" + string(stdout[:]))
-	fmt.Println("Stderr:" + stderr[:])
+	// TODO logging fmt.Println("Stdout:" + string(stdout[:]))
+	// TODO logging fmt.Println("Stderr:" + stderr[:])
 
 	m := make(map[string]interface{})
 	if err := json.Unmarshal(stdout, &m); err != nil {
@@ -168,19 +204,48 @@ func prefixLines(str string, prefix string) string {
 	return result
 }
 
-func (wasmer Wasmer) invokePy(script string, userInput map[string]interface{}) (map[string]interface{}, string, error) {
+func serializePythonVariable(name string, data interface{}) (string, error) {
+	userInputBytes, err := json.Marshal(data)
+	if err != nil {
+		return "", errors.Wrapf(err, "Cannot serialize %s into json", name)
+	}
+	// Encode twice so that the result starts and ends with a quote. All inner quotes will be escaped.
+	userInputBytes, err = json.Marshal(string(userInputBytes[:]))
+	if err != nil {
+		return "", errors.Wrapf(err, "Cannot serialize %s into json second time", name)
+	}
+	return name + "=json.loads(" + string(userInputBytes[:]) + ")\n", nil
+}
+
+func (wasmer Wasmer) invokePy(
+	script string,
+	userInput map[string]interface{},
+	resourcePool model.ResourcePoolInput,
+	currentResources []*model.ResourceInput,
+) (map[string]interface{}, string, error) {
 	header := `
 import sys,json
 def log(*args, **kwargs):
   print(*args, file=sys.stderr, **kwargs)
 `
-	userInputBytes, err := json.Marshal(userInput)
+	addition, err := serializePythonVariable("userInput", userInput)
 	if err != nil {
-		return nil, "", errors.Wrap(err, "Cannot serialize userInput into json")
+		return nil, "", err
 	}
-	// Encode twice so that the result starts and ends with a quote. All inner quotes will be escaped.
-	userInputBytes, err = json.Marshal(string(userInputBytes[:]))
-	header += "userInput=" + string(userInputBytes[:]) + "\n"
+	header += addition
+
+	addition, err = serializePythonVariable("resourcePool", resourcePool)
+	if err != nil {
+		return nil, "", err
+	}
+	header += addition
+
+	addition, err = serializePythonVariable("currentResources", currentResources)
+	if err != nil {
+		return nil, "", err
+	}
+	header += addition
+
 	header += `
 def script_fun():
 `
@@ -194,7 +259,7 @@ if not result is None:
 `
 	script = header + prefixLines(script, "  ") + footer
 
-	fmt.Println("Executing\n" + script)
+	// TODO logging fmt.Println("Executing\n" + script)
 
 	// options:
 	// -q: quiet, do not print python version

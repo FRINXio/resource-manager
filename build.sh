@@ -1,5 +1,7 @@
 #! /bin/sh
 
+set -xe
+
 GITHUB_TOKEN=$(grep GITHUB_TOKEN .env | cut -d '=' -f2)
 
 # symphony is a private repo, you need a github access token to access it
@@ -17,3 +19,5 @@ go build -o ./resourceManager
 echo ""
 echo "------> Testing"
 go test -v -short ./pools/...
+
+echo "All OK"

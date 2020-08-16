@@ -12,6 +12,7 @@ enum PoolType
 {
     set
     singleton
+# FIXME allocating is missing
 }
 
 scalar Map
@@ -88,7 +89,6 @@ type ResourceType
 
 input ResourcePoolInput {
     ResourcePoolName: String!
-    ResourceTypeName: [String]!
 }
 
 input ResourceInput {
@@ -108,7 +108,7 @@ type Query {
 
 type Mutation {
     # Allocation strategy
-    CreateAllocationStrategy(name: String!, script: String!): AllocationStrategy!
+    CreateAllocationStrategy(name: String!, script: String!, lang: AllocationStrategyLang!): AllocationStrategy!
     DeleteAllocationStrategy(allocationStrategyId: ID!): AllocationStrategy!
     TestAllocationStrategy(allocationStrategyId: ID!, resourcePool: ResourcePoolInput!,
             currentResources: [ResourceInput]!, userInput: Map!): Map!

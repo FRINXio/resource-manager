@@ -14,9 +14,9 @@ import (
 	"github.com/vektah/gqlparser/v2/gqlerror"
 )
 
-func (r *mutationResolver) CreateAllocationStrategy(ctx context.Context, name string, script string) (*ent.AllocationStrategy, error) {
+func (r *mutationResolver) CreateAllocationStrategy(ctx context.Context, name string, script string, lang allocationstrategy.Lang) (*ent.AllocationStrategy, error) {
 	var client = r.ClientFrom(ctx)
-	strat, err := client.AllocationStrategy.Create().SetName(name).SetScript(script).Save(ctx)
+	strat, err := client.AllocationStrategy.Create().SetName(name).SetScript(script).SetLang(lang).Save(ctx)
 	if err != nil {
 		return nil, gqlerror.Errorf("Unable to create strategy: %v", err)
 	}
@@ -48,7 +48,7 @@ func (r *mutationResolver) TestAllocationStrategy(ctx context.Context, allocatio
 		Where(allocationstrategy.ID(allocationStrategyID)).
 		Only(ctx)
 	if err != nil {
-		return nil, gqlerror.Errorf("Unable to delete strategy: %v", err)
+		return nil, gqlerror.Errorf("Unable to get strategy: %v", err)
 	}
 	// TODO keep just single instance
 	wasmer, err := p.NewWasmerUsingEnvVars()
@@ -56,7 +56,7 @@ func (r *mutationResolver) TestAllocationStrategy(ctx context.Context, allocatio
 		return nil, gqlerror.Errorf("Unable to create scripting engine: %v", err)
 	}
 
-	parsedOutputFromStrat, stdErr, err := p.InvokeAllocationStrategy(wasmer, strat, userInput)
+	parsedOutputFromStrat, stdErr, err := p.InvokeAllocationStrategy(wasmer, strat, userInput, resourcePool, currentResources)
 	if err != nil {
 		return nil, gqlerror.Errorf("Error while running the script: %v", err)
 	}
@@ -256,19 +256,19 @@ func (r *queryResolver) QueryAllocationStrategies(ctx context.Context) ([]*ent.A
 
 func (r *queryResolver) QueryResourceTypes(ctx context.Context) ([]*ent.ResourceType, error) {
 	client := r.ClientFrom(ctx)
-	if strats, err := client.ResourceType.Query().All(ctx); err != nil {
+	if resourceTypes, err := client.ResourceType.Query().All(ctx); err != nil {
 		return nil, gqlerror.Errorf("Unable to query resource types: %v", err)
 	} else {
-		return strats, nil
+		return resourceTypes, nil
 	}
 }
 
 func (r *queryResolver) QueryResourcePools(ctx context.Context) ([]*ent.ResourcePool, error) {
 	client := r.ClientFrom(ctx)
-	if strats, err := client.ResourcePool.Query().All(ctx); err != nil {
+	if resourcePools, err := client.ResourcePool.Query().All(ctx); err != nil {
 		return nil, gqlerror.Errorf("Unable to query resource pools: %v", err)
 	} else {
-		return strats, nil
+		return resourcePools, nil
 	}
 }
 

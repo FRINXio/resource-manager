@@ -2,15 +2,16 @@ package pools
 
 import (
 	"context"
+	"log"
+	"reflect"
+	"testing"
+
 	"github.com/facebookincubator/symphony/pkg/authz"
 	"github.com/facebookincubator/symphony/pkg/authz/models"
 	_ "github.com/mattn/go-sqlite3"
 	"github.com/net-auto/resourceManager/ent"
 	"github.com/net-auto/resourceManager/ent/resource"
 	_ "github.com/net-auto/resourceManager/ent/runtime"
-	"log"
-	"reflect"
-	"testing"
 )
 
 func getContext() context.Context {
@@ -34,22 +35,29 @@ func openDb(ctx context.Context) *ent.Client {
 	return client
 }
 
-func getResourceType(ctx context.Context, client *ent.Client) *ent.ResourceType {
-	propType, _ := client.PropertyType.Create().
+func getResourceType(ctx context.Context, client *ent.Client) (*ent.ResourceType, error) {
+	propType, err := client.PropertyType.Create().
 		SetName("vlan").
 		SetType("int").
 		SetIntVal(0).
 		SetMandatory(true).
 		Save(ctx)
 
-	resType, _ := client.ResourceType.Create().
+	if err != nil {
+		log.Fatalf("Failed to create property type: %v", err)
+		return nil, err
+	}
+	resType, err := client.ResourceType.Create().
 		SetName("vlan").
 		AddPropertyTypes(propType).
 		Save(ctx)
+	if err != nil {
+		log.Fatalf("Failed to create resource type: %v", err)
+		return nil, err
+	}
 
-	return resType
+	return resType, nil
 }
-
 
 func assertDb(ctx context.Context, client *ent.Client, t *testing.T, count ...int) {
 	assertInstancesInDb(client.PropertyType.Query().AllX(ctx), count[0], t)
@@ -105,4 +113,3 @@ func GetContext() context.Context {
 		WorkforcePolicy: authz.NewWorkforcePolicy(true, true)})
 	return ctx
 }
-

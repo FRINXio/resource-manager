@@ -14,7 +14,10 @@ func TestClaimResoourceSetPool(t *testing.T) {
 	ctx := getContext()
 	client := openDb(ctx)
 	defer client.Close()
-	resType := getResourceType(ctx, client)
+	resType, err := getResourceType(ctx, client)
+	if err != nil {
+		t.Fatalf("Unable to create resource type: %s", err)
+	}
 
 	pool, _ := NewSetPool(ctx, client, resType, []RawResourceProps{
 		RawResourceProps{"vlan": 44},
@@ -87,7 +90,10 @@ func TestResourceRetirement(t *testing.T) {
 	ctx := getContext()
 	client := openDb(ctx)
 	defer client.Close()
-	resType := getResourceType(ctx, client)
+	resType, err := getResourceType(ctx, client)
+	if err != nil {
+		t.Fatalf("Unable to create resource type: %s", err)
+	}
 
 	pool, _ := NewSetPool(ctx, client, resType, []RawResourceProps{
 		RawResourceProps{"vlan": 44},
@@ -114,7 +120,10 @@ func TestResourceDealocationSafetyWindow(t *testing.T) {
 	ctx := getContext()
 	client := openDb(ctx)
 	defer client.Close()
-	resType := getResourceType(ctx, client)
+	resType, err := getResourceType(ctx, client)
+	if err != nil {
+		t.Fatalf("Unable to create resource type: %s", err)
+	}
 
 	pool, _ := NewSetPool(ctx, client, resType, []RawResourceProps{
 		RawResourceProps{"vlan": 44},

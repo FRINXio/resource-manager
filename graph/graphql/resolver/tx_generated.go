@@ -8,6 +8,7 @@ import (
 
 	"github.com/net-auto/resourceManager/graph/graphql/generated"
 	"github.com/net-auto/resourceManager/ent"
+	"github.com/net-auto/resourceManager/ent/allocationstrategy"
 	"github.com/net-auto/resourceManager/graph/graphql/model"
 )
 
@@ -41,10 +42,10 @@ func (tr txResolver) WithTransaction(ctx context.Context, f func(context.Context
 	return nil
 }
 
-func (tr txResolver) CreateAllocationStrategy(ctx context.Context, name string, script string) (*ent.AllocationStrategy, error) {
+func (tr txResolver) CreateAllocationStrategy(ctx context.Context, name string, script string, lang allocationstrategy.Lang) (*ent.AllocationStrategy, error) {
 	var result, zero *ent.AllocationStrategy
 	if err := tr.WithTransaction(ctx, func(ctx context.Context, mr generated.MutationResolver) (err error) {
-		result, err = mr.CreateAllocationStrategy(ctx, name, script)
+		result, err = mr.CreateAllocationStrategy(ctx, name, script, lang)
 		return
 	}); err != nil {
 		return zero, err

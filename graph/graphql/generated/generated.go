@@ -63,7 +63,7 @@ type ComplexityRoot struct {
 	Mutation struct {
 		ClaimResource            func(childComplexity int, poolID int, userInput map[string]interface{}) int
 		CreateAllocatingPool     func(childComplexity int, resourceTypeID int, poolName string, allocationStrategyID int, poolDealocationSafetyPeriod int) int
-		CreateAllocationStrategy func(childComplexity int, name string, script string) int
+		CreateAllocationStrategy func(childComplexity int, name string, script string, lang allocationstrategy.Lang) int
 		CreateResourceType       func(childComplexity int, resourceName string, resourceProperties map[string]interface{}) int
 		CreateSetPool            func(childComplexity int, resourceTypeID int, poolName string, poolDealocationSafetyPeriod int, poolValues []map[string]interface{}) int
 		CreateSingletonPool      func(childComplexity int, resourceTypeID int, poolName string, poolValues []map[string]interface{}) int
@@ -125,7 +125,7 @@ type ComplexityRoot struct {
 }
 
 type MutationResolver interface {
-	CreateAllocationStrategy(ctx context.Context, name string, script string) (*ent.AllocationStrategy, error)
+	CreateAllocationStrategy(ctx context.Context, name string, script string, lang allocationstrategy.Lang) (*ent.AllocationStrategy, error)
 	DeleteAllocationStrategy(ctx context.Context, allocationStrategyID int) (*ent.AllocationStrategy, error)
 	TestAllocationStrategy(ctx context.Context, allocationStrategyID int, resourcePool model.ResourcePoolInput, currentResources []*model.ResourceInput, userInput map[string]interface{}) (map[string]interface{}, error)
 	ClaimResource(ctx context.Context, poolID int, userInput map[string]interface{}) (*ent.Resource, error)
@@ -244,7 +244,7 @@ func (e *executableSchema) Complexity(typeName, field string, childComplexity in
 			return 0, false
 		}
 
-		return e.complexity.Mutation.CreateAllocationStrategy(childComplexity, args["name"].(string), args["script"].(string)), true
+		return e.complexity.Mutation.CreateAllocationStrategy(childComplexity, args["name"].(string), args["script"].(string), args["lang"].(allocationstrategy.Lang)), true
 
 	case "Mutation.CreateResourceType":
 		if e.complexity.Mutation.CreateResourceType == nil {
@@ -712,7 +712,6 @@ type ResourceType
 
 input ResourcePoolInput {
     ResourcePoolName: String!
-    ResourceTypeName: [String]!
 }
 
 input ResourceInput {
@@ -732,7 +731,7 @@ type Query {
 
 type Mutation {
     # Allocation strategy
-    CreateAllocationStrategy(name: String!, script: String!): AllocationStrategy!
+    CreateAllocationStrategy(name: String!, script: String!, lang: AllocationStrategyLang!): AllocationStrategy!
     DeleteAllocationStrategy(allocationStrategyId: ID!): AllocationStrategy!
     TestAllocationStrategy(allocationStrategyId: ID!, resourcePool: ResourcePoolInput!,
             currentResources: [ResourceInput]!, userInput: Map!): Map!
@@ -843,6 +842,14 @@ func (ec *executionContext) field_Mutation_CreateAllocationStrategy_args(ctx con
 		}
 	}
 	args["script"] = arg1
+	var arg2 allocationstrategy.Lang
+	if tmp, ok := rawArgs["lang"]; ok {
+		arg2, err = ec.unmarshalNAllocationStrategyLang2githubᚗcomᚋnetᚑautoᚋresourceManagerᚋentᚋallocationstrategyᚐLang(ctx, tmp)
+		if err != nil {
+			return nil, err
+		}
+	}
+	args["lang"] = arg2
 	return args, nil
 }
 
@@ -1388,7 +1395,7 @@ func (ec *executionContext) _Mutation_CreateAllocationStrategy(ctx context.Conte
 	fc.Args = args
 	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
 		ctx = rctx // use context from middleware stack in children
-		return ec.resolvers.Mutation().CreateAllocationStrategy(rctx, args["name"].(string), args["script"].(string))
+		return ec.resolvers.Mutation().CreateAllocationStrategy(rctx, args["name"].(string), args["script"].(string), args["lang"].(allocationstrategy.Lang))
 	})
 	if err != nil {
 		ec.Error(ctx, err)
@@ -3931,12 +3938,6 @@ func (ec *executionContext) unmarshalInputResourcePoolInput(ctx context.Context,
 			if err != nil {
 				return it, err
 			}
-		case "ResourceTypeName":
-			var err error
-			it.ResourceTypeName, err = ec.unmarshalNString2ᚕᚖstring(ctx, v)
-			if err != nil {
-				return it, err
-			}
 		}
 	}
 
@@ -5080,35 +5081,6 @@ func (ec *executionContext) marshalNString2string(ctx context.Context, sel ast.S
 		}
 	}
 	return res
-}
-
-func (ec *executionContext) unmarshalNString2ᚕᚖstring(ctx context.Context, v interface{}) ([]*string, error) {
-	var vSlice []interface{}
-	if v != nil {
-		if tmp1, ok := v.([]interface{}); ok {
-			vSlice = tmp1
-		} else {
-			vSlice = []interface{}{v}
-		}
-	}
-	var err error
-	res := make([]*string, len(vSlice))
-	for i := range vSlice {
-		res[i], err = ec.unmarshalOString2ᚖstring(ctx, vSlice[i])
-		if err != nil {
-			return nil, err
-		}
-	}
-	return res, nil
-}
-
-func (ec *executionContext) marshalNString2ᚕᚖstring(ctx context.Context, sel ast.SelectionSet, v []*string) graphql.Marshaler {
-	ret := make(graphql.Array, len(v))
-	for i := range v {
-		ret[i] = ec.marshalOString2ᚖstring(ctx, sel, v[i])
-	}
-
-	return ret
 }
 
 func (ec *executionContext) unmarshalNString2ᚖstring(ctx context.Context, v interface{}) (*string, error) {

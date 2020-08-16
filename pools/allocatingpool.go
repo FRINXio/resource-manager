@@ -6,6 +6,7 @@ import (
 	"github.com/net-auto/resourceManager/ent"
 	"github.com/net-auto/resourceManager/ent/resource"
 	resourcePool "github.com/net-auto/resourceManager/ent/resourcepool"
+	"github.com/net-auto/resourceManager/graph/graphql/model"
 	"github.com/pkg/errors"
 )
 
@@ -106,7 +107,30 @@ func (pool AllocatingPool) ClaimResource(userInput map[string]interface{}) (*ent
 			"Unable to claim resource from pool \"%s\", resource type loading error ", pool.Name)
 	}
 
-	parsedOutputFromStrat, _ /*TODO do something with stderr */, err := InvokeAllocationStrategy(pool.invoker, strat, userInput)
+	var resourcePool model.ResourcePoolInput
+	resourcePool.ResourcePoolName = pool.Name
+
+	var currentResources []*model.ResourceInput
+	claimedResources, err := pool.QueryResources()
+	if err != nil {
+		return nil, errors.Wrapf(err,
+			"Unable get claimed resources from pool \"%s\", resource loading error ", pool.Name)
+	}
+	for _, claimedResource := range claimedResources {
+		var r model.ResourceInput
+		// FIXME: len(Properties) is always 0
+		for _, prop := range claimedResource.Edges.Properties {
+			name := prop.Edges.Type.Name
+			var propVal interface{}
+			// TODO: extract `func Value() interface{}`
+			propVal = prop.IntVal
+			r.Properties = map[string]interface{}{name: propVal}
+		}
+		currentResources = append(currentResources, &r)
+	}
+
+	parsedOutputFromStrat, _ /*TODO do something with logs */, err := InvokeAllocationStrategy(
+		pool.invoker, strat, userInput, resourcePool, currentResources)
 	if err != nil {
 		return nil, errors.Wrapf(err,
 			"Unable to claim resource from pool \"%s\", allocation strategy \"%s\" failed", pool.Name, strat.Name)

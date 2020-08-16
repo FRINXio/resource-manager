@@ -3,6 +3,7 @@ package pools
 import (
 	"context"
 	"fmt"
+
 	"github.com/net-auto/resourceManager/ent"
 	"github.com/net-auto/resourceManager/ent/propertytype"
 	"github.com/net-auto/resourceManager/ent/resource"
@@ -45,6 +46,7 @@ func PreCreateResources(ctx context.Context,
 			return nil, errors.Wrapf(err, "Error parsing properties")
 		}
 
+		// FIXME: fail when this resource is already in DB (same logic as in FreeResource)
 		// Create pre-allocated resource
 		var resource *ent.Resource
 		resource, err = client.Resource.Create().
@@ -62,4 +64,3 @@ func PreCreateResources(ctx context.Context,
 
 	return created, nil
 }
-

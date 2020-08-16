@@ -11,7 +11,10 @@ func TestNewSingletonPool(t *testing.T) {
 	ctx := getContext()
 	client := openDb(ctx)
 	defer client.Close()
-	resType := getResourceType(ctx, client)
+	resType, err := getResourceType(ctx, client)
+	if err != nil {
+		t.Fatalf("Unable to create resource type: %s", err)
+	}
 
 	pool, err := NewSingletonPool(ctx, client, resType, map[string]interface{}{
 		"vlan": 44,

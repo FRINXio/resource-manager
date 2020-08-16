@@ -9,6 +9,7 @@ import (
 	"github.com/net-auto/resourceManager/ent"
 	"github.com/net-auto/resourceManager/ent/allocationstrategy"
 	"github.com/net-auto/resourceManager/ent/schema"
+	"github.com/net-auto/resourceManager/graph/graphql/model"
 
 	_ "github.com/mattn/go-sqlite3"
 	_ "github.com/net-auto/resourceManager/ent/runtime"
@@ -22,6 +23,8 @@ type mockInvoker struct {
 func (m mockInvoker) invokeJs(
 	strategyScript string,
 	userInput map[string]interface{},
+	resourcePool model.ResourcePoolInput,
+	currentResources []*model.ResourceInput,
 ) (map[string]interface{}, string, error) {
 	if m.toBeReturnedError != nil {
 		return nil, "", m.toBeReturnedError
@@ -33,6 +36,8 @@ func (m mockInvoker) invokeJs(
 func (m mockInvoker) invokePy(
 	strategyScript string,
 	userInput map[string]interface{},
+	resourcePool model.ResourcePoolInput,
+	currentResources []*model.ResourceInput,
 ) (map[string]interface{}, string, error) {
 	if m.toBeReturnedError != nil {
 		return nil, "", m.toBeReturnedError
@@ -45,9 +50,16 @@ func TestAllocatingPool(t *testing.T) {
 	ctx := getContext()
 	client := openDb(ctx)
 	defer client.Close()
-	resType := getResourceType(ctx, client)
+	resType, err := getResourceType(ctx, client)
+	if err != nil {
+		t.Fatalf("Unable to create resource type: %s", err)
+	}
 
-	strat, _ := mockStrategy(client, ctx)
+	strat, err := mockStrategy(client, ctx)
+	if err != nil {
+		t.Fatalf("Unable to create mock strategy: %s", err)
+	}
+
 	propsAsMap := RawResourceProps{"vlan": 1}
 	mockInvoker := mockInvoker{propsAsMap, nil}
 
@@ -94,9 +106,16 @@ func TestAllocatingPoolFailure(t *testing.T) {
 	ctx := getContext()
 	client := openDb(ctx)
 	defer client.Close()
-	resType := getResourceType(ctx, client)
+	resType, err := getResourceType(ctx, client)
+	if err != nil {
+		t.Fatalf("Unable to create resource type: %s", err)
+	}
 
-	strat, _ := mockStrategy(client, ctx)
+	strat, err := mockStrategy(client, ctx)
+	if err != nil {
+		t.Fatalf("Unable to create mock strategy: %s", err)
+	}
+
 	mockInvoker := mockInvoker{nil, fmt.Errorf("Fail")}
 
 	pool, _, _ := newAllocatingPoolWithMetaInternal(
@@ -104,7 +123,7 @@ func TestAllocatingPoolFailure(t *testing.T) {
 		mockInvoker, schema.ResourcePoolDealocationRetire)
 
 	userInput := make(map[string]interface{})
-	_, err := pool.ClaimResource(userInput)
+	_, err = pool.ClaimResource(userInput)
 	if err == nil {
 		t.Fatalf("Resource claim should have failed")
 	}

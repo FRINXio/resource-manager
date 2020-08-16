@@ -28,6 +28,7 @@ query queryResourceTypes {
         ID
         Name
         Edges {
+# FIXME PropertyTypes returns null
             PropertyTypes {
                 Name
                 Type
@@ -49,10 +50,12 @@ mutation createSetPool {
     }
 }
 
-mutation createAllocationStrat {
+mutation createAllocationStratJs {
     CreateAllocationStrategy(
-        name: "helloWorld",
-        script: "function invoke() { return {\"vlan\" : userInput.vlan}; }"
+        name: "jstest",
+        script: "function invoke() {log(\"log\");return {vlan: userInput.desiredVlan, respool: resourcePool.ResourcePoolName, currentRes: currentResources};}",
+        lang: js
+
     ){
         ID
         Name
@@ -61,12 +64,48 @@ mutation createAllocationStrat {
     }
 }
 
-mutation TestAllocationStrategy {
+mutation createAllocationStratPy {
+    CreateAllocationStrategy(
+        name: "pytest",
+        script: "log(\"log\")\nreturn {\"vlan\": userInput[\"desiredVlan\"], \"respool\": resourcePool[\"ResourcePoolName\"], \"currentRes\": currentResources}"
+        lang: py
+    ){
+        ID
+        Name
+        Lang
+        Script
+    }
+}
+
+query queryAllocationStrategies {
+    QueryAllocationStrategies {
+        ID
+        Lang
+        Name
+        Script
+    }
+}
+
+mutation deleteAllocationStrategy {
+    DeleteAllocationStrategy(allocationStrategyId: 0){
+        Name
+    }
+}
+
+mutation TestAllocationStrategyJs {
     TestAllocationStrategy(
         allocationStrategyId: 1,
-        resourcePool: { ResourcePoolName: "name", ResourceTypeName: [] },
-        currentResources: [{Properties: { value:"1.2.3.1"}}],
-        userInput: {vlan: 11})
+        resourcePool: { ResourcePoolName: "testpool"},
+        currentResources: [{Properties: { value:1}}, {Properties: {value: 100}}],
+        userInput: {desiredVlan: 11})
+}
+
+mutation TestAllocationStrategyPy {
+    TestAllocationStrategy(
+        allocationStrategyId: 2,
+        resourcePool: { ResourcePoolName: "testpool"},
+        currentResources: [{Properties: { value:1}}, {Properties: {value: 100}}],
+        userInput: {desiredVlan: 11})
 }
 
 query queryAllocationStrats {
@@ -95,6 +134,13 @@ query QueryAllPools {
     QueryResourcePools{
         ID
         Name
+        PoolType
+# FIXME
+#        Edges {
+#            ResourceType {
+#                Name
+#            }
+#        }
     }
 }
 
@@ -106,7 +152,7 @@ mutation ClaimResource {
 }
 
 mutation ClaimResourceFromAllocatingPool {
-    ClaimResource(poolId:21474836481, userInput: {vlan: 10}) {
+    ClaimResource(poolId:21474836481, userInput: {desiredVlan: 14}) {
         ID
         Properties
     }
@@ -117,6 +163,13 @@ query QueryResources {
         ID
         Properties
     }
+}
+
+mutation freeResource {
+    FreeResource(
+        poolId: 21474836481,
+        input: {vlan: 10}
+    )
 }
 
 mutation deleteResourcePool {

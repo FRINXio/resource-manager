@@ -7,6 +7,5 @@ type ResourceInput struct {
 }
 
 type ResourcePoolInput struct {
-	ResourcePoolName string    `json:"ResourcePoolName"`
-	ResourceTypeName []*string `json:"ResourceTypeName"`
+	ResourcePoolName string `json:"ResourcePoolName"`
 }
