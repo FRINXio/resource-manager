@@ -54,9 +54,8 @@ mutation createSetPool {
 mutation createAllocationStratJs {
     CreateAllocationStrategy(
         name: "jstest",
-        script: "function invoke() {log(\"log\");return {vlan: userInput.desiredVlan, respool: resourcePool.ResourcePoolName, currentRes: currentResources};}",
+        script: "function invoke() {log(JSON.stringify({respool: resourcePool.ResourcePoolName, currentRes: currentResources}));return {vlan: userInput.desiredVlan};}",
         lang: js
-
     ){
         ID
         Name
@@ -68,7 +67,7 @@ mutation createAllocationStratJs {
 mutation createAllocationStratPy {
     CreateAllocationStrategy(
         name: "pytest",
-        script: "log(\"log\")\nreturn {\"vlan\": userInput[\"desiredVlan\"], \"respool\": resourcePool[\"ResourcePoolName\"], \"currentRes\": currentResources}"
+        script: "log(json.dumps({ \"respool\": resourcePool[\"ResourcePoolName\"], \"currentRes\": currentResources }))\nreturn {\"vlan\": userInput[\"desiredVlan\"]}"
         lang: py
     ){
         ID
@@ -97,7 +96,14 @@ mutation TestAllocationStrategyJs {
     TestAllocationStrategy(
         allocationStrategyId: 1,
         resourcePool: { ResourcePoolName: "testpool"},
-        currentResources: [{Properties: { value:1}}, {Properties: {value: 100}}],
+        currentResources: [
+            {Properties: { Name: "vlan", IntVal: 1, Mandatory: true, Type: "int"},
+            Status: "claimed",
+            UpdatedAt: "2020-08-18 11:38:48.0 +0200 CEST"
+        }, {Properties: { Name: "vlan", IntVal: 1, Mandatory: true, Type: "int"},
+            Status: "claimed",
+            UpdatedAt: "2020-08-18 11:38:48.0 +0200 CEST"
+        }],
         userInput: {desiredVlan: 11})
 }
 
@@ -105,17 +111,15 @@ mutation TestAllocationStrategyPy {
     TestAllocationStrategy(
         allocationStrategyId: 2,
         resourcePool: { ResourcePoolName: "testpool"},
-        currentResources: [{Properties: { value:1}}, {Properties: {value: 100}}],
+        currentResources: [
+            {Properties: { Name: "vlan", IntVal: 1, Mandatory: true, Type: "int"},
+                Status: "claimed",
+                UpdatedAt: "2020-08-18 11:38:48.0 +0200 CEST"
+            }, {Properties: { Name: "vlan", IntVal: 1, Mandatory: true, Type: "int"},
+                Status: "claimed",
+                UpdatedAt: "2020-08-18 11:38:48.0 +0200 CEST"
+            }],
         userInput: {desiredVlan: 11})
-}
-
-query queryAllocationStrats {
-    QueryAllocationStrategies{
-        ID
-        Name
-        Lang
-        Script
-    }
 }
 
 mutation createAllocationPool {

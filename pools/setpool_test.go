@@ -22,7 +22,7 @@ func TestClaimResoourceSetPool(t *testing.T) {
 	pool, _ := NewSetPool(ctx, client, resType, []RawResourceProps{
 		RawResourceProps{"vlan": 44},
 		RawResourceProps{"vlan": 45},
-	}, "set", schema.ResourcePoolDealocationImmediatelly)
+	}, "set", schema.ResourcePoolDealocationImmediately)
 
 	claims, err := pool.QueryResources()
 	if len(claims) != 0 {

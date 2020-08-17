@@ -42,7 +42,7 @@ enum PoolType
 {
     set
     singleton
-    # FIXME allocating is missing
+    allocating
 }
 
 scalar Map
@@ -90,8 +90,20 @@ input ResourcePoolInput {
     ResourcePoolName: String!
 }
 
+input PropertyInput {
+    Name: String!
+    IntVal: Int
+    StringVal: String
+    FloatVal: Float
+    Type: String!
+    Mandatory: Boolean!
+}
+
 input ResourceInput {
-    Properties: Map!
+    Properties: [PropertyInput]!
+    UpdatedAt: String!
+    # TODO replace with enum
+    Status: String!
 }
 
 type Query {

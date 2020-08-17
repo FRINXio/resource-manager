@@ -136,7 +136,7 @@ func (pool SetPool) freeResourceInner(raw RawResourceProps,
 	switch pool.ResourcePool.DealocationSafetyPeriod {
 	case schema.ResourcePoolDealocationRetire:
 		err = retireResource(res)
-	case schema.ResourcePoolDealocationImmediatelly:
+	case schema.ResourcePoolDealocationImmediately:
 		err = freeResource(res)
 	default:
 		err = benchResource(res)

@@ -5,11 +5,11 @@
 package schema
 
 import (
+	"time"
+
 	"github.com/facebookincubator/ent"
 	"github.com/facebookincubator/ent/schema/edge"
 	"github.com/facebookincubator/ent/schema/field"
-	"time"
-
 	// "github.com/facebookincubator/symphony/pkg/authz"
 	// "github.com/net-auto/resourceManager/ent/privacy"
 	// "github.com/net-auto/resourceManager/ent/privacy"
@@ -98,7 +98,7 @@ type ResourcePool struct {
 }
 
 const ResourcePoolDealocationRetire = -1
-const ResourcePoolDealocationImmediatelly = 0
+const ResourcePoolDealocationImmediately = 0
 
 // Fields of the ResourcePool.
 func (ResourcePool) Fields() []ent.Field {

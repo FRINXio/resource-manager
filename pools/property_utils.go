@@ -12,27 +12,48 @@ import (
 	"github.com/pkg/errors"
 )
 
+func GetValue(prop *ent.Property) (interface{}, error) {
+	// TODO is there a better way of parsing individual types ? Reuse something from inv ?
+	// TODO add additional types
+	// TODO we have this switch in 2 places
+	switch prop.Edges.Type.Type {
+	case "int":
+		if prop.IntVal == nil {
+			return nil, nil
+		}
+		return *prop.IntVal, nil
+	case "string":
+		if prop.StringVal == nil {
+			return nil, nil
+		}
+		return *prop.StringVal, nil
+	case "float":
+		if prop.FloatVal == nil {
+			return nil, nil
+		}
+		return *prop.FloatVal, nil
+	case "bool":
+		if prop.BoolVal == nil {
+			return nil, nil
+		}
+		return *prop.BoolVal, nil
+	default:
+		return nil, fmt.Errorf("Unsupported property type \"%s\"", prop.Edges.Type.Type)
+	}
+}
+
 func PropertiesToMap(props []*ent.Property) (RawResourceProps, error) {
 	var asMap = make(map[string]interface{})
 
 	for _, prop := range props {
-		// TODO is there a better way of parsing individual types ? Reuse something from inv ?
-		// TODO add additional types
-		// TODO we have this switch in 2 places
-		switch prop.Edges.Type.Type {
-		case "int":
-			asMap[prop.Edges.Type.Name] = *prop.IntVal
-		case "string":
-			asMap[prop.Edges.Type.Name] = *prop.StringVal
-		case "float":
-			asMap[prop.Edges.Type.Name] = *prop.FloatVal
-		case "bool":
-			asMap[prop.Edges.Type.Name] = *prop.BoolVal
-		default:
-			return nil, fmt.Errorf("Unsupported property type \"%s\"", prop.Edges.Type.Type)
+		value, err := GetValue(prop)
+		if err != nil {
+			return nil, err
+		}
+		if value != nil {
+			asMap[prop.Edges.Type.Name] = value
 		}
 	}
-
 	return asMap, nil
 }
 
@@ -64,6 +85,10 @@ func CompareProps(
 			case int32:
 				intVal = int(t)
 			case int64:
+				intVal = int(t)
+			case float32:
+				intVal = int(t)
+			case float64:
 				intVal = int(t)
 			default:
 				return nil, errors.Errorf("Unsupported int conversion from %T", t)

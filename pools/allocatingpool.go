@@ -2,6 +2,7 @@ package pools
 
 import (
 	"context"
+	"time"
 
 	"github.com/net-auto/resourceManager/ent"
 	"github.com/net-auto/resourceManager/ent/resource"
@@ -76,14 +77,14 @@ func (pool AllocatingPool) Destroy() error {
 	}
 
 	if len(claims) > 0 {
-		return errors.Errorf("Unable to destroy pool \"%s\", there are claimed resources",
-			pool.Name)
+		return errors.Errorf("Unable to destroy pool #%d, there are claimed resources",
+			pool.ID)
 	}
 
 	// Delete pool itself
 	err = pool.client.ResourcePool.DeleteOne(pool.ResourcePool).Exec(pool.ctx)
 	if err != nil {
-		return errors.Wrapf(err, "Cannot destroy pool \"%s\"", pool.Name)
+		return errors.Wrapf(err, "Cannot destroy pool #%d", pool.ID)
 	}
 
 	return nil
@@ -99,50 +100,93 @@ func (pool AllocatingPool) ClaimResource(userInput map[string]interface{}) (*ent
 	strat, err := pool.AllocationStrategy()
 	if err != nil {
 		return nil, errors.Wrapf(err,
-			"Unable to claim resource from pool \"%s\", allocation strategy loading error ", pool.Name)
+			"Unable to claim resource from pool #%d, allocation strategy loading error ", pool.ID)
 	}
 	resourceType, err := pool.ResourceType()
 	if err != nil {
 		return nil, errors.Wrapf(err,
-			"Unable to claim resource from pool \"%s\", resource type loading error ", pool.Name)
+			"Unable to claim resource from pool #%d, resource type loading error ", pool.ID)
 	}
 
 	var resourcePool model.ResourcePoolInput
 	resourcePool.ResourcePoolName = pool.Name
 
 	var currentResources []*model.ResourceInput
-	claimedResources, err := pool.QueryResources()
+	claimedResources, err := pool.findResources().WithProperties(
+		func(propertyQuery *ent.PropertyQuery) { propertyQuery.WithType() }).All(pool.ctx)
 	if err != nil {
 		return nil, errors.Wrapf(err,
-			"Unable get claimed resources from pool \"%s\", resource loading error ", pool.Name)
+			"Unable get claimed resources from pool #%d, resource loading error ", pool.ID)
 	}
 	for _, claimedResource := range claimedResources {
 		var r model.ResourceInput
-		// FIXME: len(Properties) is always 0
+		r.UpdatedAt = claimedResource.UpdatedAt.String()
+		r.Status = claimedResource.Status.String()
 		for _, prop := range claimedResource.Edges.Properties {
 			name := prop.Edges.Type.Name
-			var propVal interface{}
-			// TODO: extract `func Value() interface{}`
-			propVal = prop.IntVal
-			r.Properties = map[string]interface{}{name: propVal}
+			var pi model.PropertyInput
+			pi.Name = name
+			pi.Type = prop.Edges.Type.Type.String()
+			pi.Mandatory = prop.Edges.Type.Mandatory
+			pi.IntVal = prop.IntVal
+			pi.FloatVal = prop.FloatVal
+			pi.StringVal = prop.StringVal
+			r.Properties = append(r.Properties, &pi)
 		}
 		currentResources = append(currentResources, &r)
 	}
 
-	parsedOutputFromStrat, _ /*TODO do something with logs */, err := InvokeAllocationStrategy(
+	resourceProperties, _ /*TODO do something with logs */, err := InvokeAllocationStrategy(
 		pool.invoker, strat, userInput, resourcePool, currentResources)
 	if err != nil {
 		return nil, errors.Wrapf(err,
-			"Unable to claim resource from pool \"%s\", allocation strategy \"%s\" failed", pool.Name, strat.Name)
+			"Unable to claim resource from pool #%d, allocation strategy \"%s\" failed", pool.ID, strat.Name)
 	}
-	created, err := PreCreateResources(pool.ctx, pool.client, []RawResourceProps{parsedOutputFromStrat},
-		pool.ResourcePool, resourceType, resource.StatusClaimed)
-	if len(created) > 1 {
+
+	// Query to check whether this resource already exists.
+	// 1. construct query
+	query, err := pool.findResource(RawResourceProps(resourceProperties))
+	if err != nil {
+		return nil, errors.Wrapf(err, "Cannot query for resource based on pool #%d and properties \"%s\"", pool.ID, resourceProperties)
+	}
+
+	// 2. Try to find the resource in DB
+	foundResources, err := query.WithProperties().All(pool.ctx)
+
+	if len(foundResources) == 0 {
+		// 3a. Nothing found - create new resource
+		created, err := PreCreateResources(pool.ctx, pool.client, []RawResourceProps{resourceProperties},
+			pool.ResourcePool, resourceType, resource.StatusClaimed)
+		if err != nil {
+			return nil, errors.Wrapf(err, "Unable to create resource in pool #%d", pool.ID)
+		}
+		if len(created) > 1 {
+			return nil, errors.Errorf(
+				"Unexpected error creating resource in pool #%d, properties \"%s\" . "+
+					"Created %d resources instead of one.", pool.ID, resourceProperties, len(created))
+		}
+		return created[0], nil
+	} else if len(foundResources) > 1 {
 		return nil, errors.Errorf(
-			"Unable to claim resource from pool \"%s\", allocation strategy \"%s\" "+
-				"returned more than 1 result \"%s\"", pool.Name, strat.Name, created)
+			"Unable to claim resource with properties \"%s\" from pool #%d, database contains more than one result", resourceProperties, pool.ID)
 	}
-	return created[0], nil
+	res := foundResources[0]
+	// 3b. Claim found resource if possible
+	if res.Status == resource.StatusClaimed || res.Status == resource.StatusRetired {
+		return nil, errors.Errorf("Resource #%d is in incorrect state \"%s\"", res.ID, res.Status)
+	} else if res.Status == resource.StatusBench {
+		cutoff := res.UpdatedAt.Add(time.Duration(pool.DealocationSafetyPeriod) * time.Second)
+		if time.Now().Before(cutoff) {
+			return nil, errors.Errorf(
+				"Unable to claim resource #%d from pool #%d, resource cannot be claimed before %s", res.ID, pool.ID, cutoff)
+		}
+	}
+	res.Status = resource.StatusClaimed
+	err = pool.client.Resource.UpdateOne(res).SetStatus(res.Status).Exec(pool.ctx)
+	if err != nil {
+		return nil, errors.Wrapf(err, "Cannot update resource #%d", res.ID)
+	}
+	return res, nil
 }
 
 // FreeResource deallocates the resource identified by its properties
@@ -154,14 +198,14 @@ func (pool AllocatingPool) freeResourceImmediately(res *ent.Resource) error {
 	// Delete props
 	for _, prop := range res.Edges.Properties {
 		if err := pool.client.Property.DeleteOne(prop).Exec(pool.ctx); err != nil {
-			return errors.Wrapf(err, "Cannot free resource from \"%s\". Unable to cleanup properties", pool.Name)
+			return errors.Wrapf(err, "Cannot free resource from #%d. Unable to cleanup properties", pool.ID)
 		}
 	}
 
 	// Delete resource
 	err := pool.client.Resource.DeleteOne(res).Exec(pool.ctx)
 	if err != nil {
-		return errors.Wrapf(err, "Cannot free resource from \"%s\". Unable to cleanup resource", pool.Name)
+		return errors.Wrapf(err, "Cannot free resource from #%d. Unable to cleanup resource", pool.ID)
 	}
 
 	return nil

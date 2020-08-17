@@ -28,7 +28,7 @@ func NewSingletonPoolWithMeta(
 	poolName string) (Pool, *ent.ResourcePool, error) {
 
 	pool, err := newFixedPoolInner(ctx, client, resourceType, []RawResourceProps{propertyValues},
-		poolName, resourcePool.PoolTypeSingleton, schema.ResourcePoolDealocationImmediatelly)
+		poolName, resourcePool.PoolTypeSingleton, schema.ResourcePoolDealocationImmediately)
 
 	if err != nil {
 		return nil, nil, err

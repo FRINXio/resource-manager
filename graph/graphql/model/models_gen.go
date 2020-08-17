@@ -2,8 +2,19 @@
 
 package model
 
+type PropertyInput struct {
+	Name      string   `json:"Name"`
+	IntVal    *int     `json:"IntVal"`
+	StringVal *string  `json:"StringVal"`
+	FloatVal  *float64 `json:"FloatVal"`
+	Type      string   `json:"Type"`
+	Mandatory bool     `json:"Mandatory"`
+}
+
 type ResourceInput struct {
-	Properties map[string]interface{} `json:"Properties"`
+	Properties []*PropertyInput `json:"Properties"`
+	UpdatedAt  string           `json:"UpdatedAt"`
+	Status     string           `json:"Status"`
 }
 
 type ResourcePoolInput struct {

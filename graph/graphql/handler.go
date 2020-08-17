@@ -132,7 +132,7 @@ func errorPresenter(logger log.Logger) graphql.ErrorPresenterFunc {
 			gqlerr.Message = "Permission denied"
 		} else if _, ok := err.(*gqlerror.Error); !ok {
 			logger.For(ctx).Error("graphql internal error", zap.Error(err))
-			gqlerr.Message = "Sorry, something went wrong"
+			gqlerr.Message = fmt.Sprintf("Sorry, something went wrong - %v", err)
 		}
 		return gqlerr
 	}
