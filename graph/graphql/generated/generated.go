@@ -636,6 +636,7 @@ enum PoolType
 {
     set
     singleton
+# FIXME allocating is missing
 }
 
 scalar Map
