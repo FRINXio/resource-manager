@@ -11,9 +11,9 @@ type ResourcePoolInput struct {
 }
 
 type TagAnd struct {
-	Tags []string `json:"tags"`
+	MatchesAll []string `json:"matchesAll"`
 }
 
 type TagOr struct {
-	Tags []*TagAnd `json:"tags"`
+	MatchesAny []*TagAnd `json:"matchesAny"`
 }

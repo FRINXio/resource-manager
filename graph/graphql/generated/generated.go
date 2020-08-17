@@ -42,6 +42,9 @@ type ResolverRoot interface {
 	PropertyType() PropertyTypeResolver
 	Query() QueryResolver
 	Resource() ResourceResolver
+	ResourcePool() ResourcePoolResolver
+	ResourceType() ResourceTypeResolver
+	Tag() TagResolver
 }
 
 type DirectiveRoot struct {
@@ -101,37 +104,26 @@ type ComplexityRoot struct {
 	}
 
 	ResourcePool struct {
-		Edges    func(childComplexity int) int
-		ID       func(childComplexity int) int
-		Name     func(childComplexity int) int
-		PoolType func(childComplexity int) int
-	}
-
-	ResourcePoolEdges struct {
 		AllocationStrategy func(childComplexity int) int
+		ID                 func(childComplexity int) int
+		Name               func(childComplexity int) int
+		PoolType           func(childComplexity int) int
 		ResourceType       func(childComplexity int) int
+		Resources          func(childComplexity int) int
 		Tags               func(childComplexity int) int
 	}
 
 	ResourceType struct {
-		Edges func(childComplexity int) int
-		ID    func(childComplexity int) int
-		Name  func(childComplexity int) int
-	}
-
-	ResourceTypeEdges struct {
+		ID            func(childComplexity int) int
+		Name          func(childComplexity int) int
 		Pools         func(childComplexity int) int
 		PropertyTypes func(childComplexity int) int
 	}
 
 	Tag struct {
-		Edges func(childComplexity int) int
 		ID    func(childComplexity int) int
-		Tag   func(childComplexity int) int
-	}
-
-	TagEdges struct {
 		Pools func(childComplexity int) int
+		Tag   func(childComplexity int) int
 	}
 }
 
@@ -168,6 +160,19 @@ type QueryResolver interface {
 }
 type ResourceResolver interface {
 	Properties(ctx context.Context, obj *ent.Resource) (map[string]interface{}, error)
+}
+type ResourcePoolResolver interface {
+	ResourceType(ctx context.Context, obj *ent.ResourcePool) (*ent.ResourceType, error)
+	Resources(ctx context.Context, obj *ent.ResourcePool) ([]*ent.Resource, error)
+	Tags(ctx context.Context, obj *ent.ResourcePool) ([]*ent.Tag, error)
+	AllocationStrategy(ctx context.Context, obj *ent.ResourcePool) (*ent.AllocationStrategy, error)
+}
+type ResourceTypeResolver interface {
+	PropertyTypes(ctx context.Context, obj *ent.ResourceType) ([]*ent.PropertyType, error)
+	Pools(ctx context.Context, obj *ent.ResourceType) ([]*ent.ResourcePool, error)
+}
+type TagResolver interface {
+	Pools(ctx context.Context, obj *ent.Tag) ([]*ent.ResourcePool, error)
 }
 
 type executableSchema struct {
@@ -544,12 +549,12 @@ func (e *executableSchema) Complexity(typeName, field string, childComplexity in
 
 		return e.complexity.Resource.Properties(childComplexity), true
 
-	case "ResourcePool.Edges":
-		if e.complexity.ResourcePool.Edges == nil {
+	case "ResourcePool.AllocationStrategy":
+		if e.complexity.ResourcePool.AllocationStrategy == nil {
 			break
 		}
 
-		return e.complexity.ResourcePool.Edges(childComplexity), true
+		return e.complexity.ResourcePool.AllocationStrategy(childComplexity), true
 
 	case "ResourcePool.ID":
 		if e.complexity.ResourcePool.ID == nil {
@@ -572,33 +577,26 @@ func (e *executableSchema) Complexity(typeName, field string, childComplexity in
 
 		return e.complexity.ResourcePool.PoolType(childComplexity), true
 
-	case "ResourcePoolEdges.AllocationStrategy":
-		if e.complexity.ResourcePoolEdges.AllocationStrategy == nil {
+	case "ResourcePool.ResourceType":
+		if e.complexity.ResourcePool.ResourceType == nil {
 			break
 		}
 
-		return e.complexity.ResourcePoolEdges.AllocationStrategy(childComplexity), true
+		return e.complexity.ResourcePool.ResourceType(childComplexity), true
 
-	case "ResourcePoolEdges.ResourceType":
-		if e.complexity.ResourcePoolEdges.ResourceType == nil {
+	case "ResourcePool.Resources":
+		if e.complexity.ResourcePool.Resources == nil {
 			break
 		}
 
-		return e.complexity.ResourcePoolEdges.ResourceType(childComplexity), true
+		return e.complexity.ResourcePool.Resources(childComplexity), true
 
-	case "ResourcePoolEdges.Tags":
-		if e.complexity.ResourcePoolEdges.Tags == nil {
+	case "ResourcePool.Tags":
+		if e.complexity.ResourcePool.Tags == nil {
 			break
 		}
 
-		return e.complexity.ResourcePoolEdges.Tags(childComplexity), true
-
-	case "ResourceType.Edges":
-		if e.complexity.ResourceType.Edges == nil {
-			break
-		}
-
-		return e.complexity.ResourceType.Edges(childComplexity), true
+		return e.complexity.ResourcePool.Tags(childComplexity), true
 
 	case "ResourceType.ID":
 		if e.complexity.ResourceType.ID == nil {
@@ -614,26 +612,19 @@ func (e *executableSchema) Complexity(typeName, field string, childComplexity in
 
 		return e.complexity.ResourceType.Name(childComplexity), true
 
-	case "ResourceTypeEdges.Pools":
-		if e.complexity.ResourceTypeEdges.Pools == nil {
+	case "ResourceType.Pools":
+		if e.complexity.ResourceType.Pools == nil {
 			break
 		}
 
-		return e.complexity.ResourceTypeEdges.Pools(childComplexity), true
+		return e.complexity.ResourceType.Pools(childComplexity), true
 
-	case "ResourceTypeEdges.PropertyTypes":
-		if e.complexity.ResourceTypeEdges.PropertyTypes == nil {
+	case "ResourceType.PropertyTypes":
+		if e.complexity.ResourceType.PropertyTypes == nil {
 			break
 		}
 
-		return e.complexity.ResourceTypeEdges.PropertyTypes(childComplexity), true
-
-	case "Tag.Edges":
-		if e.complexity.Tag.Edges == nil {
-			break
-		}
-
-		return e.complexity.Tag.Edges(childComplexity), true
+		return e.complexity.ResourceType.PropertyTypes(childComplexity), true
 
 	case "Tag.ID":
 		if e.complexity.Tag.ID == nil {
@@ -642,19 +633,19 @@ func (e *executableSchema) Complexity(typeName, field string, childComplexity in
 
 		return e.complexity.Tag.ID(childComplexity), true
 
+	case "Tag.Pools":
+		if e.complexity.Tag.Pools == nil {
+			break
+		}
+
+		return e.complexity.Tag.Pools(childComplexity), true
+
 	case "Tag.Tag":
 		if e.complexity.Tag.Tag == nil {
 			break
 		}
 
 		return e.complexity.Tag.Tag(childComplexity), true
-
-	case "TagEdges.Pools":
-		if e.complexity.TagEdges.Pools == nil {
-			break
-		}
-
-		return e.complexity.TagEdges.Pools(childComplexity), true
 
 	}
 	return 0, false
@@ -727,23 +718,12 @@ var sources = []*ast.Source{
     | INTERFACE
     | UNION
 
-enum PoolType
-@goModel(
-    model: "github.com/net-auto/resourceManager/ent/resourcepool.PoolType"
-)
-{
-    set
-    singleton
-# FIXME allocating is missing
-}
-
-scalar Map
-
-type Resource
-@goModel(model: "github.com/net-auto/resourceManager/ent.Resource")
-{
+type ResourceType
+@goModel(model: "github.com/net-auto/resourceManager/ent.ResourceType") {
     ID: ID!
-    Properties: Map!
+    Name: String!
+    PropertyTypes: [PropertyType!]!
+    Pools: [ResourcePool!]!
 }
 
 type PropertyType
@@ -762,7 +742,29 @@ type ResourcePool
     ID: ID!
     Name: String!
     PoolType: PoolType!
-    Edges: ResourcePoolEdges
+    ResourceType: ResourceType!
+    Resources: [Resource!]!
+    Tags: [Tag!]!
+    AllocationStrategy: AllocationStrategy
+}
+
+enum PoolType
+@goModel(
+    model: "github.com/net-auto/resourceManager/ent/resourcepool.PoolType"
+)
+{
+    set
+    singleton
+    # FIXME allocating is missing
+}
+
+scalar Map
+
+type Resource
+@goModel(model: "github.com/net-auto/resourceManager/ent.Resource")
+{
+    ID: ID!
+    Properties: Map!
 }
 
 enum AllocationStrategyLang
@@ -774,7 +776,6 @@ enum AllocationStrategyLang
     py
 }
 
-
 type AllocationStrategy
 @goModel(model: "github.com/net-auto/resourceManager/ent.AllocationStrategy"){
     ID: ID!
@@ -783,44 +784,19 @@ type AllocationStrategy
     Script: String!
 }
 
-type ResourcePoolEdges
-@goModel(model: "github.com/net-auto/resourceManager/ent.ResourcePoolEdges"){
-    ResourceType: ResourceType!
-    Tags: [Tag]!
-    AllocationStrategy: AllocationStrategy
-}
-
-type ResourceTypeEdges
-@goModel(model: "github.com/net-auto/resourceManager/ent.ResourceTypeEdges"){
-    PropertyTypes: [PropertyType]
-    Pools: [ResourcePool]
-}
-
-type ResourceType
-@goModel(model: "github.com/net-auto/resourceManager/ent.ResourceType"){
-    ID: ID!
-    Name: String!
-    Edges: ResourceTypeEdges
-}
-
 type Tag
 @goModel(model: "github.com/net-auto/resourceManager/ent.Tag"){
     ID: ID!
     Tag: String!
-    Edges: TagEdges
-}
-
-type TagEdges
-@goModel(model: "github.com/net-auto/resourceManager/ent.TagEdges"){
     Pools: [ResourcePool]
 }
 
 input TagAnd {
-    tags: [String!]!
+    matchesAll: [String!]!
 }
 
 input TagOr {
-    tags: [TagAnd!]!
+    matchesAny: [TagAnd!]!
 }
 
 input ResourcePoolInput {
@@ -2941,7 +2917,7 @@ func (ec *executionContext) _ResourcePool_PoolType(ctx context.Context, field gr
 	return ec.marshalNPoolType2githubᚗcomᚋnetᚑautoᚋresourceManagerᚋentᚋresourcepoolᚐPoolType(ctx, field.Selections, res)
 }
 
-func (ec *executionContext) _ResourcePool_Edges(ctx context.Context, field graphql.CollectedField, obj *ent.ResourcePool) (ret graphql.Marshaler) {
+func (ec *executionContext) _ResourcePool_ResourceType(ctx context.Context, field graphql.CollectedField, obj *ent.ResourcePool) (ret graphql.Marshaler) {
 	defer func() {
 		if r := recover(); r != nil {
 			ec.Error(ctx, ec.Recover(ctx, r))
@@ -2952,44 +2928,13 @@ func (ec *executionContext) _ResourcePool_Edges(ctx context.Context, field graph
 		Object:   "ResourcePool",
 		Field:    field,
 		Args:     nil,
-		IsMethod: false,
+		IsMethod: true,
 	}
 
 	ctx = graphql.WithFieldContext(ctx, fc)
 	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
 		ctx = rctx // use context from middleware stack in children
-		return obj.Edges, nil
-	})
-	if err != nil {
-		ec.Error(ctx, err)
-		return graphql.Null
-	}
-	if resTmp == nil {
-		return graphql.Null
-	}
-	res := resTmp.(ent.ResourcePoolEdges)
-	fc.Result = res
-	return ec.marshalOResourcePoolEdges2githubᚗcomᚋnetᚑautoᚋresourceManagerᚋentᚐResourcePoolEdges(ctx, field.Selections, res)
-}
-
-func (ec *executionContext) _ResourcePoolEdges_ResourceType(ctx context.Context, field graphql.CollectedField, obj *ent.ResourcePoolEdges) (ret graphql.Marshaler) {
-	defer func() {
-		if r := recover(); r != nil {
-			ec.Error(ctx, ec.Recover(ctx, r))
-			ret = graphql.Null
-		}
-	}()
-	fc := &graphql.FieldContext{
-		Object:   "ResourcePoolEdges",
-		Field:    field,
-		Args:     nil,
-		IsMethod: false,
-	}
-
-	ctx = graphql.WithFieldContext(ctx, fc)
-	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
-		ctx = rctx // use context from middleware stack in children
-		return obj.ResourceType, nil
+		return ec.resolvers.ResourcePool().ResourceType(rctx, obj)
 	})
 	if err != nil {
 		ec.Error(ctx, err)
@@ -3006,7 +2951,7 @@ func (ec *executionContext) _ResourcePoolEdges_ResourceType(ctx context.Context,
 	return ec.marshalNResourceType2ᚖgithubᚗcomᚋnetᚑautoᚋresourceManagerᚋentᚐResourceType(ctx, field.Selections, res)
 }
 
-func (ec *executionContext) _ResourcePoolEdges_Tags(ctx context.Context, field graphql.CollectedField, obj *ent.ResourcePoolEdges) (ret graphql.Marshaler) {
+func (ec *executionContext) _ResourcePool_Resources(ctx context.Context, field graphql.CollectedField, obj *ent.ResourcePool) (ret graphql.Marshaler) {
 	defer func() {
 		if r := recover(); r != nil {
 			ec.Error(ctx, ec.Recover(ctx, r))
@@ -3014,16 +2959,50 @@ func (ec *executionContext) _ResourcePoolEdges_Tags(ctx context.Context, field g
 		}
 	}()
 	fc := &graphql.FieldContext{
-		Object:   "ResourcePoolEdges",
+		Object:   "ResourcePool",
 		Field:    field,
 		Args:     nil,
-		IsMethod: false,
+		IsMethod: true,
 	}
 
 	ctx = graphql.WithFieldContext(ctx, fc)
 	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
 		ctx = rctx // use context from middleware stack in children
-		return obj.Tags, nil
+		return ec.resolvers.ResourcePool().Resources(rctx, obj)
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.([]*ent.Resource)
+	fc.Result = res
+	return ec.marshalNResource2ᚕᚖgithubᚗcomᚋnetᚑautoᚋresourceManagerᚋentᚐResourceᚄ(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) _ResourcePool_Tags(ctx context.Context, field graphql.CollectedField, obj *ent.ResourcePool) (ret graphql.Marshaler) {
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	fc := &graphql.FieldContext{
+		Object:   "ResourcePool",
+		Field:    field,
+		Args:     nil,
+		IsMethod: true,
+	}
+
+	ctx = graphql.WithFieldContext(ctx, fc)
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return ec.resolvers.ResourcePool().Tags(rctx, obj)
 	})
 	if err != nil {
 		ec.Error(ctx, err)
@@ -3037,10 +3016,10 @@ func (ec *executionContext) _ResourcePoolEdges_Tags(ctx context.Context, field g
 	}
 	res := resTmp.([]*ent.Tag)
 	fc.Result = res
-	return ec.marshalNTag2ᚕᚖgithubᚗcomᚋnetᚑautoᚋresourceManagerᚋentᚐTag(ctx, field.Selections, res)
+	return ec.marshalNTag2ᚕᚖgithubᚗcomᚋnetᚑautoᚋresourceManagerᚋentᚐTagᚄ(ctx, field.Selections, res)
 }
 
-func (ec *executionContext) _ResourcePoolEdges_AllocationStrategy(ctx context.Context, field graphql.CollectedField, obj *ent.ResourcePoolEdges) (ret graphql.Marshaler) {
+func (ec *executionContext) _ResourcePool_AllocationStrategy(ctx context.Context, field graphql.CollectedField, obj *ent.ResourcePool) (ret graphql.Marshaler) {
 	defer func() {
 		if r := recover(); r != nil {
 			ec.Error(ctx, ec.Recover(ctx, r))
@@ -3048,16 +3027,16 @@ func (ec *executionContext) _ResourcePoolEdges_AllocationStrategy(ctx context.Co
 		}
 	}()
 	fc := &graphql.FieldContext{
-		Object:   "ResourcePoolEdges",
+		Object:   "ResourcePool",
 		Field:    field,
 		Args:     nil,
-		IsMethod: false,
+		IsMethod: true,
 	}
 
 	ctx = graphql.WithFieldContext(ctx, fc)
 	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
 		ctx = rctx // use context from middleware stack in children
-		return obj.AllocationStrategy, nil
+		return ec.resolvers.ResourcePool().AllocationStrategy(rctx, obj)
 	})
 	if err != nil {
 		ec.Error(ctx, err)
@@ -3139,7 +3118,7 @@ func (ec *executionContext) _ResourceType_Name(ctx context.Context, field graphq
 	return ec.marshalNString2string(ctx, field.Selections, res)
 }
 
-func (ec *executionContext) _ResourceType_Edges(ctx context.Context, field graphql.CollectedField, obj *ent.ResourceType) (ret graphql.Marshaler) {
+func (ec *executionContext) _ResourceType_PropertyTypes(ctx context.Context, field graphql.CollectedField, obj *ent.ResourceType) (ret graphql.Marshaler) {
 	defer func() {
 		if r := recover(); r != nil {
 			ec.Error(ctx, ec.Recover(ctx, r))
@@ -3150,58 +3129,30 @@ func (ec *executionContext) _ResourceType_Edges(ctx context.Context, field graph
 		Object:   "ResourceType",
 		Field:    field,
 		Args:     nil,
-		IsMethod: false,
+		IsMethod: true,
 	}
 
 	ctx = graphql.WithFieldContext(ctx, fc)
 	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
 		ctx = rctx // use context from middleware stack in children
-		return obj.Edges, nil
+		return ec.resolvers.ResourceType().PropertyTypes(rctx, obj)
 	})
 	if err != nil {
 		ec.Error(ctx, err)
 		return graphql.Null
 	}
 	if resTmp == nil {
-		return graphql.Null
-	}
-	res := resTmp.(ent.ResourceTypeEdges)
-	fc.Result = res
-	return ec.marshalOResourceTypeEdges2githubᚗcomᚋnetᚑautoᚋresourceManagerᚋentᚐResourceTypeEdges(ctx, field.Selections, res)
-}
-
-func (ec *executionContext) _ResourceTypeEdges_PropertyTypes(ctx context.Context, field graphql.CollectedField, obj *ent.ResourceTypeEdges) (ret graphql.Marshaler) {
-	defer func() {
-		if r := recover(); r != nil {
-			ec.Error(ctx, ec.Recover(ctx, r))
-			ret = graphql.Null
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
 		}
-	}()
-	fc := &graphql.FieldContext{
-		Object:   "ResourceTypeEdges",
-		Field:    field,
-		Args:     nil,
-		IsMethod: false,
-	}
-
-	ctx = graphql.WithFieldContext(ctx, fc)
-	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
-		ctx = rctx // use context from middleware stack in children
-		return obj.PropertyTypes, nil
-	})
-	if err != nil {
-		ec.Error(ctx, err)
-		return graphql.Null
-	}
-	if resTmp == nil {
 		return graphql.Null
 	}
 	res := resTmp.([]*ent.PropertyType)
 	fc.Result = res
-	return ec.marshalOPropertyType2ᚕᚖgithubᚗcomᚋnetᚑautoᚋresourceManagerᚋentᚐPropertyType(ctx, field.Selections, res)
+	return ec.marshalNPropertyType2ᚕᚖgithubᚗcomᚋnetᚑautoᚋresourceManagerᚋentᚐPropertyTypeᚄ(ctx, field.Selections, res)
 }
 
-func (ec *executionContext) _ResourceTypeEdges_Pools(ctx context.Context, field graphql.CollectedField, obj *ent.ResourceTypeEdges) (ret graphql.Marshaler) {
+func (ec *executionContext) _ResourceType_Pools(ctx context.Context, field graphql.CollectedField, obj *ent.ResourceType) (ret graphql.Marshaler) {
 	defer func() {
 		if r := recover(); r != nil {
 			ec.Error(ctx, ec.Recover(ctx, r))
@@ -3209,27 +3160,30 @@ func (ec *executionContext) _ResourceTypeEdges_Pools(ctx context.Context, field 
 		}
 	}()
 	fc := &graphql.FieldContext{
-		Object:   "ResourceTypeEdges",
+		Object:   "ResourceType",
 		Field:    field,
 		Args:     nil,
-		IsMethod: false,
+		IsMethod: true,
 	}
 
 	ctx = graphql.WithFieldContext(ctx, fc)
 	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
 		ctx = rctx // use context from middleware stack in children
-		return obj.Pools, nil
+		return ec.resolvers.ResourceType().Pools(rctx, obj)
 	})
 	if err != nil {
 		ec.Error(ctx, err)
 		return graphql.Null
 	}
 	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
 		return graphql.Null
 	}
 	res := resTmp.([]*ent.ResourcePool)
 	fc.Result = res
-	return ec.marshalOResourcePool2ᚕᚖgithubᚗcomᚋnetᚑautoᚋresourceManagerᚋentᚐResourcePool(ctx, field.Selections, res)
+	return ec.marshalNResourcePool2ᚕᚖgithubᚗcomᚋnetᚑautoᚋresourceManagerᚋentᚐResourcePoolᚄ(ctx, field.Selections, res)
 }
 
 func (ec *executionContext) _Tag_ID(ctx context.Context, field graphql.CollectedField, obj *ent.Tag) (ret graphql.Marshaler) {
@@ -3300,7 +3254,7 @@ func (ec *executionContext) _Tag_Tag(ctx context.Context, field graphql.Collecte
 	return ec.marshalNString2string(ctx, field.Selections, res)
 }
 
-func (ec *executionContext) _Tag_Edges(ctx context.Context, field graphql.CollectedField, obj *ent.Tag) (ret graphql.Marshaler) {
+func (ec *executionContext) _Tag_Pools(ctx context.Context, field graphql.CollectedField, obj *ent.Tag) (ret graphql.Marshaler) {
 	defer func() {
 		if r := recover(); r != nil {
 			ec.Error(ctx, ec.Recover(ctx, r))
@@ -3311,44 +3265,13 @@ func (ec *executionContext) _Tag_Edges(ctx context.Context, field graphql.Collec
 		Object:   "Tag",
 		Field:    field,
 		Args:     nil,
-		IsMethod: false,
+		IsMethod: true,
 	}
 
 	ctx = graphql.WithFieldContext(ctx, fc)
 	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
 		ctx = rctx // use context from middleware stack in children
-		return obj.Edges, nil
-	})
-	if err != nil {
-		ec.Error(ctx, err)
-		return graphql.Null
-	}
-	if resTmp == nil {
-		return graphql.Null
-	}
-	res := resTmp.(ent.TagEdges)
-	fc.Result = res
-	return ec.marshalOTagEdges2githubᚗcomᚋnetᚑautoᚋresourceManagerᚋentᚐTagEdges(ctx, field.Selections, res)
-}
-
-func (ec *executionContext) _TagEdges_Pools(ctx context.Context, field graphql.CollectedField, obj *ent.TagEdges) (ret graphql.Marshaler) {
-	defer func() {
-		if r := recover(); r != nil {
-			ec.Error(ctx, ec.Recover(ctx, r))
-			ret = graphql.Null
-		}
-	}()
-	fc := &graphql.FieldContext{
-		Object:   "TagEdges",
-		Field:    field,
-		Args:     nil,
-		IsMethod: false,
-	}
-
-	ctx = graphql.WithFieldContext(ctx, fc)
-	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
-		ctx = rctx // use context from middleware stack in children
-		return obj.Pools, nil
+		return ec.resolvers.Tag().Pools(rctx, obj)
 	})
 	if err != nil {
 		ec.Error(ctx, err)
@@ -4459,9 +4382,9 @@ func (ec *executionContext) unmarshalInputTagAnd(ctx context.Context, obj interf
 
 	for k, v := range asMap {
 		switch k {
-		case "tags":
+		case "matchesAll":
 			var err error
-			it.Tags, err = ec.unmarshalNString2ᚕstringᚄ(ctx, v)
+			it.MatchesAll, err = ec.unmarshalNString2ᚕstringᚄ(ctx, v)
 			if err != nil {
 				return it, err
 			}
@@ -4477,9 +4400,9 @@ func (ec *executionContext) unmarshalInputTagOr(ctx context.Context, obj interfa
 
 	for k, v := range asMap {
 		switch k {
-		case "tags":
+		case "matchesAny":
 			var err error
-			it.Tags, err = ec.unmarshalNTagAnd2ᚕᚖgithubᚗcomᚋnetᚑautoᚋresourceManagerᚋgraphᚋgraphqlᚋmodelᚐTagAndᚄ(ctx, v)
+			it.MatchesAny, err = ec.unmarshalNTagAnd2ᚕᚖgithubᚗcomᚋnetᚑautoᚋresourceManagerᚋgraphᚋgraphqlᚋmodelᚐTagAndᚄ(ctx, v)
 			if err != nil {
 				return it, err
 			}
@@ -4908,54 +4831,71 @@ func (ec *executionContext) _ResourcePool(ctx context.Context, sel ast.Selection
 		case "ID":
 			out.Values[i] = ec._ResourcePool_ID(ctx, field, obj)
 			if out.Values[i] == graphql.Null {
-				invalids++
+				atomic.AddUint32(&invalids, 1)
 			}
 		case "Name":
 			out.Values[i] = ec._ResourcePool_Name(ctx, field, obj)
 			if out.Values[i] == graphql.Null {
-				invalids++
+				atomic.AddUint32(&invalids, 1)
 			}
 		case "PoolType":
 			out.Values[i] = ec._ResourcePool_PoolType(ctx, field, obj)
 			if out.Values[i] == graphql.Null {
-				invalids++
+				atomic.AddUint32(&invalids, 1)
 			}
-		case "Edges":
-			out.Values[i] = ec._ResourcePool_Edges(ctx, field, obj)
-		default:
-			panic("unknown field " + strconv.Quote(field.Name))
-		}
-	}
-	out.Dispatch()
-	if invalids > 0 {
-		return graphql.Null
-	}
-	return out
-}
-
-var resourcePoolEdgesImplementors = []string{"ResourcePoolEdges"}
-
-func (ec *executionContext) _ResourcePoolEdges(ctx context.Context, sel ast.SelectionSet, obj *ent.ResourcePoolEdges) graphql.Marshaler {
-	fields := graphql.CollectFields(ec.OperationContext, sel, resourcePoolEdgesImplementors)
-
-	out := graphql.NewFieldSet(fields)
-	var invalids uint32
-	for i, field := range fields {
-		switch field.Name {
-		case "__typename":
-			out.Values[i] = graphql.MarshalString("ResourcePoolEdges")
 		case "ResourceType":
-			out.Values[i] = ec._ResourcePoolEdges_ResourceType(ctx, field, obj)
-			if out.Values[i] == graphql.Null {
-				invalids++
-			}
+			field := field
+			out.Concurrently(i, func() (res graphql.Marshaler) {
+				defer func() {
+					if r := recover(); r != nil {
+						ec.Error(ctx, ec.Recover(ctx, r))
+					}
+				}()
+				res = ec._ResourcePool_ResourceType(ctx, field, obj)
+				if res == graphql.Null {
+					atomic.AddUint32(&invalids, 1)
+				}
+				return res
+			})
+		case "Resources":
+			field := field
+			out.Concurrently(i, func() (res graphql.Marshaler) {
+				defer func() {
+					if r := recover(); r != nil {
+						ec.Error(ctx, ec.Recover(ctx, r))
+					}
+				}()
+				res = ec._ResourcePool_Resources(ctx, field, obj)
+				if res == graphql.Null {
+					atomic.AddUint32(&invalids, 1)
+				}
+				return res
+			})
 		case "Tags":
-			out.Values[i] = ec._ResourcePoolEdges_Tags(ctx, field, obj)
-			if out.Values[i] == graphql.Null {
-				invalids++
-			}
+			field := field
+			out.Concurrently(i, func() (res graphql.Marshaler) {
+				defer func() {
+					if r := recover(); r != nil {
+						ec.Error(ctx, ec.Recover(ctx, r))
+					}
+				}()
+				res = ec._ResourcePool_Tags(ctx, field, obj)
+				if res == graphql.Null {
+					atomic.AddUint32(&invalids, 1)
+				}
+				return res
+			})
 		case "AllocationStrategy":
-			out.Values[i] = ec._ResourcePoolEdges_AllocationStrategy(ctx, field, obj)
+			field := field
+			out.Concurrently(i, func() (res graphql.Marshaler) {
+				defer func() {
+					if r := recover(); r != nil {
+						ec.Error(ctx, ec.Recover(ctx, r))
+					}
+				}()
+				res = ec._ResourcePool_AllocationStrategy(ctx, field, obj)
+				return res
+			})
 		default:
 			panic("unknown field " + strconv.Quote(field.Name))
 		}
@@ -4981,41 +4921,41 @@ func (ec *executionContext) _ResourceType(ctx context.Context, sel ast.Selection
 		case "ID":
 			out.Values[i] = ec._ResourceType_ID(ctx, field, obj)
 			if out.Values[i] == graphql.Null {
-				invalids++
+				atomic.AddUint32(&invalids, 1)
 			}
 		case "Name":
 			out.Values[i] = ec._ResourceType_Name(ctx, field, obj)
 			if out.Values[i] == graphql.Null {
-				invalids++
+				atomic.AddUint32(&invalids, 1)
 			}
-		case "Edges":
-			out.Values[i] = ec._ResourceType_Edges(ctx, field, obj)
-		default:
-			panic("unknown field " + strconv.Quote(field.Name))
-		}
-	}
-	out.Dispatch()
-	if invalids > 0 {
-		return graphql.Null
-	}
-	return out
-}
-
-var resourceTypeEdgesImplementors = []string{"ResourceTypeEdges"}
-
-func (ec *executionContext) _ResourceTypeEdges(ctx context.Context, sel ast.SelectionSet, obj *ent.ResourceTypeEdges) graphql.Marshaler {
-	fields := graphql.CollectFields(ec.OperationContext, sel, resourceTypeEdgesImplementors)
-
-	out := graphql.NewFieldSet(fields)
-	var invalids uint32
-	for i, field := range fields {
-		switch field.Name {
-		case "__typename":
-			out.Values[i] = graphql.MarshalString("ResourceTypeEdges")
 		case "PropertyTypes":
-			out.Values[i] = ec._ResourceTypeEdges_PropertyTypes(ctx, field, obj)
+			field := field
+			out.Concurrently(i, func() (res graphql.Marshaler) {
+				defer func() {
+					if r := recover(); r != nil {
+						ec.Error(ctx, ec.Recover(ctx, r))
+					}
+				}()
+				res = ec._ResourceType_PropertyTypes(ctx, field, obj)
+				if res == graphql.Null {
+					atomic.AddUint32(&invalids, 1)
+				}
+				return res
+			})
 		case "Pools":
-			out.Values[i] = ec._ResourceTypeEdges_Pools(ctx, field, obj)
+			field := field
+			out.Concurrently(i, func() (res graphql.Marshaler) {
+				defer func() {
+					if r := recover(); r != nil {
+						ec.Error(ctx, ec.Recover(ctx, r))
+					}
+				}()
+				res = ec._ResourceType_Pools(ctx, field, obj)
+				if res == graphql.Null {
+					atomic.AddUint32(&invalids, 1)
+				}
+				return res
+			})
 		default:
 			panic("unknown field " + strconv.Quote(field.Name))
 		}
@@ -5041,39 +4981,24 @@ func (ec *executionContext) _Tag(ctx context.Context, sel ast.SelectionSet, obj 
 		case "ID":
 			out.Values[i] = ec._Tag_ID(ctx, field, obj)
 			if out.Values[i] == graphql.Null {
-				invalids++
+				atomic.AddUint32(&invalids, 1)
 			}
 		case "Tag":
 			out.Values[i] = ec._Tag_Tag(ctx, field, obj)
 			if out.Values[i] == graphql.Null {
-				invalids++
+				atomic.AddUint32(&invalids, 1)
 			}
-		case "Edges":
-			out.Values[i] = ec._Tag_Edges(ctx, field, obj)
-		default:
-			panic("unknown field " + strconv.Quote(field.Name))
-		}
-	}
-	out.Dispatch()
-	if invalids > 0 {
-		return graphql.Null
-	}
-	return out
-}
-
-var tagEdgesImplementors = []string{"TagEdges"}
-
-func (ec *executionContext) _TagEdges(ctx context.Context, sel ast.SelectionSet, obj *ent.TagEdges) graphql.Marshaler {
-	fields := graphql.CollectFields(ec.OperationContext, sel, tagEdgesImplementors)
-
-	out := graphql.NewFieldSet(fields)
-	var invalids uint32
-	for i, field := range fields {
-		switch field.Name {
-		case "__typename":
-			out.Values[i] = graphql.MarshalString("TagEdges")
 		case "Pools":
-			out.Values[i] = ec._TagEdges_Pools(ctx, field, obj)
+			field := field
+			out.Concurrently(i, func() (res graphql.Marshaler) {
+				defer func() {
+					if r := recover(); r != nil {
+						ec.Error(ctx, ec.Recover(ctx, r))
+					}
+				}()
+				res = ec._Tag_Pools(ctx, field, obj)
+				return res
+			})
 		default:
 			panic("unknown field " + strconv.Quote(field.Name))
 		}
@@ -5514,6 +5439,57 @@ func (ec *executionContext) marshalNPoolType2githubᚗcomᚋnetᚑautoᚋresourc
 	return v
 }
 
+func (ec *executionContext) marshalNPropertyType2githubᚗcomᚋnetᚑautoᚋresourceManagerᚋentᚐPropertyType(ctx context.Context, sel ast.SelectionSet, v ent.PropertyType) graphql.Marshaler {
+	return ec._PropertyType(ctx, sel, &v)
+}
+
+func (ec *executionContext) marshalNPropertyType2ᚕᚖgithubᚗcomᚋnetᚑautoᚋresourceManagerᚋentᚐPropertyTypeᚄ(ctx context.Context, sel ast.SelectionSet, v []*ent.PropertyType) graphql.Marshaler {
+	ret := make(graphql.Array, len(v))
+	var wg sync.WaitGroup
+	isLen1 := len(v) == 1
+	if !isLen1 {
+		wg.Add(len(v))
+	}
+	for i := range v {
+		i := i
+		fc := &graphql.FieldContext{
+			Index:  &i,
+			Result: &v[i],
+		}
+		ctx := graphql.WithFieldContext(ctx, fc)
+		f := func(i int) {
+			defer func() {
+				if r := recover(); r != nil {
+					ec.Error(ctx, ec.Recover(ctx, r))
+					ret = nil
+				}
+			}()
+			if !isLen1 {
+				defer wg.Done()
+			}
+			ret[i] = ec.marshalNPropertyType2ᚖgithubᚗcomᚋnetᚑautoᚋresourceManagerᚋentᚐPropertyType(ctx, sel, v[i])
+		}
+		if isLen1 {
+			f(i)
+		} else {
+			go f(i)
+		}
+
+	}
+	wg.Wait()
+	return ret
+}
+
+func (ec *executionContext) marshalNPropertyType2ᚖgithubᚗcomᚋnetᚑautoᚋresourceManagerᚋentᚐPropertyType(ctx context.Context, sel ast.SelectionSet, v *ent.PropertyType) graphql.Marshaler {
+	if v == nil {
+		if !graphql.HasFieldError(ctx, graphql.GetFieldContext(ctx)) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	return ec._PropertyType(ctx, sel, v)
+}
+
 func (ec *executionContext) marshalNResource2githubᚗcomᚋnetᚑautoᚋresourceManagerᚋentᚐResource(ctx context.Context, sel ast.SelectionSet, v ent.Resource) graphql.Marshaler {
 	return ec._Resource(ctx, sel, &v)
 }
@@ -5543,6 +5519,43 @@ func (ec *executionContext) marshalNResource2ᚕᚖgithubᚗcomᚋnetᚑautoᚋr
 				defer wg.Done()
 			}
 			ret[i] = ec.marshalOResource2ᚖgithubᚗcomᚋnetᚑautoᚋresourceManagerᚋentᚐResource(ctx, sel, v[i])
+		}
+		if isLen1 {
+			f(i)
+		} else {
+			go f(i)
+		}
+
+	}
+	wg.Wait()
+	return ret
+}
+
+func (ec *executionContext) marshalNResource2ᚕᚖgithubᚗcomᚋnetᚑautoᚋresourceManagerᚋentᚐResourceᚄ(ctx context.Context, sel ast.SelectionSet, v []*ent.Resource) graphql.Marshaler {
+	ret := make(graphql.Array, len(v))
+	var wg sync.WaitGroup
+	isLen1 := len(v) == 1
+	if !isLen1 {
+		wg.Add(len(v))
+	}
+	for i := range v {
+		i := i
+		fc := &graphql.FieldContext{
+			Index:  &i,
+			Result: &v[i],
+		}
+		ctx := graphql.WithFieldContext(ctx, fc)
+		f := func(i int) {
+			defer func() {
+				if r := recover(); r != nil {
+					ec.Error(ctx, ec.Recover(ctx, r))
+					ret = nil
+				}
+			}()
+			if !isLen1 {
+				defer wg.Done()
+			}
+			ret[i] = ec.marshalNResource2ᚖgithubᚗcomᚋnetᚑautoᚋresourceManagerᚋentᚐResource(ctx, sel, v[i])
 		}
 		if isLen1 {
 			f(i)
@@ -5614,6 +5627,43 @@ func (ec *executionContext) marshalNResourcePool2ᚕᚖgithubᚗcomᚋnetᚑauto
 				defer wg.Done()
 			}
 			ret[i] = ec.marshalOResourcePool2ᚖgithubᚗcomᚋnetᚑautoᚋresourceManagerᚋentᚐResourcePool(ctx, sel, v[i])
+		}
+		if isLen1 {
+			f(i)
+		} else {
+			go f(i)
+		}
+
+	}
+	wg.Wait()
+	return ret
+}
+
+func (ec *executionContext) marshalNResourcePool2ᚕᚖgithubᚗcomᚋnetᚑautoᚋresourceManagerᚋentᚐResourcePoolᚄ(ctx context.Context, sel ast.SelectionSet, v []*ent.ResourcePool) graphql.Marshaler {
+	ret := make(graphql.Array, len(v))
+	var wg sync.WaitGroup
+	isLen1 := len(v) == 1
+	if !isLen1 {
+		wg.Add(len(v))
+	}
+	for i := range v {
+		i := i
+		fc := &graphql.FieldContext{
+			Index:  &i,
+			Result: &v[i],
+		}
+		ctx := graphql.WithFieldContext(ctx, fc)
+		f := func(i int) {
+			defer func() {
+				if r := recover(); r != nil {
+					ec.Error(ctx, ec.Recover(ctx, r))
+					ret = nil
+				}
+			}()
+			if !isLen1 {
+				defer wg.Done()
+			}
+			ret[i] = ec.marshalNResourcePool2ᚖgithubᚗcomᚋnetᚑautoᚋresourceManagerᚋentᚐResourcePool(ctx, sel, v[i])
 		}
 		if isLen1 {
 			f(i)
@@ -5781,6 +5831,43 @@ func (ec *executionContext) marshalNTag2ᚕᚖgithubᚗcomᚋnetᚑautoᚋresour
 				defer wg.Done()
 			}
 			ret[i] = ec.marshalOTag2ᚖgithubᚗcomᚋnetᚑautoᚋresourceManagerᚋentᚐTag(ctx, sel, v[i])
+		}
+		if isLen1 {
+			f(i)
+		} else {
+			go f(i)
+		}
+
+	}
+	wg.Wait()
+	return ret
+}
+
+func (ec *executionContext) marshalNTag2ᚕᚖgithubᚗcomᚋnetᚑautoᚋresourceManagerᚋentᚐTagᚄ(ctx context.Context, sel ast.SelectionSet, v []*ent.Tag) graphql.Marshaler {
+	ret := make(graphql.Array, len(v))
+	var wg sync.WaitGroup
+	isLen1 := len(v) == 1
+	if !isLen1 {
+		wg.Add(len(v))
+	}
+	for i := range v {
+		i := i
+		fc := &graphql.FieldContext{
+			Index:  &i,
+			Result: &v[i],
+		}
+		ctx := graphql.WithFieldContext(ctx, fc)
+		f := func(i int) {
+			defer func() {
+				if r := recover(); r != nil {
+					ec.Error(ctx, ec.Recover(ctx, r))
+					ret = nil
+				}
+			}()
+			if !isLen1 {
+				defer wg.Done()
+			}
+			ret[i] = ec.marshalNTag2ᚖgithubᚗcomᚋnetᚑautoᚋresourceManagerᚋentᚐTag(ctx, sel, v[i])
 		}
 		if isLen1 {
 			f(i)
@@ -6141,57 +6228,6 @@ func (ec *executionContext) marshalOMap2ᚕmap(ctx context.Context, sel ast.Sele
 	return ret
 }
 
-func (ec *executionContext) marshalOPropertyType2githubᚗcomᚋnetᚑautoᚋresourceManagerᚋentᚐPropertyType(ctx context.Context, sel ast.SelectionSet, v ent.PropertyType) graphql.Marshaler {
-	return ec._PropertyType(ctx, sel, &v)
-}
-
-func (ec *executionContext) marshalOPropertyType2ᚕᚖgithubᚗcomᚋnetᚑautoᚋresourceManagerᚋentᚐPropertyType(ctx context.Context, sel ast.SelectionSet, v []*ent.PropertyType) graphql.Marshaler {
-	if v == nil {
-		return graphql.Null
-	}
-	ret := make(graphql.Array, len(v))
-	var wg sync.WaitGroup
-	isLen1 := len(v) == 1
-	if !isLen1 {
-		wg.Add(len(v))
-	}
-	for i := range v {
-		i := i
-		fc := &graphql.FieldContext{
-			Index:  &i,
-			Result: &v[i],
-		}
-		ctx := graphql.WithFieldContext(ctx, fc)
-		f := func(i int) {
-			defer func() {
-				if r := recover(); r != nil {
-					ec.Error(ctx, ec.Recover(ctx, r))
-					ret = nil
-				}
-			}()
-			if !isLen1 {
-				defer wg.Done()
-			}
-			ret[i] = ec.marshalOPropertyType2ᚖgithubᚗcomᚋnetᚑautoᚋresourceManagerᚋentᚐPropertyType(ctx, sel, v[i])
-		}
-		if isLen1 {
-			f(i)
-		} else {
-			go f(i)
-		}
-
-	}
-	wg.Wait()
-	return ret
-}
-
-func (ec *executionContext) marshalOPropertyType2ᚖgithubᚗcomᚋnetᚑautoᚋresourceManagerᚋentᚐPropertyType(ctx context.Context, sel ast.SelectionSet, v *ent.PropertyType) graphql.Marshaler {
-	if v == nil {
-		return graphql.Null
-	}
-	return ec._PropertyType(ctx, sel, v)
-}
-
 func (ec *executionContext) marshalOResource2githubᚗcomᚋnetᚑautoᚋresourceManagerᚋentᚐResource(ctx context.Context, sel ast.SelectionSet, v ent.Resource) graphql.Marshaler {
 	return ec._Resource(ctx, sel, &v)
 }
@@ -6266,10 +6302,6 @@ func (ec *executionContext) marshalOResourcePool2ᚖgithubᚗcomᚋnetᚑautoᚋ
 	return ec._ResourcePool(ctx, sel, v)
 }
 
-func (ec *executionContext) marshalOResourcePoolEdges2githubᚗcomᚋnetᚑautoᚋresourceManagerᚋentᚐResourcePoolEdges(ctx context.Context, sel ast.SelectionSet, v ent.ResourcePoolEdges) graphql.Marshaler {
-	return ec._ResourcePoolEdges(ctx, sel, &v)
-}
-
 func (ec *executionContext) marshalOResourceType2githubᚗcomᚋnetᚑautoᚋresourceManagerᚋentᚐResourceType(ctx context.Context, sel ast.SelectionSet, v ent.ResourceType) graphql.Marshaler {
 	return ec._ResourceType(ctx, sel, &v)
 }
@@ -6279,10 +6311,6 @@ func (ec *executionContext) marshalOResourceType2ᚖgithubᚗcomᚋnetᚑautoᚋ
 		return graphql.Null
 	}
 	return ec._ResourceType(ctx, sel, v)
-}
-
-func (ec *executionContext) marshalOResourceTypeEdges2githubᚗcomᚋnetᚑautoᚋresourceManagerᚋentᚐResourceTypeEdges(ctx context.Context, sel ast.SelectionSet, v ent.ResourceTypeEdges) graphql.Marshaler {
-	return ec._ResourceTypeEdges(ctx, sel, &v)
 }
 
 func (ec *executionContext) unmarshalOString2string(ctx context.Context, v interface{}) (string, error) {
@@ -6349,10 +6377,6 @@ func (ec *executionContext) marshalOTag2ᚖgithubᚗcomᚋnetᚑautoᚋresourceM
 		return graphql.Null
 	}
 	return ec._Tag(ctx, sel, v)
-}
-
-func (ec *executionContext) marshalOTagEdges2githubᚗcomᚋnetᚑautoᚋresourceManagerᚋentᚐTagEdges(ctx context.Context, sel ast.SelectionSet, v ent.TagEdges) graphql.Marshaler {
-	return ec._TagEdges(ctx, sel, &v)
 }
 
 func (ec *executionContext) unmarshalOTagOr2githubᚗcomᚋnetᚑautoᚋresourceManagerᚋgraphᚋgraphqlᚋmodelᚐTagOr(ctx context.Context, v interface{}) (model.TagOr, error) {

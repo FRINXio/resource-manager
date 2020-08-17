@@ -5,23 +5,12 @@ directive @goModel(model: String, models: [String!]) on OBJECT
     | INTERFACE
     | UNION
 
-enum PoolType
-@goModel(
-    model: "github.com/net-auto/resourceManager/ent/resourcepool.PoolType"
-)
-{
-    set
-    singleton
-# FIXME allocating is missing
-}
-
-scalar Map
-
-type Resource
-@goModel(model: "github.com/net-auto/resourceManager/ent.Resource")
-{
+type ResourceType
+@goModel(model: "github.com/net-auto/resourceManager/ent.ResourceType") {
     ID: ID!
-    Properties: Map!
+    Name: String!
+    PropertyTypes: [PropertyType!]!
+    Pools: [ResourcePool!]!
 }
 
 type PropertyType
@@ -40,7 +29,29 @@ type ResourcePool
     ID: ID!
     Name: String!
     PoolType: PoolType!
-    Edges: ResourcePoolEdges
+    ResourceType: ResourceType!
+    Resources: [Resource!]!
+    Tags: [Tag!]!
+    AllocationStrategy: AllocationStrategy
+}
+
+enum PoolType
+@goModel(
+    model: "github.com/net-auto/resourceManager/ent/resourcepool.PoolType"
+)
+{
+    set
+    singleton
+    # FIXME allocating is missing
+}
+
+scalar Map
+
+type Resource
+@goModel(model: "github.com/net-auto/resourceManager/ent.Resource")
+{
+    ID: ID!
+    Properties: Map!
 }
 
 enum AllocationStrategyLang
@@ -52,7 +63,6 @@ enum AllocationStrategyLang
     py
 }
 
-
 type AllocationStrategy
 @goModel(model: "github.com/net-auto/resourceManager/ent.AllocationStrategy"){
     ID: ID!
@@ -61,44 +71,19 @@ type AllocationStrategy
     Script: String!
 }
 
-type ResourcePoolEdges
-@goModel(model: "github.com/net-auto/resourceManager/ent.ResourcePoolEdges"){
-    ResourceType: ResourceType!
-    Tags: [Tag]!
-    AllocationStrategy: AllocationStrategy
-}
-
-type ResourceTypeEdges
-@goModel(model: "github.com/net-auto/resourceManager/ent.ResourceTypeEdges"){
-    PropertyTypes: [PropertyType]
-    Pools: [ResourcePool]
-}
-
-type ResourceType
-@goModel(model: "github.com/net-auto/resourceManager/ent.ResourceType"){
-    ID: ID!
-    Name: String!
-    Edges: ResourceTypeEdges
-}
-
 type Tag
 @goModel(model: "github.com/net-auto/resourceManager/ent.Tag"){
     ID: ID!
     Tag: String!
-    Edges: TagEdges
-}
-
-type TagEdges
-@goModel(model: "github.com/net-auto/resourceManager/ent.TagEdges"){
     Pools: [ResourcePool]
 }
 
 input TagAnd {
-    tags: [String!]!
+    matchesAll: [String!]!
 }
 
 input TagOr {
-    tags: [TagAnd!]!
+    matchesAny: [TagAnd!]!
 }
 
 input ResourcePoolInput {

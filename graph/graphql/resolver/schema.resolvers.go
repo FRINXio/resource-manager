@@ -317,10 +317,10 @@ func (r *queryResolver) SearchPoolsByTags(ctx context.Context, tags *model.TagOr
 
 	// TODO make sure all tags exist
 
-	for _, tagOr := range tags.Tags {
+	for _, tagOr := range tags.MatchesAny {
 		// Join queries where tag equals to input by AND operation
 		predicateAnd := resourcePool.HasTags()
-		for _, tagAnd := range tagOr.Tags {
+		for _, tagAnd := range tagOr.MatchesAll {
 			predicateAnd = resourcePool.And(predicateAnd, resourcePool.HasTagsWith(tagWhere.Tag(tagAnd)))
 		}
 
@@ -362,6 +362,58 @@ func (r *resourceResolver) Properties(ctx context.Context, obj *ent.Resource) (m
 	}
 }
 
+func (r *resourcePoolResolver) ResourceType(ctx context.Context, obj *ent.ResourcePool) (*ent.ResourceType, error) {
+	if es, err := obj.Edges.ResourceTypeOrErr(); !ent.IsNotLoaded(err) {
+		return es, err
+	}
+	return obj.QueryResourceType().Only(ctx)
+}
+
+func (r *resourcePoolResolver) Resources(ctx context.Context, obj *ent.ResourcePool) ([]*ent.Resource, error) {
+	if es, err := obj.Edges.ClaimsOrErr(); !ent.IsNotLoaded(err) {
+		return es, err
+	}
+	return obj.QueryClaims().All(ctx)
+}
+
+func (r *resourcePoolResolver) Tags(ctx context.Context, obj *ent.ResourcePool) ([]*ent.Tag, error) {
+	if es, err := obj.Edges.TagsOrErr(); !ent.IsNotLoaded(err) {
+		return es, err
+	}
+	return obj.QueryTags().All(ctx)
+}
+
+func (r *resourcePoolResolver) AllocationStrategy(ctx context.Context, obj *ent.ResourcePool) (*ent.AllocationStrategy, error) {
+	if obj.PoolType != resourcePool.PoolTypeAllocating {
+		return nil, nil
+	}
+	if es, err := obj.Edges.AllocationStrategyOrErr(); !ent.IsNotLoaded(err) {
+		return es, err
+	}
+	return obj.QueryAllocationStrategy().Only(ctx)
+}
+
+func (r *resourceTypeResolver) PropertyTypes(ctx context.Context, obj *ent.ResourceType) ([]*ent.PropertyType, error) {
+	if es, err := obj.Edges.PropertyTypesOrErr(); !ent.IsNotLoaded(err) {
+		return es, err
+	}
+	return obj.QueryPropertyTypes().All(ctx)
+}
+
+func (r *resourceTypeResolver) Pools(ctx context.Context, obj *ent.ResourceType) ([]*ent.ResourcePool, error) {
+	if es, err := obj.Edges.PoolsOrErr(); !ent.IsNotLoaded(err) {
+		return es, err
+	}
+	return obj.QueryPools().All(ctx)
+}
+
+func (r *tagResolver) Pools(ctx context.Context, obj *ent.Tag) ([]*ent.ResourcePool, error) {
+	if es, err := obj.Edges.PoolsOrErr(); !ent.IsNotLoaded(err) {
+		return es, err
+	}
+	return obj.QueryPools().All(ctx)
+}
+
 // Mutation returns generated.MutationResolver implementation.
 //  Mutation() function removed in favour of resolver.go.Mutation()
 
@@ -374,7 +426,19 @@ func (r *Resolver) Query() generated.QueryResolver { return &queryResolver{r} }
 // Resource returns generated.ResourceResolver implementation.
 func (r *Resolver) Resource() generated.ResourceResolver { return &resourceResolver{r} }
 
+// ResourcePool returns generated.ResourcePoolResolver implementation.
+func (r *Resolver) ResourcePool() generated.ResourcePoolResolver { return &resourcePoolResolver{r} }
+
+// ResourceType returns generated.ResourceTypeResolver implementation.
+func (r *Resolver) ResourceType() generated.ResourceTypeResolver { return &resourceTypeResolver{r} }
+
+// Tag returns generated.TagResolver implementation.
+func (r *Resolver) Tag() generated.TagResolver { return &tagResolver{r} }
+
 type mutationResolver struct{ *Resolver }
 type propertyTypeResolver struct{ *Resolver }
 type queryResolver struct{ *Resolver }
 type resourceResolver struct{ *Resolver }
+type resourcePoolResolver struct{ *Resolver }
+type resourceTypeResolver struct{ *Resolver }
+type tagResolver struct{ *Resolver }

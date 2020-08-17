@@ -27,12 +27,13 @@ query queryResourceTypes {
     QueryResourceTypes{
         ID
         Name
-        Edges {
-# FIXME PropertyTypes returns null
-            PropertyTypes {
-                Name
-                Type
-            }
+        PropertyTypes {
+            Name
+            Type
+        }
+        Pools {
+            ID
+            Name
         }
     }
 }
@@ -127,6 +128,12 @@ mutation createAllocationPool {
         ID
         PoolType
         Name
+        AllocationStrategy {
+            Name
+        }
+        ResourceType {
+            Name
+        }
     }
 }
 
@@ -135,12 +142,15 @@ query QueryAllPools {
         ID
         Name
         PoolType
-# FIXME
-#        Edges {
-#            ResourceType {
-#                Name
-#            }
-#        }
+        Tags {
+            Tag
+        }
+        AllocationStrategy {
+            Name
+        }
+        ResourceType {
+            Name
+        }
     }
 }
 
@@ -190,11 +200,9 @@ query Tags {
     QueryTags {
         ID
         Tag
-        Edges {
-            Pools {
-                ID
-                Name
-            }
+        Pools {
+            ID
+            Name
         }
     }
 }
@@ -202,10 +210,8 @@ query Tags {
 mutation TagSetPoolWithFb {
     TagPool(tagId: 25769803776, poolId: 17179869184) {
         Tag
-        Edges {
-            Pools {
-                ID
-            }
+        Pools {
+            ID
         }
     }
 }
@@ -230,30 +236,59 @@ mutation TagAllocatingPoolWithTip {
 }
 
 query searchPoolsByBothTags {
-    SearchPoolsByTags(tags: {tags: [{tags: ["fb-connectivity", "tipIsTheBest"]}]}) {
+    SearchPoolsByTags(tags: {matchesAny: [{matchesAll: ["fb-connectivity", "tipIsTheBest"]}]}) {
         ID
         Name
     }
 }
 
 query searchPoolsByOneOrTheOtherTag {
-    SearchPoolsByTags(tags: {tags: [{tags: ["fb-connectivity"]}, {tags: ["tipIsTheBest"]}]}) {
+    SearchPoolsByTags(tags: {matchesAny: [{matchesAll: ["fb-connectivity"]}, {matchesAll: ["tipIsTheBest"]}]}) {
         ID
         Name
     }
 }
 
 query searchPoolsByTipTag {
-    SearchPoolsByTags(tags: {tags: [{tags: ["tipIsTheBest"]}]}) {
+    SearchPoolsByTags(tags: {matchesAny: [{matchesAll: ["tipIsTheBest"]}]}) {
         ID
         Name
     }
 }
 
 query searchPoolsByFbTag {
-    SearchPoolsByTags(tags: {tags: [{tags: ["fb-connectivity"]}]}) {
+    SearchPoolsByTags(tags: {matchesAny: [{matchesAll: ["fb-connectivity"]}]}) {
         ID
         Name
+    }
+}
+
+query deepQuery {
+    QueryResourceTypes{
+        ID
+        Name
+        PropertyTypes {
+            Name
+            Type
+        }
+        Pools {
+            ID
+            Name
+            AllocationStrategy {
+                ID
+                Lang
+                Name
+            }
+            PoolType
+            Tags {
+                ID
+                Tag
+            }
+            Resources {
+                ID
+                Properties
+            }
+        }
     }
 }
 
