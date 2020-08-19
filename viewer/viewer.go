@@ -20,11 +20,17 @@ import (
 	"go.uber.org/zap"
 )
 
+const (
+	// TenantHeader is the http tenant header.
+	TenantHeader = "x-tenant-id"
+	UserHeader = "from"
+)
+
 // TenancyHandler adds viewer / tenancy into incoming requests.
 func TenancyHandler(h http.Handler, tenancy Tenancy, logger log.Logger) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		logger := logger.For(r.Context())
-		tenant := r.Header.Get(fb_viewer.TenantHeader)
+		tenant := r.Header.Get(TenantHeader)
 		if tenant == "" {
 			logger.Warn("request missing tenant header")
 			http.Error(w, "missing tenant header", http.StatusBadRequest)
@@ -38,8 +44,10 @@ func TenancyHandler(h http.Handler, tenancy Tenancy, logger log.Logger) http.Han
 				zap.Stringer("role", role),
 				zap.Error(err),
 			)
-			http.Error(w, err.Error(), http.StatusBadRequest)
-			return
+			// NH-261 TODO use role in RBAC
+			role = "OWNER"
+			// http.Error(w, err.Error(), http.StatusBadRequest)
+			// return
 		}
 
 		client, err := tenancy.ClientFor(r.Context(), tenant)
@@ -58,7 +66,7 @@ func TenancyHandler(h http.Handler, tenancy Tenancy, logger log.Logger) http.Han
 		if features := r.Header.Get(fb_viewer.FeaturesHeader); features != "" {
 			opts = append(opts, fb_viewer.WithFeatures(strings.Split(features, ",")...))
 		}
-		if username := r.Header.Get(fb_viewer.UserHeader); username != "" {
+		if username := r.Header.Get(UserHeader); username != "" {
 			u, err := GetOrCreateUser(
 				username,
 				role)
