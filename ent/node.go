@@ -55,7 +55,7 @@ func (as *AllocationStrategy) Node(ctx context.Context) (node *Node, err error) 
 	node = &Node{
 		ID:     as.ID,
 		Type:   "AllocationStrategy",
-		Fields: make([]*Field, 3),
+		Fields: make([]*Field, 4),
 		Edges:  make([]*Edge, 1),
 	}
 	var buf []byte
@@ -67,10 +67,18 @@ func (as *AllocationStrategy) Node(ctx context.Context) (node *Node, err error) 
 		Name:  "name",
 		Value: string(buf),
 	}
-	if buf, err = json.Marshal(as.Lang); err != nil {
+	if buf, err = json.Marshal(as.Description); err != nil {
 		return nil, err
 	}
 	node.Fields[1] = &Field{
+		Type:  "string",
+		Name:  "description",
+		Value: string(buf),
+	}
+	if buf, err = json.Marshal(as.Lang); err != nil {
+		return nil, err
+	}
+	node.Fields[2] = &Field{
 		Type:  "allocationstrategy.Lang",
 		Name:  "lang",
 		Value: string(buf),
@@ -78,7 +86,7 @@ func (as *AllocationStrategy) Node(ctx context.Context) (node *Node, err error) 
 	if buf, err = json.Marshal(as.Script); err != nil {
 		return nil, err
 	}
-	node.Fields[2] = &Field{
+	node.Fields[3] = &Field{
 		Type:  "string",
 		Name:  "script",
 		Value: string(buf),
@@ -357,7 +365,7 @@ func (r *Resource) Node(ctx context.Context) (node *Node, err error) {
 		ID:     r.ID,
 		Type:   "Resource",
 		Fields: make([]*Field, 2),
-		Edges:  make([]*Edge, 2),
+		Edges:  make([]*Edge, 3),
 	}
 	var buf []byte
 	if buf, err = json.Marshal(r.Status); err != nil {
@@ -399,6 +407,17 @@ func (r *Resource) Node(ctx context.Context) (node *Node, err error) {
 		Type: "Property",
 		Name: "properties",
 	}
+	ids, err = r.QueryNestedPool().
+		Select(resourcepool.FieldID).
+		Ints(ctx)
+	if err != nil {
+		return nil, err
+	}
+	node.Edges[2] = &Edge{
+		IDs:  ids,
+		Type: "ResourcePool",
+		Name: "nested_pool",
+	}
 	return node, nil
 }
 
@@ -406,8 +425,8 @@ func (rp *ResourcePool) Node(ctx context.Context) (node *Node, err error) {
 	node = &Node{
 		ID:     rp.ID,
 		Type:   "ResourcePool",
-		Fields: make([]*Field, 3),
-		Edges:  make([]*Edge, 4),
+		Fields: make([]*Field, 4),
+		Edges:  make([]*Edge, 5),
 	}
 	var buf []byte
 	if buf, err = json.Marshal(rp.Name); err != nil {
@@ -418,10 +437,18 @@ func (rp *ResourcePool) Node(ctx context.Context) (node *Node, err error) {
 		Name:  "name",
 		Value: string(buf),
 	}
-	if buf, err = json.Marshal(rp.PoolType); err != nil {
+	if buf, err = json.Marshal(rp.Description); err != nil {
 		return nil, err
 	}
 	node.Fields[1] = &Field{
+		Type:  "string",
+		Name:  "description",
+		Value: string(buf),
+	}
+	if buf, err = json.Marshal(rp.PoolType); err != nil {
+		return nil, err
+	}
+	node.Fields[2] = &Field{
 		Type:  "resourcepool.PoolType",
 		Name:  "pool_type",
 		Value: string(buf),
@@ -429,7 +456,7 @@ func (rp *ResourcePool) Node(ctx context.Context) (node *Node, err error) {
 	if buf, err = json.Marshal(rp.DealocationSafetyPeriod); err != nil {
 		return nil, err
 	}
-	node.Fields[2] = &Field{
+	node.Fields[3] = &Field{
 		Type:  "int",
 		Name:  "dealocation_safety_period",
 		Value: string(buf),
@@ -478,6 +505,17 @@ func (rp *ResourcePool) Node(ctx context.Context) (node *Node, err error) {
 		IDs:  ids,
 		Type: "AllocationStrategy",
 		Name: "allocation_strategy",
+	}
+	ids, err = rp.QueryParentResource().
+		Select(resource.FieldID).
+		Ints(ctx)
+	if err != nil {
+		return nil, err
+	}
+	node.Edges[4] = &Edge{
+		IDs:  ids,
+		Type: "Resource",
+		Name: "parent_resource",
 	}
 	return node, nil
 }

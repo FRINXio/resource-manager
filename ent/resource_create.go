@@ -76,6 +76,25 @@ func (rc *ResourceCreate) AddProperties(p ...*Property) *ResourceCreate {
 	return rc.AddPropertyIDs(ids...)
 }
 
+// SetNestedPoolID sets the nested_pool edge to ResourcePool by id.
+func (rc *ResourceCreate) SetNestedPoolID(id int) *ResourceCreate {
+	rc.mutation.SetNestedPoolID(id)
+	return rc
+}
+
+// SetNillableNestedPoolID sets the nested_pool edge to ResourcePool by id if the given value is not nil.
+func (rc *ResourceCreate) SetNillableNestedPoolID(id *int) *ResourceCreate {
+	if id != nil {
+		rc = rc.SetNestedPoolID(*id)
+	}
+	return rc
+}
+
+// SetNestedPool sets the nested_pool edge to ResourcePool.
+func (rc *ResourceCreate) SetNestedPool(r *ResourcePool) *ResourceCreate {
+	return rc.SetNestedPoolID(r.ID)
+}
+
 // Mutation returns the ResourceMutation object of the builder.
 func (rc *ResourceCreate) Mutation() *ResourceMutation {
 	return rc.mutation
@@ -208,6 +227,25 @@ func (rc *ResourceCreate) createSpec() (*Resource, *sqlgraph.CreateSpec) {
 				IDSpec: &sqlgraph.FieldSpec{
 					Type:   field.TypeInt,
 					Column: property.FieldID,
+				},
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges = append(_spec.Edges, edge)
+	}
+	if nodes := rc.mutation.NestedPoolIDs(); len(nodes) > 0 {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2O,
+			Inverse: false,
+			Table:   resource.NestedPoolTable,
+			Columns: []string{resource.NestedPoolColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: &sqlgraph.FieldSpec{
+					Type:   field.TypeInt,
+					Column: resourcepool.FieldID,
 				},
 			},
 		}

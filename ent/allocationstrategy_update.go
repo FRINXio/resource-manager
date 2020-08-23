@@ -34,6 +34,26 @@ func (asu *AllocationStrategyUpdate) SetName(s string) *AllocationStrategyUpdate
 	return asu
 }
 
+// SetDescription sets the description field.
+func (asu *AllocationStrategyUpdate) SetDescription(s string) *AllocationStrategyUpdate {
+	asu.mutation.SetDescription(s)
+	return asu
+}
+
+// SetNillableDescription sets the description field if the given value is not nil.
+func (asu *AllocationStrategyUpdate) SetNillableDescription(s *string) *AllocationStrategyUpdate {
+	if s != nil {
+		asu.SetDescription(*s)
+	}
+	return asu
+}
+
+// ClearDescription clears the value of description.
+func (asu *AllocationStrategyUpdate) ClearDescription() *AllocationStrategyUpdate {
+	asu.mutation.ClearDescription()
+	return asu
+}
+
 // SetLang sets the lang field.
 func (asu *AllocationStrategyUpdate) SetLang(a allocationstrategy.Lang) *AllocationStrategyUpdate {
 	asu.mutation.SetLang(a)
@@ -181,6 +201,19 @@ func (asu *AllocationStrategyUpdate) sqlSave(ctx context.Context) (n int, err er
 			Column: allocationstrategy.FieldName,
 		})
 	}
+	if value, ok := asu.mutation.Description(); ok {
+		_spec.Fields.Set = append(_spec.Fields.Set, &sqlgraph.FieldSpec{
+			Type:   field.TypeString,
+			Value:  value,
+			Column: allocationstrategy.FieldDescription,
+		})
+	}
+	if asu.mutation.DescriptionCleared() {
+		_spec.Fields.Clear = append(_spec.Fields.Clear, &sqlgraph.FieldSpec{
+			Type:   field.TypeString,
+			Column: allocationstrategy.FieldDescription,
+		})
+	}
 	if value, ok := asu.mutation.Lang(); ok {
 		_spec.Fields.Set = append(_spec.Fields.Set, &sqlgraph.FieldSpec{
 			Type:   field.TypeEnum,
@@ -254,6 +287,26 @@ type AllocationStrategyUpdateOne struct {
 // SetName sets the name field.
 func (asuo *AllocationStrategyUpdateOne) SetName(s string) *AllocationStrategyUpdateOne {
 	asuo.mutation.SetName(s)
+	return asuo
+}
+
+// SetDescription sets the description field.
+func (asuo *AllocationStrategyUpdateOne) SetDescription(s string) *AllocationStrategyUpdateOne {
+	asuo.mutation.SetDescription(s)
+	return asuo
+}
+
+// SetNillableDescription sets the description field if the given value is not nil.
+func (asuo *AllocationStrategyUpdateOne) SetNillableDescription(s *string) *AllocationStrategyUpdateOne {
+	if s != nil {
+		asuo.SetDescription(*s)
+	}
+	return asuo
+}
+
+// ClearDescription clears the value of description.
+func (asuo *AllocationStrategyUpdateOne) ClearDescription() *AllocationStrategyUpdateOne {
+	asuo.mutation.ClearDescription()
 	return asuo
 }
 
@@ -400,6 +453,19 @@ func (asuo *AllocationStrategyUpdateOne) sqlSave(ctx context.Context) (as *Alloc
 			Type:   field.TypeString,
 			Value:  value,
 			Column: allocationstrategy.FieldName,
+		})
+	}
+	if value, ok := asuo.mutation.Description(); ok {
+		_spec.Fields.Set = append(_spec.Fields.Set, &sqlgraph.FieldSpec{
+			Type:   field.TypeString,
+			Value:  value,
+			Column: allocationstrategy.FieldDescription,
+		})
+	}
+	if asuo.mutation.DescriptionCleared() {
+		_spec.Fields.Clear = append(_spec.Fields.Clear, &sqlgraph.FieldSpec{
+			Type:   field.TypeString,
+			Column: allocationstrategy.FieldDescription,
 		})
 	}
 	if value, ok := asuo.mutation.Lang(); ok {

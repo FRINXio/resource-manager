@@ -76,6 +76,25 @@ func (ru *ResourceUpdate) AddProperties(p ...*Property) *ResourceUpdate {
 	return ru.AddPropertyIDs(ids...)
 }
 
+// SetNestedPoolID sets the nested_pool edge to ResourcePool by id.
+func (ru *ResourceUpdate) SetNestedPoolID(id int) *ResourceUpdate {
+	ru.mutation.SetNestedPoolID(id)
+	return ru
+}
+
+// SetNillableNestedPoolID sets the nested_pool edge to ResourcePool by id if the given value is not nil.
+func (ru *ResourceUpdate) SetNillableNestedPoolID(id *int) *ResourceUpdate {
+	if id != nil {
+		ru = ru.SetNestedPoolID(*id)
+	}
+	return ru
+}
+
+// SetNestedPool sets the nested_pool edge to ResourcePool.
+func (ru *ResourceUpdate) SetNestedPool(r *ResourcePool) *ResourceUpdate {
+	return ru.SetNestedPoolID(r.ID)
+}
+
 // Mutation returns the ResourceMutation object of the builder.
 func (ru *ResourceUpdate) Mutation() *ResourceMutation {
 	return ru.mutation
@@ -100,6 +119,12 @@ func (ru *ResourceUpdate) RemoveProperties(p ...*Property) *ResourceUpdate {
 		ids[i] = p[i].ID
 	}
 	return ru.RemovePropertyIDs(ids...)
+}
+
+// ClearNestedPool clears the nested_pool edge to ResourcePool.
+func (ru *ResourceUpdate) ClearNestedPool() *ResourceUpdate {
+	ru.mutation.ClearNestedPool()
+	return ru
 }
 
 // Save executes the query and returns the number of rows/vertices matched by this operation.
@@ -268,6 +293,41 @@ func (ru *ResourceUpdate) sqlSave(ctx context.Context) (n int, err error) {
 		}
 		_spec.Edges.Add = append(_spec.Edges.Add, edge)
 	}
+	if ru.mutation.NestedPoolCleared() {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2O,
+			Inverse: false,
+			Table:   resource.NestedPoolTable,
+			Columns: []string{resource.NestedPoolColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: &sqlgraph.FieldSpec{
+					Type:   field.TypeInt,
+					Column: resourcepool.FieldID,
+				},
+			},
+		}
+		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
+	}
+	if nodes := ru.mutation.NestedPoolIDs(); len(nodes) > 0 {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2O,
+			Inverse: false,
+			Table:   resource.NestedPoolTable,
+			Columns: []string{resource.NestedPoolColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: &sqlgraph.FieldSpec{
+					Type:   field.TypeInt,
+					Column: resourcepool.FieldID,
+				},
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges.Add = append(_spec.Edges.Add, edge)
+	}
 	if n, err = sqlgraph.UpdateNodes(ctx, ru.driver, _spec); err != nil {
 		if _, ok := err.(*sqlgraph.NotFoundError); ok {
 			err = &NotFoundError{resource.Label}
@@ -332,6 +392,25 @@ func (ruo *ResourceUpdateOne) AddProperties(p ...*Property) *ResourceUpdateOne {
 	return ruo.AddPropertyIDs(ids...)
 }
 
+// SetNestedPoolID sets the nested_pool edge to ResourcePool by id.
+func (ruo *ResourceUpdateOne) SetNestedPoolID(id int) *ResourceUpdateOne {
+	ruo.mutation.SetNestedPoolID(id)
+	return ruo
+}
+
+// SetNillableNestedPoolID sets the nested_pool edge to ResourcePool by id if the given value is not nil.
+func (ruo *ResourceUpdateOne) SetNillableNestedPoolID(id *int) *ResourceUpdateOne {
+	if id != nil {
+		ruo = ruo.SetNestedPoolID(*id)
+	}
+	return ruo
+}
+
+// SetNestedPool sets the nested_pool edge to ResourcePool.
+func (ruo *ResourceUpdateOne) SetNestedPool(r *ResourcePool) *ResourceUpdateOne {
+	return ruo.SetNestedPoolID(r.ID)
+}
+
 // Mutation returns the ResourceMutation object of the builder.
 func (ruo *ResourceUpdateOne) Mutation() *ResourceMutation {
 	return ruo.mutation
@@ -356,6 +435,12 @@ func (ruo *ResourceUpdateOne) RemoveProperties(p ...*Property) *ResourceUpdateOn
 		ids[i] = p[i].ID
 	}
 	return ruo.RemovePropertyIDs(ids...)
+}
+
+// ClearNestedPool clears the nested_pool edge to ResourcePool.
+func (ruo *ResourceUpdateOne) ClearNestedPool() *ResourceUpdateOne {
+	ruo.mutation.ClearNestedPool()
+	return ruo
 }
 
 // Save executes the query and returns the updated entity.
@@ -514,6 +599,41 @@ func (ruo *ResourceUpdateOne) sqlSave(ctx context.Context) (r *Resource, err err
 				IDSpec: &sqlgraph.FieldSpec{
 					Type:   field.TypeInt,
 					Column: property.FieldID,
+				},
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges.Add = append(_spec.Edges.Add, edge)
+	}
+	if ruo.mutation.NestedPoolCleared() {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2O,
+			Inverse: false,
+			Table:   resource.NestedPoolTable,
+			Columns: []string{resource.NestedPoolColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: &sqlgraph.FieldSpec{
+					Type:   field.TypeInt,
+					Column: resourcepool.FieldID,
+				},
+			},
+		}
+		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
+	}
+	if nodes := ruo.mutation.NestedPoolIDs(); len(nodes) > 0 {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2O,
+			Inverse: false,
+			Table:   resource.NestedPoolTable,
+			Columns: []string{resource.NestedPoolColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: &sqlgraph.FieldSpec{
+					Type:   field.TypeInt,
+					Column: resourcepool.FieldID,
 				},
 			},
 		}

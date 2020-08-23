@@ -17,6 +17,8 @@ type AllocationStrategy struct {
 	ID int `json:"id,omitempty"`
 	// Name holds the value of the "name" field.
 	Name string `json:"name,omitempty"`
+	// Description holds the value of the "description" field.
+	Description *string `json:"description,omitempty"`
 	// Lang holds the value of the "lang" field.
 	Lang allocationstrategy.Lang `json:"lang,omitempty"`
 	// Script holds the value of the "script" field.
@@ -49,6 +51,7 @@ func (*AllocationStrategy) scanValues() []interface{} {
 	return []interface{}{
 		&sql.NullInt64{},  // id
 		&sql.NullString{}, // name
+		&sql.NullString{}, // description
 		&sql.NullString{}, // lang
 		&sql.NullString{}, // script
 	}
@@ -72,12 +75,18 @@ func (as *AllocationStrategy) assignValues(values ...interface{}) error {
 		as.Name = value.String
 	}
 	if value, ok := values[1].(*sql.NullString); !ok {
-		return fmt.Errorf("unexpected type %T for field lang", values[1])
+		return fmt.Errorf("unexpected type %T for field description", values[1])
+	} else if value.Valid {
+		as.Description = new(string)
+		*as.Description = value.String
+	}
+	if value, ok := values[2].(*sql.NullString); !ok {
+		return fmt.Errorf("unexpected type %T for field lang", values[2])
 	} else if value.Valid {
 		as.Lang = allocationstrategy.Lang(value.String)
 	}
-	if value, ok := values[2].(*sql.NullString); !ok {
-		return fmt.Errorf("unexpected type %T for field script", values[2])
+	if value, ok := values[3].(*sql.NullString); !ok {
+		return fmt.Errorf("unexpected type %T for field script", values[3])
 	} else if value.Valid {
 		as.Script = value.String
 	}
@@ -114,6 +123,10 @@ func (as *AllocationStrategy) String() string {
 	builder.WriteString(fmt.Sprintf("id=%v", as.ID))
 	builder.WriteString(", name=")
 	builder.WriteString(as.Name)
+	if v := as.Description; v != nil {
+		builder.WriteString(", description=")
+		builder.WriteString(*v)
+	}
 	builder.WriteString(", lang=")
 	builder.WriteString(fmt.Sprintf("%v", as.Lang))
 	builder.WriteString(", script=")

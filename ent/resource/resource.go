@@ -23,6 +23,8 @@ const (
 	EdgePool = "pool"
 	// EdgeProperties holds the string denoting the properties edge name in mutations.
 	EdgeProperties = "properties"
+	// EdgeNestedPool holds the string denoting the nested_pool edge name in mutations.
+	EdgeNestedPool = "nested_pool"
 
 	// Table holds the table name of the resource in the database.
 	Table = "resources"
@@ -40,6 +42,13 @@ const (
 	PropertiesInverseTable = "properties"
 	// PropertiesColumn is the table column denoting the properties relation/edge.
 	PropertiesColumn = "resource_properties"
+	// NestedPoolTable is the table the holds the nested_pool relation/edge.
+	NestedPoolTable = "resource_pools"
+	// NestedPoolInverseTable is the table name for the ResourcePool entity.
+	// It exists in this package in order to avoid circular dependency with the "resourcepool" package.
+	NestedPoolInverseTable = "resource_pools"
+	// NestedPoolColumn is the table column denoting the nested_pool relation/edge.
+	NestedPoolColumn = "resource_nested_pool"
 )
 
 // Columns holds all SQL columns for resource fields.

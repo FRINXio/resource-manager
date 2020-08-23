@@ -98,10 +98,10 @@ func (tr txResolver) TagPool(ctx context.Context, tagID int, poolID int) (*ent.T
 	return result, nil
 }
 
-func (tr txResolver) CreateAllocationStrategy(ctx context.Context, name string, script string, lang allocationstrategy.Lang) (*ent.AllocationStrategy, error) {
+func (tr txResolver) CreateAllocationStrategy(ctx context.Context, name string, description *string, script string, lang allocationstrategy.Lang) (*ent.AllocationStrategy, error) {
 	var result, zero *ent.AllocationStrategy
 	if err := tr.WithTransaction(ctx, func(ctx context.Context, mr generated.MutationResolver) (err error) {
-		result, err = mr.CreateAllocationStrategy(ctx, name, script, lang)
+		result, err = mr.CreateAllocationStrategy(ctx, name, description, script, lang)
 		return
 	}); err != nil {
 		return zero, err
@@ -162,10 +162,10 @@ func (tr txResolver) FreeResource(ctx context.Context, input map[string]interfac
 	return result, nil
 }
 
-func (tr txResolver) CreateSetPool(ctx context.Context, resourceTypeID int, poolName string, poolDealocationSafetyPeriod int, poolValues []map[string]interface{}) (*ent.ResourcePool, error) {
+func (tr txResolver) CreateSetPool(ctx context.Context, input model.CreateSetPoolInput) (*ent.ResourcePool, error) {
 	var result, zero *ent.ResourcePool
 	if err := tr.WithTransaction(ctx, func(ctx context.Context, mr generated.MutationResolver) (err error) {
-		result, err = mr.CreateSetPool(ctx, resourceTypeID, poolName, poolDealocationSafetyPeriod, poolValues)
+		result, err = mr.CreateSetPool(ctx, input)
 		return
 	}); err != nil {
 		return zero, err
@@ -176,10 +176,10 @@ func (tr txResolver) CreateSetPool(ctx context.Context, resourceTypeID int, pool
 	return result, nil
 }
 
-func (tr txResolver) CreateSingletonPool(ctx context.Context, resourceTypeID int, poolName string, poolValues []map[string]interface{}) (*ent.ResourcePool, error) {
+func (tr txResolver) CreateNestedSetPool(ctx context.Context, input model.CreateSetPoolInput, parentResourceID int) (*ent.ResourcePool, error) {
 	var result, zero *ent.ResourcePool
 	if err := tr.WithTransaction(ctx, func(ctx context.Context, mr generated.MutationResolver) (err error) {
-		result, err = mr.CreateSingletonPool(ctx, resourceTypeID, poolName, poolValues)
+		result, err = mr.CreateNestedSetPool(ctx, input, parentResourceID)
 		return
 	}); err != nil {
 		return zero, err
@@ -190,10 +190,52 @@ func (tr txResolver) CreateSingletonPool(ctx context.Context, resourceTypeID int
 	return result, nil
 }
 
-func (tr txResolver) CreateAllocatingPool(ctx context.Context, resourceTypeID int, poolName string, allocationStrategyID int, poolDealocationSafetyPeriod int) (*ent.ResourcePool, error) {
+func (tr txResolver) CreateSingletonPool(ctx context.Context, input *model.CreateSingletonPoolInput) (*ent.ResourcePool, error) {
 	var result, zero *ent.ResourcePool
 	if err := tr.WithTransaction(ctx, func(ctx context.Context, mr generated.MutationResolver) (err error) {
-		result, err = mr.CreateAllocatingPool(ctx, resourceTypeID, poolName, allocationStrategyID, poolDealocationSafetyPeriod)
+		result, err = mr.CreateSingletonPool(ctx, input)
+		return
+	}); err != nil {
+		return zero, err
+	}
+	if result != nil {
+		result = result.Unwrap()
+	}
+	return result, nil
+}
+
+func (tr txResolver) CreateNestedSingletonPool(ctx context.Context, input *model.CreateSingletonPoolInput, parentResourceID int) (*ent.ResourcePool, error) {
+	var result, zero *ent.ResourcePool
+	if err := tr.WithTransaction(ctx, func(ctx context.Context, mr generated.MutationResolver) (err error) {
+		result, err = mr.CreateNestedSingletonPool(ctx, input, parentResourceID)
+		return
+	}); err != nil {
+		return zero, err
+	}
+	if result != nil {
+		result = result.Unwrap()
+	}
+	return result, nil
+}
+
+func (tr txResolver) CreateAllocatingPool(ctx context.Context, input *model.CreateAllocatingPoolInput) (*ent.ResourcePool, error) {
+	var result, zero *ent.ResourcePool
+	if err := tr.WithTransaction(ctx, func(ctx context.Context, mr generated.MutationResolver) (err error) {
+		result, err = mr.CreateAllocatingPool(ctx, input)
+		return
+	}); err != nil {
+		return zero, err
+	}
+	if result != nil {
+		result = result.Unwrap()
+	}
+	return result, nil
+}
+
+func (tr txResolver) CreateNestedAllocatingPool(ctx context.Context, input *model.CreateAllocatingPoolInput, parentResourceID int) (*ent.ResourcePool, error) {
+	var result, zero *ent.ResourcePool
+	if err := tr.WithTransaction(ctx, func(ctx context.Context, mr generated.MutationResolver) (err error) {
+		result, err = mr.CreateNestedAllocatingPool(ctx, input, parentResourceID)
 		return
 	}); err != nil {
 		return zero, err

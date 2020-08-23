@@ -9,7 +9,9 @@ import (
 	"github.com/net-auto/resourceManager/ent"
 	"github.com/net-auto/resourceManager/ent/allocationstrategy"
 	"github.com/net-auto/resourceManager/ent/predicate"
+	"github.com/net-auto/resourceManager/ent/resource"
 	resourcePool "github.com/net-auto/resourceManager/ent/resourcepool"
+	"github.com/net-auto/resourceManager/ent/resourcetype"
 	tagWhere "github.com/net-auto/resourceManager/ent/tag"
 	"github.com/net-auto/resourceManager/graph/graphql/generated"
 	"github.com/net-auto/resourceManager/graph/graphql/model"
@@ -53,9 +55,14 @@ func (r *mutationResolver) TagPool(ctx context.Context, tagID int, poolID int) (
 	return tag, nil
 }
 
-func (r *mutationResolver) CreateAllocationStrategy(ctx context.Context, name string, script string, lang allocationstrategy.Lang) (*ent.AllocationStrategy, error) {
+func (r *mutationResolver) CreateAllocationStrategy(ctx context.Context, name string, description *string, script string, lang allocationstrategy.Lang) (*ent.AllocationStrategy, error) {
 	var client = r.ClientFrom(ctx)
-	strat, err := client.AllocationStrategy.Create().SetName(name).SetScript(script).SetLang(lang).Save(ctx)
+	strat, err := client.AllocationStrategy.Create().
+		SetName(name).
+		SetNillableDescription(description).
+		SetScript(script).
+		SetLang(lang).
+		Save(ctx)
 	if err != nil {
 		return nil, gqlerror.Errorf("Unable to create strategy: %v", err)
 	}
@@ -66,11 +73,12 @@ func (r *mutationResolver) DeleteAllocationStrategy(ctx context.Context, allocat
 	var client = r.ClientFrom(ctx)
 	if strat, err := client.AllocationStrategy.Query().
 		Where(allocationstrategy.ID(allocationStrategyID)).
+		WithPools().
 		Only(ctx); err != nil {
 		return nil, gqlerror.Errorf("Unable to delete strategy: %v", err)
 	} else {
 
-		if dependentPools, err := strat.QueryPools().All(ctx); len(dependentPools) > 0 && err != nil {
+		if len(strat.Edges.Pools) > 0 {
 			return nil, gqlerror.Errorf("Unable to delete, Allocation strategy is still in use")
 		}
 
@@ -131,49 +139,80 @@ func (r *mutationResolver) FreeResource(ctx context.Context, input map[string]in
 	return "", gqlerror.Errorf("Unable to free resource: %v", err)
 }
 
-func (r *mutationResolver) CreateSetPool(ctx context.Context, resourceTypeID int, poolName string, poolDealocationSafetyPeriod int, poolValues []map[string]interface{}) (*ent.ResourcePool, error) {
+func (r *mutationResolver) CreateSetPool(ctx context.Context, input model.CreateSetPoolInput) (*ent.ResourcePool, error) {
 	var client = r.ClientFrom(ctx)
 
-	resType, err := client.ResourceType.Get(ctx, resourceTypeID)
+	resType, err := client.ResourceType.Get(ctx, input.ResourceTypeID)
 	if err != nil {
 		return nil, gqlerror.Errorf("Unable to create pool: %v", err)
 	}
-	_, rp, err := p.NewSetPoolWithMeta(ctx, client, resType, p.ToRawTypes(poolValues), poolName, poolDealocationSafetyPeriod)
+	_, rp, err := p.NewSetPoolWithMeta(ctx, client, resType, p.ToRawTypes(input.PoolValues),
+		input.PoolName, input.Description, input.PoolDealocationSafetyPeriod)
 	if err != nil {
 		return nil, gqlerror.Errorf("Unable to create pool: %v", err)
 	}
 	return rp, nil
 }
 
-func (r *mutationResolver) CreateSingletonPool(ctx context.Context, resourceTypeID int, poolName string, poolValues []map[string]interface{}) (*ent.ResourcePool, error) {
+func (r *mutationResolver) CreateNestedSetPool(ctx context.Context, input model.CreateSetPoolInput, parentResourceID int) (*ent.ResourcePool, error) {
 	var client = r.ClientFrom(ctx)
 
-	resType, _ := client.ResourceType.Get(ctx, resourceTypeID)
-	if len(poolValues) == 1 {
-		_, rp, err := p.NewSingletonPoolWithMeta(ctx, client, resType, p.ToRawTypes(poolValues)[0], poolName)
-		return rp, gqlerror.Errorf("Cannot create singleton pool: %v", err)
+	return createNestedPool(ctx, parentResourceID, client, func() (*ent.ResourcePool, error) {
+		return r.CreateSetPool(ctx, input)
+	})
+}
+
+func (r *mutationResolver) CreateSingletonPool(ctx context.Context, input *model.CreateSingletonPoolInput) (*ent.ResourcePool, error) {
+	var client = r.ClientFrom(ctx)
+
+	resType, _ := client.ResourceType.Get(ctx, input.ResourceTypeID)
+	if len(input.PoolValues) == 1 {
+		_, rp, err := p.NewSingletonPoolWithMeta(ctx, client, resType, p.ToRawTypes(input.PoolValues)[0],
+			input.PoolName, input.Description)
+		if err != nil {
+			return rp, gqlerror.Errorf("Cannot create singleton pool: %v", err)
+		} else {
+			return rp, nil
+		}
 	} else {
 		return nil, gqlerror.Errorf("Cannot create singleton pool, no resource provided")
 	}
 }
 
-func (r *mutationResolver) CreateAllocatingPool(ctx context.Context, resourceTypeID int, poolName string, allocationStrategyID int, poolDealocationSafetyPeriod int) (*ent.ResourcePool, error) {
+func (r *mutationResolver) CreateNestedSingletonPool(ctx context.Context, input *model.CreateSingletonPoolInput, parentResourceID int) (*ent.ResourcePool, error) {
 	var client = r.ClientFrom(ctx)
 
-	resType, errRes := client.ResourceType.Get(ctx, resourceTypeID)
+	return createNestedPool(ctx, parentResourceID, client, func() (*ent.ResourcePool, error) {
+		return r.CreateSingletonPool(ctx, input)
+	})
+}
+
+func (r *mutationResolver) CreateAllocatingPool(ctx context.Context, input *model.CreateAllocatingPoolInput) (*ent.ResourcePool, error) {
+	var client = r.ClientFrom(ctx)
+
+	resType, errRes := client.ResourceType.Get(ctx, input.ResourceTypeID)
 	if errRes != nil {
 		return nil, gqlerror.Errorf("Unable to create pool: %v", errRes)
 	}
-	allocationStrat, errAlloc := client.AllocationStrategy.Get(ctx, allocationStrategyID)
+	allocationStrat, errAlloc := client.AllocationStrategy.Get(ctx, input.AllocationStrategyID)
 	if errAlloc != nil {
 		return nil, gqlerror.Errorf("Unable to create pool: %v", errAlloc)
 	}
 
-	_, rp, err := p.NewAllocatingPoolWithMeta(ctx, client, resType, allocationStrat, poolName, poolDealocationSafetyPeriod)
+	_, rp, err := p.NewAllocatingPoolWithMeta(ctx, client, resType, allocationStrat,
+		input.PoolName, input.Description, input.PoolDealocationSafetyPeriod)
 	if err != nil {
 		return nil, gqlerror.Errorf("Unable to create pool: %v", err)
 	}
 	return rp, err
+}
+
+func (r *mutationResolver) CreateNestedAllocatingPool(ctx context.Context, input *model.CreateAllocatingPoolInput, parentResourceID int) (*ent.ResourcePool, error) {
+	var client = r.ClientFrom(ctx)
+
+	return createNestedPool(ctx, parentResourceID, client, func() (*ent.ResourcePool, error) {
+		return r.CreateAllocatingPool(ctx, input)
+	})
 }
 
 func (r *mutationResolver) DeleteResourcePool(ctx context.Context, resourcePoolID int) (string, error) {
@@ -302,9 +341,50 @@ func (r *queryResolver) QueryResourceTypes(ctx context.Context) ([]*ent.Resource
 	}
 }
 
-func (r *queryResolver) QueryResourcePools(ctx context.Context) ([]*ent.ResourcePool, error) {
+func (r *queryResolver) QueryResourcePools(ctx context.Context, resourceTypeID *int) ([]*ent.ResourcePool, error) {
 	client := r.ClientFrom(ctx)
-	if resourcePools, err := client.ResourcePool.Query().All(ctx); err != nil {
+	query := client.ResourcePool.Query()
+
+	if resourceTypeID != nil {
+		query.Where(resourcePool.HasResourceTypeWith(resourcetype.ID(*resourceTypeID)))
+	}
+
+	if resourcePools, err := query.All(ctx); err != nil {
+		return nil, gqlerror.Errorf("Unable to query resource pools: %v", err)
+	} else {
+		return resourcePools, nil
+	}
+}
+
+func (r *queryResolver) QueryRootResourcePools(ctx context.Context, resourceTypeID *int) ([]*ent.ResourcePool, error) {
+	client := r.ClientFrom(ctx)
+	query := client.ResourcePool.
+		Query().
+		Where(resourcePool.Not(resourcePool.HasParentResource()))
+
+	if resourceTypeID != nil {
+		query.Where(resourcePool.HasResourceTypeWith(resourcetype.ID(*resourceTypeID)))
+	}
+
+	if resourcePools, err := query.All(ctx); err != nil {
+		return nil, gqlerror.Errorf("Unable to query resource pools: %v", err)
+	} else {
+		return resourcePools, nil
+	}
+}
+
+func (r *queryResolver) QueryLeafResourcePools(ctx context.Context, resourceTypeID *int) ([]*ent.ResourcePool, error) {
+	client := r.ClientFrom(ctx)
+	query := client.ResourcePool.
+		Query().
+		Where(resourcePool.HasParentResource()).
+		Where(resourcePool.Not(resourcePool.HasClaimsWith(resource.HasNestedPool())))
+
+	if resourceTypeID != nil {
+		query.Where(resourcePool.HasResourceTypeWith(resourcetype.ID(*resourceTypeID)))
+	}
+
+	if resourcePools, err := query.All(ctx); err != nil {
 		return nil, gqlerror.Errorf("Unable to query resource pools: %v", err)
 	} else {
 		return resourcePools, nil
@@ -359,6 +439,19 @@ func (r *resourceResolver) Properties(ctx context.Context, obj *ent.Resource) (m
 		return nil, gqlerror.Errorf("Unable to query properties: %v", err)
 	} else {
 		return props, nil
+	}
+}
+
+func (r *resourceResolver) NestedPool(ctx context.Context, obj *ent.Resource) (*ent.ResourcePool, error) {
+	if es, err := obj.Edges.NestedPoolOrErr(); !ent.IsNotLoaded(err) {
+		return es, err
+	}
+	if pool, err := obj.QueryNestedPool().First(ctx); ent.IsNotFound(err) {
+		return nil, nil
+	} else if err == nil {
+		return pool, nil
+	} else {
+		return nil, gqlerror.Errorf("Unable to query nested pool: %v", err)
 	}
 }
 

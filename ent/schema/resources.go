@@ -77,10 +77,13 @@ func (AllocationStrategy) Fields() []ent.Field {
 		field.String("name").
 			NotEmpty().
 			Unique(),
+		field.Text("description").
+			Optional().
+			Nillable(),
 		field.Enum("lang").
 			Values("py", "js").
 			Default("js"),
-		field.String("script").
+		field.Text("script").
 			NotEmpty(),
 	}
 }
@@ -106,6 +109,9 @@ func (ResourcePool) Fields() []ent.Field {
 		field.String("name").
 			NotEmpty().
 			Unique(),
+		field.Text("description").
+			Optional().
+			Nillable(),
 		field.Enum("pool_type").
 			Values("singleton", "set", "allocating"),
 		field.Int("dealocation_safety_period").
@@ -125,6 +131,10 @@ func (ResourcePool) Edges() []ent.Edge {
 			Ref("pools"),
 		edge.To("claims", Resource.Type),
 		edge.To("allocation_strategy", AllocationStrategy.Type).
+			Unique(),
+		edge.From("parent_resource", Resource.Type).
+			Ref("nested_pool").
+			Comment("pool hierarchies can use this link between resoruce and pool").
 			Unique(),
 	}
 }
@@ -152,5 +162,8 @@ func (Resource) Edges() []ent.Edge {
 			Ref("claims").
 			Unique(),
 		edge.To("properties", Property.Type),
+		edge.To("nested_pool", ResourcePool.Type).
+			Comment("pool hierarchies can use this link between resoruce and pool").
+			Unique(),
 	}
 }

@@ -280,6 +280,34 @@ func HasPropertiesWith(preds ...predicate.Property) predicate.Resource {
 	})
 }
 
+// HasNestedPool applies the HasEdge predicate on the "nested_pool" edge.
+func HasNestedPool() predicate.Resource {
+	return predicate.Resource(func(s *sql.Selector) {
+		step := sqlgraph.NewStep(
+			sqlgraph.From(Table, FieldID),
+			sqlgraph.To(NestedPoolTable, FieldID),
+			sqlgraph.Edge(sqlgraph.O2O, false, NestedPoolTable, NestedPoolColumn),
+		)
+		sqlgraph.HasNeighbors(s, step)
+	})
+}
+
+// HasNestedPoolWith applies the HasEdge predicate on the "nested_pool" edge with a given conditions (other predicates).
+func HasNestedPoolWith(preds ...predicate.ResourcePool) predicate.Resource {
+	return predicate.Resource(func(s *sql.Selector) {
+		step := sqlgraph.NewStep(
+			sqlgraph.From(Table, FieldID),
+			sqlgraph.To(NestedPoolInverseTable, FieldID),
+			sqlgraph.Edge(sqlgraph.O2O, false, NestedPoolTable, NestedPoolColumn),
+		)
+		sqlgraph.HasNeighborsWith(s, step, func(s *sql.Selector) {
+			for _, p := range preds {
+				p(s)
+			}
+		})
+	})
+}
+
 // And groups list of predicates with the AND operator between them.
 func And(predicates ...predicate.Resource) predicate.Resource {
 	return predicate.Resource(func(s *sql.Selector) {

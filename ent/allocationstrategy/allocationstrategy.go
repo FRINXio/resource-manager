@@ -15,6 +15,8 @@ const (
 	FieldID = "id"
 	// FieldName holds the string denoting the name field in the database.
 	FieldName = "name"
+	// FieldDescription holds the string denoting the description field in the database.
+	FieldDescription = "description"
 	// FieldLang holds the string denoting the lang field in the database.
 	FieldLang = "lang"
 	// FieldScript holds the string denoting the script field in the database.
@@ -38,6 +40,7 @@ const (
 var Columns = []string{
 	FieldID,
 	FieldName,
+	FieldDescription,
 	FieldLang,
 	FieldScript,
 }

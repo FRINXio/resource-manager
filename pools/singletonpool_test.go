@@ -18,7 +18,7 @@ func TestNewSingletonPool(t *testing.T) {
 
 	pool, err := NewSingletonPool(ctx, client, resType, map[string]interface{}{
 		"vlan": 44,
-	}, "singleton")
+	}, "singleton", nil)
 
 	if err != nil {
 		t.Fatal(err)

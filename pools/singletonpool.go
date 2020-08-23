@@ -14,8 +14,9 @@ func NewSingletonPool(
 	client *ent.Client,
 	resourceType *ent.ResourceType,
 	propertyValues RawResourceProps,
-	poolName string) (Pool, error) {
-	pool, _, err := NewSingletonPoolWithMeta(ctx, client, resourceType, propertyValues, poolName)
+	poolName string,
+	description *string) (Pool, error) {
+	pool, _, err := NewSingletonPoolWithMeta(ctx, client, resourceType, propertyValues, poolName, description)
 	return pool, err
 }
 
@@ -25,10 +26,11 @@ func NewSingletonPoolWithMeta(
 	client *ent.Client,
 	resourceType *ent.ResourceType,
 	propertyValues RawResourceProps,
-	poolName string) (Pool, *ent.ResourcePool, error) {
+	poolName string,
+	description *string) (Pool, *ent.ResourcePool, error) {
 
 	pool, err := newFixedPoolInner(ctx, client, resourceType, []RawResourceProps{propertyValues},
-		poolName, resourcePool.PoolTypeSingleton, schema.ResourcePoolDealocationImmediately)
+		poolName, description, resourcePool.PoolTypeSingleton, schema.ResourcePoolDealocationImmediately)
 
 	if err != nil {
 		return nil, nil, err

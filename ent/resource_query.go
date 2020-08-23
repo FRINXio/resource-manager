@@ -29,6 +29,7 @@ type ResourceQuery struct {
 	// eager-loading edges.
 	withPool       *ResourcePoolQuery
 	withProperties *PropertyQuery
+	withNestedPool *ResourcePoolQuery
 	withFKs        bool
 	// intermediate query (i.e. traversal path).
 	sql  *sql.Selector
@@ -88,6 +89,24 @@ func (rq *ResourceQuery) QueryProperties() *PropertyQuery {
 			sqlgraph.From(resource.Table, resource.FieldID, rq.sqlQuery()),
 			sqlgraph.To(property.Table, property.FieldID),
 			sqlgraph.Edge(sqlgraph.O2M, false, resource.PropertiesTable, resource.PropertiesColumn),
+		)
+		fromU = sqlgraph.SetNeighbors(rq.driver.Dialect(), step)
+		return fromU, nil
+	}
+	return query
+}
+
+// QueryNestedPool chains the current query on the nested_pool edge.
+func (rq *ResourceQuery) QueryNestedPool() *ResourcePoolQuery {
+	query := &ResourcePoolQuery{config: rq.config}
+	query.path = func(ctx context.Context) (fromU *sql.Selector, err error) {
+		if err := rq.prepareQuery(ctx); err != nil {
+			return nil, err
+		}
+		step := sqlgraph.NewStep(
+			sqlgraph.From(resource.Table, resource.FieldID, rq.sqlQuery()),
+			sqlgraph.To(resourcepool.Table, resourcepool.FieldID),
+			sqlgraph.Edge(sqlgraph.O2O, false, resource.NestedPoolTable, resource.NestedPoolColumn),
 		)
 		fromU = sqlgraph.SetNeighbors(rq.driver.Dialect(), step)
 		return fromU, nil
@@ -296,6 +315,17 @@ func (rq *ResourceQuery) WithProperties(opts ...func(*PropertyQuery)) *ResourceQ
 	return rq
 }
 
+//  WithNestedPool tells the query-builder to eager-loads the nodes that are connected to
+// the "nested_pool" edge. The optional arguments used to configure the query builder of the edge.
+func (rq *ResourceQuery) WithNestedPool(opts ...func(*ResourcePoolQuery)) *ResourceQuery {
+	query := &ResourcePoolQuery{config: rq.config}
+	for _, opt := range opts {
+		opt(query)
+	}
+	rq.withNestedPool = query
+	return rq
+}
+
 // GroupBy used to group vertices by one or more fields/columns.
 // It is often used with aggregate functions, like: count, max, mean, min, sum.
 //
@@ -363,9 +393,10 @@ func (rq *ResourceQuery) sqlAll(ctx context.Context) ([]*Resource, error) {
 		nodes       = []*Resource{}
 		withFKs     = rq.withFKs
 		_spec       = rq.querySpec()
-		loadedTypes = [2]bool{
+		loadedTypes = [3]bool{
 			rq.withPool != nil,
 			rq.withProperties != nil,
+			rq.withNestedPool != nil,
 		}
 	)
 	if rq.withPool != nil {
@@ -448,6 +479,34 @@ func (rq *ResourceQuery) sqlAll(ctx context.Context) ([]*Resource, error) {
 				return nil, fmt.Errorf(`unexpected foreign-key "resource_properties" returned %v for node %v`, *fk, n.ID)
 			}
 			node.Edges.Properties = append(node.Edges.Properties, n)
+		}
+	}
+
+	if query := rq.withNestedPool; query != nil {
+		fks := make([]driver.Value, 0, len(nodes))
+		nodeids := make(map[int]*Resource)
+		for i := range nodes {
+			fks = append(fks, nodes[i].ID)
+			nodeids[nodes[i].ID] = nodes[i]
+		}
+		query.withFKs = true
+		query.Where(predicate.ResourcePool(func(s *sql.Selector) {
+			s.Where(sql.InValues(resource.NestedPoolColumn, fks...))
+		}))
+		neighbors, err := query.All(ctx)
+		if err != nil {
+			return nil, err
+		}
+		for _, n := range neighbors {
+			fk := n.resource_nested_pool
+			if fk == nil {
+				return nil, fmt.Errorf(`foreign-key "resource_nested_pool" is nil for node %v`, n.ID)
+			}
+			node, ok := nodeids[*fk]
+			if !ok {
+				return nil, fmt.Errorf(`unexpected foreign-key "resource_nested_pool" returned %v for node %v`, *fk, n.ID)
+			}
+			node.Edges.NestedPool = n
 		}
 	}
 

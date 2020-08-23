@@ -3,3 +3,5 @@
 resourceManager
 entCmd
 .idea
+.wasmer
+wasm

@@ -45,6 +45,7 @@ type AllocationStrategyMutation struct {
 	typ           string
 	id            *int
 	name          *string
+	description   *string
 	lang          *allocationstrategy.Lang
 	script        *string
 	clearedFields map[string]struct{}
@@ -168,6 +169,56 @@ func (m *AllocationStrategyMutation) OldName(ctx context.Context) (v string, err
 // ResetName reset all changes of the "name" field.
 func (m *AllocationStrategyMutation) ResetName() {
 	m.name = nil
+}
+
+// SetDescription sets the description field.
+func (m *AllocationStrategyMutation) SetDescription(s string) {
+	m.description = &s
+}
+
+// Description returns the description value in the mutation.
+func (m *AllocationStrategyMutation) Description() (r string, exists bool) {
+	v := m.description
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldDescription returns the old description value of the AllocationStrategy.
+// If the AllocationStrategy object wasn't provided to the builder, the object is fetched
+// from the database.
+// An error is returned if the mutation operation is not UpdateOne, or database query fails.
+func (m *AllocationStrategyMutation) OldDescription(ctx context.Context) (v *string, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, fmt.Errorf("OldDescription is allowed only on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, fmt.Errorf("OldDescription requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldDescription: %w", err)
+	}
+	return oldValue.Description, nil
+}
+
+// ClearDescription clears the value of description.
+func (m *AllocationStrategyMutation) ClearDescription() {
+	m.description = nil
+	m.clearedFields[allocationstrategy.FieldDescription] = struct{}{}
+}
+
+// DescriptionCleared returns if the field description was cleared in this mutation.
+func (m *AllocationStrategyMutation) DescriptionCleared() bool {
+	_, ok := m.clearedFields[allocationstrategy.FieldDescription]
+	return ok
+}
+
+// ResetDescription reset all changes of the "description" field.
+func (m *AllocationStrategyMutation) ResetDescription() {
+	m.description = nil
+	delete(m.clearedFields, allocationstrategy.FieldDescription)
 }
 
 // SetLang sets the lang field.
@@ -300,9 +351,12 @@ func (m *AllocationStrategyMutation) Type() string {
 // this mutation. Note that, in order to get all numeric
 // fields that were in/decremented, call AddedFields().
 func (m *AllocationStrategyMutation) Fields() []string {
-	fields := make([]string, 0, 3)
+	fields := make([]string, 0, 4)
 	if m.name != nil {
 		fields = append(fields, allocationstrategy.FieldName)
+	}
+	if m.description != nil {
+		fields = append(fields, allocationstrategy.FieldDescription)
 	}
 	if m.lang != nil {
 		fields = append(fields, allocationstrategy.FieldLang)
@@ -320,6 +374,8 @@ func (m *AllocationStrategyMutation) Field(name string) (ent.Value, bool) {
 	switch name {
 	case allocationstrategy.FieldName:
 		return m.Name()
+	case allocationstrategy.FieldDescription:
+		return m.Description()
 	case allocationstrategy.FieldLang:
 		return m.Lang()
 	case allocationstrategy.FieldScript:
@@ -335,6 +391,8 @@ func (m *AllocationStrategyMutation) OldField(ctx context.Context, name string) 
 	switch name {
 	case allocationstrategy.FieldName:
 		return m.OldName(ctx)
+	case allocationstrategy.FieldDescription:
+		return m.OldDescription(ctx)
 	case allocationstrategy.FieldLang:
 		return m.OldLang(ctx)
 	case allocationstrategy.FieldScript:
@@ -354,6 +412,13 @@ func (m *AllocationStrategyMutation) SetField(name string, value ent.Value) erro
 			return fmt.Errorf("unexpected type %T for field %s", value, name)
 		}
 		m.SetName(v)
+		return nil
+	case allocationstrategy.FieldDescription:
+		v, ok := value.(string)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetDescription(v)
 		return nil
 	case allocationstrategy.FieldLang:
 		v, ok := value.(allocationstrategy.Lang)
@@ -398,7 +463,11 @@ func (m *AllocationStrategyMutation) AddField(name string, value ent.Value) erro
 // ClearedFields returns all nullable fields that were cleared
 // during this mutation.
 func (m *AllocationStrategyMutation) ClearedFields() []string {
-	return nil
+	var fields []string
+	if m.FieldCleared(allocationstrategy.FieldDescription) {
+		fields = append(fields, allocationstrategy.FieldDescription)
+	}
+	return fields
 }
 
 // FieldCleared returns a boolean indicates if this field was
@@ -411,6 +480,11 @@ func (m *AllocationStrategyMutation) FieldCleared(name string) bool {
 // ClearField clears the value for the given name. It returns an
 // error if the field is not defined in the schema.
 func (m *AllocationStrategyMutation) ClearField(name string) error {
+	switch name {
+	case allocationstrategy.FieldDescription:
+		m.ClearDescription()
+		return nil
+	}
 	return fmt.Errorf("unknown AllocationStrategy nullable field %s", name)
 }
 
@@ -421,6 +495,9 @@ func (m *AllocationStrategyMutation) ResetField(name string) error {
 	switch name {
 	case allocationstrategy.FieldName:
 		m.ResetName()
+		return nil
+	case allocationstrategy.FieldDescription:
+		m.ResetDescription()
 		return nil
 	case allocationstrategy.FieldLang:
 		m.ResetLang()
@@ -3403,18 +3480,20 @@ func (m *PropertyTypeMutation) ResetEdge(name string) error {
 // nodes in the graph.
 type ResourceMutation struct {
 	config
-	op                Op
-	typ               string
-	id                *int
-	status            *resource.Status
-	updated_at        *time.Time
-	clearedFields     map[string]struct{}
-	pool              *int
-	clearedpool       bool
-	properties        map[int]struct{}
-	removedproperties map[int]struct{}
-	done              bool
-	oldValue          func(context.Context) (*Resource, error)
+	op                 Op
+	typ                string
+	id                 *int
+	status             *resource.Status
+	updated_at         *time.Time
+	clearedFields      map[string]struct{}
+	pool               *int
+	clearedpool        bool
+	properties         map[int]struct{}
+	removedproperties  map[int]struct{}
+	nested_pool        *int
+	clearednested_pool bool
+	done               bool
+	oldValue           func(context.Context) (*Resource, error)
 }
 
 var _ ent.Mutation = (*ResourceMutation)(nil)
@@ -3651,6 +3730,45 @@ func (m *ResourceMutation) ResetProperties() {
 	m.removedproperties = nil
 }
 
+// SetNestedPoolID sets the nested_pool edge to ResourcePool by id.
+func (m *ResourceMutation) SetNestedPoolID(id int) {
+	m.nested_pool = &id
+}
+
+// ClearNestedPool clears the nested_pool edge to ResourcePool.
+func (m *ResourceMutation) ClearNestedPool() {
+	m.clearednested_pool = true
+}
+
+// NestedPoolCleared returns if the edge nested_pool was cleared.
+func (m *ResourceMutation) NestedPoolCleared() bool {
+	return m.clearednested_pool
+}
+
+// NestedPoolID returns the nested_pool id in the mutation.
+func (m *ResourceMutation) NestedPoolID() (id int, exists bool) {
+	if m.nested_pool != nil {
+		return *m.nested_pool, true
+	}
+	return
+}
+
+// NestedPoolIDs returns the nested_pool ids in the mutation.
+// Note that ids always returns len(ids) <= 1 for unique edges, and you should use
+// NestedPoolID instead. It exists only for internal usage by the builders.
+func (m *ResourceMutation) NestedPoolIDs() (ids []int) {
+	if id := m.nested_pool; id != nil {
+		ids = append(ids, *id)
+	}
+	return
+}
+
+// ResetNestedPool reset all changes of the "nested_pool" edge.
+func (m *ResourceMutation) ResetNestedPool() {
+	m.nested_pool = nil
+	m.clearednested_pool = false
+}
+
 // Op returns the operation name.
 func (m *ResourceMutation) Op() Op {
 	return m.op
@@ -3783,12 +3901,15 @@ func (m *ResourceMutation) ResetField(name string) error {
 // AddedEdges returns all edge names that were set/added in this
 // mutation.
 func (m *ResourceMutation) AddedEdges() []string {
-	edges := make([]string, 0, 2)
+	edges := make([]string, 0, 3)
 	if m.pool != nil {
 		edges = append(edges, resource.EdgePool)
 	}
 	if m.properties != nil {
 		edges = append(edges, resource.EdgeProperties)
+	}
+	if m.nested_pool != nil {
+		edges = append(edges, resource.EdgeNestedPool)
 	}
 	return edges
 }
@@ -3807,6 +3928,10 @@ func (m *ResourceMutation) AddedIDs(name string) []ent.Value {
 			ids = append(ids, id)
 		}
 		return ids
+	case resource.EdgeNestedPool:
+		if id := m.nested_pool; id != nil {
+			return []ent.Value{*id}
+		}
 	}
 	return nil
 }
@@ -3814,7 +3939,7 @@ func (m *ResourceMutation) AddedIDs(name string) []ent.Value {
 // RemovedEdges returns all edge names that were removed in this
 // mutation.
 func (m *ResourceMutation) RemovedEdges() []string {
-	edges := make([]string, 0, 2)
+	edges := make([]string, 0, 3)
 	if m.removedproperties != nil {
 		edges = append(edges, resource.EdgeProperties)
 	}
@@ -3838,9 +3963,12 @@ func (m *ResourceMutation) RemovedIDs(name string) []ent.Value {
 // ClearedEdges returns all edge names that were cleared in this
 // mutation.
 func (m *ResourceMutation) ClearedEdges() []string {
-	edges := make([]string, 0, 2)
+	edges := make([]string, 0, 3)
 	if m.clearedpool {
 		edges = append(edges, resource.EdgePool)
+	}
+	if m.clearednested_pool {
+		edges = append(edges, resource.EdgeNestedPool)
 	}
 	return edges
 }
@@ -3851,6 +3979,8 @@ func (m *ResourceMutation) EdgeCleared(name string) bool {
 	switch name {
 	case resource.EdgePool:
 		return m.clearedpool
+	case resource.EdgeNestedPool:
+		return m.clearednested_pool
 	}
 	return false
 }
@@ -3861,6 +3991,9 @@ func (m *ResourceMutation) ClearEdge(name string) error {
 	switch name {
 	case resource.EdgePool:
 		m.ClearPool()
+		return nil
+	case resource.EdgeNestedPool:
+		m.ClearNestedPool()
 		return nil
 	}
 	return fmt.Errorf("unknown Resource unique edge %s", name)
@@ -3877,6 +4010,9 @@ func (m *ResourceMutation) ResetEdge(name string) error {
 	case resource.EdgeProperties:
 		m.ResetProperties()
 		return nil
+	case resource.EdgeNestedPool:
+		m.ResetNestedPool()
+		return nil
 	}
 	return fmt.Errorf("unknown Resource edge %s", name)
 }
@@ -3889,6 +4025,7 @@ type ResourcePoolMutation struct {
 	typ                          string
 	id                           *int
 	name                         *string
+	description                  *string
 	pool_type                    *resourcepool.PoolType
 	dealocation_safety_period    *int
 	adddealocation_safety_period *int
@@ -3901,6 +4038,8 @@ type ResourcePoolMutation struct {
 	removedclaims                map[int]struct{}
 	allocation_strategy          *int
 	clearedallocation_strategy   bool
+	parent_resource              *int
+	clearedparent_resource       bool
 	done                         bool
 	oldValue                     func(context.Context) (*ResourcePool, error)
 }
@@ -4019,6 +4158,56 @@ func (m *ResourcePoolMutation) OldName(ctx context.Context) (v string, err error
 // ResetName reset all changes of the "name" field.
 func (m *ResourcePoolMutation) ResetName() {
 	m.name = nil
+}
+
+// SetDescription sets the description field.
+func (m *ResourcePoolMutation) SetDescription(s string) {
+	m.description = &s
+}
+
+// Description returns the description value in the mutation.
+func (m *ResourcePoolMutation) Description() (r string, exists bool) {
+	v := m.description
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldDescription returns the old description value of the ResourcePool.
+// If the ResourcePool object wasn't provided to the builder, the object is fetched
+// from the database.
+// An error is returned if the mutation operation is not UpdateOne, or database query fails.
+func (m *ResourcePoolMutation) OldDescription(ctx context.Context) (v *string, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, fmt.Errorf("OldDescription is allowed only on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, fmt.Errorf("OldDescription requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldDescription: %w", err)
+	}
+	return oldValue.Description, nil
+}
+
+// ClearDescription clears the value of description.
+func (m *ResourcePoolMutation) ClearDescription() {
+	m.description = nil
+	m.clearedFields[resourcepool.FieldDescription] = struct{}{}
+}
+
+// DescriptionCleared returns if the field description was cleared in this mutation.
+func (m *ResourcePoolMutation) DescriptionCleared() bool {
+	_, ok := m.clearedFields[resourcepool.FieldDescription]
+	return ok
+}
+
+// ResetDescription reset all changes of the "description" field.
+func (m *ResourcePoolMutation) ResetDescription() {
+	m.description = nil
+	delete(m.clearedFields, resourcepool.FieldDescription)
 }
 
 // SetPoolType sets the pool_type field.
@@ -4277,6 +4466,45 @@ func (m *ResourcePoolMutation) ResetAllocationStrategy() {
 	m.clearedallocation_strategy = false
 }
 
+// SetParentResourceID sets the parent_resource edge to Resource by id.
+func (m *ResourcePoolMutation) SetParentResourceID(id int) {
+	m.parent_resource = &id
+}
+
+// ClearParentResource clears the parent_resource edge to Resource.
+func (m *ResourcePoolMutation) ClearParentResource() {
+	m.clearedparent_resource = true
+}
+
+// ParentResourceCleared returns if the edge parent_resource was cleared.
+func (m *ResourcePoolMutation) ParentResourceCleared() bool {
+	return m.clearedparent_resource
+}
+
+// ParentResourceID returns the parent_resource id in the mutation.
+func (m *ResourcePoolMutation) ParentResourceID() (id int, exists bool) {
+	if m.parent_resource != nil {
+		return *m.parent_resource, true
+	}
+	return
+}
+
+// ParentResourceIDs returns the parent_resource ids in the mutation.
+// Note that ids always returns len(ids) <= 1 for unique edges, and you should use
+// ParentResourceID instead. It exists only for internal usage by the builders.
+func (m *ResourcePoolMutation) ParentResourceIDs() (ids []int) {
+	if id := m.parent_resource; id != nil {
+		ids = append(ids, *id)
+	}
+	return
+}
+
+// ResetParentResource reset all changes of the "parent_resource" edge.
+func (m *ResourcePoolMutation) ResetParentResource() {
+	m.parent_resource = nil
+	m.clearedparent_resource = false
+}
+
 // Op returns the operation name.
 func (m *ResourcePoolMutation) Op() Op {
 	return m.op
@@ -4291,9 +4519,12 @@ func (m *ResourcePoolMutation) Type() string {
 // this mutation. Note that, in order to get all numeric
 // fields that were in/decremented, call AddedFields().
 func (m *ResourcePoolMutation) Fields() []string {
-	fields := make([]string, 0, 3)
+	fields := make([]string, 0, 4)
 	if m.name != nil {
 		fields = append(fields, resourcepool.FieldName)
+	}
+	if m.description != nil {
+		fields = append(fields, resourcepool.FieldDescription)
 	}
 	if m.pool_type != nil {
 		fields = append(fields, resourcepool.FieldPoolType)
@@ -4311,6 +4542,8 @@ func (m *ResourcePoolMutation) Field(name string) (ent.Value, bool) {
 	switch name {
 	case resourcepool.FieldName:
 		return m.Name()
+	case resourcepool.FieldDescription:
+		return m.Description()
 	case resourcepool.FieldPoolType:
 		return m.PoolType()
 	case resourcepool.FieldDealocationSafetyPeriod:
@@ -4326,6 +4559,8 @@ func (m *ResourcePoolMutation) OldField(ctx context.Context, name string) (ent.V
 	switch name {
 	case resourcepool.FieldName:
 		return m.OldName(ctx)
+	case resourcepool.FieldDescription:
+		return m.OldDescription(ctx)
 	case resourcepool.FieldPoolType:
 		return m.OldPoolType(ctx)
 	case resourcepool.FieldDealocationSafetyPeriod:
@@ -4345,6 +4580,13 @@ func (m *ResourcePoolMutation) SetField(name string, value ent.Value) error {
 			return fmt.Errorf("unexpected type %T for field %s", value, name)
 		}
 		m.SetName(v)
+		return nil
+	case resourcepool.FieldDescription:
+		v, ok := value.(string)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetDescription(v)
 		return nil
 	case resourcepool.FieldPoolType:
 		v, ok := value.(resourcepool.PoolType)
@@ -4404,7 +4646,11 @@ func (m *ResourcePoolMutation) AddField(name string, value ent.Value) error {
 // ClearedFields returns all nullable fields that were cleared
 // during this mutation.
 func (m *ResourcePoolMutation) ClearedFields() []string {
-	return nil
+	var fields []string
+	if m.FieldCleared(resourcepool.FieldDescription) {
+		fields = append(fields, resourcepool.FieldDescription)
+	}
+	return fields
 }
 
 // FieldCleared returns a boolean indicates if this field was
@@ -4417,6 +4663,11 @@ func (m *ResourcePoolMutation) FieldCleared(name string) bool {
 // ClearField clears the value for the given name. It returns an
 // error if the field is not defined in the schema.
 func (m *ResourcePoolMutation) ClearField(name string) error {
+	switch name {
+	case resourcepool.FieldDescription:
+		m.ClearDescription()
+		return nil
+	}
 	return fmt.Errorf("unknown ResourcePool nullable field %s", name)
 }
 
@@ -4427,6 +4678,9 @@ func (m *ResourcePoolMutation) ResetField(name string) error {
 	switch name {
 	case resourcepool.FieldName:
 		m.ResetName()
+		return nil
+	case resourcepool.FieldDescription:
+		m.ResetDescription()
 		return nil
 	case resourcepool.FieldPoolType:
 		m.ResetPoolType()
@@ -4441,7 +4695,7 @@ func (m *ResourcePoolMutation) ResetField(name string) error {
 // AddedEdges returns all edge names that were set/added in this
 // mutation.
 func (m *ResourcePoolMutation) AddedEdges() []string {
-	edges := make([]string, 0, 4)
+	edges := make([]string, 0, 5)
 	if m.resource_type != nil {
 		edges = append(edges, resourcepool.EdgeResourceType)
 	}
@@ -4453,6 +4707,9 @@ func (m *ResourcePoolMutation) AddedEdges() []string {
 	}
 	if m.allocation_strategy != nil {
 		edges = append(edges, resourcepool.EdgeAllocationStrategy)
+	}
+	if m.parent_resource != nil {
+		edges = append(edges, resourcepool.EdgeParentResource)
 	}
 	return edges
 }
@@ -4481,6 +4738,10 @@ func (m *ResourcePoolMutation) AddedIDs(name string) []ent.Value {
 		if id := m.allocation_strategy; id != nil {
 			return []ent.Value{*id}
 		}
+	case resourcepool.EdgeParentResource:
+		if id := m.parent_resource; id != nil {
+			return []ent.Value{*id}
+		}
 	}
 	return nil
 }
@@ -4488,7 +4749,7 @@ func (m *ResourcePoolMutation) AddedIDs(name string) []ent.Value {
 // RemovedEdges returns all edge names that were removed in this
 // mutation.
 func (m *ResourcePoolMutation) RemovedEdges() []string {
-	edges := make([]string, 0, 4)
+	edges := make([]string, 0, 5)
 	if m.removedtags != nil {
 		edges = append(edges, resourcepool.EdgeTags)
 	}
@@ -4521,12 +4782,15 @@ func (m *ResourcePoolMutation) RemovedIDs(name string) []ent.Value {
 // ClearedEdges returns all edge names that were cleared in this
 // mutation.
 func (m *ResourcePoolMutation) ClearedEdges() []string {
-	edges := make([]string, 0, 4)
+	edges := make([]string, 0, 5)
 	if m.clearedresource_type {
 		edges = append(edges, resourcepool.EdgeResourceType)
 	}
 	if m.clearedallocation_strategy {
 		edges = append(edges, resourcepool.EdgeAllocationStrategy)
+	}
+	if m.clearedparent_resource {
+		edges = append(edges, resourcepool.EdgeParentResource)
 	}
 	return edges
 }
@@ -4539,6 +4803,8 @@ func (m *ResourcePoolMutation) EdgeCleared(name string) bool {
 		return m.clearedresource_type
 	case resourcepool.EdgeAllocationStrategy:
 		return m.clearedallocation_strategy
+	case resourcepool.EdgeParentResource:
+		return m.clearedparent_resource
 	}
 	return false
 }
@@ -4552,6 +4818,9 @@ func (m *ResourcePoolMutation) ClearEdge(name string) error {
 		return nil
 	case resourcepool.EdgeAllocationStrategy:
 		m.ClearAllocationStrategy()
+		return nil
+	case resourcepool.EdgeParentResource:
+		m.ClearParentResource()
 		return nil
 	}
 	return fmt.Errorf("unknown ResourcePool unique edge %s", name)
@@ -4573,6 +4842,9 @@ func (m *ResourcePoolMutation) ResetEdge(name string) error {
 		return nil
 	case resourcepool.EdgeAllocationStrategy:
 		m.ResetAllocationStrategy()
+		return nil
+	case resourcepool.EdgeParentResource:
+		m.ResetParentResource()
 		return nil
 	}
 	return fmt.Errorf("unknown ResourcePool edge %s", name)

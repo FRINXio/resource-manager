@@ -18,8 +18,9 @@ func NewSetPool(
 	resourceType *ent.ResourceType,
 	propertyValues []RawResourceProps,
 	poolName string,
+	description *string,
 	poolDealocationSafetyPeriod int) (Pool, error) {
-	pool, _, err := NewSetPoolWithMeta(ctx, client, resourceType, propertyValues, poolName, poolDealocationSafetyPeriod)
+	pool, _, err := NewSetPoolWithMeta(ctx, client, resourceType, propertyValues, poolName, description, poolDealocationSafetyPeriod)
 	return pool, err
 }
 
@@ -30,12 +31,13 @@ func NewSetPoolWithMeta(
 	resourceType *ent.ResourceType,
 	propertyValues []RawResourceProps,
 	poolName string,
+	description *string,
 	poolDealocationSafetyPeriod int) (Pool, *ent.ResourcePool, error) {
 
 	// TODO check that propertyValues are unique
 
 	pool, err := newFixedPoolInner(ctx, client, resourceType, propertyValues,
-		poolName, resourcePool.PoolTypeSet, poolDealocationSafetyPeriod)
+		poolName, description, resourcePool.PoolTypeSet, poolDealocationSafetyPeriod)
 
 	if err != nil {
 		return nil, nil, err
@@ -131,6 +133,15 @@ func (pool SetPool) freeResourceInner(raw RawResourceProps,
 
 	if res.Status != resource.StatusClaimed {
 		return errors.Wrapf(err, "Unable to free a resource in pool \"%s\". It has not been claimed", pool.Name)
+	}
+
+	// Make sure there are no nested pools attached
+	if nestedPool, err := res.QueryNestedPool().First(pool.ctx); err != nil && !ent.IsNotFound(err) {
+		return errors.Wrapf(err, "Unable to free a resource in pool \"%s\". " +
+			"Unable to check nested pools", pool.Name)
+	} else if nestedPool != nil {
+		return errors.Wrapf(err, "Unable to free a resource in pool \"%s\". " +
+			"There is a nested pool attached to it \"%v\"", pool.Name, nestedPool.ID)
 	}
 
 	switch pool.ResourcePool.DealocationSafetyPeriod {

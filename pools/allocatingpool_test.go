@@ -77,7 +77,7 @@ func CreateTestSetup(t *testing.T, mockInvoker mockInvoker, poolDealocationSafet
 	}
 
 	pool, _, err := newAllocatingPoolWithMetaInternal(
-		ctx, client, resType, strat, "testAllocatingPool",
+		ctx, client, resType, strat, "testAllocatingPool", nil,
 		mockInvoker, poolDealocationSafetyPeriod)
 
 	if err != nil {

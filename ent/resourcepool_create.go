@@ -29,6 +29,20 @@ func (rpc *ResourcePoolCreate) SetName(s string) *ResourcePoolCreate {
 	return rpc
 }
 
+// SetDescription sets the description field.
+func (rpc *ResourcePoolCreate) SetDescription(s string) *ResourcePoolCreate {
+	rpc.mutation.SetDescription(s)
+	return rpc
+}
+
+// SetNillableDescription sets the description field if the given value is not nil.
+func (rpc *ResourcePoolCreate) SetNillableDescription(s *string) *ResourcePoolCreate {
+	if s != nil {
+		rpc.SetDescription(*s)
+	}
+	return rpc
+}
+
 // SetPoolType sets the pool_type field.
 func (rpc *ResourcePoolCreate) SetPoolType(rt resourcepool.PoolType) *ResourcePoolCreate {
 	rpc.mutation.SetPoolType(rt)
@@ -115,6 +129,25 @@ func (rpc *ResourcePoolCreate) SetNillableAllocationStrategyID(id *int) *Resourc
 // SetAllocationStrategy sets the allocation_strategy edge to AllocationStrategy.
 func (rpc *ResourcePoolCreate) SetAllocationStrategy(a *AllocationStrategy) *ResourcePoolCreate {
 	return rpc.SetAllocationStrategyID(a.ID)
+}
+
+// SetParentResourceID sets the parent_resource edge to Resource by id.
+func (rpc *ResourcePoolCreate) SetParentResourceID(id int) *ResourcePoolCreate {
+	rpc.mutation.SetParentResourceID(id)
+	return rpc
+}
+
+// SetNillableParentResourceID sets the parent_resource edge to Resource by id if the given value is not nil.
+func (rpc *ResourcePoolCreate) SetNillableParentResourceID(id *int) *ResourcePoolCreate {
+	if id != nil {
+		rpc = rpc.SetParentResourceID(*id)
+	}
+	return rpc
+}
+
+// SetParentResource sets the parent_resource edge to Resource.
+func (rpc *ResourcePoolCreate) SetParentResource(r *Resource) *ResourcePoolCreate {
+	return rpc.SetParentResourceID(r.ID)
 }
 
 // Mutation returns the ResourcePoolMutation object of the builder.
@@ -219,6 +252,14 @@ func (rpc *ResourcePoolCreate) createSpec() (*ResourcePool, *sqlgraph.CreateSpec
 		})
 		rp.Name = value
 	}
+	if value, ok := rpc.mutation.Description(); ok {
+		_spec.Fields = append(_spec.Fields, &sqlgraph.FieldSpec{
+			Type:   field.TypeString,
+			Value:  value,
+			Column: resourcepool.FieldDescription,
+		})
+		rp.Description = &value
+	}
 	if value, ok := rpc.mutation.PoolType(); ok {
 		_spec.Fields = append(_spec.Fields, &sqlgraph.FieldSpec{
 			Type:   field.TypeEnum,
@@ -303,6 +344,25 @@ func (rpc *ResourcePoolCreate) createSpec() (*ResourcePool, *sqlgraph.CreateSpec
 				IDSpec: &sqlgraph.FieldSpec{
 					Type:   field.TypeInt,
 					Column: allocationstrategy.FieldID,
+				},
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges = append(_spec.Edges, edge)
+	}
+	if nodes := rpc.mutation.ParentResourceIDs(); len(nodes) > 0 {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2O,
+			Inverse: true,
+			Table:   resourcepool.ParentResourceTable,
+			Columns: []string{resourcepool.ParentResourceColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: &sqlgraph.FieldSpec{
+					Type:   field.TypeInt,
+					Column: resource.FieldID,
 				},
 			},
 		}

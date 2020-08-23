@@ -22,7 +22,7 @@ func TestClaimResoourceSetPool(t *testing.T) {
 	pool, _ := NewSetPool(ctx, client, resType, []RawResourceProps{
 		RawResourceProps{"vlan": 44},
 		RawResourceProps{"vlan": 45},
-	}, "set", schema.ResourcePoolDealocationImmediately)
+	}, "set", nil, schema.ResourcePoolDealocationImmediately)
 
 	claims, err := pool.QueryResources()
 	if len(claims) != 0 {
@@ -95,10 +95,11 @@ func TestResourceRetirement(t *testing.T) {
 		t.Fatalf("Unable to create resource type: %s", err)
 	}
 
+	description := "testPool"
 	pool, _ := NewSetPool(ctx, client, resType, []RawResourceProps{
 		RawResourceProps{"vlan": 44},
 		RawResourceProps{"vlan": 45},
-	}, "set", schema.ResourcePoolDealocationRetire)
+	}, "set", &description, schema.ResourcePoolDealocationRetire)
 
 	userInput := make(map[string]interface{})
 	claim1, _ := pool.ClaimResource(userInput)
@@ -128,7 +129,7 @@ func TestResourceDealocationSafetyWindow(t *testing.T) {
 	pool, _ := NewSetPool(ctx, client, resType, []RawResourceProps{
 		RawResourceProps{"vlan": 44},
 		RawResourceProps{"vlan": 45},
-	}, "set", 3)
+	}, "set", nil,3)
 
 	// Claim and free resource 44
 	userInput := make(map[string]interface{})

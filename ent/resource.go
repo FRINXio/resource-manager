@@ -33,9 +33,11 @@ type ResourceEdges struct {
 	Pool *ResourcePool
 	// Properties holds the value of the properties edge.
 	Properties []*Property
+	// NestedPool holds the value of the nested_pool edge.
+	NestedPool *ResourcePool
 	// loadedTypes holds the information for reporting if a
 	// type was loaded (or requested) in eager-loading or not.
-	loadedTypes [2]bool
+	loadedTypes [3]bool
 }
 
 // PoolOrErr returns the Pool value or an error if the edge
@@ -59,6 +61,20 @@ func (e ResourceEdges) PropertiesOrErr() ([]*Property, error) {
 		return e.Properties, nil
 	}
 	return nil, &NotLoadedError{edge: "properties"}
+}
+
+// NestedPoolOrErr returns the NestedPool value or an error if the edge
+// was not loaded in eager-loading, or loaded but was not found.
+func (e ResourceEdges) NestedPoolOrErr() (*ResourcePool, error) {
+	if e.loadedTypes[2] {
+		if e.NestedPool == nil {
+			// The edge nested_pool was loaded in eager-loading,
+			// but was not found.
+			return nil, &NotFoundError{label: resourcepool.Label}
+		}
+		return e.NestedPool, nil
+	}
+	return nil, &NotLoadedError{edge: "nested_pool"}
 }
 
 // scanValues returns the types for scanning values from sql.Rows.
@@ -119,6 +135,11 @@ func (r *Resource) QueryPool() *ResourcePoolQuery {
 // QueryProperties queries the properties edge of the Resource.
 func (r *Resource) QueryProperties() *PropertyQuery {
 	return (&ResourceClient{config: r.config}).QueryProperties(r)
+}
+
+// QueryNestedPool queries the nested_pool edge of the Resource.
+func (r *Resource) QueryNestedPool() *ResourcePoolQuery {
+	return (&ResourceClient{config: r.config}).QueryNestedPool(r)
 }
 
 // Update returns a builder for updating this Resource.

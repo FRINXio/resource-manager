@@ -33,6 +33,7 @@ type ResourcePoolQuery struct {
 	withTags               *TagQuery
 	withClaims             *ResourceQuery
 	withAllocationStrategy *AllocationStrategyQuery
+	withParentResource     *ResourceQuery
 	withFKs                bool
 	// intermediate query (i.e. traversal path).
 	sql  *sql.Selector
@@ -128,6 +129,24 @@ func (rpq *ResourcePoolQuery) QueryAllocationStrategy() *AllocationStrategyQuery
 			sqlgraph.From(resourcepool.Table, resourcepool.FieldID, rpq.sqlQuery()),
 			sqlgraph.To(allocationstrategy.Table, allocationstrategy.FieldID),
 			sqlgraph.Edge(sqlgraph.M2O, false, resourcepool.AllocationStrategyTable, resourcepool.AllocationStrategyColumn),
+		)
+		fromU = sqlgraph.SetNeighbors(rpq.driver.Dialect(), step)
+		return fromU, nil
+	}
+	return query
+}
+
+// QueryParentResource chains the current query on the parent_resource edge.
+func (rpq *ResourcePoolQuery) QueryParentResource() *ResourceQuery {
+	query := &ResourceQuery{config: rpq.config}
+	query.path = func(ctx context.Context) (fromU *sql.Selector, err error) {
+		if err := rpq.prepareQuery(ctx); err != nil {
+			return nil, err
+		}
+		step := sqlgraph.NewStep(
+			sqlgraph.From(resourcepool.Table, resourcepool.FieldID, rpq.sqlQuery()),
+			sqlgraph.To(resource.Table, resource.FieldID),
+			sqlgraph.Edge(sqlgraph.O2O, true, resourcepool.ParentResourceTable, resourcepool.ParentResourceColumn),
 		)
 		fromU = sqlgraph.SetNeighbors(rpq.driver.Dialect(), step)
 		return fromU, nil
@@ -358,6 +377,17 @@ func (rpq *ResourcePoolQuery) WithAllocationStrategy(opts ...func(*AllocationStr
 	return rpq
 }
 
+//  WithParentResource tells the query-builder to eager-loads the nodes that are connected to
+// the "parent_resource" edge. The optional arguments used to configure the query builder of the edge.
+func (rpq *ResourcePoolQuery) WithParentResource(opts ...func(*ResourceQuery)) *ResourcePoolQuery {
+	query := &ResourceQuery{config: rpq.config}
+	for _, opt := range opts {
+		opt(query)
+	}
+	rpq.withParentResource = query
+	return rpq
+}
+
 // GroupBy used to group vertices by one or more fields/columns.
 // It is often used with aggregate functions, like: count, max, mean, min, sum.
 //
@@ -425,14 +455,15 @@ func (rpq *ResourcePoolQuery) sqlAll(ctx context.Context) ([]*ResourcePool, erro
 		nodes       = []*ResourcePool{}
 		withFKs     = rpq.withFKs
 		_spec       = rpq.querySpec()
-		loadedTypes = [4]bool{
+		loadedTypes = [5]bool{
 			rpq.withResourceType != nil,
 			rpq.withTags != nil,
 			rpq.withClaims != nil,
 			rpq.withAllocationStrategy != nil,
+			rpq.withParentResource != nil,
 		}
 	)
-	if rpq.withResourceType != nil || rpq.withAllocationStrategy != nil {
+	if rpq.withResourceType != nil || rpq.withAllocationStrategy != nil || rpq.withParentResource != nil {
 		withFKs = true
 	}
 	if withFKs {
@@ -599,6 +630,31 @@ func (rpq *ResourcePoolQuery) sqlAll(ctx context.Context) ([]*ResourcePool, erro
 			}
 			for i := range nodes {
 				nodes[i].Edges.AllocationStrategy = n
+			}
+		}
+	}
+
+	if query := rpq.withParentResource; query != nil {
+		ids := make([]int, 0, len(nodes))
+		nodeids := make(map[int][]*ResourcePool)
+		for i := range nodes {
+			if fk := nodes[i].resource_nested_pool; fk != nil {
+				ids = append(ids, *fk)
+				nodeids[*fk] = append(nodeids[*fk], nodes[i])
+			}
+		}
+		query.Where(resource.IDIn(ids...))
+		neighbors, err := query.All(ctx)
+		if err != nil {
+			return nil, err
+		}
+		for _, n := range neighbors {
+			nodes, ok := nodeids[n.ID]
+			if !ok {
+				return nil, fmt.Errorf(`unexpected foreign-key "resource_nested_pool" returned %v`, n.ID)
+			}
+			for i := range nodes {
+				nodes[i].Edges.ParentResource = n
 			}
 		}
 	}

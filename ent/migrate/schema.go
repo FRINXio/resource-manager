@@ -12,8 +12,9 @@ var (
 	AllocationStrategiesColumns = []*schema.Column{
 		{Name: "id", Type: field.TypeInt, Increment: true},
 		{Name: "name", Type: field.TypeString, Unique: true},
+		{Name: "description", Type: field.TypeString, Nullable: true, Size: 2147483647},
 		{Name: "lang", Type: field.TypeEnum, Enums: []string{"js", "py"}, Default: "js"},
-		{Name: "script", Type: field.TypeString},
+		{Name: "script", Type: field.TypeString, Size: 2147483647},
 	}
 	// AllocationStrategiesTable holds the schema information for the "allocation_strategies" table.
 	AllocationStrategiesTable = &schema.Table{
@@ -122,8 +123,10 @@ var (
 	ResourcePoolsColumns = []*schema.Column{
 		{Name: "id", Type: field.TypeInt, Increment: true},
 		{Name: "name", Type: field.TypeString, Unique: true},
+		{Name: "description", Type: field.TypeString, Nullable: true, Size: 2147483647},
 		{Name: "pool_type", Type: field.TypeEnum, Enums: []string{"allocating", "set", "singleton"}},
 		{Name: "dealocation_safety_period", Type: field.TypeInt},
+		{Name: "resource_nested_pool", Type: field.TypeInt, Unique: true, Nullable: true},
 		{Name: "resource_pool_allocation_strategy", Type: field.TypeInt, Nullable: true},
 		{Name: "resource_type_pools", Type: field.TypeInt, Nullable: true},
 	}
@@ -134,15 +137,22 @@ var (
 		PrimaryKey: []*schema.Column{ResourcePoolsColumns[0]},
 		ForeignKeys: []*schema.ForeignKey{
 			{
+				Symbol:  "resource_pools_resources_nested_pool",
+				Columns: []*schema.Column{ResourcePoolsColumns[5]},
+
+				RefColumns: []*schema.Column{ResourcesColumns[0]},
+				OnDelete:   schema.SetNull,
+			},
+			{
 				Symbol:  "resource_pools_allocation_strategies_allocation_strategy",
-				Columns: []*schema.Column{ResourcePoolsColumns[4]},
+				Columns: []*schema.Column{ResourcePoolsColumns[6]},
 
 				RefColumns: []*schema.Column{AllocationStrategiesColumns[0]},
 				OnDelete:   schema.SetNull,
 			},
 			{
 				Symbol:  "resource_pools_resource_types_pools",
-				Columns: []*schema.Column{ResourcePoolsColumns[5]},
+				Columns: []*schema.Column{ResourcePoolsColumns[7]},
 
 				RefColumns: []*schema.Column{ResourceTypesColumns[0]},
 				OnDelete:   schema.SetNull,
@@ -218,8 +228,9 @@ func init() {
 	PropertiesTable.ForeignKeys[1].RefTable = ResourcesTable
 	PropertyTypesTable.ForeignKeys[0].RefTable = ResourceTypesTable
 	ResourcesTable.ForeignKeys[0].RefTable = ResourcePoolsTable
-	ResourcePoolsTable.ForeignKeys[0].RefTable = AllocationStrategiesTable
-	ResourcePoolsTable.ForeignKeys[1].RefTable = ResourceTypesTable
+	ResourcePoolsTable.ForeignKeys[0].RefTable = ResourcesTable
+	ResourcePoolsTable.ForeignKeys[1].RefTable = AllocationStrategiesTable
+	ResourcePoolsTable.ForeignKeys[2].RefTable = ResourceTypesTable
 	TagPoolsTable.ForeignKeys[0].RefTable = TagsTable
 	TagPoolsTable.ForeignKeys[1].RefTable = ResourcePoolsTable
 }

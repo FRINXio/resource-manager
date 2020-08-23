@@ -589,6 +589,22 @@ func (c *ResourceClient) QueryProperties(r *Resource) *PropertyQuery {
 	return query
 }
 
+// QueryNestedPool queries the nested_pool edge of a Resource.
+func (c *ResourceClient) QueryNestedPool(r *Resource) *ResourcePoolQuery {
+	query := &ResourcePoolQuery{config: c.config}
+	query.path = func(ctx context.Context) (fromV *sql.Selector, _ error) {
+		id := r.ID
+		step := sqlgraph.NewStep(
+			sqlgraph.From(resource.Table, resource.FieldID, id),
+			sqlgraph.To(resourcepool.Table, resourcepool.FieldID),
+			sqlgraph.Edge(sqlgraph.O2O, false, resource.NestedPoolTable, resource.NestedPoolColumn),
+		)
+		fromV = sqlgraph.Neighbors(r.driver.Dialect(), step)
+		return fromV, nil
+	}
+	return query
+}
+
 // Hooks returns the client hooks.
 func (c *ResourceClient) Hooks() []Hook {
 	return c.hooks.Resource
@@ -734,6 +750,22 @@ func (c *ResourcePoolClient) QueryAllocationStrategy(rp *ResourcePool) *Allocati
 			sqlgraph.From(resourcepool.Table, resourcepool.FieldID, id),
 			sqlgraph.To(allocationstrategy.Table, allocationstrategy.FieldID),
 			sqlgraph.Edge(sqlgraph.M2O, false, resourcepool.AllocationStrategyTable, resourcepool.AllocationStrategyColumn),
+		)
+		fromV = sqlgraph.Neighbors(rp.driver.Dialect(), step)
+		return fromV, nil
+	}
+	return query
+}
+
+// QueryParentResource queries the parent_resource edge of a ResourcePool.
+func (c *ResourcePoolClient) QueryParentResource(rp *ResourcePool) *ResourceQuery {
+	query := &ResourceQuery{config: c.config}
+	query.path = func(ctx context.Context) (fromV *sql.Selector, _ error) {
+		id := rp.ID
+		step := sqlgraph.NewStep(
+			sqlgraph.From(resourcepool.Table, resourcepool.FieldID, id),
+			sqlgraph.To(resource.Table, resource.FieldID),
+			sqlgraph.Edge(sqlgraph.O2O, true, resourcepool.ParentResourceTable, resourcepool.ParentResourceColumn),
 		)
 		fromV = sqlgraph.Neighbors(rp.driver.Dialect(), step)
 		return fromV, nil

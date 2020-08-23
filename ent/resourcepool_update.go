@@ -37,6 +37,26 @@ func (rpu *ResourcePoolUpdate) SetName(s string) *ResourcePoolUpdate {
 	return rpu
 }
 
+// SetDescription sets the description field.
+func (rpu *ResourcePoolUpdate) SetDescription(s string) *ResourcePoolUpdate {
+	rpu.mutation.SetDescription(s)
+	return rpu
+}
+
+// SetNillableDescription sets the description field if the given value is not nil.
+func (rpu *ResourcePoolUpdate) SetNillableDescription(s *string) *ResourcePoolUpdate {
+	if s != nil {
+		rpu.SetDescription(*s)
+	}
+	return rpu
+}
+
+// ClearDescription clears the value of description.
+func (rpu *ResourcePoolUpdate) ClearDescription() *ResourcePoolUpdate {
+	rpu.mutation.ClearDescription()
+	return rpu
+}
+
 // SetPoolType sets the pool_type field.
 func (rpu *ResourcePoolUpdate) SetPoolType(rt resourcepool.PoolType) *ResourcePoolUpdate {
 	rpu.mutation.SetPoolType(rt)
@@ -132,6 +152,25 @@ func (rpu *ResourcePoolUpdate) SetAllocationStrategy(a *AllocationStrategy) *Res
 	return rpu.SetAllocationStrategyID(a.ID)
 }
 
+// SetParentResourceID sets the parent_resource edge to Resource by id.
+func (rpu *ResourcePoolUpdate) SetParentResourceID(id int) *ResourcePoolUpdate {
+	rpu.mutation.SetParentResourceID(id)
+	return rpu
+}
+
+// SetNillableParentResourceID sets the parent_resource edge to Resource by id if the given value is not nil.
+func (rpu *ResourcePoolUpdate) SetNillableParentResourceID(id *int) *ResourcePoolUpdate {
+	if id != nil {
+		rpu = rpu.SetParentResourceID(*id)
+	}
+	return rpu
+}
+
+// SetParentResource sets the parent_resource edge to Resource.
+func (rpu *ResourcePoolUpdate) SetParentResource(r *Resource) *ResourcePoolUpdate {
+	return rpu.SetParentResourceID(r.ID)
+}
+
 // Mutation returns the ResourcePoolMutation object of the builder.
 func (rpu *ResourcePoolUpdate) Mutation() *ResourcePoolMutation {
 	return rpu.mutation
@@ -176,6 +215,12 @@ func (rpu *ResourcePoolUpdate) RemoveClaims(r ...*Resource) *ResourcePoolUpdate 
 // ClearAllocationStrategy clears the allocation_strategy edge to AllocationStrategy.
 func (rpu *ResourcePoolUpdate) ClearAllocationStrategy() *ResourcePoolUpdate {
 	rpu.mutation.ClearAllocationStrategy()
+	return rpu
+}
+
+// ClearParentResource clears the parent_resource edge to Resource.
+func (rpu *ResourcePoolUpdate) ClearParentResource() *ResourcePoolUpdate {
+	rpu.mutation.ClearParentResource()
 	return rpu
 }
 
@@ -264,6 +309,19 @@ func (rpu *ResourcePoolUpdate) sqlSave(ctx context.Context) (n int, err error) {
 			Type:   field.TypeString,
 			Value:  value,
 			Column: resourcepool.FieldName,
+		})
+	}
+	if value, ok := rpu.mutation.Description(); ok {
+		_spec.Fields.Set = append(_spec.Fields.Set, &sqlgraph.FieldSpec{
+			Type:   field.TypeString,
+			Value:  value,
+			Column: resourcepool.FieldDescription,
+		})
+	}
+	if rpu.mutation.DescriptionCleared() {
+		_spec.Fields.Clear = append(_spec.Fields.Clear, &sqlgraph.FieldSpec{
+			Type:   field.TypeString,
+			Column: resourcepool.FieldDescription,
 		})
 	}
 	if value, ok := rpu.mutation.PoolType(); ok {
@@ -433,6 +491,41 @@ func (rpu *ResourcePoolUpdate) sqlSave(ctx context.Context) (n int, err error) {
 		}
 		_spec.Edges.Add = append(_spec.Edges.Add, edge)
 	}
+	if rpu.mutation.ParentResourceCleared() {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2O,
+			Inverse: true,
+			Table:   resourcepool.ParentResourceTable,
+			Columns: []string{resourcepool.ParentResourceColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: &sqlgraph.FieldSpec{
+					Type:   field.TypeInt,
+					Column: resource.FieldID,
+				},
+			},
+		}
+		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
+	}
+	if nodes := rpu.mutation.ParentResourceIDs(); len(nodes) > 0 {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2O,
+			Inverse: true,
+			Table:   resourcepool.ParentResourceTable,
+			Columns: []string{resourcepool.ParentResourceColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: &sqlgraph.FieldSpec{
+					Type:   field.TypeInt,
+					Column: resource.FieldID,
+				},
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges.Add = append(_spec.Edges.Add, edge)
+	}
 	if n, err = sqlgraph.UpdateNodes(ctx, rpu.driver, _spec); err != nil {
 		if _, ok := err.(*sqlgraph.NotFoundError); ok {
 			err = &NotFoundError{resourcepool.Label}
@@ -454,6 +547,26 @@ type ResourcePoolUpdateOne struct {
 // SetName sets the name field.
 func (rpuo *ResourcePoolUpdateOne) SetName(s string) *ResourcePoolUpdateOne {
 	rpuo.mutation.SetName(s)
+	return rpuo
+}
+
+// SetDescription sets the description field.
+func (rpuo *ResourcePoolUpdateOne) SetDescription(s string) *ResourcePoolUpdateOne {
+	rpuo.mutation.SetDescription(s)
+	return rpuo
+}
+
+// SetNillableDescription sets the description field if the given value is not nil.
+func (rpuo *ResourcePoolUpdateOne) SetNillableDescription(s *string) *ResourcePoolUpdateOne {
+	if s != nil {
+		rpuo.SetDescription(*s)
+	}
+	return rpuo
+}
+
+// ClearDescription clears the value of description.
+func (rpuo *ResourcePoolUpdateOne) ClearDescription() *ResourcePoolUpdateOne {
+	rpuo.mutation.ClearDescription()
 	return rpuo
 }
 
@@ -552,6 +665,25 @@ func (rpuo *ResourcePoolUpdateOne) SetAllocationStrategy(a *AllocationStrategy) 
 	return rpuo.SetAllocationStrategyID(a.ID)
 }
 
+// SetParentResourceID sets the parent_resource edge to Resource by id.
+func (rpuo *ResourcePoolUpdateOne) SetParentResourceID(id int) *ResourcePoolUpdateOne {
+	rpuo.mutation.SetParentResourceID(id)
+	return rpuo
+}
+
+// SetNillableParentResourceID sets the parent_resource edge to Resource by id if the given value is not nil.
+func (rpuo *ResourcePoolUpdateOne) SetNillableParentResourceID(id *int) *ResourcePoolUpdateOne {
+	if id != nil {
+		rpuo = rpuo.SetParentResourceID(*id)
+	}
+	return rpuo
+}
+
+// SetParentResource sets the parent_resource edge to Resource.
+func (rpuo *ResourcePoolUpdateOne) SetParentResource(r *Resource) *ResourcePoolUpdateOne {
+	return rpuo.SetParentResourceID(r.ID)
+}
+
 // Mutation returns the ResourcePoolMutation object of the builder.
 func (rpuo *ResourcePoolUpdateOne) Mutation() *ResourcePoolMutation {
 	return rpuo.mutation
@@ -596,6 +728,12 @@ func (rpuo *ResourcePoolUpdateOne) RemoveClaims(r ...*Resource) *ResourcePoolUpd
 // ClearAllocationStrategy clears the allocation_strategy edge to AllocationStrategy.
 func (rpuo *ResourcePoolUpdateOne) ClearAllocationStrategy() *ResourcePoolUpdateOne {
 	rpuo.mutation.ClearAllocationStrategy()
+	return rpuo
+}
+
+// ClearParentResource clears the parent_resource edge to Resource.
+func (rpuo *ResourcePoolUpdateOne) ClearParentResource() *ResourcePoolUpdateOne {
+	rpuo.mutation.ClearParentResource()
 	return rpuo
 }
 
@@ -682,6 +820,19 @@ func (rpuo *ResourcePoolUpdateOne) sqlSave(ctx context.Context) (rp *ResourcePoo
 			Type:   field.TypeString,
 			Value:  value,
 			Column: resourcepool.FieldName,
+		})
+	}
+	if value, ok := rpuo.mutation.Description(); ok {
+		_spec.Fields.Set = append(_spec.Fields.Set, &sqlgraph.FieldSpec{
+			Type:   field.TypeString,
+			Value:  value,
+			Column: resourcepool.FieldDescription,
+		})
+	}
+	if rpuo.mutation.DescriptionCleared() {
+		_spec.Fields.Clear = append(_spec.Fields.Clear, &sqlgraph.FieldSpec{
+			Type:   field.TypeString,
+			Column: resourcepool.FieldDescription,
 		})
 	}
 	if value, ok := rpuo.mutation.PoolType(); ok {
@@ -843,6 +994,41 @@ func (rpuo *ResourcePoolUpdateOne) sqlSave(ctx context.Context) (rp *ResourcePoo
 				IDSpec: &sqlgraph.FieldSpec{
 					Type:   field.TypeInt,
 					Column: allocationstrategy.FieldID,
+				},
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges.Add = append(_spec.Edges.Add, edge)
+	}
+	if rpuo.mutation.ParentResourceCleared() {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2O,
+			Inverse: true,
+			Table:   resourcepool.ParentResourceTable,
+			Columns: []string{resourcepool.ParentResourceColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: &sqlgraph.FieldSpec{
+					Type:   field.TypeInt,
+					Column: resource.FieldID,
+				},
+			},
+		}
+		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
+	}
+	if nodes := rpuo.mutation.ParentResourceIDs(); len(nodes) > 0 {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2O,
+			Inverse: true,
+			Table:   resourcepool.ParentResourceTable,
+			Columns: []string{resourcepool.ParentResourceColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: &sqlgraph.FieldSpec{
+					Type:   field.TypeInt,
+					Column: resource.FieldID,
 				},
 			},
 		}

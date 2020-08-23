@@ -2,6 +2,29 @@
 
 package model
 
+type CreateAllocatingPoolInput struct {
+	ResourceTypeID              int     `json:"resourceTypeId"`
+	PoolName                    string  `json:"poolName"`
+	Description                 *string `json:"description"`
+	AllocationStrategyID        int     `json:"allocationStrategyId"`
+	PoolDealocationSafetyPeriod int     `json:"poolDealocationSafetyPeriod"`
+}
+
+type CreateSetPoolInput struct {
+	ResourceTypeID              int                      `json:"resourceTypeId"`
+	PoolName                    string                   `json:"poolName"`
+	Description                 *string                  `json:"description"`
+	PoolDealocationSafetyPeriod int                      `json:"poolDealocationSafetyPeriod"`
+	PoolValues                  []map[string]interface{} `json:"poolValues"`
+}
+
+type CreateSingletonPoolInput struct {
+	ResourceTypeID int                      `json:"resourceTypeId"`
+	PoolName       string                   `json:"poolName"`
+	Description    *string                  `json:"description"`
+	PoolValues     []map[string]interface{} `json:"poolValues"`
+}
+
 type PropertyInput struct {
 	Name      string   `json:"Name"`
 	IntVal    *int     `json:"IntVal"`

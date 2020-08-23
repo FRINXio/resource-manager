@@ -6,6 +6,7 @@ package ent
 func (c *AllocationStrategyClient) CreateFrom(as *AllocationStrategy) *AllocationStrategyCreate {
 	mutation := newAllocationStrategyMutation(c.config, OpCreate, withAllocationStrategy(as))
 	mutation.name = &(as.Name)
+	mutation.description = (as.Description)
 	mutation.lang = &(as.Lang)
 	mutation.script = &(as.Script)
 
@@ -86,6 +87,10 @@ func (c *ResourceClient) CreateFrom(r *Resource) *ResourceCreate {
 		createBuilder.AddProperties(r.Edges.Properties...)
 	}
 
+	if r.Edges.NestedPool != nil {
+		createBuilder.SetNestedPool(r.Edges.NestedPool)
+	}
+
 	return createBuilder
 }
 
@@ -93,6 +98,7 @@ func (c *ResourceClient) CreateFrom(r *Resource) *ResourceCreate {
 func (c *ResourcePoolClient) CreateFrom(rp *ResourcePool) *ResourcePoolCreate {
 	mutation := newResourcePoolMutation(c.config, OpCreate, withResourcePool(rp))
 	mutation.name = &(rp.Name)
+	mutation.description = (rp.Description)
 	mutation.pool_type = &(rp.PoolType)
 	mutation.dealocation_safety_period = &(rp.DealocationSafetyPeriod)
 
@@ -112,6 +118,10 @@ func (c *ResourcePoolClient) CreateFrom(rp *ResourcePool) *ResourcePoolCreate {
 
 	if rp.Edges.AllocationStrategy != nil {
 		createBuilder.SetAllocationStrategy(rp.Edges.AllocationStrategy)
+	}
+
+	if rp.Edges.ParentResource != nil {
+		createBuilder.SetParentResource(rp.Edges.ParentResource)
 	}
 
 	return createBuilder

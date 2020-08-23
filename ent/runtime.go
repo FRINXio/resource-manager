@@ -25,7 +25,7 @@ func init() {
 	// allocationstrategy.NameValidator is a validator for the "name" field. It is called by the builders before save.
 	allocationstrategy.NameValidator = allocationstrategyDescName.Validators[0].(func(string) error)
 	// allocationstrategyDescScript is the schema descriptor for script field.
-	allocationstrategyDescScript := allocationstrategyFields[2].Descriptor()
+	allocationstrategyDescScript := allocationstrategyFields[3].Descriptor()
 	// allocationstrategy.ScriptValidator is a validator for the "script" field. It is called by the builders before save.
 	allocationstrategy.ScriptValidator = allocationstrategyDescScript.Validators[0].(func(string) error)
 	propertytypeFields := schema.PropertyType{}.Fields()
@@ -61,7 +61,7 @@ func init() {
 	// resourcepool.NameValidator is a validator for the "name" field. It is called by the builders before save.
 	resourcepool.NameValidator = resourcepoolDescName.Validators[0].(func(string) error)
 	// resourcepoolDescDealocationSafetyPeriod is the schema descriptor for dealocation_safety_period field.
-	resourcepoolDescDealocationSafetyPeriod := resourcepoolFields[2].Descriptor()
+	resourcepoolDescDealocationSafetyPeriod := resourcepoolFields[3].Descriptor()
 	// resourcepool.DefaultDealocationSafetyPeriod holds the default value on creation for the dealocation_safety_period field.
 	resourcepool.DefaultDealocationSafetyPeriod = resourcepoolDescDealocationSafetyPeriod.Default.(int)
 	resourcetypeFields := schema.ResourceType{}.Fields()

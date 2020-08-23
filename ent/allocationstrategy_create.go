@@ -26,6 +26,20 @@ func (asc *AllocationStrategyCreate) SetName(s string) *AllocationStrategyCreate
 	return asc
 }
 
+// SetDescription sets the description field.
+func (asc *AllocationStrategyCreate) SetDescription(s string) *AllocationStrategyCreate {
+	asc.mutation.SetDescription(s)
+	return asc
+}
+
+// SetNillableDescription sets the description field if the given value is not nil.
+func (asc *AllocationStrategyCreate) SetNillableDescription(s *string) *AllocationStrategyCreate {
+	if s != nil {
+		asc.SetDescription(*s)
+	}
+	return asc
+}
+
 // SetLang sets the lang field.
 func (asc *AllocationStrategyCreate) SetLang(a allocationstrategy.Lang) *AllocationStrategyCreate {
 	asc.mutation.SetLang(a)
@@ -167,6 +181,14 @@ func (asc *AllocationStrategyCreate) createSpec() (*AllocationStrategy, *sqlgrap
 			Column: allocationstrategy.FieldName,
 		})
 		as.Name = value
+	}
+	if value, ok := asc.mutation.Description(); ok {
+		_spec.Fields = append(_spec.Fields, &sqlgraph.FieldSpec{
+			Type:   field.TypeString,
+			Value:  value,
+			Column: allocationstrategy.FieldDescription,
+		})
+		as.Description = &value
 	}
 	if value, ok := asc.mutation.Lang(); ok {
 		_spec.Fields = append(_spec.Fields, &sqlgraph.FieldSpec{

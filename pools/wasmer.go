@@ -131,6 +131,10 @@ console.error = function(...args) {
 }
 const log = console.error;
 `
+	if userInput == nil {
+		// default in case of nil
+		userInput = map[string]interface{}{}
+	}
 	addition, err := serializeJsVariable("userInput", userInput)
 	if err != nil {
 		return nil, "", err
@@ -143,6 +147,10 @@ const log = console.error;
 	}
 	header += addition
 
+	if currentResources == nil {
+		// default in case of nil
+		currentResources = []*model.ResourceInput{}
+	}
 	addition, err = serializeJsVariable("currentResources", currentResources)
 	if err != nil {
 		return nil, "", err
@@ -190,7 +198,8 @@ func (wasmer Wasmer) invoke(name string, arg ...string) (map[string]interface{},
 	m := make(map[string]interface{})
 	if err := json.Unmarshal(stdout, &m); err != nil {
 		return nil, stderr, errors.Wrapf(err,
-			"Unable to parse allocation function output as flat JSON: \"%s\"", string(stdout))
+			"Unable to parse allocation function output as flat JSON: \"%s\". " +
+			"Error output: \"%s\"", string(stdout), string(stderr))
 	}
 	return m, stderr, nil
 }
@@ -228,6 +237,10 @@ import sys,json
 def log(*args, **kwargs):
   print(*args, file=sys.stderr, **kwargs)
 `
+	if userInput == nil {
+		// default in case of nil
+		userInput = map[string]interface{}{}
+	}
 	addition, err := serializePythonVariable("userInput", userInput)
 	if err != nil {
 		return nil, "", err
@@ -240,6 +253,10 @@ def log(*args, **kwargs):
 	}
 	header += addition
 
+	if currentResources == nil {
+		// default in case of nil
+		currentResources = []*model.ResourceInput{}
+	}
 	addition, err = serializePythonVariable("currentResources", currentResources)
 	if err != nil {
 		return nil, "", err

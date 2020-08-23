@@ -52,29 +52,33 @@ type DirectiveRoot struct {
 
 type ComplexityRoot struct {
 	AllocationStrategy struct {
-		ID     func(childComplexity int) int
-		Lang   func(childComplexity int) int
-		Name   func(childComplexity int) int
-		Script func(childComplexity int) int
+		Description func(childComplexity int) int
+		ID          func(childComplexity int) int
+		Lang        func(childComplexity int) int
+		Name        func(childComplexity int) int
+		Script      func(childComplexity int) int
 	}
 
 	Mutation struct {
-		ClaimResource            func(childComplexity int, poolID int, userInput map[string]interface{}) int
-		CreateAllocatingPool     func(childComplexity int, resourceTypeID int, poolName string, allocationStrategyID int, poolDealocationSafetyPeriod int) int
-		CreateAllocationStrategy func(childComplexity int, name string, script string, lang allocationstrategy.Lang) int
-		CreateResourceType       func(childComplexity int, resourceName string, resourceProperties map[string]interface{}) int
-		CreateSetPool            func(childComplexity int, resourceTypeID int, poolName string, poolDealocationSafetyPeriod int, poolValues []map[string]interface{}) int
-		CreateSingletonPool      func(childComplexity int, resourceTypeID int, poolName string, poolValues []map[string]interface{}) int
-		CreateTag                func(childComplexity int, tag string) int
-		DeleteAllocationStrategy func(childComplexity int, allocationStrategyID int) int
-		DeleteResourcePool       func(childComplexity int, resourcePoolID int) int
-		DeleteResourceType       func(childComplexity int, resourceTypeID int) int
-		DeleteTag                func(childComplexity int, tagID int) int
-		FreeResource             func(childComplexity int, input map[string]interface{}, poolID int) int
-		TagPool                  func(childComplexity int, tagID int, poolID int) int
-		TestAllocationStrategy   func(childComplexity int, allocationStrategyID int, resourcePool model.ResourcePoolInput, currentResources []*model.ResourceInput, userInput map[string]interface{}) int
-		UpdateResourceTypeName   func(childComplexity int, resourceTypeID int, resourceName string) int
-		UpdateTag                func(childComplexity int, tagID int, tag string) int
+		ClaimResource              func(childComplexity int, poolID int, userInput map[string]interface{}) int
+		CreateAllocatingPool       func(childComplexity int, input *model.CreateAllocatingPoolInput) int
+		CreateAllocationStrategy   func(childComplexity int, name string, description *string, script string, lang allocationstrategy.Lang) int
+		CreateNestedAllocatingPool func(childComplexity int, input *model.CreateAllocatingPoolInput, parentResourceID int) int
+		CreateNestedSetPool        func(childComplexity int, input model.CreateSetPoolInput, parentResourceID int) int
+		CreateNestedSingletonPool  func(childComplexity int, input *model.CreateSingletonPoolInput, parentResourceID int) int
+		CreateResourceType         func(childComplexity int, resourceName string, resourceProperties map[string]interface{}) int
+		CreateSetPool              func(childComplexity int, input model.CreateSetPoolInput) int
+		CreateSingletonPool        func(childComplexity int, input *model.CreateSingletonPoolInput) int
+		CreateTag                  func(childComplexity int, tag string) int
+		DeleteAllocationStrategy   func(childComplexity int, allocationStrategyID int) int
+		DeleteResourcePool         func(childComplexity int, resourcePoolID int) int
+		DeleteResourceType         func(childComplexity int, resourceTypeID int) int
+		DeleteTag                  func(childComplexity int, tagID int) int
+		FreeResource               func(childComplexity int, input map[string]interface{}, poolID int) int
+		TagPool                    func(childComplexity int, tagID int, poolID int) int
+		TestAllocationStrategy     func(childComplexity int, allocationStrategyID int, resourcePool model.ResourcePoolInput, currentResources []*model.ResourceInput, userInput map[string]interface{}) int
+		UpdateResourceTypeName     func(childComplexity int, resourceTypeID int, resourceName string) int
+		UpdateTag                  func(childComplexity int, tagID int, tag string) int
 	}
 
 	PropertyType struct {
@@ -90,16 +94,19 @@ type ComplexityRoot struct {
 	Query struct {
 		QueryAllocationStrategies func(childComplexity int) int
 		QueryAllocationStrategy   func(childComplexity int, allocationStrategyID int) int
+		QueryLeafResourcePools    func(childComplexity int, resourceTypeID *int) int
 		QueryResource             func(childComplexity int, input map[string]interface{}, poolID int) int
-		QueryResourcePools        func(childComplexity int) int
+		QueryResourcePools        func(childComplexity int, resourceTypeID *int) int
 		QueryResourceTypes        func(childComplexity int) int
 		QueryResources            func(childComplexity int, poolID int) int
+		QueryRootResourcePools    func(childComplexity int, resourceTypeID *int) int
 		QueryTags                 func(childComplexity int) int
 		SearchPoolsByTags         func(childComplexity int, tags *model.TagOr) int
 	}
 
 	Resource struct {
 		ID         func(childComplexity int) int
+		NestedPool func(childComplexity int) int
 		Properties func(childComplexity int) int
 	}
 
@@ -132,14 +139,17 @@ type MutationResolver interface {
 	UpdateTag(ctx context.Context, tagID int, tag string) (*ent.Tag, error)
 	DeleteTag(ctx context.Context, tagID int) (*ent.Tag, error)
 	TagPool(ctx context.Context, tagID int, poolID int) (*ent.Tag, error)
-	CreateAllocationStrategy(ctx context.Context, name string, script string, lang allocationstrategy.Lang) (*ent.AllocationStrategy, error)
+	CreateAllocationStrategy(ctx context.Context, name string, description *string, script string, lang allocationstrategy.Lang) (*ent.AllocationStrategy, error)
 	DeleteAllocationStrategy(ctx context.Context, allocationStrategyID int) (*ent.AllocationStrategy, error)
 	TestAllocationStrategy(ctx context.Context, allocationStrategyID int, resourcePool model.ResourcePoolInput, currentResources []*model.ResourceInput, userInput map[string]interface{}) (map[string]interface{}, error)
 	ClaimResource(ctx context.Context, poolID int, userInput map[string]interface{}) (*ent.Resource, error)
 	FreeResource(ctx context.Context, input map[string]interface{}, poolID int) (string, error)
-	CreateSetPool(ctx context.Context, resourceTypeID int, poolName string, poolDealocationSafetyPeriod int, poolValues []map[string]interface{}) (*ent.ResourcePool, error)
-	CreateSingletonPool(ctx context.Context, resourceTypeID int, poolName string, poolValues []map[string]interface{}) (*ent.ResourcePool, error)
-	CreateAllocatingPool(ctx context.Context, resourceTypeID int, poolName string, allocationStrategyID int, poolDealocationSafetyPeriod int) (*ent.ResourcePool, error)
+	CreateSetPool(ctx context.Context, input model.CreateSetPoolInput) (*ent.ResourcePool, error)
+	CreateNestedSetPool(ctx context.Context, input model.CreateSetPoolInput, parentResourceID int) (*ent.ResourcePool, error)
+	CreateSingletonPool(ctx context.Context, input *model.CreateSingletonPoolInput) (*ent.ResourcePool, error)
+	CreateNestedSingletonPool(ctx context.Context, input *model.CreateSingletonPoolInput, parentResourceID int) (*ent.ResourcePool, error)
+	CreateAllocatingPool(ctx context.Context, input *model.CreateAllocatingPoolInput) (*ent.ResourcePool, error)
+	CreateNestedAllocatingPool(ctx context.Context, input *model.CreateAllocatingPoolInput, parentResourceID int) (*ent.ResourcePool, error)
 	DeleteResourcePool(ctx context.Context, resourcePoolID int) (string, error)
 	CreateResourceType(ctx context.Context, resourceName string, resourceProperties map[string]interface{}) (*ent.ResourceType, error)
 	DeleteResourceType(ctx context.Context, resourceTypeID int) (string, error)
@@ -154,12 +164,15 @@ type QueryResolver interface {
 	QueryAllocationStrategy(ctx context.Context, allocationStrategyID int) (*ent.AllocationStrategy, error)
 	QueryAllocationStrategies(ctx context.Context) ([]*ent.AllocationStrategy, error)
 	QueryResourceTypes(ctx context.Context) ([]*ent.ResourceType, error)
-	QueryResourcePools(ctx context.Context) ([]*ent.ResourcePool, error)
+	QueryResourcePools(ctx context.Context, resourceTypeID *int) ([]*ent.ResourcePool, error)
+	QueryRootResourcePools(ctx context.Context, resourceTypeID *int) ([]*ent.ResourcePool, error)
+	QueryLeafResourcePools(ctx context.Context, resourceTypeID *int) ([]*ent.ResourcePool, error)
 	SearchPoolsByTags(ctx context.Context, tags *model.TagOr) ([]*ent.ResourcePool, error)
 	QueryTags(ctx context.Context) ([]*ent.Tag, error)
 }
 type ResourceResolver interface {
 	Properties(ctx context.Context, obj *ent.Resource) (map[string]interface{}, error)
+	NestedPool(ctx context.Context, obj *ent.Resource) (*ent.ResourcePool, error)
 }
 type ResourcePoolResolver interface {
 	ResourceType(ctx context.Context, obj *ent.ResourcePool) (*ent.ResourceType, error)
@@ -189,6 +202,13 @@ func (e *executableSchema) Complexity(typeName, field string, childComplexity in
 	ec := executionContext{nil, e}
 	_ = ec
 	switch typeName + "." + field {
+
+	case "AllocationStrategy.Description":
+		if e.complexity.AllocationStrategy.Description == nil {
+			break
+		}
+
+		return e.complexity.AllocationStrategy.Description(childComplexity), true
 
 	case "AllocationStrategy.ID":
 		if e.complexity.AllocationStrategy.ID == nil {
@@ -240,7 +260,7 @@ func (e *executableSchema) Complexity(typeName, field string, childComplexity in
 			return 0, false
 		}
 
-		return e.complexity.Mutation.CreateAllocatingPool(childComplexity, args["resourceTypeId"].(int), args["poolName"].(string), args["allocationStrategyId"].(int), args["poolDealocationSafetyPeriod"].(int)), true
+		return e.complexity.Mutation.CreateAllocatingPool(childComplexity, args["input"].(*model.CreateAllocatingPoolInput)), true
 
 	case "Mutation.CreateAllocationStrategy":
 		if e.complexity.Mutation.CreateAllocationStrategy == nil {
@@ -252,7 +272,43 @@ func (e *executableSchema) Complexity(typeName, field string, childComplexity in
 			return 0, false
 		}
 
-		return e.complexity.Mutation.CreateAllocationStrategy(childComplexity, args["name"].(string), args["script"].(string), args["lang"].(allocationstrategy.Lang)), true
+		return e.complexity.Mutation.CreateAllocationStrategy(childComplexity, args["name"].(string), args["description"].(*string), args["script"].(string), args["lang"].(allocationstrategy.Lang)), true
+
+	case "Mutation.CreateNestedAllocatingPool":
+		if e.complexity.Mutation.CreateNestedAllocatingPool == nil {
+			break
+		}
+
+		args, err := ec.field_Mutation_CreateNestedAllocatingPool_args(context.TODO(), rawArgs)
+		if err != nil {
+			return 0, false
+		}
+
+		return e.complexity.Mutation.CreateNestedAllocatingPool(childComplexity, args["input"].(*model.CreateAllocatingPoolInput), args["parentResourceId"].(int)), true
+
+	case "Mutation.CreateNestedSetPool":
+		if e.complexity.Mutation.CreateNestedSetPool == nil {
+			break
+		}
+
+		args, err := ec.field_Mutation_CreateNestedSetPool_args(context.TODO(), rawArgs)
+		if err != nil {
+			return 0, false
+		}
+
+		return e.complexity.Mutation.CreateNestedSetPool(childComplexity, args["input"].(model.CreateSetPoolInput), args["parentResourceId"].(int)), true
+
+	case "Mutation.CreateNestedSingletonPool":
+		if e.complexity.Mutation.CreateNestedSingletonPool == nil {
+			break
+		}
+
+		args, err := ec.field_Mutation_CreateNestedSingletonPool_args(context.TODO(), rawArgs)
+		if err != nil {
+			return 0, false
+		}
+
+		return e.complexity.Mutation.CreateNestedSingletonPool(childComplexity, args["input"].(*model.CreateSingletonPoolInput), args["parentResourceId"].(int)), true
 
 	case "Mutation.CreateResourceType":
 		if e.complexity.Mutation.CreateResourceType == nil {
@@ -276,7 +332,7 @@ func (e *executableSchema) Complexity(typeName, field string, childComplexity in
 			return 0, false
 		}
 
-		return e.complexity.Mutation.CreateSetPool(childComplexity, args["resourceTypeId"].(int), args["poolName"].(string), args["poolDealocationSafetyPeriod"].(int), args["poolValues"].([]map[string]interface{})), true
+		return e.complexity.Mutation.CreateSetPool(childComplexity, args["input"].(model.CreateSetPoolInput)), true
 
 	case "Mutation.CreateSingletonPool":
 		if e.complexity.Mutation.CreateSingletonPool == nil {
@@ -288,7 +344,7 @@ func (e *executableSchema) Complexity(typeName, field string, childComplexity in
 			return 0, false
 		}
 
-		return e.complexity.Mutation.CreateSingletonPool(childComplexity, args["resourceTypeId"].(int), args["poolName"].(string), args["poolValues"].([]map[string]interface{})), true
+		return e.complexity.Mutation.CreateSingletonPool(childComplexity, args["input"].(*model.CreateSingletonPoolInput)), true
 
 	case "Mutation.CreateTag":
 		if e.complexity.Mutation.CreateTag == nil {
@@ -478,6 +534,18 @@ func (e *executableSchema) Complexity(typeName, field string, childComplexity in
 
 		return e.complexity.Query.QueryAllocationStrategy(childComplexity, args["allocationStrategyId"].(int)), true
 
+	case "Query.QueryLeafResourcePools":
+		if e.complexity.Query.QueryLeafResourcePools == nil {
+			break
+		}
+
+		args, err := ec.field_Query_QueryLeafResourcePools_args(context.TODO(), rawArgs)
+		if err != nil {
+			return 0, false
+		}
+
+		return e.complexity.Query.QueryLeafResourcePools(childComplexity, args["resourceTypeId"].(*int)), true
+
 	case "Query.QueryResource":
 		if e.complexity.Query.QueryResource == nil {
 			break
@@ -495,7 +563,12 @@ func (e *executableSchema) Complexity(typeName, field string, childComplexity in
 			break
 		}
 
-		return e.complexity.Query.QueryResourcePools(childComplexity), true
+		args, err := ec.field_Query_QueryResourcePools_args(context.TODO(), rawArgs)
+		if err != nil {
+			return 0, false
+		}
+
+		return e.complexity.Query.QueryResourcePools(childComplexity, args["resourceTypeId"].(*int)), true
 
 	case "Query.QueryResourceTypes":
 		if e.complexity.Query.QueryResourceTypes == nil {
@@ -515,6 +588,18 @@ func (e *executableSchema) Complexity(typeName, field string, childComplexity in
 		}
 
 		return e.complexity.Query.QueryResources(childComplexity, args["poolId"].(int)), true
+
+	case "Query.QueryRootResourcePools":
+		if e.complexity.Query.QueryRootResourcePools == nil {
+			break
+		}
+
+		args, err := ec.field_Query_QueryRootResourcePools_args(context.TODO(), rawArgs)
+		if err != nil {
+			return 0, false
+		}
+
+		return e.complexity.Query.QueryRootResourcePools(childComplexity, args["resourceTypeId"].(*int)), true
 
 	case "Query.QueryTags":
 		if e.complexity.Query.QueryTags == nil {
@@ -541,6 +626,13 @@ func (e *executableSchema) Complexity(typeName, field string, childComplexity in
 		}
 
 		return e.complexity.Resource.ID(childComplexity), true
+
+	case "Resource.NestedPool":
+		if e.complexity.Resource.NestedPool == nil {
+			break
+		}
+
+		return e.complexity.Resource.NestedPool(childComplexity), true
 
 	case "Resource.Properties":
 		if e.complexity.Resource.Properties == nil {
@@ -765,6 +857,7 @@ type Resource
 {
     ID: ID!
     Properties: Map!
+    NestedPool: ResourcePool
 }
 
 enum AllocationStrategyLang
@@ -780,6 +873,7 @@ type AllocationStrategy
 @goModel(model: "github.com/net-auto/resourceManager/ent.AllocationStrategy"){
     ID: ID!
     Name: String!
+    Description: String
     Lang: AllocationStrategyLang!
     Script: String!
 }
@@ -819,14 +913,41 @@ input ResourceInput {
     Status: String!
 }
 
+input CreateSetPoolInput {
+    resourceTypeId: ID!
+    poolName: String!
+    description: String
+    poolDealocationSafetyPeriod: Int!
+    poolValues: [Map]!
+}
+
+input CreateSingletonPoolInput {
+    resourceTypeId: ID!
+    poolName: String!
+    description: String
+    poolValues: [Map]!
+}
+
+input CreateAllocatingPoolInput {
+    resourceTypeId: ID!
+    poolName: String!
+    description: String
+    allocationStrategyId: ID!
+    poolDealocationSafetyPeriod: Int!
+}
+
 type Query {
     QueryResource(input: Map!, poolId: ID!): Resource!
     QueryResources(poolId: ID!): [Resource]!
     QueryAllocationStrategy(allocationStrategyId: ID!): AllocationStrategy!
     QueryAllocationStrategies: [AllocationStrategy]!
     QueryResourceTypes: [ResourceType]!
-    QueryResourcePools: [ResourcePool]!
+
+    QueryResourcePools(resourceTypeId: ID): [ResourcePool]!
+    QueryRootResourcePools(resourceTypeId: ID): [ResourcePool]!
+    QueryLeafResourcePools(resourceTypeId: ID): [ResourcePool]!
     SearchPoolsByTags(tags: TagOr): [ResourcePool]!
+
     QueryTags: [Tag]!
 }
 
@@ -838,19 +959,22 @@ type Mutation {
     TagPool(tagId: ID!, poolId: ID!): Tag!
 
     # Allocation strategy
-    CreateAllocationStrategy(name: String!, script: String!, lang: AllocationStrategyLang!): AllocationStrategy!
+    CreateAllocationStrategy(name: String!, description: String, script: String!, lang: AllocationStrategyLang!): AllocationStrategy!
     DeleteAllocationStrategy(allocationStrategyId: ID!): AllocationStrategy!
     TestAllocationStrategy(allocationStrategyId: ID!, resourcePool: ResourcePoolInput!,
-            currentResources: [ResourceInput]!, userInput: Map!): Map!
+        currentResources: [ResourceInput]!, userInput: Map!): Map!
 
     # managing resources via pools
     ClaimResource(poolId: ID!, userInput: Map!): Resource!
     FreeResource(input: Map!, poolId: ID!): String!
 
     # create/update/delete resource pool
-    CreateSetPool(resourceTypeId: ID!, poolName: String!, poolDealocationSafetyPeriod: Int!, poolValues: [Map]): ResourcePool!
-    CreateSingletonPool(resourceTypeId: ID!, poolName: String!, poolValues: [Map]): ResourcePool!
-    CreateAllocatingPool(resourceTypeId: ID!, poolName: String!, allocationStrategyId: ID!, poolDealocationSafetyPeriod: Int!): ResourcePool!
+    CreateSetPool(input: CreateSetPoolInput!): ResourcePool!
+    CreateNestedSetPool(input: CreateSetPoolInput!, parentResourceId: ID!): ResourcePool!
+    CreateSingletonPool(input: CreateSingletonPoolInput): ResourcePool!
+    CreateNestedSingletonPool(input: CreateSingletonPoolInput, parentResourceId: ID!): ResourcePool!
+    CreateAllocatingPool(input: CreateAllocatingPoolInput): ResourcePool!
+    CreateNestedAllocatingPool(input: CreateAllocatingPoolInput, parentResourceId: ID!): ResourcePool!
     DeleteResourcePool(resourcePoolId: ID!): String!
 
     # create/update/delete resource type
@@ -895,38 +1019,14 @@ func (ec *executionContext) field_Mutation_ClaimResource_args(ctx context.Contex
 func (ec *executionContext) field_Mutation_CreateAllocatingPool_args(ctx context.Context, rawArgs map[string]interface{}) (map[string]interface{}, error) {
 	var err error
 	args := map[string]interface{}{}
-	var arg0 int
-	if tmp, ok := rawArgs["resourceTypeId"]; ok {
-		arg0, err = ec.unmarshalNID2int(ctx, tmp)
+	var arg0 *model.CreateAllocatingPoolInput
+	if tmp, ok := rawArgs["input"]; ok {
+		arg0, err = ec.unmarshalOCreateAllocatingPoolInput2ᚖgithubᚗcomᚋnetᚑautoᚋresourceManagerᚋgraphᚋgraphqlᚋmodelᚐCreateAllocatingPoolInput(ctx, tmp)
 		if err != nil {
 			return nil, err
 		}
 	}
-	args["resourceTypeId"] = arg0
-	var arg1 string
-	if tmp, ok := rawArgs["poolName"]; ok {
-		arg1, err = ec.unmarshalNString2string(ctx, tmp)
-		if err != nil {
-			return nil, err
-		}
-	}
-	args["poolName"] = arg1
-	var arg2 int
-	if tmp, ok := rawArgs["allocationStrategyId"]; ok {
-		arg2, err = ec.unmarshalNID2int(ctx, tmp)
-		if err != nil {
-			return nil, err
-		}
-	}
-	args["allocationStrategyId"] = arg2
-	var arg3 int
-	if tmp, ok := rawArgs["poolDealocationSafetyPeriod"]; ok {
-		arg3, err = ec.unmarshalNInt2int(ctx, tmp)
-		if err != nil {
-			return nil, err
-		}
-	}
-	args["poolDealocationSafetyPeriod"] = arg3
+	args["input"] = arg0
 	return args, nil
 }
 
@@ -941,22 +1041,96 @@ func (ec *executionContext) field_Mutation_CreateAllocationStrategy_args(ctx con
 		}
 	}
 	args["name"] = arg0
-	var arg1 string
+	var arg1 *string
+	if tmp, ok := rawArgs["description"]; ok {
+		arg1, err = ec.unmarshalOString2ᚖstring(ctx, tmp)
+		if err != nil {
+			return nil, err
+		}
+	}
+	args["description"] = arg1
+	var arg2 string
 	if tmp, ok := rawArgs["script"]; ok {
-		arg1, err = ec.unmarshalNString2string(ctx, tmp)
+		arg2, err = ec.unmarshalNString2string(ctx, tmp)
 		if err != nil {
 			return nil, err
 		}
 	}
-	args["script"] = arg1
-	var arg2 allocationstrategy.Lang
+	args["script"] = arg2
+	var arg3 allocationstrategy.Lang
 	if tmp, ok := rawArgs["lang"]; ok {
-		arg2, err = ec.unmarshalNAllocationStrategyLang2githubᚗcomᚋnetᚑautoᚋresourceManagerᚋentᚋallocationstrategyᚐLang(ctx, tmp)
+		arg3, err = ec.unmarshalNAllocationStrategyLang2githubᚗcomᚋnetᚑautoᚋresourceManagerᚋentᚋallocationstrategyᚐLang(ctx, tmp)
 		if err != nil {
 			return nil, err
 		}
 	}
-	args["lang"] = arg2
+	args["lang"] = arg3
+	return args, nil
+}
+
+func (ec *executionContext) field_Mutation_CreateNestedAllocatingPool_args(ctx context.Context, rawArgs map[string]interface{}) (map[string]interface{}, error) {
+	var err error
+	args := map[string]interface{}{}
+	var arg0 *model.CreateAllocatingPoolInput
+	if tmp, ok := rawArgs["input"]; ok {
+		arg0, err = ec.unmarshalOCreateAllocatingPoolInput2ᚖgithubᚗcomᚋnetᚑautoᚋresourceManagerᚋgraphᚋgraphqlᚋmodelᚐCreateAllocatingPoolInput(ctx, tmp)
+		if err != nil {
+			return nil, err
+		}
+	}
+	args["input"] = arg0
+	var arg1 int
+	if tmp, ok := rawArgs["parentResourceId"]; ok {
+		arg1, err = ec.unmarshalNID2int(ctx, tmp)
+		if err != nil {
+			return nil, err
+		}
+	}
+	args["parentResourceId"] = arg1
+	return args, nil
+}
+
+func (ec *executionContext) field_Mutation_CreateNestedSetPool_args(ctx context.Context, rawArgs map[string]interface{}) (map[string]interface{}, error) {
+	var err error
+	args := map[string]interface{}{}
+	var arg0 model.CreateSetPoolInput
+	if tmp, ok := rawArgs["input"]; ok {
+		arg0, err = ec.unmarshalNCreateSetPoolInput2githubᚗcomᚋnetᚑautoᚋresourceManagerᚋgraphᚋgraphqlᚋmodelᚐCreateSetPoolInput(ctx, tmp)
+		if err != nil {
+			return nil, err
+		}
+	}
+	args["input"] = arg0
+	var arg1 int
+	if tmp, ok := rawArgs["parentResourceId"]; ok {
+		arg1, err = ec.unmarshalNID2int(ctx, tmp)
+		if err != nil {
+			return nil, err
+		}
+	}
+	args["parentResourceId"] = arg1
+	return args, nil
+}
+
+func (ec *executionContext) field_Mutation_CreateNestedSingletonPool_args(ctx context.Context, rawArgs map[string]interface{}) (map[string]interface{}, error) {
+	var err error
+	args := map[string]interface{}{}
+	var arg0 *model.CreateSingletonPoolInput
+	if tmp, ok := rawArgs["input"]; ok {
+		arg0, err = ec.unmarshalOCreateSingletonPoolInput2ᚖgithubᚗcomᚋnetᚑautoᚋresourceManagerᚋgraphᚋgraphqlᚋmodelᚐCreateSingletonPoolInput(ctx, tmp)
+		if err != nil {
+			return nil, err
+		}
+	}
+	args["input"] = arg0
+	var arg1 int
+	if tmp, ok := rawArgs["parentResourceId"]; ok {
+		arg1, err = ec.unmarshalNID2int(ctx, tmp)
+		if err != nil {
+			return nil, err
+		}
+	}
+	args["parentResourceId"] = arg1
 	return args, nil
 }
 
@@ -985,68 +1159,28 @@ func (ec *executionContext) field_Mutation_CreateResourceType_args(ctx context.C
 func (ec *executionContext) field_Mutation_CreateSetPool_args(ctx context.Context, rawArgs map[string]interface{}) (map[string]interface{}, error) {
 	var err error
 	args := map[string]interface{}{}
-	var arg0 int
-	if tmp, ok := rawArgs["resourceTypeId"]; ok {
-		arg0, err = ec.unmarshalNID2int(ctx, tmp)
+	var arg0 model.CreateSetPoolInput
+	if tmp, ok := rawArgs["input"]; ok {
+		arg0, err = ec.unmarshalNCreateSetPoolInput2githubᚗcomᚋnetᚑautoᚋresourceManagerᚋgraphᚋgraphqlᚋmodelᚐCreateSetPoolInput(ctx, tmp)
 		if err != nil {
 			return nil, err
 		}
 	}
-	args["resourceTypeId"] = arg0
-	var arg1 string
-	if tmp, ok := rawArgs["poolName"]; ok {
-		arg1, err = ec.unmarshalNString2string(ctx, tmp)
-		if err != nil {
-			return nil, err
-		}
-	}
-	args["poolName"] = arg1
-	var arg2 int
-	if tmp, ok := rawArgs["poolDealocationSafetyPeriod"]; ok {
-		arg2, err = ec.unmarshalNInt2int(ctx, tmp)
-		if err != nil {
-			return nil, err
-		}
-	}
-	args["poolDealocationSafetyPeriod"] = arg2
-	var arg3 []map[string]interface{}
-	if tmp, ok := rawArgs["poolValues"]; ok {
-		arg3, err = ec.unmarshalOMap2ᚕmap(ctx, tmp)
-		if err != nil {
-			return nil, err
-		}
-	}
-	args["poolValues"] = arg3
+	args["input"] = arg0
 	return args, nil
 }
 
 func (ec *executionContext) field_Mutation_CreateSingletonPool_args(ctx context.Context, rawArgs map[string]interface{}) (map[string]interface{}, error) {
 	var err error
 	args := map[string]interface{}{}
-	var arg0 int
-	if tmp, ok := rawArgs["resourceTypeId"]; ok {
-		arg0, err = ec.unmarshalNID2int(ctx, tmp)
+	var arg0 *model.CreateSingletonPoolInput
+	if tmp, ok := rawArgs["input"]; ok {
+		arg0, err = ec.unmarshalOCreateSingletonPoolInput2ᚖgithubᚗcomᚋnetᚑautoᚋresourceManagerᚋgraphᚋgraphqlᚋmodelᚐCreateSingletonPoolInput(ctx, tmp)
 		if err != nil {
 			return nil, err
 		}
 	}
-	args["resourceTypeId"] = arg0
-	var arg1 string
-	if tmp, ok := rawArgs["poolName"]; ok {
-		arg1, err = ec.unmarshalNString2string(ctx, tmp)
-		if err != nil {
-			return nil, err
-		}
-	}
-	args["poolName"] = arg1
-	var arg2 []map[string]interface{}
-	if tmp, ok := rawArgs["poolValues"]; ok {
-		arg2, err = ec.unmarshalOMap2ᚕmap(ctx, tmp)
-		if err != nil {
-			return nil, err
-		}
-	}
-	args["poolValues"] = arg2
+	args["input"] = arg0
 	return args, nil
 }
 
@@ -1260,6 +1394,34 @@ func (ec *executionContext) field_Query_QueryAllocationStrategy_args(ctx context
 	return args, nil
 }
 
+func (ec *executionContext) field_Query_QueryLeafResourcePools_args(ctx context.Context, rawArgs map[string]interface{}) (map[string]interface{}, error) {
+	var err error
+	args := map[string]interface{}{}
+	var arg0 *int
+	if tmp, ok := rawArgs["resourceTypeId"]; ok {
+		arg0, err = ec.unmarshalOID2ᚖint(ctx, tmp)
+		if err != nil {
+			return nil, err
+		}
+	}
+	args["resourceTypeId"] = arg0
+	return args, nil
+}
+
+func (ec *executionContext) field_Query_QueryResourcePools_args(ctx context.Context, rawArgs map[string]interface{}) (map[string]interface{}, error) {
+	var err error
+	args := map[string]interface{}{}
+	var arg0 *int
+	if tmp, ok := rawArgs["resourceTypeId"]; ok {
+		arg0, err = ec.unmarshalOID2ᚖint(ctx, tmp)
+		if err != nil {
+			return nil, err
+		}
+	}
+	args["resourceTypeId"] = arg0
+	return args, nil
+}
+
 func (ec *executionContext) field_Query_QueryResource_args(ctx context.Context, rawArgs map[string]interface{}) (map[string]interface{}, error) {
 	var err error
 	args := map[string]interface{}{}
@@ -1293,6 +1455,20 @@ func (ec *executionContext) field_Query_QueryResources_args(ctx context.Context,
 		}
 	}
 	args["poolId"] = arg0
+	return args, nil
+}
+
+func (ec *executionContext) field_Query_QueryRootResourcePools_args(ctx context.Context, rawArgs map[string]interface{}) (map[string]interface{}, error) {
+	var err error
+	args := map[string]interface{}{}
+	var arg0 *int
+	if tmp, ok := rawArgs["resourceTypeId"]; ok {
+		arg0, err = ec.unmarshalOID2ᚖint(ctx, tmp)
+		if err != nil {
+			return nil, err
+		}
+	}
+	args["resourceTypeId"] = arg0
 	return args, nil
 }
 
@@ -1426,6 +1602,37 @@ func (ec *executionContext) _AllocationStrategy_Name(ctx context.Context, field 
 	res := resTmp.(string)
 	fc.Result = res
 	return ec.marshalNString2string(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) _AllocationStrategy_Description(ctx context.Context, field graphql.CollectedField, obj *ent.AllocationStrategy) (ret graphql.Marshaler) {
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	fc := &graphql.FieldContext{
+		Object:   "AllocationStrategy",
+		Field:    field,
+		Args:     nil,
+		IsMethod: false,
+	}
+
+	ctx = graphql.WithFieldContext(ctx, fc)
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.Description, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		return graphql.Null
+	}
+	res := resTmp.(*string)
+	fc.Result = res
+	return ec.marshalOString2ᚖstring(ctx, field.Selections, res)
 }
 
 func (ec *executionContext) _AllocationStrategy_Lang(ctx context.Context, field graphql.CollectedField, obj *ent.AllocationStrategy) (ret graphql.Marshaler) {
@@ -1684,7 +1891,7 @@ func (ec *executionContext) _Mutation_CreateAllocationStrategy(ctx context.Conte
 	fc.Args = args
 	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
 		ctx = rctx // use context from middleware stack in children
-		return ec.resolvers.Mutation().CreateAllocationStrategy(rctx, args["name"].(string), args["script"].(string), args["lang"].(allocationstrategy.Lang))
+		return ec.resolvers.Mutation().CreateAllocationStrategy(rctx, args["name"].(string), args["description"].(*string), args["script"].(string), args["lang"].(allocationstrategy.Lang))
 	})
 	if err != nil {
 		ec.Error(ctx, err)
@@ -1889,7 +2096,48 @@ func (ec *executionContext) _Mutation_CreateSetPool(ctx context.Context, field g
 	fc.Args = args
 	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
 		ctx = rctx // use context from middleware stack in children
-		return ec.resolvers.Mutation().CreateSetPool(rctx, args["resourceTypeId"].(int), args["poolName"].(string), args["poolDealocationSafetyPeriod"].(int), args["poolValues"].([]map[string]interface{}))
+		return ec.resolvers.Mutation().CreateSetPool(rctx, args["input"].(model.CreateSetPoolInput))
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(*ent.ResourcePool)
+	fc.Result = res
+	return ec.marshalNResourcePool2ᚖgithubᚗcomᚋnetᚑautoᚋresourceManagerᚋentᚐResourcePool(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) _Mutation_CreateNestedSetPool(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	fc := &graphql.FieldContext{
+		Object:   "Mutation",
+		Field:    field,
+		Args:     nil,
+		IsMethod: true,
+	}
+
+	ctx = graphql.WithFieldContext(ctx, fc)
+	rawArgs := field.ArgumentMap(ec.Variables)
+	args, err := ec.field_Mutation_CreateNestedSetPool_args(ctx, rawArgs)
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	fc.Args = args
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return ec.resolvers.Mutation().CreateNestedSetPool(rctx, args["input"].(model.CreateSetPoolInput), args["parentResourceId"].(int))
 	})
 	if err != nil {
 		ec.Error(ctx, err)
@@ -1930,7 +2178,48 @@ func (ec *executionContext) _Mutation_CreateSingletonPool(ctx context.Context, f
 	fc.Args = args
 	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
 		ctx = rctx // use context from middleware stack in children
-		return ec.resolvers.Mutation().CreateSingletonPool(rctx, args["resourceTypeId"].(int), args["poolName"].(string), args["poolValues"].([]map[string]interface{}))
+		return ec.resolvers.Mutation().CreateSingletonPool(rctx, args["input"].(*model.CreateSingletonPoolInput))
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(*ent.ResourcePool)
+	fc.Result = res
+	return ec.marshalNResourcePool2ᚖgithubᚗcomᚋnetᚑautoᚋresourceManagerᚋentᚐResourcePool(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) _Mutation_CreateNestedSingletonPool(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	fc := &graphql.FieldContext{
+		Object:   "Mutation",
+		Field:    field,
+		Args:     nil,
+		IsMethod: true,
+	}
+
+	ctx = graphql.WithFieldContext(ctx, fc)
+	rawArgs := field.ArgumentMap(ec.Variables)
+	args, err := ec.field_Mutation_CreateNestedSingletonPool_args(ctx, rawArgs)
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	fc.Args = args
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return ec.resolvers.Mutation().CreateNestedSingletonPool(rctx, args["input"].(*model.CreateSingletonPoolInput), args["parentResourceId"].(int))
 	})
 	if err != nil {
 		ec.Error(ctx, err)
@@ -1971,7 +2260,48 @@ func (ec *executionContext) _Mutation_CreateAllocatingPool(ctx context.Context, 
 	fc.Args = args
 	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
 		ctx = rctx // use context from middleware stack in children
-		return ec.resolvers.Mutation().CreateAllocatingPool(rctx, args["resourceTypeId"].(int), args["poolName"].(string), args["allocationStrategyId"].(int), args["poolDealocationSafetyPeriod"].(int))
+		return ec.resolvers.Mutation().CreateAllocatingPool(rctx, args["input"].(*model.CreateAllocatingPoolInput))
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(*ent.ResourcePool)
+	fc.Result = res
+	return ec.marshalNResourcePool2ᚖgithubᚗcomᚋnetᚑautoᚋresourceManagerᚋentᚐResourcePool(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) _Mutation_CreateNestedAllocatingPool(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	fc := &graphql.FieldContext{
+		Object:   "Mutation",
+		Field:    field,
+		Args:     nil,
+		IsMethod: true,
+	}
+
+	ctx = graphql.WithFieldContext(ctx, fc)
+	rawArgs := field.ArgumentMap(ec.Variables)
+	args, err := ec.field_Mutation_CreateNestedAllocatingPool_args(ctx, rawArgs)
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	fc.Args = args
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return ec.resolvers.Mutation().CreateNestedAllocatingPool(rctx, args["input"].(*model.CreateAllocatingPoolInput), args["parentResourceId"].(int))
 	})
 	if err != nil {
 		ec.Error(ctx, err)
@@ -2596,9 +2926,98 @@ func (ec *executionContext) _Query_QueryResourcePools(ctx context.Context, field
 	}
 
 	ctx = graphql.WithFieldContext(ctx, fc)
+	rawArgs := field.ArgumentMap(ec.Variables)
+	args, err := ec.field_Query_QueryResourcePools_args(ctx, rawArgs)
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	fc.Args = args
 	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
 		ctx = rctx // use context from middleware stack in children
-		return ec.resolvers.Query().QueryResourcePools(rctx)
+		return ec.resolvers.Query().QueryResourcePools(rctx, args["resourceTypeId"].(*int))
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.([]*ent.ResourcePool)
+	fc.Result = res
+	return ec.marshalNResourcePool2ᚕᚖgithubᚗcomᚋnetᚑautoᚋresourceManagerᚋentᚐResourcePool(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) _Query_QueryRootResourcePools(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	fc := &graphql.FieldContext{
+		Object:   "Query",
+		Field:    field,
+		Args:     nil,
+		IsMethod: true,
+	}
+
+	ctx = graphql.WithFieldContext(ctx, fc)
+	rawArgs := field.ArgumentMap(ec.Variables)
+	args, err := ec.field_Query_QueryRootResourcePools_args(ctx, rawArgs)
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	fc.Args = args
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return ec.resolvers.Query().QueryRootResourcePools(rctx, args["resourceTypeId"].(*int))
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.([]*ent.ResourcePool)
+	fc.Result = res
+	return ec.marshalNResourcePool2ᚕᚖgithubᚗcomᚋnetᚑautoᚋresourceManagerᚋentᚐResourcePool(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) _Query_QueryLeafResourcePools(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	fc := &graphql.FieldContext{
+		Object:   "Query",
+		Field:    field,
+		Args:     nil,
+		IsMethod: true,
+	}
+
+	ctx = graphql.WithFieldContext(ctx, fc)
+	rawArgs := field.ArgumentMap(ec.Variables)
+	args, err := ec.field_Query_QueryLeafResourcePools_args(ctx, rawArgs)
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	fc.Args = args
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return ec.resolvers.Query().QueryLeafResourcePools(rctx, args["resourceTypeId"].(*int))
 	})
 	if err != nil {
 		ec.Error(ctx, err)
@@ -2825,6 +3244,37 @@ func (ec *executionContext) _Resource_Properties(ctx context.Context, field grap
 	res := resTmp.(map[string]interface{})
 	fc.Result = res
 	return ec.marshalNMap2map(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) _Resource_NestedPool(ctx context.Context, field graphql.CollectedField, obj *ent.Resource) (ret graphql.Marshaler) {
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	fc := &graphql.FieldContext{
+		Object:   "Resource",
+		Field:    field,
+		Args:     nil,
+		IsMethod: true,
+	}
+
+	ctx = graphql.WithFieldContext(ctx, fc)
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return ec.resolvers.Resource().NestedPool(rctx, obj)
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		return graphql.Null
+	}
+	res := resTmp.(*ent.ResourcePool)
+	fc.Result = res
+	return ec.marshalOResourcePool2ᚖgithubᚗcomᚋnetᚑautoᚋresourceManagerᚋentᚐResourcePool(ctx, field.Selections, res)
 }
 
 func (ec *executionContext) _ResourcePool_ID(ctx context.Context, field graphql.CollectedField, obj *ent.ResourcePool) (ret graphql.Marshaler) {
@@ -4352,6 +4802,126 @@ func (ec *executionContext) ___Type_ofType(ctx context.Context, field graphql.Co
 
 // region    **************************** input.gotpl *****************************
 
+func (ec *executionContext) unmarshalInputCreateAllocatingPoolInput(ctx context.Context, obj interface{}) (model.CreateAllocatingPoolInput, error) {
+	var it model.CreateAllocatingPoolInput
+	var asMap = obj.(map[string]interface{})
+
+	for k, v := range asMap {
+		switch k {
+		case "resourceTypeId":
+			var err error
+			it.ResourceTypeID, err = ec.unmarshalNID2int(ctx, v)
+			if err != nil {
+				return it, err
+			}
+		case "poolName":
+			var err error
+			it.PoolName, err = ec.unmarshalNString2string(ctx, v)
+			if err != nil {
+				return it, err
+			}
+		case "description":
+			var err error
+			it.Description, err = ec.unmarshalOString2ᚖstring(ctx, v)
+			if err != nil {
+				return it, err
+			}
+		case "allocationStrategyId":
+			var err error
+			it.AllocationStrategyID, err = ec.unmarshalNID2int(ctx, v)
+			if err != nil {
+				return it, err
+			}
+		case "poolDealocationSafetyPeriod":
+			var err error
+			it.PoolDealocationSafetyPeriod, err = ec.unmarshalNInt2int(ctx, v)
+			if err != nil {
+				return it, err
+			}
+		}
+	}
+
+	return it, nil
+}
+
+func (ec *executionContext) unmarshalInputCreateSetPoolInput(ctx context.Context, obj interface{}) (model.CreateSetPoolInput, error) {
+	var it model.CreateSetPoolInput
+	var asMap = obj.(map[string]interface{})
+
+	for k, v := range asMap {
+		switch k {
+		case "resourceTypeId":
+			var err error
+			it.ResourceTypeID, err = ec.unmarshalNID2int(ctx, v)
+			if err != nil {
+				return it, err
+			}
+		case "poolName":
+			var err error
+			it.PoolName, err = ec.unmarshalNString2string(ctx, v)
+			if err != nil {
+				return it, err
+			}
+		case "description":
+			var err error
+			it.Description, err = ec.unmarshalOString2ᚖstring(ctx, v)
+			if err != nil {
+				return it, err
+			}
+		case "poolDealocationSafetyPeriod":
+			var err error
+			it.PoolDealocationSafetyPeriod, err = ec.unmarshalNInt2int(ctx, v)
+			if err != nil {
+				return it, err
+			}
+		case "poolValues":
+			var err error
+			it.PoolValues, err = ec.unmarshalNMap2ᚕmap(ctx, v)
+			if err != nil {
+				return it, err
+			}
+		}
+	}
+
+	return it, nil
+}
+
+func (ec *executionContext) unmarshalInputCreateSingletonPoolInput(ctx context.Context, obj interface{}) (model.CreateSingletonPoolInput, error) {
+	var it model.CreateSingletonPoolInput
+	var asMap = obj.(map[string]interface{})
+
+	for k, v := range asMap {
+		switch k {
+		case "resourceTypeId":
+			var err error
+			it.ResourceTypeID, err = ec.unmarshalNID2int(ctx, v)
+			if err != nil {
+				return it, err
+			}
+		case "poolName":
+			var err error
+			it.PoolName, err = ec.unmarshalNString2string(ctx, v)
+			if err != nil {
+				return it, err
+			}
+		case "description":
+			var err error
+			it.Description, err = ec.unmarshalOString2ᚖstring(ctx, v)
+			if err != nil {
+				return it, err
+			}
+		case "poolValues":
+			var err error
+			it.PoolValues, err = ec.unmarshalNMap2ᚕmap(ctx, v)
+			if err != nil {
+				return it, err
+			}
+		}
+	}
+
+	return it, nil
+}
+
 func (ec *executionContext) unmarshalInputPropertyInput(ctx context.Context, obj interface{}) (model.PropertyInput, error) {
 	var it model.PropertyInput
 	var asMap = obj.(map[string]interface{})
@@ -4513,6 +5083,8 @@ func (ec *executionContext) _AllocationStrategy(ctx context.Context, sel ast.Sel
 			if out.Values[i] == graphql.Null {
 				invalids++
 			}
+		case "Description":
+			out.Values[i] = ec._AllocationStrategy_Description(ctx, field, obj)
 		case "Lang":
 			out.Values[i] = ec._AllocationStrategy_Lang(ctx, field, obj)
 			if out.Values[i] == graphql.Null {
@@ -4599,13 +5171,28 @@ func (ec *executionContext) _Mutation(ctx context.Context, sel ast.SelectionSet)
 			if out.Values[i] == graphql.Null {
 				invalids++
 			}
+		case "CreateNestedSetPool":
+			out.Values[i] = ec._Mutation_CreateNestedSetPool(ctx, field)
+			if out.Values[i] == graphql.Null {
+				invalids++
+			}
 		case "CreateSingletonPool":
 			out.Values[i] = ec._Mutation_CreateSingletonPool(ctx, field)
 			if out.Values[i] == graphql.Null {
 				invalids++
 			}
+		case "CreateNestedSingletonPool":
+			out.Values[i] = ec._Mutation_CreateNestedSingletonPool(ctx, field)
+			if out.Values[i] == graphql.Null {
+				invalids++
+			}
 		case "CreateAllocatingPool":
 			out.Values[i] = ec._Mutation_CreateAllocatingPool(ctx, field)
+			if out.Values[i] == graphql.Null {
+				invalids++
+			}
+		case "CreateNestedAllocatingPool":
+			out.Values[i] = ec._Mutation_CreateNestedAllocatingPool(ctx, field)
 			if out.Values[i] == graphql.Null {
 				invalids++
 			}
@@ -4805,6 +5392,34 @@ func (ec *executionContext) _Query(ctx context.Context, sel ast.SelectionSet) gr
 				}
 				return res
 			})
+		case "QueryRootResourcePools":
+			field := field
+			out.Concurrently(i, func() (res graphql.Marshaler) {
+				defer func() {
+					if r := recover(); r != nil {
+						ec.Error(ctx, ec.Recover(ctx, r))
+					}
+				}()
+				res = ec._Query_QueryRootResourcePools(ctx, field)
+				if res == graphql.Null {
+					atomic.AddUint32(&invalids, 1)
+				}
+				return res
+			})
+		case "QueryLeafResourcePools":
+			field := field
+			out.Concurrently(i, func() (res graphql.Marshaler) {
+				defer func() {
+					if r := recover(); r != nil {
+						ec.Error(ctx, ec.Recover(ctx, r))
+					}
+				}()
+				res = ec._Query_QueryLeafResourcePools(ctx, field)
+				if res == graphql.Null {
+					atomic.AddUint32(&invalids, 1)
+				}
+				return res
+			})
 		case "SearchPoolsByTags":
 			field := field
 			out.Concurrently(i, func() (res graphql.Marshaler) {
@@ -4876,6 +5491,17 @@ func (ec *executionContext) _Resource(ctx context.Context, sel ast.SelectionSet,
 				if res == graphql.Null {
 					atomic.AddUint32(&invalids, 1)
 				}
+				return res
+			})
+		case "NestedPool":
+			field := field
+			out.Concurrently(i, func() (res graphql.Marshaler) {
+				defer func() {
+					if r := recover(); r != nil {
+						ec.Error(ctx, ec.Recover(ctx, r))
+					}
+				}()
+				res = ec._Resource_NestedPool(ctx, field, obj)
 				return res
 			})
 		default:
@@ -5401,6 +6027,10 @@ func (ec *executionContext) marshalNBoolean2bool(ctx context.Context, sel ast.Se
 	return res
 }
 
+func (ec *executionContext) unmarshalNCreateSetPoolInput2githubᚗcomᚋnetᚑautoᚋresourceManagerᚋgraphᚋgraphqlᚋmodelᚐCreateSetPoolInput(ctx context.Context, v interface{}) (model.CreateSetPoolInput, error) {
+	return ec.unmarshalInputCreateSetPoolInput(ctx, v)
+}
+
 func (ec *executionContext) unmarshalNFloat2float64(ctx context.Context, v interface{}) (float64, error) {
 	return graphql.UnmarshalFloat(v)
 }
@@ -5500,6 +6130,35 @@ func (ec *executionContext) marshalNMap2map(ctx context.Context, sel ast.Selecti
 		}
 	}
 	return res
+}
+
+func (ec *executionContext) unmarshalNMap2ᚕmap(ctx context.Context, v interface{}) ([]map[string]interface{}, error) {
+	var vSlice []interface{}
+	if v != nil {
+		if tmp1, ok := v.([]interface{}); ok {
+			vSlice = tmp1
+		} else {
+			vSlice = []interface{}{v}
+		}
+	}
+	var err error
+	res := make([]map[string]interface{}, len(vSlice))
+	for i := range vSlice {
+		res[i], err = ec.unmarshalOMap2map(ctx, vSlice[i])
+		if err != nil {
+			return nil, err
+		}
+	}
+	return res, nil
+}
+
+func (ec *executionContext) marshalNMap2ᚕmap(ctx context.Context, sel ast.SelectionSet, v []map[string]interface{}) graphql.Marshaler {
+	ret := make(graphql.Array, len(v))
+	for i := range v {
+		ret[i] = ec.marshalOMap2map(ctx, sel, v[i])
+	}
+
+	return ret
 }
 
 func (ec *executionContext) unmarshalNPoolType2githubᚗcomᚋnetᚑautoᚋresourceManagerᚋentᚋresourcepoolᚐPoolType(ctx context.Context, v interface{}) (resourcepool.PoolType, error) {
@@ -6274,6 +6933,30 @@ func (ec *executionContext) marshalOBoolean2ᚖbool(ctx context.Context, sel ast
 	return ec.marshalOBoolean2bool(ctx, sel, *v)
 }
 
+func (ec *executionContext) unmarshalOCreateAllocatingPoolInput2githubᚗcomᚋnetᚑautoᚋresourceManagerᚋgraphᚋgraphqlᚋmodelᚐCreateAllocatingPoolInput(ctx context.Context, v interface{}) (model.CreateAllocatingPoolInput, error) {
+	return ec.unmarshalInputCreateAllocatingPoolInput(ctx, v)
+}
+
+func (ec *executionContext) unmarshalOCreateAllocatingPoolInput2ᚖgithubᚗcomᚋnetᚑautoᚋresourceManagerᚋgraphᚋgraphqlᚋmodelᚐCreateAllocatingPoolInput(ctx context.Context, v interface{}) (*model.CreateAllocatingPoolInput, error) {
+	if v == nil {
+		return nil, nil
+	}
+	res, err := ec.unmarshalOCreateAllocatingPoolInput2githubᚗcomᚋnetᚑautoᚋresourceManagerᚋgraphᚋgraphqlᚋmodelᚐCreateAllocatingPoolInput(ctx, v)
+	return &res, err
+}
+
+func (ec *executionContext) unmarshalOCreateSingletonPoolInput2githubᚗcomᚋnetᚑautoᚋresourceManagerᚋgraphᚋgraphqlᚋmodelᚐCreateSingletonPoolInput(ctx context.Context, v interface{}) (model.CreateSingletonPoolInput, error) {
+	return ec.unmarshalInputCreateSingletonPoolInput(ctx, v)
+}
+
+func (ec *executionContext) unmarshalOCreateSingletonPoolInput2ᚖgithubᚗcomᚋnetᚑautoᚋresourceManagerᚋgraphᚋgraphqlᚋmodelᚐCreateSingletonPoolInput(ctx context.Context, v interface{}) (*model.CreateSingletonPoolInput, error) {
+	if v == nil {
+		return nil, nil
+	}
+	res, err := ec.unmarshalOCreateSingletonPoolInput2githubᚗcomᚋnetᚑautoᚋresourceManagerᚋgraphᚋgraphqlᚋmodelᚐCreateSingletonPoolInput(ctx, v)
+	return &res, err
+}
+
 func (ec *executionContext) unmarshalOFloat2float64(ctx context.Context, v interface{}) (float64, error) {
 	return graphql.UnmarshalFloat(v)
 }
@@ -6295,6 +6978,29 @@ func (ec *executionContext) marshalOFloat2ᚖfloat64(ctx context.Context, sel as
 		return graphql.Null
 	}
 	return ec.marshalOFloat2float64(ctx, sel, *v)
+}
+
+func (ec *executionContext) unmarshalOID2int(ctx context.Context, v interface{}) (int, error) {
+	return graphql.UnmarshalIntID(v)
+}
+
+func (ec *executionContext) marshalOID2int(ctx context.Context, sel ast.SelectionSet, v int) graphql.Marshaler {
+	return graphql.MarshalIntID(v)
+}
+
+func (ec *executionContext) unmarshalOID2ᚖint(ctx context.Context, v interface{}) (*int, error) {
+	if v == nil {
+		return nil, nil
+	}
+	res, err := ec.unmarshalOID2int(ctx, v)
+	return &res, err
+}
+
+func (ec *executionContext) marshalOID2ᚖint(ctx context.Context, sel ast.SelectionSet, v *int) graphql.Marshaler {
+	if v == nil {
+		return graphql.Null
+	}
+	return ec.marshalOID2int(ctx, sel, *v)
 }
 
 func (ec *executionContext) unmarshalOInt2int(ctx context.Context, v interface{}) (int, error) {
@@ -6332,38 +7038,6 @@ func (ec *executionContext) marshalOMap2map(ctx context.Context, sel ast.Selecti
 		return graphql.Null
 	}
 	return graphql.MarshalMap(v)
-}
-
-func (ec *executionContext) unmarshalOMap2ᚕmap(ctx context.Context, v interface{}) ([]map[string]interface{}, error) {
-	var vSlice []interface{}
-	if v != nil {
-		if tmp1, ok := v.([]interface{}); ok {
-			vSlice = tmp1
-		} else {
-			vSlice = []interface{}{v}
-		}
-	}
-	var err error
-	res := make([]map[string]interface{}, len(vSlice))
-	for i := range vSlice {
-		res[i], err = ec.unmarshalOMap2map(ctx, vSlice[i])
-		if err != nil {
-			return nil, err
-		}
-	}
-	return res, nil
-}
-
-func (ec *executionContext) marshalOMap2ᚕmap(ctx context.Context, sel ast.SelectionSet, v []map[string]interface{}) graphql.Marshaler {
-	if v == nil {
-		return graphql.Null
-	}
-	ret := make(graphql.Array, len(v))
-	for i := range v {
-		ret[i] = ec.marshalOMap2map(ctx, sel, v[i])
-	}
-
-	return ret
 }
 
 func (ec *executionContext) unmarshalOPropertyInput2githubᚗcomᚋnetᚑautoᚋresourceManagerᚋgraphᚋgraphqlᚋmodelᚐPropertyInput(ctx context.Context, v interface{}) (model.PropertyInput, error) {

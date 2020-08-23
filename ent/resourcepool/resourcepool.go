@@ -15,6 +15,8 @@ const (
 	FieldID = "id"
 	// FieldName holds the string denoting the name field in the database.
 	FieldName = "name"
+	// FieldDescription holds the string denoting the description field in the database.
+	FieldDescription = "description"
 	// FieldPoolType holds the string denoting the pool_type field in the database.
 	FieldPoolType = "pool_type"
 	// FieldDealocationSafetyPeriod holds the string denoting the dealocation_safety_period field in the database.
@@ -28,6 +30,8 @@ const (
 	EdgeClaims = "claims"
 	// EdgeAllocationStrategy holds the string denoting the allocation_strategy edge name in mutations.
 	EdgeAllocationStrategy = "allocation_strategy"
+	// EdgeParentResource holds the string denoting the parent_resource edge name in mutations.
+	EdgeParentResource = "parent_resource"
 
 	// Table holds the table name of the resourcepool in the database.
 	Table = "resource_pools"
@@ -57,18 +61,27 @@ const (
 	AllocationStrategyInverseTable = "allocation_strategies"
 	// AllocationStrategyColumn is the table column denoting the allocation_strategy relation/edge.
 	AllocationStrategyColumn = "resource_pool_allocation_strategy"
+	// ParentResourceTable is the table the holds the parent_resource relation/edge.
+	ParentResourceTable = "resource_pools"
+	// ParentResourceInverseTable is the table name for the Resource entity.
+	// It exists in this package in order to avoid circular dependency with the "resource" package.
+	ParentResourceInverseTable = "resources"
+	// ParentResourceColumn is the table column denoting the parent_resource relation/edge.
+	ParentResourceColumn = "resource_nested_pool"
 )
 
 // Columns holds all SQL columns for resourcepool fields.
 var Columns = []string{
 	FieldID,
 	FieldName,
+	FieldDescription,
 	FieldPoolType,
 	FieldDealocationSafetyPeriod,
 }
 
 // ForeignKeys holds the SQL foreign-keys that are owned by the ResourcePool type.
 var ForeignKeys = []string{
+	"resource_nested_pool",
 	"resource_pool_allocation_strategy",
 	"resource_type_pools",
 }

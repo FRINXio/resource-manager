@@ -19,17 +19,17 @@ func NewAllocatingPool(
 	allocationStrategy *ent.AllocationStrategy,
 	poolName string,
 	poolDealocationSafetyPeriod int) (Pool, error) {
-	pool, _, err := NewAllocatingPoolWithMeta(ctx, client, resourceType, allocationStrategy, poolName, poolDealocationSafetyPeriod)
+	pool, _, err := NewAllocatingPoolWithMeta(ctx, client, resourceType, allocationStrategy, poolName, nil, poolDealocationSafetyPeriod)
 	return pool, err
 }
 
 // NewAllocatingPoolWithMeta creates a brand new pool + returns the pools underlying meta information
-func NewAllocatingPoolWithMeta(
-	ctx context.Context,
+func NewAllocatingPoolWithMeta(ctx context.Context,
 	client *ent.Client,
 	resourceType *ent.ResourceType,
 	allocationStrategy *ent.AllocationStrategy,
 	poolName string,
+	description *string,
 	poolDealocationSafetyPeriod int) (Pool, *ent.ResourcePool, error) {
 
 	// TODO keep just single instance
@@ -38,7 +38,7 @@ func NewAllocatingPoolWithMeta(
 		return nil, nil, errors.Wrap(err, "Cannot create resource pool")
 	}
 	return newAllocatingPoolWithMetaInternal(
-		ctx, client, resourceType, allocationStrategy, poolName, wasmer, poolDealocationSafetyPeriod)
+		ctx, client, resourceType, allocationStrategy, poolName, description, wasmer, poolDealocationSafetyPeriod)
 }
 
 func newAllocatingPoolWithMetaInternal(
@@ -47,11 +47,13 @@ func newAllocatingPoolWithMetaInternal(
 	resourceType *ent.ResourceType,
 	allocationStrategy *ent.AllocationStrategy,
 	poolName string,
+	description *string,
 	invoker ScriptInvoker,
 	poolDealocationSafetyPeriod int) (Pool, *ent.ResourcePool, error) {
 
 	pool, err := client.ResourcePool.Create().
 		SetName(poolName).
+		SetNillableDescription(description).
 		SetPoolType(resourcePool.PoolTypeAllocating).
 		SetResourceType(resourceType).
 		SetAllocationStrategy(allocationStrategy).
@@ -187,6 +189,15 @@ func (pool AllocatingPool) ClaimResource(userInput map[string]interface{}) (*ent
 		return nil, errors.Wrapf(err, "Cannot update resource #%d", res.ID)
 	}
 	return res, nil
+}
+
+func clearBenchedResources(pool AllocatingPool) error {
+	_, err := pool.client.Resource.Delete().
+		Where(resource.StatusEQ(resource.StatusBench)).
+		Where(resource.UpdatedAtLT(time.Now().Add(time.Duration(-pool.ResourcePool.DealocationSafetyPeriod) * time.Second))).
+		Exec(pool.ctx)
+
+	return err
 }
 
 // FreeResource deallocates the resource identified by its properties

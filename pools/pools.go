@@ -54,11 +54,13 @@ func newFixedPoolInner(ctx context.Context,
 	resourceType *ent.ResourceType,
 	propertyValues []RawResourceProps,
 	poolName string,
+	description *string,
 	poolType resourcePool.PoolType,
 	poolDealocationSafetyPeriod int) (*ent.ResourcePool, error) {
 	pool, err := client.ResourcePool.Create().
 		SetName(poolName).
 		SetPoolType(poolType).
+		SetNillableDescription(description).
 		SetResourceType(resourceType).
 		SetDealocationSafetyPeriod(poolDealocationSafetyPeriod).
 		Save(ctx)
