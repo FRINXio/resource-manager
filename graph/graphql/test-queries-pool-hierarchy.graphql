@@ -145,7 +145,7 @@ mutation TestAllocationStrat_ipv4Prefix_2 {
     TestAllocationStrategy(
         allocationStrategyId: 1,
         resourcePool: { ResourcePoolName: "10.0.0.0/8"},
-        currentResources: [{Properties: [{ Name: "prefix", IntVal: 9, Mandatory: true, Type: "int"}, { Name: "ip", StringVal: "10.0.0.8", Mandatory: true, Type: "string"}]
+        currentResources: [{Properties: { prefix: 9, ip: "10.0.0.8"},
             Status: "claimed",
             UpdatedAt: "2020-08-18 11:38:48.0 +0200 CEST"
         }],
@@ -157,11 +157,11 @@ mutation TestAllocationStrat_ipv4Prefix_full {
         allocationStrategyId: 1,
         resourcePool: { ResourcePoolName: "10.0.0.0/8"},
         currentResources: [
-            {Properties: [{ Name: "prefix", IntVal: 9, Mandatory: true, Type: "int"}, { Name: "ip", StringVal: "10.0.0.8", Mandatory: true, Type: "string"}]
+            {Properties: { prefix: 9, ip: "10.0.0.8"},
                 Status: "claimed",
                 UpdatedAt: "2020-08-18 11:38:48.0 +0200 CEST"
             },
-            {Properties: [{ Name: "prefix", IntVal: 9, Mandatory: true, Type: "int"}, { Name: "ip", StringVal: "10.128.0.8", Mandatory: true, Type: "string"}]
+            {Properties: { prefix: 9, ip: "10.128.0.8"},
                 Status: "claimed",
                 UpdatedAt: "2020-08-18 11:38:48.0 +0200 CEST"
             }],
@@ -483,6 +483,4 @@ query QueryIpv4AddressLeafPools {
     }
 }
 
-# TODO simplify currentResources input type ... just use a simple map to keep it consistent
-# TODO check allocation pool vs benched resources behavior
 # TODO pool properties ? where does root pool store its root prefix ?

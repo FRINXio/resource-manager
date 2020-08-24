@@ -73,24 +73,12 @@ return {"vlan": userInput["desiredVlan"]}
 
 func createCurrentResources(now time.Time) []*model.ResourceInput {
 	var r0 model.ResourceInput
-	var r0p0 model.PropertyInput
-	r0p0.Name = "value"
-	r0p0Value := 1
-	r0p0.IntVal = &r0p0Value
-	r0p0.Type = "int"
-	r0p0.Mandatory = true
-	r0.Properties = append(r0.Properties, &r0p0)
+	r0.Properties = map[string]interface{}{"value": 1}
 	r0.Status = "claimed"
 	r0.UpdatedAt = now.String()
 
 	var r1 model.ResourceInput
-	var r1p0 model.PropertyInput
-	r1p0.Name = "value"
-	r1p0Value := 100
-	r1p0.IntVal = &r1p0Value
-	r1p0.Type = "int"
-	r1p0.Mandatory = true
-	r1.Properties = append(r1.Properties, &r1p0)
+	r0.Properties = map[string]interface{}{"value": 100}
 	r1.Status = "claimed"
 	r1.UpdatedAt = now.String()
 

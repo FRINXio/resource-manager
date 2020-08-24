@@ -39,11 +39,11 @@ query queryResourceTypes {
 }
 
 mutation createSetPool {
-    CreateSetPool(
+    CreateSetPool(input: {
         resourceTypeId: 21474836480,
         poolName: "vlan_test4",
         poolValues: [{vlan: 13}, {vlan: 14},],
-        poolDealocationSafetyPeriod: 0
+        poolDealocationSafetyPeriod: 0}
     ){
         ID
         PoolType
@@ -97,10 +97,10 @@ mutation TestAllocationStrategyJs {
         allocationStrategyId: 1,
         resourcePool: { ResourcePoolName: "testpool"},
         currentResources: [
-            {Properties: { Name: "vlan", IntVal: 1, Mandatory: true, Type: "int"},
+            {Properties: { vlan: 1},
                 Status: "claimed",
                 UpdatedAt: "2020-08-18 11:38:48.0 +0200 CEST"
-            }, {Properties: { Name: "vlan", IntVal: 1, Mandatory: true, Type: "int"},
+            }, {Properties: { vlan: 2},
                 Status: "claimed",
                 UpdatedAt: "2020-08-18 11:38:48.0 +0200 CEST"
             }],
@@ -112,10 +112,10 @@ mutation TestAllocationStrategyPy {
         allocationStrategyId: 2,
         resourcePool: { ResourcePoolName: "testpool"},
         currentResources: [
-            {Properties: { Name: "vlan", IntVal: 1, Mandatory: true, Type: "int"},
+            {Properties: { vlan: 1},
                 Status: "claimed",
                 UpdatedAt: "2020-08-18 11:38:48.0 +0200 CEST"
-            }, {Properties: { Name: "vlan", IntVal: 1, Mandatory: true, Type: "int"},
+            }, {Properties: { vlan: 1},
                 Status: "claimed",
                 UpdatedAt: "2020-08-18 11:38:48.0 +0200 CEST"
             }],
@@ -123,11 +123,11 @@ mutation TestAllocationStrategyPy {
 }
 
 mutation createAllocationPool {
-    CreateAllocatingPool(
+    CreateAllocatingPool(input: {
         resourceTypeId: 21474836480,
         poolName: "vlan_allocating",
         allocationStrategyId: 1,
-        poolDealocationSafetyPeriod: 0
+        poolDealocationSafetyPeriod: 0}
     ){
         ID
         PoolType
@@ -159,21 +159,21 @@ query QueryAllPools {
 }
 
 mutation ClaimResource {
-    ClaimResource(poolId:21474836480, userInput: {}) {
+    ClaimResource(poolId:17179869184, userInput: {}) {
         ID
         Properties
     }
 }
 
 mutation ClaimResourceFromAllocatingPool {
-    ClaimResource(poolId:21474836481, userInput: {desiredVlan: 14}) {
+    ClaimResource(poolId:17179869185, userInput: {desiredVlan: 14}) {
         ID
         Properties
     }
 }
 
 query QueryResources {
-    QueryResources(poolId:21474836481){
+    QueryResources(poolId:17179869185){
         ID
         Properties
     }
@@ -181,8 +181,8 @@ query QueryResources {
 
 mutation freeResource {
     FreeResource(
-        poolId: 21474836481,
-        input: {vlan: 10}
+        poolId: 17179869185,
+        input: {vlan: 14}
     )
 }
 

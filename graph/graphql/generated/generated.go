@@ -897,17 +897,8 @@ input ResourcePoolInput {
     ResourcePoolName: String!
 }
 
-input PropertyInput {
-    Name: String!
-    IntVal: Int
-    StringVal: String
-    FloatVal: Float
-    Type: String!
-    Mandatory: Boolean!
-}
-
 input ResourceInput {
-    Properties: [PropertyInput]!
+    Properties: Map!
     UpdatedAt: String!
     # TODO replace with enum
     Status: String!
@@ -4922,54 +4913,6 @@ func (ec *executionContext) unmarshalInputCreateSingletonPoolInput(ctx context.C
 	return it, nil
 }
 
-func (ec *executionContext) unmarshalInputPropertyInput(ctx context.Context, obj interface{}) (model.PropertyInput, error) {
-	var it model.PropertyInput
-	var asMap = obj.(map[string]interface{})
-
-	for k, v := range asMap {
-		switch k {
-		case "Name":
-			var err error
-			it.Name, err = ec.unmarshalNString2string(ctx, v)
-			if err != nil {
-				return it, err
-			}
-		case "IntVal":
-			var err error
-			it.IntVal, err = ec.unmarshalOInt2ᚖint(ctx, v)
-			if err != nil {
-				return it, err
-			}
-		case "StringVal":
-			var err error
-			it.StringVal, err = ec.unmarshalOString2ᚖstring(ctx, v)
-			if err != nil {
-				return it, err
-			}
-		case "FloatVal":
-			var err error
-			it.FloatVal, err = ec.unmarshalOFloat2ᚖfloat64(ctx, v)
-			if err != nil {
-				return it, err
-			}
-		case "Type":
-			var err error
-			it.Type, err = ec.unmarshalNString2string(ctx, v)
-			if err != nil {
-				return it, err
-			}
-		case "Mandatory":
-			var err error
-			it.Mandatory, err = ec.unmarshalNBoolean2bool(ctx, v)
-			if err != nil {
-				return it, err
-			}
-		}
-	}
-
-	return it, nil
-}
-
 func (ec *executionContext) unmarshalInputResourceInput(ctx context.Context, obj interface{}) (model.ResourceInput, error) {
 	var it model.ResourceInput
 	var asMap = obj.(map[string]interface{})
@@ -4978,7 +4921,7 @@ func (ec *executionContext) unmarshalInputResourceInput(ctx context.Context, obj
 		switch k {
 		case "Properties":
 			var err error
-			it.Properties, err = ec.unmarshalNPropertyInput2ᚕᚖgithubᚗcomᚋnetᚑautoᚋresourceManagerᚋgraphᚋgraphqlᚋmodelᚐPropertyInput(ctx, v)
+			it.Properties, err = ec.unmarshalNMap2map(ctx, v)
 			if err != nil {
 				return it, err
 			}
@@ -6170,26 +6113,6 @@ func (ec *executionContext) marshalNPoolType2githubᚗcomᚋnetᚑautoᚋresourc
 	return v
 }
 
-func (ec *executionContext) unmarshalNPropertyInput2ᚕᚖgithubᚗcomᚋnetᚑautoᚋresourceManagerᚋgraphᚋgraphqlᚋmodelᚐPropertyInput(ctx context.Context, v interface{}) ([]*model.PropertyInput, error) {
-	var vSlice []interface{}
-	if v != nil {
-		if tmp1, ok := v.([]interface{}); ok {
-			vSlice = tmp1
-		} else {
-			vSlice = []interface{}{v}
-		}
-	}
-	var err error
-	res := make([]*model.PropertyInput, len(vSlice))
-	for i := range vSlice {
-		res[i], err = ec.unmarshalOPropertyInput2ᚖgithubᚗcomᚋnetᚑautoᚋresourceManagerᚋgraphᚋgraphqlᚋmodelᚐPropertyInput(ctx, vSlice[i])
-		if err != nil {
-			return nil, err
-		}
-	}
-	return res, nil
-}
-
 func (ec *executionContext) marshalNPropertyType2githubᚗcomᚋnetᚑautoᚋresourceManagerᚋentᚐPropertyType(ctx context.Context, sel ast.SelectionSet, v ent.PropertyType) graphql.Marshaler {
 	return ec._PropertyType(ctx, sel, &v)
 }
@@ -6957,29 +6880,6 @@ func (ec *executionContext) unmarshalOCreateSingletonPoolInput2ᚖgithubᚗcom�
 	return &res, err
 }
 
-func (ec *executionContext) unmarshalOFloat2float64(ctx context.Context, v interface{}) (float64, error) {
-	return graphql.UnmarshalFloat(v)
-}
-
-func (ec *executionContext) marshalOFloat2float64(ctx context.Context, sel ast.SelectionSet, v float64) graphql.Marshaler {
-	return graphql.MarshalFloat(v)
-}
-
-func (ec *executionContext) unmarshalOFloat2ᚖfloat64(ctx context.Context, v interface{}) (*float64, error) {
-	if v == nil {
-		return nil, nil
-	}
-	res, err := ec.unmarshalOFloat2float64(ctx, v)
-	return &res, err
-}
-
-func (ec *executionContext) marshalOFloat2ᚖfloat64(ctx context.Context, sel ast.SelectionSet, v *float64) graphql.Marshaler {
-	if v == nil {
-		return graphql.Null
-	}
-	return ec.marshalOFloat2float64(ctx, sel, *v)
-}
-
 func (ec *executionContext) unmarshalOID2int(ctx context.Context, v interface{}) (int, error) {
 	return graphql.UnmarshalIntID(v)
 }
@@ -7003,29 +6903,6 @@ func (ec *executionContext) marshalOID2ᚖint(ctx context.Context, sel ast.Selec
 	return ec.marshalOID2int(ctx, sel, *v)
 }
 
-func (ec *executionContext) unmarshalOInt2int(ctx context.Context, v interface{}) (int, error) {
-	return graphql.UnmarshalInt(v)
-}
-
-func (ec *executionContext) marshalOInt2int(ctx context.Context, sel ast.SelectionSet, v int) graphql.Marshaler {
-	return graphql.MarshalInt(v)
-}
-
-func (ec *executionContext) unmarshalOInt2ᚖint(ctx context.Context, v interface{}) (*int, error) {
-	if v == nil {
-		return nil, nil
-	}
-	res, err := ec.unmarshalOInt2int(ctx, v)
-	return &res, err
-}
-
-func (ec *executionContext) marshalOInt2ᚖint(ctx context.Context, sel ast.SelectionSet, v *int) graphql.Marshaler {
-	if v == nil {
-		return graphql.Null
-	}
-	return ec.marshalOInt2int(ctx, sel, *v)
-}
-
 func (ec *executionContext) unmarshalOMap2map(ctx context.Context, v interface{}) (map[string]interface{}, error) {
 	if v == nil {
 		return nil, nil
@@ -7038,18 +6915,6 @@ func (ec *executionContext) marshalOMap2map(ctx context.Context, sel ast.Selecti
 		return graphql.Null
 	}
 	return graphql.MarshalMap(v)
-}
-
-func (ec *executionContext) unmarshalOPropertyInput2githubᚗcomᚋnetᚑautoᚋresourceManagerᚋgraphᚋgraphqlᚋmodelᚐPropertyInput(ctx context.Context, v interface{}) (model.PropertyInput, error) {
-	return ec.unmarshalInputPropertyInput(ctx, v)
-}
-
-func (ec *executionContext) unmarshalOPropertyInput2ᚖgithubᚗcomᚋnetᚑautoᚋresourceManagerᚋgraphᚋgraphqlᚋmodelᚐPropertyInput(ctx context.Context, v interface{}) (*model.PropertyInput, error) {
-	if v == nil {
-		return nil, nil
-	}
-	res, err := ec.unmarshalOPropertyInput2githubᚗcomᚋnetᚑautoᚋresourceManagerᚋgraphᚋgraphqlᚋmodelᚐPropertyInput(ctx, v)
-	return &res, err
 }
 
 func (ec *executionContext) marshalOResource2githubᚗcomᚋnetᚑautoᚋresourceManagerᚋentᚐResource(ctx context.Context, sel ast.SelectionSet, v ent.Resource) graphql.Marshaler {

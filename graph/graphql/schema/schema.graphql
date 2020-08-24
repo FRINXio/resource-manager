@@ -92,17 +92,8 @@ input ResourcePoolInput {
     ResourcePoolName: String!
 }
 
-input PropertyInput {
-    Name: String!
-    IntVal: Int
-    StringVal: String
-    FloatVal: Float
-    Type: String!
-    Mandatory: Boolean!
-}
-
 input ResourceInput {
-    Properties: [PropertyInput]!
+    Properties: Map!
     UpdatedAt: String!
     # TODO replace with enum
     Status: String!
