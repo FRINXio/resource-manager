@@ -113,29 +113,10 @@ func (pool AllocatingPool) ClaimResource(userInput map[string]interface{}) (*ent
 	var resourcePool model.ResourcePoolInput
 	resourcePool.ResourcePoolName = pool.Name
 
-	var currentResources []*model.ResourceInput
-	claimedResources, err := pool.findResources().WithProperties(
-		func(propertyQuery *ent.PropertyQuery) { propertyQuery.WithType() }).All(pool.ctx)
+	currentResources, err := pool.loadClaimedResources()
 	if err != nil {
 		return nil, errors.Wrapf(err,
-			"Unable get claimed resources from pool #%d, resource loading error ", pool.ID)
-	}
-	for _, claimedResource := range claimedResources {
-		var r model.ResourceInput
-		r.UpdatedAt = claimedResource.UpdatedAt.String()
-		r.Status = claimedResource.Status.String()
-		for _, prop := range claimedResource.Edges.Properties {
-			name := prop.Edges.Type.Name
-			var pi model.PropertyInput
-			pi.Name = name
-			pi.Type = prop.Edges.Type.Type.String()
-			pi.Mandatory = prop.Edges.Type.Mandatory
-			pi.IntVal = prop.IntVal
-			pi.FloatVal = prop.FloatVal
-			pi.StringVal = prop.StringVal
-			r.Properties = append(r.Properties, &pi)
-		}
-		currentResources = append(currentResources, &r)
+			"Unable to claim resource from pool #%d, resource loading error ", pool.ID)
 	}
 
 	resourceProperties, _ /*TODO do something with logs */, err := InvokeAllocationStrategy(
@@ -189,6 +170,29 @@ func (pool AllocatingPool) ClaimResource(userInput map[string]interface{}) (*ent
 		return nil, errors.Wrapf(err, "Cannot update resource #%d", res.ID)
 	}
 	return res, nil
+}
+
+func  (pool AllocatingPool) loadClaimedResources() ([]*model.ResourceInput, error) {
+	var currentResources []*model.ResourceInput
+	claimedResources, err := pool.findResources().WithProperties(
+		func(propertyQuery *ent.PropertyQuery) { propertyQuery.WithType() }).All(pool.ctx)
+	if err != nil {
+		return nil, errors.Wrapf(err,
+			"Unable get claimed resources from pool #%d, resource loading error ", pool.ID)
+	}
+	for _, claimedResource := range claimedResources {
+		var r model.ResourceInput
+		r.UpdatedAt = claimedResource.UpdatedAt.String()
+		r.Status = claimedResource.Status.String()
+		if propsToMap, err := PropertiesToMap(claimedResource.Edges.Properties); err != nil {
+			return nil, errors.Wrapf(err, "Unable to serialize resource properties")
+		} else {
+			r.Properties = propsToMap
+		}
+
+		currentResources = append(currentResources, &r)
+	}
+	return currentResources, nil
 }
 
 func clearBenchedResources(pool AllocatingPool) error {
