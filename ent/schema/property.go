@@ -95,6 +95,8 @@ func (PropertyType) Edges() []ent.Edge {
 	return []ent.Edge{
 		edge.From("properties", Property.Type).
 			Ref("type"),
+		edge.From("resource_type", ResourceType.Type).
+			Ref("property_types").Unique(),
 	}
 }
 

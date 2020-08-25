@@ -8,6 +8,7 @@ import (
 
 	"github.com/facebookincubator/ent/dialect/sql"
 	"github.com/net-auto/resourceManager/ent/propertytype"
+	"github.com/net-auto/resourceManager/ent/resourcetype"
 )
 
 // PropertyType is the model entity for the PropertyType schema.
@@ -61,9 +62,11 @@ type PropertyType struct {
 type PropertyTypeEdges struct {
 	// Properties holds the value of the properties edge.
 	Properties []*Property
+	// ResourceType holds the value of the resource_type edge.
+	ResourceType *ResourceType
 	// loadedTypes holds the information for reporting if a
 	// type was loaded (or requested) in eager-loading or not.
-	loadedTypes [1]bool
+	loadedTypes [2]bool
 }
 
 // PropertiesOrErr returns the Properties value or an error if the edge
@@ -73,6 +76,20 @@ func (e PropertyTypeEdges) PropertiesOrErr() ([]*Property, error) {
 		return e.Properties, nil
 	}
 	return nil, &NotLoadedError{edge: "properties"}
+}
+
+// ResourceTypeOrErr returns the ResourceType value or an error if the edge
+// was not loaded in eager-loading, or loaded but was not found.
+func (e PropertyTypeEdges) ResourceTypeOrErr() (*ResourceType, error) {
+	if e.loadedTypes[1] {
+		if e.ResourceType == nil {
+			// The edge resource_type was loaded in eager-loading,
+			// but was not found.
+			return nil, &NotFoundError{label: resourcetype.Label}
+		}
+		return e.ResourceType, nil
+	}
+	return nil, &NotLoadedError{edge: "resource_type"}
 }
 
 // scanValues returns the types for scanning values from sql.Rows.
@@ -232,6 +249,11 @@ func (pt *PropertyType) assignValues(values ...interface{}) error {
 // QueryProperties queries the properties edge of the PropertyType.
 func (pt *PropertyType) QueryProperties() *PropertyQuery {
 	return (&PropertyTypeClient{config: pt.config}).QueryProperties(pt)
+}
+
+// QueryResourceType queries the resource_type edge of the PropertyType.
+func (pt *PropertyType) QueryResourceType() *ResourceTypeQuery {
+	return (&PropertyTypeClient{config: pt.config}).QueryResourceType(pt)
 }
 
 // Update returns a builder for updating this PropertyType.

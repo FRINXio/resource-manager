@@ -469,6 +469,22 @@ func (c *PropertyTypeClient) QueryProperties(pt *PropertyType) *PropertyQuery {
 	return query
 }
 
+// QueryResourceType queries the resource_type edge of a PropertyType.
+func (c *PropertyTypeClient) QueryResourceType(pt *PropertyType) *ResourceTypeQuery {
+	query := &ResourceTypeQuery{config: c.config}
+	query.path = func(ctx context.Context) (fromV *sql.Selector, _ error) {
+		id := pt.ID
+		step := sqlgraph.NewStep(
+			sqlgraph.From(propertytype.Table, propertytype.FieldID, id),
+			sqlgraph.To(resourcetype.Table, resourcetype.FieldID),
+			sqlgraph.Edge(sqlgraph.M2O, true, propertytype.ResourceTypeTable, propertytype.ResourceTypeColumn),
+		)
+		fromV = sqlgraph.Neighbors(pt.driver.Dialect(), step)
+		return fromV, nil
+	}
+	return query
+}
+
 // Hooks returns the client hooks.
 func (c *PropertyTypeClient) Hooks() []Hook {
 	return c.hooks.PropertyType

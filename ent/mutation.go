@@ -1736,6 +1736,8 @@ type PropertyTypeMutation struct {
 	clearedFields        map[string]struct{}
 	properties           map[int]struct{}
 	removedproperties    map[int]struct{}
+	resource_type        *int
+	clearedresource_type bool
 	done                 bool
 	oldValue             func(context.Context) (*PropertyType, error)
 }
@@ -2830,6 +2832,45 @@ func (m *PropertyTypeMutation) ResetProperties() {
 	m.removedproperties = nil
 }
 
+// SetResourceTypeID sets the resource_type edge to ResourceType by id.
+func (m *PropertyTypeMutation) SetResourceTypeID(id int) {
+	m.resource_type = &id
+}
+
+// ClearResourceType clears the resource_type edge to ResourceType.
+func (m *PropertyTypeMutation) ClearResourceType() {
+	m.clearedresource_type = true
+}
+
+// ResourceTypeCleared returns if the edge resource_type was cleared.
+func (m *PropertyTypeMutation) ResourceTypeCleared() bool {
+	return m.clearedresource_type
+}
+
+// ResourceTypeID returns the resource_type id in the mutation.
+func (m *PropertyTypeMutation) ResourceTypeID() (id int, exists bool) {
+	if m.resource_type != nil {
+		return *m.resource_type, true
+	}
+	return
+}
+
+// ResourceTypeIDs returns the resource_type ids in the mutation.
+// Note that ids always returns len(ids) <= 1 for unique edges, and you should use
+// ResourceTypeID instead. It exists only for internal usage by the builders.
+func (m *PropertyTypeMutation) ResourceTypeIDs() (ids []int) {
+	if id := m.resource_type; id != nil {
+		ids = append(ids, *id)
+	}
+	return
+}
+
+// ResetResourceType reset all changes of the "resource_type" edge.
+func (m *PropertyTypeMutation) ResetResourceType() {
+	m.resource_type = nil
+	m.clearedresource_type = false
+}
+
 // Op returns the operation name.
 func (m *PropertyTypeMutation) Op() Op {
 	return m.op
@@ -3396,9 +3437,12 @@ func (m *PropertyTypeMutation) ResetField(name string) error {
 // AddedEdges returns all edge names that were set/added in this
 // mutation.
 func (m *PropertyTypeMutation) AddedEdges() []string {
-	edges := make([]string, 0, 1)
+	edges := make([]string, 0, 2)
 	if m.properties != nil {
 		edges = append(edges, propertytype.EdgeProperties)
+	}
+	if m.resource_type != nil {
+		edges = append(edges, propertytype.EdgeResourceType)
 	}
 	return edges
 }
@@ -3413,6 +3457,10 @@ func (m *PropertyTypeMutation) AddedIDs(name string) []ent.Value {
 			ids = append(ids, id)
 		}
 		return ids
+	case propertytype.EdgeResourceType:
+		if id := m.resource_type; id != nil {
+			return []ent.Value{*id}
+		}
 	}
 	return nil
 }
@@ -3420,7 +3468,7 @@ func (m *PropertyTypeMutation) AddedIDs(name string) []ent.Value {
 // RemovedEdges returns all edge names that were removed in this
 // mutation.
 func (m *PropertyTypeMutation) RemovedEdges() []string {
-	edges := make([]string, 0, 1)
+	edges := make([]string, 0, 2)
 	if m.removedproperties != nil {
 		edges = append(edges, propertytype.EdgeProperties)
 	}
@@ -3444,7 +3492,10 @@ func (m *PropertyTypeMutation) RemovedIDs(name string) []ent.Value {
 // ClearedEdges returns all edge names that were cleared in this
 // mutation.
 func (m *PropertyTypeMutation) ClearedEdges() []string {
-	edges := make([]string, 0, 1)
+	edges := make([]string, 0, 2)
+	if m.clearedresource_type {
+		edges = append(edges, propertytype.EdgeResourceType)
+	}
 	return edges
 }
 
@@ -3452,6 +3503,8 @@ func (m *PropertyTypeMutation) ClearedEdges() []string {
 // cleared in this mutation.
 func (m *PropertyTypeMutation) EdgeCleared(name string) bool {
 	switch name {
+	case propertytype.EdgeResourceType:
+		return m.clearedresource_type
 	}
 	return false
 }
@@ -3460,6 +3513,9 @@ func (m *PropertyTypeMutation) EdgeCleared(name string) bool {
 // error if the edge name is not defined in the schema.
 func (m *PropertyTypeMutation) ClearEdge(name string) error {
 	switch name {
+	case propertytype.EdgeResourceType:
+		m.ClearResourceType()
+		return nil
 	}
 	return fmt.Errorf("unknown PropertyType unique edge %s", name)
 }
@@ -3471,6 +3527,9 @@ func (m *PropertyTypeMutation) ResetEdge(name string) error {
 	switch name {
 	case propertytype.EdgeProperties:
 		m.ResetProperties()
+		return nil
+	case propertytype.EdgeResourceType:
+		m.ResetResourceType()
 		return nil
 	}
 	return fmt.Errorf("unknown PropertyType edge %s", name)

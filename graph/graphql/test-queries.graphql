@@ -38,6 +38,10 @@ query queryResourceTypes {
     }
 }
 
+mutation deleteResourceTypes {
+    DeleteResourceType (resourceTypeId: 21474836481)
+}
+
 mutation createSetPool {
     CreateSetPool(input: {
         resourceTypeId: 21474836480,

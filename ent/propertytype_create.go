@@ -11,6 +11,7 @@ import (
 	"github.com/facebookincubator/ent/schema/field"
 	"github.com/net-auto/resourceManager/ent/property"
 	"github.com/net-auto/resourceManager/ent/propertytype"
+	"github.com/net-auto/resourceManager/ent/resourcetype"
 )
 
 // PropertyTypeCreate is the builder for creating a PropertyType entity.
@@ -271,6 +272,25 @@ func (ptc *PropertyTypeCreate) AddProperties(p ...*Property) *PropertyTypeCreate
 	return ptc.AddPropertyIDs(ids...)
 }
 
+// SetResourceTypeID sets the resource_type edge to ResourceType by id.
+func (ptc *PropertyTypeCreate) SetResourceTypeID(id int) *PropertyTypeCreate {
+	ptc.mutation.SetResourceTypeID(id)
+	return ptc
+}
+
+// SetNillableResourceTypeID sets the resource_type edge to ResourceType by id if the given value is not nil.
+func (ptc *PropertyTypeCreate) SetNillableResourceTypeID(id *int) *PropertyTypeCreate {
+	if id != nil {
+		ptc = ptc.SetResourceTypeID(*id)
+	}
+	return ptc
+}
+
+// SetResourceType sets the resource_type edge to ResourceType.
+func (ptc *PropertyTypeCreate) SetResourceType(r *ResourceType) *PropertyTypeCreate {
+	return ptc.SetResourceTypeID(r.ID)
+}
+
 // Mutation returns the PropertyTypeMutation object of the builder.
 func (ptc *PropertyTypeCreate) Mutation() *PropertyTypeMutation {
 	return ptc.mutation
@@ -527,6 +547,25 @@ func (ptc *PropertyTypeCreate) createSpec() (*PropertyType, *sqlgraph.CreateSpec
 				IDSpec: &sqlgraph.FieldSpec{
 					Type:   field.TypeInt,
 					Column: property.FieldID,
+				},
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges = append(_spec.Edges, edge)
+	}
+	if nodes := ptc.mutation.ResourceTypeIDs(); len(nodes) > 0 {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.M2O,
+			Inverse: true,
+			Table:   propertytype.ResourceTypeTable,
+			Columns: []string{propertytype.ResourceTypeColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: &sqlgraph.FieldSpec{
+					Type:   field.TypeInt,
+					Column: resourcetype.FieldID,
 				},
 			},
 		}

@@ -1611,6 +1611,34 @@ func HasPropertiesWith(preds ...predicate.Property) predicate.PropertyType {
 	})
 }
 
+// HasResourceType applies the HasEdge predicate on the "resource_type" edge.
+func HasResourceType() predicate.PropertyType {
+	return predicate.PropertyType(func(s *sql.Selector) {
+		step := sqlgraph.NewStep(
+			sqlgraph.From(Table, FieldID),
+			sqlgraph.To(ResourceTypeTable, FieldID),
+			sqlgraph.Edge(sqlgraph.M2O, true, ResourceTypeTable, ResourceTypeColumn),
+		)
+		sqlgraph.HasNeighbors(s, step)
+	})
+}
+
+// HasResourceTypeWith applies the HasEdge predicate on the "resource_type" edge with a given conditions (other predicates).
+func HasResourceTypeWith(preds ...predicate.ResourceType) predicate.PropertyType {
+	return predicate.PropertyType(func(s *sql.Selector) {
+		step := sqlgraph.NewStep(
+			sqlgraph.From(Table, FieldID),
+			sqlgraph.To(ResourceTypeInverseTable, FieldID),
+			sqlgraph.Edge(sqlgraph.M2O, true, ResourceTypeTable, ResourceTypeColumn),
+		)
+		sqlgraph.HasNeighborsWith(s, step, func(s *sql.Selector) {
+			for _, p := range preds {
+				p(s)
+			}
+		})
+	})
+}
+
 // And groups list of predicates with the AND operator between them.
 func And(predicates ...predicate.PropertyType) predicate.PropertyType {
 	return predicate.PropertyType(func(s *sql.Selector) {

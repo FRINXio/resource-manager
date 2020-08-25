@@ -52,6 +52,8 @@ const (
 
 	// EdgeProperties holds the string denoting the properties edge name in mutations.
 	EdgeProperties = "properties"
+	// EdgeResourceType holds the string denoting the resource_type edge name in mutations.
+	EdgeResourceType = "resource_type"
 
 	// Table holds the table name of the propertytype in the database.
 	Table = "property_types"
@@ -62,6 +64,13 @@ const (
 	PropertiesInverseTable = "properties"
 	// PropertiesColumn is the table column denoting the properties relation/edge.
 	PropertiesColumn = "property_type"
+	// ResourceTypeTable is the table the holds the resource_type relation/edge.
+	ResourceTypeTable = "property_types"
+	// ResourceTypeInverseTable is the table name for the ResourceType entity.
+	// It exists in this package in order to avoid circular dependency with the "resourcetype" package.
+	ResourceTypeInverseTable = "resource_types"
+	// ResourceTypeColumn is the table column denoting the resource_type relation/edge.
+	ResourceTypeColumn = "resource_type_property_types"
 )
 
 // Columns holds all SQL columns for propertytype fields.

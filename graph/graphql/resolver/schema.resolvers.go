@@ -9,6 +9,7 @@ import (
 	"github.com/net-auto/resourceManager/ent"
 	"github.com/net-auto/resourceManager/ent/allocationstrategy"
 	"github.com/net-auto/resourceManager/ent/predicate"
+	"github.com/net-auto/resourceManager/ent/propertytype"
 	"github.com/net-auto/resourceManager/ent/resource"
 	resourcePool "github.com/net-auto/resourceManager/ent/resourcepool"
 	"github.com/net-auto/resourceManager/ent/resourcetype"
@@ -264,23 +265,30 @@ func (r *mutationResolver) DeleteResourceType(ctx context.Context, resourceTypeI
 	resourceType, err := client.ResourceType.Get(ctx, resourceTypeID)
 
 	if err != nil {
-		return "nil", gqlerror.Errorf("Unable to delete resource type: %v", err)
+		return "nil", gqlerror.Errorf("Unable to delete resource type - cannot find by ID %d: %v", resourceTypeID, err)
 	}
 
-	pools, err2 := client.ResourceType.QueryPools(resourceType).All(ctx)
+	pools, err := client.ResourceType.QueryPools(resourceType).All(ctx)
 
-	if err2 != nil {
-		return "", gqlerror.Errorf("Unable to create resource type: %v", err2)
+	if err != nil {
+		return "", gqlerror.Errorf("Unable to delete resource type - error obtaining pools: %v", err)
 	}
 
 	if len(pools) > 0 {
-		return "", gqlerror.Errorf("Unable to create resource type, there are pools attached to it")
+		return "", gqlerror.Errorf("Unable to delete resource type, there are pools attached to it")
 	}
 
-	if err := client.ResourcePool.DeleteOneID(resourceTypeID).Exec(ctx); err == nil {
+	// delete property types
+	_, err = client.PropertyType.Delete().Where(propertytype.HasResourceTypeWith(resourcetype.ID(resourceType.ID))).Exec(ctx)
+	if err != nil {
+		return "", gqlerror.Errorf("Unable to delete resource type - error deleting property types: %v", err)
+	}
+
+	// delete resource type
+	if err := client.ResourceType.DeleteOneID(resourceTypeID).Exec(ctx); err == nil {
 		return "ok", nil
 	} else {
-		return "", gqlerror.Errorf("Unable to create resource type: %v", err2)
+		return "", gqlerror.Errorf("Unable to delete resource type: %v", err)
 	}
 }
 

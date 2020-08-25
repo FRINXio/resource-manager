@@ -198,7 +198,7 @@ func (pt *PropertyType) Node(ctx context.Context) (node *Node, err error) {
 		ID:     pt.ID,
 		Type:   "PropertyType",
 		Fields: make([]*Field, 18),
-		Edges:  make([]*Edge, 1),
+		Edges:  make([]*Edge, 2),
 	}
 	var buf []byte
 	if buf, err = json.Marshal(pt.Type); err != nil {
@@ -356,6 +356,17 @@ func (pt *PropertyType) Node(ctx context.Context) (node *Node, err error) {
 		IDs:  ids,
 		Type: "Property",
 		Name: "properties",
+	}
+	ids, err = pt.QueryResourceType().
+		Select(resourcetype.FieldID).
+		Ints(ctx)
+	if err != nil {
+		return nil, err
+	}
+	node.Edges[1] = &Edge{
+		IDs:  ids,
+		Type: "ResourceType",
+		Name: "resource_type",
 	}
 	return node, nil
 }

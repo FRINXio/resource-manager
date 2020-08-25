@@ -68,6 +68,10 @@ func (c *PropertyTypeClient) CreateFrom(pt *PropertyType) *PropertyTypeCreate {
 		createBuilder.AddProperties(pt.Edges.Properties...)
 	}
 
+	if pt.Edges.ResourceType != nil {
+		createBuilder.SetResourceType(pt.Edges.ResourceType)
+	}
+
 	return createBuilder
 }
 
