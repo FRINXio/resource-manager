@@ -78,7 +78,7 @@ func createCurrentResources(now time.Time) []*model.ResourceInput {
 	r0.UpdatedAt = now.String()
 
 	var r1 model.ResourceInput
-	r0.Properties = map[string]interface{}{"value": 100}
+	r1.Properties = map[string]interface{}{"value": 100}
 	r1.Status = "claimed"
 	r1.UpdatedAt = now.String()
 
@@ -97,14 +97,15 @@ func checkResult(t *testing.T, now time.Time, actual map[string]interface{}, log
 	// check stderr
 	actualLog := make(map[string]interface{})
 	json.Unmarshal([]byte(logString), &actualLog)
-	expectedLog := make(map[string]interface{})
-	json.Unmarshal([]byte(`{
+	expectedLogString := `{
 		"respool":"testpool",
 		"currentRes":[
-			{"Properties":[{"Name":"value","IntVal":1,"StringVal":null,"FloatVal":null,"Type":"int","Mandatory":true}],"UpdatedAt":"`+now.String()+`","Status":"claimed"},
-			{"Properties":[{"Name":"value","IntVal":100,"StringVal":null,"FloatVal":null,"Type":"int","Mandatory":true}],"UpdatedAt":"`+now.String()+`","Status":"claimed"}]}
-			`), &expectedLog)
+			{"Properties":{"value":1},"UpdatedAt":"` + now.String() + `","Status":"claimed"},
+			{"Properties":{"value":100},"UpdatedAt":"` + now.String() + `","Status":"claimed"}]}
+			`
+	expectedLog := make(map[string]interface{})
+	json.Unmarshal([]byte(expectedLogString), &expectedLog)
 	if !reflect.DeepEqual(actualLog, expectedLog) {
-		t.Fatalf("Unexpected logging result: %v, should be %v", actualLog, expectedLog)
+		t.Fatalf("Unexpected logging result: %v, should be %v", logString, expectedLogString)
 	}
 }

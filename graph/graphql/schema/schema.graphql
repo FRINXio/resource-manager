@@ -104,14 +104,14 @@ input CreateSetPoolInput {
     poolName: String!
     description: String
     poolDealocationSafetyPeriod: Int!
-    poolValues: [Map]!
+    poolValues: [Map!]!
 }
 
 input CreateSingletonPoolInput {
     resourceTypeId: ID!
     poolName: String!
     description: String
-    poolValues: [Map]!
+    poolValues: [Map!]!
 }
 
 input CreateAllocatingPoolInput {
@@ -124,17 +124,17 @@ input CreateAllocatingPoolInput {
 
 type Query {
     QueryResource(input: Map!, poolId: ID!): Resource!
-    QueryResources(poolId: ID!): [Resource]!
+    QueryResources(poolId: ID!): [Resource!]!
     QueryAllocationStrategy(allocationStrategyId: ID!): AllocationStrategy!
-    QueryAllocationStrategies: [AllocationStrategy]!
-    QueryResourceTypes: [ResourceType]!
+    QueryAllocationStrategies: [AllocationStrategy!]!
+    QueryResourceTypes: [ResourceType!]!
 
-    QueryResourcePools(resourceTypeId: ID): [ResourcePool]!
-    QueryRootResourcePools(resourceTypeId: ID): [ResourcePool]!
-    QueryLeafResourcePools(resourceTypeId: ID): [ResourcePool]!
-    SearchPoolsByTags(tags: TagOr): [ResourcePool]!
+    QueryResourcePools(resourceTypeId: ID): [ResourcePool!]!
+    QueryRootResourcePools(resourceTypeId: ID): [ResourcePool!]!
+    QueryLeafResourcePools(resourceTypeId: ID): [ResourcePool!]!
+    SearchPoolsByTags(tags: TagOr): [ResourcePool!]!
 
-    QueryTags: [Tag]!
+    QueryTags: [Tag!]!
 }
 
 type Mutation {
@@ -148,7 +148,7 @@ type Mutation {
     CreateAllocationStrategy(name: String!, description: String, script: String!, lang: AllocationStrategyLang!): AllocationStrategy!
     DeleteAllocationStrategy(allocationStrategyId: ID!): AllocationStrategy!
     TestAllocationStrategy(allocationStrategyId: ID!, resourcePool: ResourcePoolInput!,
-        currentResources: [ResourceInput]!, userInput: Map!): Map!
+        currentResources: [ResourceInput!]!, userInput: Map!): Map!
 
     # managing resources via pools
     ClaimResource(poolId: ID!, userInput: Map!): Resource!

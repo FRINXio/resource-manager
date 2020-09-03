@@ -909,14 +909,14 @@ input CreateSetPoolInput {
     poolName: String!
     description: String
     poolDealocationSafetyPeriod: Int!
-    poolValues: [Map]!
+    poolValues: [Map!]!
 }
 
 input CreateSingletonPoolInput {
     resourceTypeId: ID!
     poolName: String!
     description: String
-    poolValues: [Map]!
+    poolValues: [Map!]!
 }
 
 input CreateAllocatingPoolInput {
@@ -929,17 +929,17 @@ input CreateAllocatingPoolInput {
 
 type Query {
     QueryResource(input: Map!, poolId: ID!): Resource!
-    QueryResources(poolId: ID!): [Resource]!
+    QueryResources(poolId: ID!): [Resource!]!
     QueryAllocationStrategy(allocationStrategyId: ID!): AllocationStrategy!
-    QueryAllocationStrategies: [AllocationStrategy]!
-    QueryResourceTypes: [ResourceType]!
+    QueryAllocationStrategies: [AllocationStrategy!]!
+    QueryResourceTypes: [ResourceType!]!
 
-    QueryResourcePools(resourceTypeId: ID): [ResourcePool]!
-    QueryRootResourcePools(resourceTypeId: ID): [ResourcePool]!
-    QueryLeafResourcePools(resourceTypeId: ID): [ResourcePool]!
-    SearchPoolsByTags(tags: TagOr): [ResourcePool]!
+    QueryResourcePools(resourceTypeId: ID): [ResourcePool!]!
+    QueryRootResourcePools(resourceTypeId: ID): [ResourcePool!]!
+    QueryLeafResourcePools(resourceTypeId: ID): [ResourcePool!]!
+    SearchPoolsByTags(tags: TagOr): [ResourcePool!]!
 
-    QueryTags: [Tag]!
+    QueryTags: [Tag!]!
 }
 
 type Mutation {
@@ -953,7 +953,7 @@ type Mutation {
     CreateAllocationStrategy(name: String!, description: String, script: String!, lang: AllocationStrategyLang!): AllocationStrategy!
     DeleteAllocationStrategy(allocationStrategyId: ID!): AllocationStrategy!
     TestAllocationStrategy(allocationStrategyId: ID!, resourcePool: ResourcePoolInput!,
-        currentResources: [ResourceInput]!, userInput: Map!): Map!
+        currentResources: [ResourceInput!]!, userInput: Map!): Map!
 
     # managing resources via pools
     ClaimResource(poolId: ID!, userInput: Map!): Resource!
@@ -1310,7 +1310,7 @@ func (ec *executionContext) field_Mutation_TestAllocationStrategy_args(ctx conte
 	args["resourcePool"] = arg1
 	var arg2 []*model.ResourceInput
 	if tmp, ok := rawArgs["currentResources"]; ok {
-		arg2, err = ec.unmarshalNResourceInput2ᚕᚖgithubᚗcomᚋnetᚑautoᚋresourceManagerᚋgraphᚋgraphqlᚋmodelᚐResourceInput(ctx, tmp)
+		arg2, err = ec.unmarshalNResourceInput2ᚕᚖgithubᚗcomᚋnetᚑautoᚋresourceManagerᚋgraphᚋgraphqlᚋmodelᚐResourceInputᚄ(ctx, tmp)
 		if err != nil {
 			return nil, err
 		}
@@ -2790,7 +2790,7 @@ func (ec *executionContext) _Query_QueryResources(ctx context.Context, field gra
 	}
 	res := resTmp.([]*ent.Resource)
 	fc.Result = res
-	return ec.marshalNResource2ᚕᚖgithubᚗcomᚋnetᚑautoᚋresourceManagerᚋentᚐResource(ctx, field.Selections, res)
+	return ec.marshalNResource2ᚕᚖgithubᚗcomᚋnetᚑautoᚋresourceManagerᚋentᚐResourceᚄ(ctx, field.Selections, res)
 }
 
 func (ec *executionContext) _Query_QueryAllocationStrategy(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
@@ -2865,7 +2865,7 @@ func (ec *executionContext) _Query_QueryAllocationStrategies(ctx context.Context
 	}
 	res := resTmp.([]*ent.AllocationStrategy)
 	fc.Result = res
-	return ec.marshalNAllocationStrategy2ᚕᚖgithubᚗcomᚋnetᚑautoᚋresourceManagerᚋentᚐAllocationStrategy(ctx, field.Selections, res)
+	return ec.marshalNAllocationStrategy2ᚕᚖgithubᚗcomᚋnetᚑautoᚋresourceManagerᚋentᚐAllocationStrategyᚄ(ctx, field.Selections, res)
 }
 
 func (ec *executionContext) _Query_QueryResourceTypes(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
@@ -2899,7 +2899,7 @@ func (ec *executionContext) _Query_QueryResourceTypes(ctx context.Context, field
 	}
 	res := resTmp.([]*ent.ResourceType)
 	fc.Result = res
-	return ec.marshalNResourceType2ᚕᚖgithubᚗcomᚋnetᚑautoᚋresourceManagerᚋentᚐResourceType(ctx, field.Selections, res)
+	return ec.marshalNResourceType2ᚕᚖgithubᚗcomᚋnetᚑautoᚋresourceManagerᚋentᚐResourceTypeᚄ(ctx, field.Selections, res)
 }
 
 func (ec *executionContext) _Query_QueryResourcePools(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
@@ -2940,7 +2940,7 @@ func (ec *executionContext) _Query_QueryResourcePools(ctx context.Context, field
 	}
 	res := resTmp.([]*ent.ResourcePool)
 	fc.Result = res
-	return ec.marshalNResourcePool2ᚕᚖgithubᚗcomᚋnetᚑautoᚋresourceManagerᚋentᚐResourcePool(ctx, field.Selections, res)
+	return ec.marshalNResourcePool2ᚕᚖgithubᚗcomᚋnetᚑautoᚋresourceManagerᚋentᚐResourcePoolᚄ(ctx, field.Selections, res)
 }
 
 func (ec *executionContext) _Query_QueryRootResourcePools(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
@@ -2981,7 +2981,7 @@ func (ec *executionContext) _Query_QueryRootResourcePools(ctx context.Context, f
 	}
 	res := resTmp.([]*ent.ResourcePool)
 	fc.Result = res
-	return ec.marshalNResourcePool2ᚕᚖgithubᚗcomᚋnetᚑautoᚋresourceManagerᚋentᚐResourcePool(ctx, field.Selections, res)
+	return ec.marshalNResourcePool2ᚕᚖgithubᚗcomᚋnetᚑautoᚋresourceManagerᚋentᚐResourcePoolᚄ(ctx, field.Selections, res)
 }
 
 func (ec *executionContext) _Query_QueryLeafResourcePools(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
@@ -3022,7 +3022,7 @@ func (ec *executionContext) _Query_QueryLeafResourcePools(ctx context.Context, f
 	}
 	res := resTmp.([]*ent.ResourcePool)
 	fc.Result = res
-	return ec.marshalNResourcePool2ᚕᚖgithubᚗcomᚋnetᚑautoᚋresourceManagerᚋentᚐResourcePool(ctx, field.Selections, res)
+	return ec.marshalNResourcePool2ᚕᚖgithubᚗcomᚋnetᚑautoᚋresourceManagerᚋentᚐResourcePoolᚄ(ctx, field.Selections, res)
 }
 
 func (ec *executionContext) _Query_SearchPoolsByTags(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
@@ -3063,7 +3063,7 @@ func (ec *executionContext) _Query_SearchPoolsByTags(ctx context.Context, field 
 	}
 	res := resTmp.([]*ent.ResourcePool)
 	fc.Result = res
-	return ec.marshalNResourcePool2ᚕᚖgithubᚗcomᚋnetᚑautoᚋresourceManagerᚋentᚐResourcePool(ctx, field.Selections, res)
+	return ec.marshalNResourcePool2ᚕᚖgithubᚗcomᚋnetᚑautoᚋresourceManagerᚋentᚐResourcePoolᚄ(ctx, field.Selections, res)
 }
 
 func (ec *executionContext) _Query_QueryTags(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
@@ -3097,7 +3097,7 @@ func (ec *executionContext) _Query_QueryTags(ctx context.Context, field graphql.
 	}
 	res := resTmp.([]*ent.Tag)
 	fc.Result = res
-	return ec.marshalNTag2ᚕᚖgithubᚗcomᚋnetᚑautoᚋresourceManagerᚋentᚐTag(ctx, field.Selections, res)
+	return ec.marshalNTag2ᚕᚖgithubᚗcomᚋnetᚑautoᚋresourceManagerᚋentᚐTagᚄ(ctx, field.Selections, res)
 }
 
 func (ec *executionContext) _Query___type(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
@@ -4867,7 +4867,7 @@ func (ec *executionContext) unmarshalInputCreateSetPoolInput(ctx context.Context
 			}
 		case "poolValues":
 			var err error
-			it.PoolValues, err = ec.unmarshalNMap2ᚕmap(ctx, v)
+			it.PoolValues, err = ec.unmarshalNMap2ᚕmapᚄ(ctx, v)
 			if err != nil {
 				return it, err
 			}
@@ -4903,7 +4903,7 @@ func (ec *executionContext) unmarshalInputCreateSingletonPoolInput(ctx context.C
 			}
 		case "poolValues":
 			var err error
-			it.PoolValues, err = ec.unmarshalNMap2ᚕmap(ctx, v)
+			it.PoolValues, err = ec.unmarshalNMap2ᚕmapᚄ(ctx, v)
 			if err != nil {
 				return it, err
 			}
@@ -5900,7 +5900,7 @@ func (ec *executionContext) marshalNAllocationStrategy2githubᚗcomᚋnetᚑauto
 	return ec._AllocationStrategy(ctx, sel, &v)
 }
 
-func (ec *executionContext) marshalNAllocationStrategy2ᚕᚖgithubᚗcomᚋnetᚑautoᚋresourceManagerᚋentᚐAllocationStrategy(ctx context.Context, sel ast.SelectionSet, v []*ent.AllocationStrategy) graphql.Marshaler {
+func (ec *executionContext) marshalNAllocationStrategy2ᚕᚖgithubᚗcomᚋnetᚑautoᚋresourceManagerᚋentᚐAllocationStrategyᚄ(ctx context.Context, sel ast.SelectionSet, v []*ent.AllocationStrategy) graphql.Marshaler {
 	ret := make(graphql.Array, len(v))
 	var wg sync.WaitGroup
 	isLen1 := len(v) == 1
@@ -5924,7 +5924,7 @@ func (ec *executionContext) marshalNAllocationStrategy2ᚕᚖgithubᚗcomᚋnet�
 			if !isLen1 {
 				defer wg.Done()
 			}
-			ret[i] = ec.marshalOAllocationStrategy2ᚖgithubᚗcomᚋnetᚑautoᚋresourceManagerᚋentᚐAllocationStrategy(ctx, sel, v[i])
+			ret[i] = ec.marshalNAllocationStrategy2ᚖgithubᚗcomᚋnetᚑautoᚋresourceManagerᚋentᚐAllocationStrategy(ctx, sel, v[i])
 		}
 		if isLen1 {
 			f(i)
@@ -6075,7 +6075,7 @@ func (ec *executionContext) marshalNMap2map(ctx context.Context, sel ast.Selecti
 	return res
 }
 
-func (ec *executionContext) unmarshalNMap2ᚕmap(ctx context.Context, v interface{}) ([]map[string]interface{}, error) {
+func (ec *executionContext) unmarshalNMap2ᚕmapᚄ(ctx context.Context, v interface{}) ([]map[string]interface{}, error) {
 	var vSlice []interface{}
 	if v != nil {
 		if tmp1, ok := v.([]interface{}); ok {
@@ -6087,7 +6087,7 @@ func (ec *executionContext) unmarshalNMap2ᚕmap(ctx context.Context, v interfac
 	var err error
 	res := make([]map[string]interface{}, len(vSlice))
 	for i := range vSlice {
-		res[i], err = ec.unmarshalOMap2map(ctx, vSlice[i])
+		res[i], err = ec.unmarshalNMap2map(ctx, vSlice[i])
 		if err != nil {
 			return nil, err
 		}
@@ -6095,10 +6095,10 @@ func (ec *executionContext) unmarshalNMap2ᚕmap(ctx context.Context, v interfac
 	return res, nil
 }
 
-func (ec *executionContext) marshalNMap2ᚕmap(ctx context.Context, sel ast.SelectionSet, v []map[string]interface{}) graphql.Marshaler {
+func (ec *executionContext) marshalNMap2ᚕmapᚄ(ctx context.Context, sel ast.SelectionSet, v []map[string]interface{}) graphql.Marshaler {
 	ret := make(graphql.Array, len(v))
 	for i := range v {
-		ret[i] = ec.marshalOMap2map(ctx, sel, v[i])
+		ret[i] = ec.marshalNMap2map(ctx, sel, v[i])
 	}
 
 	return ret
@@ -6168,43 +6168,6 @@ func (ec *executionContext) marshalNResource2githubᚗcomᚋnetᚑautoᚋresourc
 	return ec._Resource(ctx, sel, &v)
 }
 
-func (ec *executionContext) marshalNResource2ᚕᚖgithubᚗcomᚋnetᚑautoᚋresourceManagerᚋentᚐResource(ctx context.Context, sel ast.SelectionSet, v []*ent.Resource) graphql.Marshaler {
-	ret := make(graphql.Array, len(v))
-	var wg sync.WaitGroup
-	isLen1 := len(v) == 1
-	if !isLen1 {
-		wg.Add(len(v))
-	}
-	for i := range v {
-		i := i
-		fc := &graphql.FieldContext{
-			Index:  &i,
-			Result: &v[i],
-		}
-		ctx := graphql.WithFieldContext(ctx, fc)
-		f := func(i int) {
-			defer func() {
-				if r := recover(); r != nil {
-					ec.Error(ctx, ec.Recover(ctx, r))
-					ret = nil
-				}
-			}()
-			if !isLen1 {
-				defer wg.Done()
-			}
-			ret[i] = ec.marshalOResource2ᚖgithubᚗcomᚋnetᚑautoᚋresourceManagerᚋentᚐResource(ctx, sel, v[i])
-		}
-		if isLen1 {
-			f(i)
-		} else {
-			go f(i)
-		}
-
-	}
-	wg.Wait()
-	return ret
-}
-
 func (ec *executionContext) marshalNResource2ᚕᚖgithubᚗcomᚋnetᚑautoᚋresourceManagerᚋentᚐResourceᚄ(ctx context.Context, sel ast.SelectionSet, v []*ent.Resource) graphql.Marshaler {
 	ret := make(graphql.Array, len(v))
 	var wg sync.WaitGroup
@@ -6252,7 +6215,11 @@ func (ec *executionContext) marshalNResource2ᚖgithubᚗcomᚋnetᚑautoᚋreso
 	return ec._Resource(ctx, sel, v)
 }
 
-func (ec *executionContext) unmarshalNResourceInput2ᚕᚖgithubᚗcomᚋnetᚑautoᚋresourceManagerᚋgraphᚋgraphqlᚋmodelᚐResourceInput(ctx context.Context, v interface{}) ([]*model.ResourceInput, error) {
+func (ec *executionContext) unmarshalNResourceInput2githubᚗcomᚋnetᚑautoᚋresourceManagerᚋgraphᚋgraphqlᚋmodelᚐResourceInput(ctx context.Context, v interface{}) (model.ResourceInput, error) {
+	return ec.unmarshalInputResourceInput(ctx, v)
+}
+
+func (ec *executionContext) unmarshalNResourceInput2ᚕᚖgithubᚗcomᚋnetᚑautoᚋresourceManagerᚋgraphᚋgraphqlᚋmodelᚐResourceInputᚄ(ctx context.Context, v interface{}) ([]*model.ResourceInput, error) {
 	var vSlice []interface{}
 	if v != nil {
 		if tmp1, ok := v.([]interface{}); ok {
@@ -6264,7 +6231,7 @@ func (ec *executionContext) unmarshalNResourceInput2ᚕᚖgithubᚗcomᚋnetᚑa
 	var err error
 	res := make([]*model.ResourceInput, len(vSlice))
 	for i := range vSlice {
-		res[i], err = ec.unmarshalOResourceInput2ᚖgithubᚗcomᚋnetᚑautoᚋresourceManagerᚋgraphᚋgraphqlᚋmodelᚐResourceInput(ctx, vSlice[i])
+		res[i], err = ec.unmarshalNResourceInput2ᚖgithubᚗcomᚋnetᚑautoᚋresourceManagerᚋgraphᚋgraphqlᚋmodelᚐResourceInput(ctx, vSlice[i])
 		if err != nil {
 			return nil, err
 		}
@@ -6272,45 +6239,16 @@ func (ec *executionContext) unmarshalNResourceInput2ᚕᚖgithubᚗcomᚋnetᚑa
 	return res, nil
 }
 
-func (ec *executionContext) marshalNResourcePool2githubᚗcomᚋnetᚑautoᚋresourceManagerᚋentᚐResourcePool(ctx context.Context, sel ast.SelectionSet, v ent.ResourcePool) graphql.Marshaler {
-	return ec._ResourcePool(ctx, sel, &v)
+func (ec *executionContext) unmarshalNResourceInput2ᚖgithubᚗcomᚋnetᚑautoᚋresourceManagerᚋgraphᚋgraphqlᚋmodelᚐResourceInput(ctx context.Context, v interface{}) (*model.ResourceInput, error) {
+	if v == nil {
+		return nil, nil
+	}
+	res, err := ec.unmarshalNResourceInput2githubᚗcomᚋnetᚑautoᚋresourceManagerᚋgraphᚋgraphqlᚋmodelᚐResourceInput(ctx, v)
+	return &res, err
 }
 
-func (ec *executionContext) marshalNResourcePool2ᚕᚖgithubᚗcomᚋnetᚑautoᚋresourceManagerᚋentᚐResourcePool(ctx context.Context, sel ast.SelectionSet, v []*ent.ResourcePool) graphql.Marshaler {
-	ret := make(graphql.Array, len(v))
-	var wg sync.WaitGroup
-	isLen1 := len(v) == 1
-	if !isLen1 {
-		wg.Add(len(v))
-	}
-	for i := range v {
-		i := i
-		fc := &graphql.FieldContext{
-			Index:  &i,
-			Result: &v[i],
-		}
-		ctx := graphql.WithFieldContext(ctx, fc)
-		f := func(i int) {
-			defer func() {
-				if r := recover(); r != nil {
-					ec.Error(ctx, ec.Recover(ctx, r))
-					ret = nil
-				}
-			}()
-			if !isLen1 {
-				defer wg.Done()
-			}
-			ret[i] = ec.marshalOResourcePool2ᚖgithubᚗcomᚋnetᚑautoᚋresourceManagerᚋentᚐResourcePool(ctx, sel, v[i])
-		}
-		if isLen1 {
-			f(i)
-		} else {
-			go f(i)
-		}
-
-	}
-	wg.Wait()
-	return ret
+func (ec *executionContext) marshalNResourcePool2githubᚗcomᚋnetᚑautoᚋresourceManagerᚋentᚐResourcePool(ctx context.Context, sel ast.SelectionSet, v ent.ResourcePool) graphql.Marshaler {
+	return ec._ResourcePool(ctx, sel, &v)
 }
 
 func (ec *executionContext) marshalNResourcePool2ᚕᚖgithubᚗcomᚋnetᚑautoᚋresourceManagerᚋentᚐResourcePoolᚄ(ctx context.Context, sel ast.SelectionSet, v []*ent.ResourcePool) graphql.Marshaler {
@@ -6368,7 +6306,7 @@ func (ec *executionContext) marshalNResourceType2githubᚗcomᚋnetᚑautoᚋres
 	return ec._ResourceType(ctx, sel, &v)
 }
 
-func (ec *executionContext) marshalNResourceType2ᚕᚖgithubᚗcomᚋnetᚑautoᚋresourceManagerᚋentᚐResourceType(ctx context.Context, sel ast.SelectionSet, v []*ent.ResourceType) graphql.Marshaler {
+func (ec *executionContext) marshalNResourceType2ᚕᚖgithubᚗcomᚋnetᚑautoᚋresourceManagerᚋentᚐResourceTypeᚄ(ctx context.Context, sel ast.SelectionSet, v []*ent.ResourceType) graphql.Marshaler {
 	ret := make(graphql.Array, len(v))
 	var wg sync.WaitGroup
 	isLen1 := len(v) == 1
@@ -6392,7 +6330,7 @@ func (ec *executionContext) marshalNResourceType2ᚕᚖgithubᚗcomᚋnetᚑauto
 			if !isLen1 {
 				defer wg.Done()
 			}
-			ret[i] = ec.marshalOResourceType2ᚖgithubᚗcomᚋnetᚑautoᚋresourceManagerᚋentᚐResourceType(ctx, sel, v[i])
+			ret[i] = ec.marshalNResourceType2ᚖgithubᚗcomᚋnetᚑautoᚋresourceManagerᚋentᚐResourceType(ctx, sel, v[i])
 		}
 		if isLen1 {
 			f(i)
@@ -6478,43 +6416,6 @@ func (ec *executionContext) marshalNString2ᚖstring(ctx context.Context, sel as
 
 func (ec *executionContext) marshalNTag2githubᚗcomᚋnetᚑautoᚋresourceManagerᚋentᚐTag(ctx context.Context, sel ast.SelectionSet, v ent.Tag) graphql.Marshaler {
 	return ec._Tag(ctx, sel, &v)
-}
-
-func (ec *executionContext) marshalNTag2ᚕᚖgithubᚗcomᚋnetᚑautoᚋresourceManagerᚋentᚐTag(ctx context.Context, sel ast.SelectionSet, v []*ent.Tag) graphql.Marshaler {
-	ret := make(graphql.Array, len(v))
-	var wg sync.WaitGroup
-	isLen1 := len(v) == 1
-	if !isLen1 {
-		wg.Add(len(v))
-	}
-	for i := range v {
-		i := i
-		fc := &graphql.FieldContext{
-			Index:  &i,
-			Result: &v[i],
-		}
-		ctx := graphql.WithFieldContext(ctx, fc)
-		f := func(i int) {
-			defer func() {
-				if r := recover(); r != nil {
-					ec.Error(ctx, ec.Recover(ctx, r))
-					ret = nil
-				}
-			}()
-			if !isLen1 {
-				defer wg.Done()
-			}
-			ret[i] = ec.marshalOTag2ᚖgithubᚗcomᚋnetᚑautoᚋresourceManagerᚋentᚐTag(ctx, sel, v[i])
-		}
-		if isLen1 {
-			f(i)
-		} else {
-			go f(i)
-		}
-
-	}
-	wg.Wait()
-	return ret
 }
 
 func (ec *executionContext) marshalNTag2ᚕᚖgithubᚗcomᚋnetᚑautoᚋresourceManagerᚋentᚐTagᚄ(ctx context.Context, sel ast.SelectionSet, v []*ent.Tag) graphql.Marshaler {
@@ -6903,43 +6804,6 @@ func (ec *executionContext) marshalOID2ᚖint(ctx context.Context, sel ast.Selec
 	return ec.marshalOID2int(ctx, sel, *v)
 }
 
-func (ec *executionContext) unmarshalOMap2map(ctx context.Context, v interface{}) (map[string]interface{}, error) {
-	if v == nil {
-		return nil, nil
-	}
-	return graphql.UnmarshalMap(v)
-}
-
-func (ec *executionContext) marshalOMap2map(ctx context.Context, sel ast.SelectionSet, v map[string]interface{}) graphql.Marshaler {
-	if v == nil {
-		return graphql.Null
-	}
-	return graphql.MarshalMap(v)
-}
-
-func (ec *executionContext) marshalOResource2githubᚗcomᚋnetᚑautoᚋresourceManagerᚋentᚐResource(ctx context.Context, sel ast.SelectionSet, v ent.Resource) graphql.Marshaler {
-	return ec._Resource(ctx, sel, &v)
-}
-
-func (ec *executionContext) marshalOResource2ᚖgithubᚗcomᚋnetᚑautoᚋresourceManagerᚋentᚐResource(ctx context.Context, sel ast.SelectionSet, v *ent.Resource) graphql.Marshaler {
-	if v == nil {
-		return graphql.Null
-	}
-	return ec._Resource(ctx, sel, v)
-}
-
-func (ec *executionContext) unmarshalOResourceInput2githubᚗcomᚋnetᚑautoᚋresourceManagerᚋgraphᚋgraphqlᚋmodelᚐResourceInput(ctx context.Context, v interface{}) (model.ResourceInput, error) {
-	return ec.unmarshalInputResourceInput(ctx, v)
-}
-
-func (ec *executionContext) unmarshalOResourceInput2ᚖgithubᚗcomᚋnetᚑautoᚋresourceManagerᚋgraphᚋgraphqlᚋmodelᚐResourceInput(ctx context.Context, v interface{}) (*model.ResourceInput, error) {
-	if v == nil {
-		return nil, nil
-	}
-	res, err := ec.unmarshalOResourceInput2githubᚗcomᚋnetᚑautoᚋresourceManagerᚋgraphᚋgraphqlᚋmodelᚐResourceInput(ctx, v)
-	return &res, err
-}
-
 func (ec *executionContext) marshalOResourcePool2githubᚗcomᚋnetᚑautoᚋresourceManagerᚋentᚐResourcePool(ctx context.Context, sel ast.SelectionSet, v ent.ResourcePool) graphql.Marshaler {
 	return ec._ResourcePool(ctx, sel, &v)
 }
@@ -6989,17 +6853,6 @@ func (ec *executionContext) marshalOResourcePool2ᚖgithubᚗcomᚋnetᚑautoᚋ
 		return graphql.Null
 	}
 	return ec._ResourcePool(ctx, sel, v)
-}
-
-func (ec *executionContext) marshalOResourceType2githubᚗcomᚋnetᚑautoᚋresourceManagerᚋentᚐResourceType(ctx context.Context, sel ast.SelectionSet, v ent.ResourceType) graphql.Marshaler {
-	return ec._ResourceType(ctx, sel, &v)
-}
-
-func (ec *executionContext) marshalOResourceType2ᚖgithubᚗcomᚋnetᚑautoᚋresourceManagerᚋentᚐResourceType(ctx context.Context, sel ast.SelectionSet, v *ent.ResourceType) graphql.Marshaler {
-	if v == nil {
-		return graphql.Null
-	}
-	return ec._ResourceType(ctx, sel, v)
 }
 
 func (ec *executionContext) unmarshalOString2string(ctx context.Context, v interface{}) (string, error) {
@@ -7055,17 +6908,6 @@ func (ec *executionContext) marshalOString2ᚖstring(ctx context.Context, sel as
 		return graphql.Null
 	}
 	return ec.marshalOString2string(ctx, sel, *v)
-}
-
-func (ec *executionContext) marshalOTag2githubᚗcomᚋnetᚑautoᚋresourceManagerᚋentᚐTag(ctx context.Context, sel ast.SelectionSet, v ent.Tag) graphql.Marshaler {
-	return ec._Tag(ctx, sel, &v)
-}
-
-func (ec *executionContext) marshalOTag2ᚖgithubᚗcomᚋnetᚑautoᚋresourceManagerᚋentᚐTag(ctx context.Context, sel ast.SelectionSet, v *ent.Tag) graphql.Marshaler {
-	if v == nil {
-		return graphql.Null
-	}
-	return ec._Tag(ctx, sel, v)
 }
 
 func (ec *executionContext) unmarshalOTagOr2githubᚗcomᚋnetᚑautoᚋresourceManagerᚋgraphᚋgraphqlᚋmodelᚐTagOr(ctx context.Context, v interface{}) (model.TagOr, error) {
