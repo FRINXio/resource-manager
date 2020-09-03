@@ -10,6 +10,14 @@ import (
 	"github.com/pkg/errors"
 )
 
+func GetResourceFromPool (
+	ctx context.Context, obj *ent.ResourcePool) ([]*ent.Resource, error) {
+	if es, err := obj.Edges.ClaimsOrErr(); !ent.IsNotLoaded(err) {
+		return es, err
+	}
+	return obj.QueryClaims().All(ctx)
+}
+
 func CreatePropertyType(
 	ctx context.Context,
 	client *ent.Client,

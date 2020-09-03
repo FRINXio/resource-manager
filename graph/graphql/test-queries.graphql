@@ -1,45 +1,49 @@
 mutation createNewResourceType {
-    CreateResourceType(
+    CreateResourceType( input: {
         resourceName: "vlan",
         resourceProperties: {
             vlan: "int"
         }
-    ) {
-        ID
-        Name
+     } ) {
+         resourceType {
+             id
+         }
     }
 }
 
 mutation createComplexResourceType {
-    CreateResourceType(
+    CreateResourceType( input: {
         resourceName: "complex",
         resourceProperties: {
             a: "int",
             b: "string"
         }
-    ) {
-        ID
-        Name
+    } ) {
+        resourceType {
+            id
+        }
     }
 }
 
 query queryResourceTypes {
     QueryResourceTypes{
-        ID
+        id
         Name
         PropertyTypes {
             Name
             Type
         }
         Pools {
-            ID
+            id
             Name
         }
     }
 }
 
 mutation deleteResourceTypes {
-    DeleteResourceType (resourceTypeId: 21474836481)
+    DeleteResourceType (input: {resourceTypeId: 21474836481}) {
+        resourceTypeId
+    }
 }
 
 mutation createSetPool {
@@ -49,41 +53,48 @@ mutation createSetPool {
         poolValues: [{vlan: 13}, {vlan: 14},],
         poolDealocationSafetyPeriod: 0}
     ){
-        ID
-        PoolType
-        Name
+        pool {
+            id
+            PoolType
+            Name
+        }
     }
 }
 
 mutation createAllocationStratJs {
-    CreateAllocationStrategy(
+    CreateAllocationStrategy(input:{
         name: "jstest",
         script: "function invoke() {log(JSON.stringify({respool: resourcePool.ResourcePoolName, currentRes: currentResources}));return {vlan: userInput.desiredVlan};}",
         lang: js
+    }
     ){
-        ID
-        Name
-        Lang
-        Script
+       strategy {
+           id
+           Name
+           Lang
+           Script
+       }
     }
 }
 
 mutation createAllocationStratPy {
-    CreateAllocationStrategy(
+    CreateAllocationStrategy(input:{
         name: "pytest",
         script: "log(json.dumps({ \"respool\": resourcePool[\"ResourcePoolName\"], \"currentRes\": currentResources }))\nreturn {\"vlan\": userInput[\"desiredVlan\"]}"
         lang: py
-    ){
-        ID
-        Name
-        Lang
-        Script
+    }){
+       strategy{
+           id
+           Name
+           Lang
+           Script
+       }
     }
 }
 
 query queryAllocationStrategies {
     QueryAllocationStrategies {
-        ID
+        id
         Lang
         Name
         Script
@@ -91,8 +102,11 @@ query queryAllocationStrategies {
 }
 
 mutation deleteAllocationStrategy {
-    DeleteAllocationStrategy(allocationStrategyId: 0){
-        Name
+    DeleteAllocationStrategy(input:{allocationStrategyId: 0}){
+        strategy {
+            id
+            Name
+        }
     }
 }
 
@@ -133,21 +147,17 @@ mutation createAllocationPool {
         allocationStrategyId: 1,
         poolDealocationSafetyPeriod: 0}
     ){
-        ID
-        PoolType
-        Name
-        AllocationStrategy {
-            Name
-        }
-        ResourceType {
-            Name
-        }
+       pool {
+           id
+           PoolType
+           Name
+       }
     }
 }
 
 query QueryAllPools {
     QueryResourcePools{
-        ID
+        id
         Name
         PoolType
         Tags {
@@ -164,21 +174,21 @@ query QueryAllPools {
 
 mutation ClaimResource {
     ClaimResource(poolId:17179869184, userInput: {}) {
-        ID
+        id
         Properties
     }
 }
 
 mutation ClaimResourceFromAllocatingPool {
     ClaimResource(poolId:17179869185, userInput: {desiredVlan: 14}) {
-        ID
+        id
         Properties
     }
 }
 
 query QueryResources {
     QueryResources(poolId:17179869185){
-        ID
+        id
         Properties
     }
 }
@@ -191,109 +201,115 @@ mutation freeResource {
 }
 
 mutation CreateTag {
-    CreateTag(tag: "fb-connectivity") {
-        ID
-        Tag
+    CreateTag(input: { tagText: "fb-connectivity"}) {
+        tag {
+            id
+        }
     }
 }
 
 mutation CreateTag {
-    CreateTag(tag: "tip") {
-        ID
-        Tag
+    CreateTag(input: { tagText: "tip"}) {
+        tag {
+            id
+        }
     }
 }
 
 query Tags {
     QueryTags {
-        ID
+        id
         Tag
         Pools {
-            ID
+            id
             Name
         }
     }
 }
 
 mutation TagSetPoolWithFb {
-    TagPool(tagId: 25769803776, poolId: 17179869184) {
-        Tag
-        Pools {
-            ID
+    TagPool(input:{tagId: 25769803776, poolId: 17179869184}) {
+        tag {
+            id
         }
     }
 }
 
 mutation TagSetPoolWithTip {
-    TagPool(tagId: 25769803777, poolId: 17179869184) {
-        Tag
+    TagPool(input:{tagId: 25769803777, poolId: 17179869184}) {
+        tag {
+            id
+        }
     }
 }
 
 mutation UpdateTagTip {
-    UpdateTag(tagId: 25769803777, tag: "tipIsTheBest") {
-        ID
-        Tag
+    UpdateTag(input: {tagId: 25769803777, tagText: "tipIsTheBest"} ) {
+        tag {
+            id
+        }
     }
 }
 
 mutation TagAllocatingPoolWithTip {
-    TagPool(tagId: 25769803777, poolId: 17179869185) {
-        Tag
+    TagPool(input: {tagId: 25769803777, poolId: 17179869185}) {
+        tag {
+            id
+        }
     }
 }
 
 query searchPoolsByBothTags {
     SearchPoolsByTags(tags: {matchesAny: [{matchesAll: ["fb-connectivity", "tipIsTheBest"]}]}) {
-        ID
+        id
         Name
     }
 }
 
 query searchPoolsByOneOrTheOtherTag {
     SearchPoolsByTags(tags: {matchesAny: [{matchesAll: ["fb-connectivity"]}, {matchesAll: ["tipIsTheBest"]}]}) {
-        ID
+        id
         Name
     }
 }
 
 query searchPoolsByTipTag {
     SearchPoolsByTags(tags: {matchesAny: [{matchesAll: ["tipIsTheBest"]}]}) {
-        ID
+        id
         Name
     }
 }
 
 query searchPoolsByFbTag {
     SearchPoolsByTags(tags: {matchesAny: [{matchesAll: ["fb-connectivity"]}]}) {
-        ID
+        id
         Name
     }
 }
 
 query deepQuery {
     QueryResourceTypes{
-        ID
+        id
         Name
         PropertyTypes {
             Name
             Type
         }
         Pools {
-            ID
+            id
             Name
             AllocationStrategy {
-                ID
+                id
                 Lang
                 Name
             }
             PoolType
             Tags {
-                ID
+                id
                 Tag
             }
             Resources {
-                ID
+                id
                 Properties
             }
         }
@@ -301,13 +317,17 @@ query deepQuery {
 }
 
 mutation deleteResourcePool {
-    DeleteResourcePool(resourcePoolId:21474836481)
+    DeleteResourcePool(input: {resourcePoolId:21474836481}) {
+        resourcePoolId
+    }
 }
 
 mutation deleteAllocationStrat {
-    DeleteAllocationStrategy(
-        allocationStrategyId: 1,
+    DeleteAllocationStrategy(input: {allocationStrategyId: 1}
     ){
-        Name
+       strategy{
+           id
+           Name
+       }
     }
 }

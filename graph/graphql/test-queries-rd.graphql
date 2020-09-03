@@ -3,7 +3,7 @@
 
 query QueryRT {
     QueryResourceTypes {
-        ID
+        id
         Name
         PropertyTypes {
             Name
@@ -13,7 +13,7 @@ query QueryRT {
 }
 query QueryStrats {
     QueryAllocationStrategies {
-        ID
+        id
         Name
         Lang
     }
@@ -56,30 +56,37 @@ mutation CreateIpv4Pool {
         allocationStrategyId: 2,
         poolDealocationSafetyPeriod: 10000}
     ){
-        ID
+        pool {
+            id
+        }
     }
 }
 
 
 # AS number global singleton pool
 mutation createASnumberResourceType {
-    CreateResourceType(
+    CreateResourceType( input: {
         resourceName: "as",
         resourceProperties: {
             as: "int"
         }
-    ) {
-        ID
-        Name
+    }) {
+        resourceType {
+            Name
+            id
+        }
     }
 }
+
 mutation CreateASPool {
     CreateSingletonPool(input: {
         resourceTypeId: 21474836488,
         poolName: "global_AS",
         poolValues: [{as: 4545}]}
     ){
-        ID
+        pool {
+            id
+        }
     }
 }
 
@@ -91,7 +98,9 @@ mutation CreateRandomINTForAssignedNumbers {
         allocationStrategyId: 8,
         poolDealocationSafetyPeriod: 10000}
     ){
-        ID
+        pool {
+            id
+        }
     }
 }
 
@@ -103,17 +112,19 @@ mutation CreateRandomINTForAssignedNumbers {
         allocationStrategyId: 7,
         poolDealocationSafetyPeriod: 10000}
     ){
-        ID
+        pool {
+            id
+        }
     }
 }
 
 query checkPools {
     QueryResourcePools {
-        ID
+        id
         Name
         PoolType
         Resources {
-            ID
+            id
             Properties
         }
     }
@@ -123,33 +134,33 @@ query checkPools {
 # Get AS + get random number => get RD 4545:748
 mutation ClaimAS {
     ClaimResource(poolId:17179869185, userInput: {}) {
-        ID
+        id
         Properties
     }
 }
 mutation ClaimAssignedNumberFromRandom {
     ClaimResource(poolId:17179869186, userInput: {}) {
-        ID
+        id
         Properties
     }
 }
 mutation ClaimRDFromPreviousResources {
     ClaimResource(poolId:17179869187, userInput: {asNumber: 4545, assignedNumber: 748}) {
-        ID
+        id
         Properties
     }
 }
 ## This one should fail as it requests duplicate entry
 mutation ClaimRDFromPreviousResources_duplicate {
     ClaimResource(poolId:17179869187, userInput: {asNumber: 4545, assignedNumber: 748}) {
-        ID
+        id
         Properties
     }
 }
 ## Instead read existing resource
 query ReadRD {
     QueryResource(input: {rd: "4545:748"}, poolId: 17179869187) {
-        ID
+        id
         Properties
     }
 }
@@ -158,33 +169,33 @@ query ReadRD {
 # Get IPv4 + get random number => get RD 192.168.1.1:183
 mutation ClaimAS {
     ClaimResource(poolId:17179869184, userInput: {subnet: true}) {
-        ID
+        id
         Properties
     }
 }
 mutation ClaimAssignedNumberFromRandom {
     ClaimResource(poolId:17179869186, userInput: {}) {
-        ID
+        id
         Properties
     }
 }
 mutation ClaimRDFromPreviousResources {
     ClaimResource(poolId:17179869187, userInput: {ipv4: "192.168.1.1", assignedNumber: 183}) {
-        ID
+        id
         Properties
     }
 }
 ## This one should fail as it requests duplicate entry
 mutation ClaimRDFromPreviousResources {
     ClaimResource(poolId:17179869187, userInput: {ipv4: "192.168.1.1", assignedNumber: 183}) {
-        ID
+        id
         Properties
     }
 }
 ## Instead read existing resource
 query ReadRD {
     QueryResource(input: {rd: "192.168.1.1:183"}, poolId: 17179869187) {
-        ID
+        id
         Properties
     }
 }

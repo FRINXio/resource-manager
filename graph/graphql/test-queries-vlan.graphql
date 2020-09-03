@@ -7,7 +7,7 @@
 
 query QueryRT {
     QueryResourceTypes {
-        ID
+        id
         Name
         PropertyTypes {
             Name
@@ -17,7 +17,7 @@ query QueryRT {
 }
 query QueryStrats {
     QueryAllocationStrategies {
-        ID
+        id
         Name
         Lang
     }
@@ -60,14 +60,16 @@ mutation CreateRootPool_allocating {
         allocationStrategyId: 3,
         poolDealocationSafetyPeriod: 0}
     ){
-        ID
+        pool {
+            id
+        }
     }
 }
 
 # Pool 0-2000 on level #2
 mutation ClaimResourceFromRoot {
     ClaimResource(poolId:17179869184, userInput: {desiredSize: 2001}) {
-        ID
+        id
         Properties
     }
 }
@@ -77,17 +79,20 @@ mutation CreateLevel2Pool1_allocating {
         resourceTypeId: 21474836483,
         poolName: "[0-2000]",
         allocationStrategyId: 4,
-        poolDealocationSafetyPeriod: 0},
+        poolDealocationSafetyPeriod: 0,
         parentResourceId: 12884901888
+    }
     ){
-        ID
+        pool {
+            id
+        }
     }
 }
 
 # Pool 2001-4095 on level #2
 mutation ClaimResourceFromRoot {
     ClaimResource(poolId:17179869184, userInput: {desiredSize:2095}) {
-        ID
+        id
         Properties
     }
 }
@@ -97,17 +102,20 @@ mutation CreateLevel2Pool2_allocating {
         resourceTypeId: 21474836483,
         poolName: "[2001-4095]",
         allocationStrategyId: 4,
-        poolDealocationSafetyPeriod: 0},
+        poolDealocationSafetyPeriod: 0,
         parentResourceId: 12884901889
+    }
     ){
-        ID
+        pool {
+            id
+        }
     }
 }
 
 # Pool 0-2000 on level #2
 mutation ClaimResourceFromLevel2Pool1 {
     ClaimResource(poolId:17179869185, userInput: {}) {
-        ID
+        id
         Properties
     }
 }
@@ -115,7 +123,7 @@ mutation ClaimResourceFromLevel2Pool1 {
 # Pool 2001-4095 on level #2
 mutation ClaimResourceFromLevel2Pool2 {
     ClaimResource(poolId:17179869186, userInput: {}) {
-        ID
+        id
         Properties
     }
 }

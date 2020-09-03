@@ -38,7 +38,7 @@
 
 query QueryRT {
     QueryResourceTypes {
-        ID
+        id
         Name
         PropertyTypes {
             Name
@@ -48,7 +48,7 @@ query QueryRT {
 }
 query QueryStrats {
     QueryAllocationStrategies {
-        ID
+        id
         Name
         Lang
     }
@@ -105,14 +105,16 @@ mutation CreateRootPool_allocating {
         allocationStrategyId: 1,
         poolDealocationSafetyPeriod: 0}
     ){
-        ID
+        pool {
+            id
+        }
     }
 }
 
 # Pool 10.0.0.0/9 on level #2
 mutation ClaimResourceFromRoot {
     ClaimResource(poolId:17179869184, userInput: {desiredSize: 8388608}) {
-        ID
+        id
         Properties
     }
 }
@@ -122,17 +124,20 @@ mutation CreateLevel2Pool1_allocating {
         resourceTypeId: 21474836480,
         poolName: "10.0.0.0/9",
         allocationStrategyId: 1,
-        poolDealocationSafetyPeriod: 0},
+        poolDealocationSafetyPeriod: 0,
         parentResourceId: 12884901888
+    }
     ){
-        ID
+        pool {
+            id
+        }
     }
 }
 
 # Pool 10.128.0.0/9 on level #2
 mutation ClaimResourceFromRoot {
     ClaimResource(poolId:17179869184, userInput: {desiredSize: 8388608}) {
-        ID
+        id
         Properties
     }
 }
@@ -142,17 +147,20 @@ mutation CreateLevel2Pool2_set {
         resourceTypeId: 21474836480,
         poolName: "10.128.0.0/9",
         poolValues: [{address: "10.128.0.0", prefix: 10}, {address: "10.192.0.0", prefix: 10},],
-        poolDealocationSafetyPeriod: 0},
+        poolDealocationSafetyPeriod: 0,
         parentResourceId: 12884901889
+    }
     ){
-        ID
+        pool {
+            id
+        }
     }
 }
 
 # Pool 10.0.0.0/10 on level #3
 mutation ClaimResourceFromLevel2Pool1 {
     ClaimResource(poolId:17179869185, userInput: {desiredSize: 4194304}) {
-        ID
+        id
         Properties
     }
 }
@@ -161,17 +169,20 @@ mutation CreateLevel3Pool1_singleton {
     CreateNestedSingletonPool(input: {
         resourceTypeId: 21474836480,
         poolName: "10.0.0.0/10",
-        poolValues: [{address: "10.10.0.0", prefix: 11},]},
+        poolValues: [{address: "10.10.0.0", prefix: 11},],
         parentResourceId: 12884901892
+    }
     ){
-        ID
+        pool {
+            id
+        }
     }
 }
 
 # Pool 10.64.0.0/10 on level #3
 mutation ClaimResourceFromLevel2Pool1 {
     ClaimResource(poolId:17179869185, userInput: {desiredSize: 4194304}) {
-        ID
+        id
         Properties
     }
 }
@@ -181,16 +192,19 @@ mutation CreateLevel2Pool1_allocating {
         resourceTypeId: 21474836481,
         poolName: "10.64.0.0/10",
         allocationStrategyId: 2,
-        poolDealocationSafetyPeriod: 0},
+        poolDealocationSafetyPeriod: 0,
         parentResourceId: 12884901894
+    }
     ){
-        ID
+        pool {
+            id
+        }
     }
 }
 
 mutation ClaimResourceFromLevel3Pool2_ips_from_10_64_0_0__10 {
     ClaimResource(poolId:17179869188, userInput: {}) {
-        ID
+        id
         Properties
     }
 }
@@ -198,7 +212,7 @@ mutation ClaimResourceFromLevel3Pool2_ips_from_10_64_0_0__10 {
 # Pool 10.128.0.0/10 on level #3
 mutation ClaimResourceFromLevel2Pool2 {
     ClaimResource(poolId:17179869186, userInput: {}) {
-        ID
+        id
         Properties
     }
 }
@@ -208,16 +222,19 @@ mutation CreateLevel3Pool3_allocating {
         resourceTypeId: 21474836481,
         poolName: "10.128.0.0/10",
         allocationStrategyId: 2,
-        poolDealocationSafetyPeriod: 0},
+        poolDealocationSafetyPeriod: 0,
         parentResourceId: 12884901890
+    }
     ){
-        ID
+        pool {
+            id
+        }
     }
 }
 
 mutation ClaimResourceFromLevel3Pool2_ips_from_10_128_0_0__10 {
     ClaimResource(poolId:17179869189, userInput: {}) {
-        ID
+        id
         Properties
     }
 }
@@ -225,7 +242,7 @@ mutation ClaimResourceFromLevel3Pool2_ips_from_10_128_0_0__10 {
 # Pool 10.192.0.0/10 on level #3
 mutation ClaimResourceFromLevel2Pool2 {
     ClaimResource(poolId:17179869186, userInput: {}) {
-        ID
+        id
         Properties
     }
 }
@@ -235,16 +252,19 @@ mutation CreateLevel3Pool3_allocating {
         resourceTypeId: 21474836481,
         poolName: "10.192.0.0/10",
         allocationStrategyId: 2,
-        poolDealocationSafetyPeriod: 0},
+        poolDealocationSafetyPeriod: 0,
         parentResourceId: 12884901891
+    }
     ){
-        ID
+        pool {
+            id
+        }
     }
 }
 
 mutation ClaimResourceFromLevel3Pool2_ips_from_10_92_0_0__10 {
     ClaimResource(poolId:17179869190, userInput: {}) {
-        ID
+        id
         Properties
     }
 }
@@ -252,25 +272,25 @@ mutation ClaimResourceFromLevel3Pool2_ips_from_10_92_0_0__10 {
 query QueryPoolHierarchy_3LevelsDeep {
     QueryResources(poolId: 17179869184) {
         # Resources from root pool
-        ID
+        id
         Properties
 
         # Level 2 pools
         NestedPool {
-            ID
+            id
             Name
             PoolType
             Resources {
-                ID
+                id
                 Properties
 
                 # Level 3 pools
                 NestedPool {
-                    ID
+                    id
                     Name
                     PoolType
                     Resources {
-                        ID
+                        id
                         Properties
                     }
                 }
@@ -283,28 +303,28 @@ query QueryPoolHierarchy_3LevelsDeep {
 
 query QueryOnlyIpv4PrefixPools {
     QueryResourcePools(resourceTypeId: 21474836480) {
-        ID
+        id
         Name
     }
 }
 
 query QueryOnlyIpv4AddrPools {
     QueryResourcePools(resourceTypeId: 21474836481) {
-        ID
+        id
         Name
     }
 }
 
 query QueryIpv4PrefixRootPools {
     QueryRootResourcePools(resourceTypeId: 21474836480) {
-        ID
+        id
         Name
     }
 }
 
 query QueryIpv4AddressLeafPools {
     QueryLeafResourcePools(resourceTypeId: 21474836481) {
-        ID
+        id
         Name
     }
 }

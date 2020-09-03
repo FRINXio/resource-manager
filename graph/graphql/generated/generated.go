@@ -6,6 +6,7 @@ import (
 	"bytes"
 	"context"
 	"errors"
+	"fmt"
 	"strconv"
 	"sync"
 	"sync/atomic"
@@ -59,26 +60,85 @@ type ComplexityRoot struct {
 		Script      func(childComplexity int) int
 	}
 
+	CreateAllocatingPoolPayload struct {
+		Pool func(childComplexity int) int
+	}
+
+	CreateAllocationStrategyPayload struct {
+		Strategy func(childComplexity int) int
+	}
+
+	CreateNestedAllocatingPoolPayload struct {
+		Pool func(childComplexity int) int
+	}
+
+	CreateNestedSetPoolPayload struct {
+		Pool func(childComplexity int) int
+	}
+
+	CreateNestedSingletonPoolPayload struct {
+		Pool func(childComplexity int) int
+	}
+
+	CreateResourceTypePayload struct {
+		ResourceType func(childComplexity int) int
+	}
+
+	CreateSetPoolPayload struct {
+		Pool func(childComplexity int) int
+	}
+
+	CreateSingletonPoolPayload struct {
+		Pool func(childComplexity int) int
+	}
+
+	CreateTagPayload struct {
+		Tag func(childComplexity int) int
+	}
+
+	DeleteAllocationStrategyPayload struct {
+		Strategy func(childComplexity int) int
+	}
+
+	DeleteResourcePoolPayload struct {
+		ResourcePoolID func(childComplexity int) int
+	}
+
+	DeleteResourceTypePayload struct {
+		ResourceTypeID func(childComplexity int) int
+	}
+
+	DeleteTagPayload struct {
+		TagID func(childComplexity int) int
+	}
+
 	Mutation struct {
 		ClaimResource              func(childComplexity int, poolID int, userInput map[string]interface{}) int
 		CreateAllocatingPool       func(childComplexity int, input *model.CreateAllocatingPoolInput) int
-		CreateAllocationStrategy   func(childComplexity int, name string, description *string, script string, lang allocationstrategy.Lang) int
-		CreateNestedAllocatingPool func(childComplexity int, input *model.CreateAllocatingPoolInput, parentResourceID int) int
-		CreateNestedSetPool        func(childComplexity int, input model.CreateSetPoolInput, parentResourceID int) int
-		CreateNestedSingletonPool  func(childComplexity int, input *model.CreateSingletonPoolInput, parentResourceID int) int
-		CreateResourceType         func(childComplexity int, resourceName string, resourceProperties map[string]interface{}) int
+		CreateAllocationStrategy   func(childComplexity int, input *model.CreateAllocationStrategyInput) int
+		CreateNestedAllocatingPool func(childComplexity int, input model.CreateNestedAllocatingPoolInput) int
+		CreateNestedSetPool        func(childComplexity int, input model.CreateNestedSetPoolInput) int
+		CreateNestedSingletonPool  func(childComplexity int, input model.CreateNestedSingletonPoolInput) int
+		CreateResourceType         func(childComplexity int, input model.CreateResourceTypeInput) int
 		CreateSetPool              func(childComplexity int, input model.CreateSetPoolInput) int
 		CreateSingletonPool        func(childComplexity int, input *model.CreateSingletonPoolInput) int
-		CreateTag                  func(childComplexity int, tag string) int
-		DeleteAllocationStrategy   func(childComplexity int, allocationStrategyID int) int
-		DeleteResourcePool         func(childComplexity int, resourcePoolID int) int
-		DeleteResourceType         func(childComplexity int, resourceTypeID int) int
-		DeleteTag                  func(childComplexity int, tagID int) int
+		CreateTag                  func(childComplexity int, input model.CreateTagInput) int
+		DeleteAllocationStrategy   func(childComplexity int, input *model.DeleteAllocationStrategyInput) int
+		DeleteResourcePool         func(childComplexity int, input model.DeleteResourcePoolInput) int
+		DeleteResourceType         func(childComplexity int, input model.DeleteResourceTypeInput) int
+		DeleteTag                  func(childComplexity int, input model.DeleteTagInput) int
 		FreeResource               func(childComplexity int, input map[string]interface{}, poolID int) int
-		TagPool                    func(childComplexity int, tagID int, poolID int) int
+		TagPool                    func(childComplexity int, input model.TagPoolInput) int
 		TestAllocationStrategy     func(childComplexity int, allocationStrategyID int, resourcePool model.ResourcePoolInput, currentResources []*model.ResourceInput, userInput map[string]interface{}) int
-		UpdateResourceTypeName     func(childComplexity int, resourceTypeID int, resourceName string) int
-		UpdateTag                  func(childComplexity int, tagID int, tag string) int
+		UpdateResourceTypeName     func(childComplexity int, input model.UpdateResourceTypeNameInput) int
+		UpdateTag                  func(childComplexity int, input model.UpdateTagInput) int
+	}
+
+	PageInfo struct {
+		EndCursor       func(childComplexity int) int
+		HasNextEdge     func(childComplexity int) int
+		HasPreviousEdge func(childComplexity int) int
+		StartCursor     func(childComplexity int) int
 	}
 
 	PropertyType struct {
@@ -92,6 +152,7 @@ type ComplexityRoot struct {
 	}
 
 	Query struct {
+		Node                      func(childComplexity int, id int) int
 		QueryAllocationStrategies func(childComplexity int) int
 		QueryAllocationStrategy   func(childComplexity int, allocationStrategyID int) int
 		QueryLeafResourcePools    func(childComplexity int, resourceTypeID *int) int
@@ -110,7 +171,18 @@ type ComplexityRoot struct {
 		Properties func(childComplexity int) int
 	}
 
+	ResourceConnection struct {
+		Edges    func(childComplexity int) int
+		PageInfo func(childComplexity int) int
+	}
+
+	ResourceEdge struct {
+		Cursor func(childComplexity int) int
+		Node   func(childComplexity int) int
+	}
+
 	ResourcePool struct {
+		AllocatedResources func(childComplexity int, first *int, last *int, before *int, after *int) int
 		AllocationStrategy func(childComplexity int) int
 		ID                 func(childComplexity int) int
 		Name               func(childComplexity int) int
@@ -132,28 +204,40 @@ type ComplexityRoot struct {
 		Pools func(childComplexity int) int
 		Tag   func(childComplexity int) int
 	}
+
+	TagPoolPayload struct {
+		Tag func(childComplexity int) int
+	}
+
+	UpdateResourceTypeNamePayload struct {
+		ResourceTypeID func(childComplexity int) int
+	}
+
+	UpdateTagPayload struct {
+		Tag func(childComplexity int) int
+	}
 }
 
 type MutationResolver interface {
-	CreateTag(ctx context.Context, tag string) (*ent.Tag, error)
-	UpdateTag(ctx context.Context, tagID int, tag string) (*ent.Tag, error)
-	DeleteTag(ctx context.Context, tagID int) (*ent.Tag, error)
-	TagPool(ctx context.Context, tagID int, poolID int) (*ent.Tag, error)
-	CreateAllocationStrategy(ctx context.Context, name string, description *string, script string, lang allocationstrategy.Lang) (*ent.AllocationStrategy, error)
-	DeleteAllocationStrategy(ctx context.Context, allocationStrategyID int) (*ent.AllocationStrategy, error)
+	CreateTag(ctx context.Context, input model.CreateTagInput) (*model.CreateTagPayload, error)
+	UpdateTag(ctx context.Context, input model.UpdateTagInput) (*model.UpdateTagPayload, error)
+	DeleteTag(ctx context.Context, input model.DeleteTagInput) (*model.DeleteTagPayload, error)
+	TagPool(ctx context.Context, input model.TagPoolInput) (*model.TagPoolPayload, error)
+	CreateAllocationStrategy(ctx context.Context, input *model.CreateAllocationStrategyInput) (*model.CreateAllocationStrategyPayload, error)
+	DeleteAllocationStrategy(ctx context.Context, input *model.DeleteAllocationStrategyInput) (*model.DeleteAllocationStrategyPayload, error)
 	TestAllocationStrategy(ctx context.Context, allocationStrategyID int, resourcePool model.ResourcePoolInput, currentResources []*model.ResourceInput, userInput map[string]interface{}) (map[string]interface{}, error)
 	ClaimResource(ctx context.Context, poolID int, userInput map[string]interface{}) (*ent.Resource, error)
 	FreeResource(ctx context.Context, input map[string]interface{}, poolID int) (string, error)
-	CreateSetPool(ctx context.Context, input model.CreateSetPoolInput) (*ent.ResourcePool, error)
-	CreateNestedSetPool(ctx context.Context, input model.CreateSetPoolInput, parentResourceID int) (*ent.ResourcePool, error)
-	CreateSingletonPool(ctx context.Context, input *model.CreateSingletonPoolInput) (*ent.ResourcePool, error)
-	CreateNestedSingletonPool(ctx context.Context, input *model.CreateSingletonPoolInput, parentResourceID int) (*ent.ResourcePool, error)
-	CreateAllocatingPool(ctx context.Context, input *model.CreateAllocatingPoolInput) (*ent.ResourcePool, error)
-	CreateNestedAllocatingPool(ctx context.Context, input *model.CreateAllocatingPoolInput, parentResourceID int) (*ent.ResourcePool, error)
-	DeleteResourcePool(ctx context.Context, resourcePoolID int) (string, error)
-	CreateResourceType(ctx context.Context, resourceName string, resourceProperties map[string]interface{}) (*ent.ResourceType, error)
-	DeleteResourceType(ctx context.Context, resourceTypeID int) (string, error)
-	UpdateResourceTypeName(ctx context.Context, resourceTypeID int, resourceName string) (*ent.ResourceType, error)
+	CreateSetPool(ctx context.Context, input model.CreateSetPoolInput) (*model.CreateSetPoolPayload, error)
+	CreateNestedSetPool(ctx context.Context, input model.CreateNestedSetPoolInput) (*model.CreateNestedSetPoolPayload, error)
+	CreateSingletonPool(ctx context.Context, input *model.CreateSingletonPoolInput) (*model.CreateSingletonPoolPayload, error)
+	CreateNestedSingletonPool(ctx context.Context, input model.CreateNestedSingletonPoolInput) (*model.CreateNestedSingletonPoolPayload, error)
+	CreateAllocatingPool(ctx context.Context, input *model.CreateAllocatingPoolInput) (*model.CreateAllocatingPoolPayload, error)
+	CreateNestedAllocatingPool(ctx context.Context, input model.CreateNestedAllocatingPoolInput) (*model.CreateNestedAllocatingPoolPayload, error)
+	DeleteResourcePool(ctx context.Context, input model.DeleteResourcePoolInput) (*model.DeleteResourcePoolPayload, error)
+	CreateResourceType(ctx context.Context, input model.CreateResourceTypeInput) (*model.CreateResourceTypePayload, error)
+	DeleteResourceType(ctx context.Context, input model.DeleteResourceTypeInput) (*model.DeleteResourceTypePayload, error)
+	UpdateResourceTypeName(ctx context.Context, input model.UpdateResourceTypeNameInput) (*model.UpdateResourceTypeNamePayload, error)
 }
 type PropertyTypeResolver interface {
 	Type(ctx context.Context, obj *ent.PropertyType) (string, error)
@@ -169,6 +253,7 @@ type QueryResolver interface {
 	QueryLeafResourcePools(ctx context.Context, resourceTypeID *int) ([]*ent.ResourcePool, error)
 	SearchPoolsByTags(ctx context.Context, tags *model.TagOr) ([]*ent.ResourcePool, error)
 	QueryTags(ctx context.Context) ([]*ent.Tag, error)
+	Node(ctx context.Context, id int) (ent.Noder, error)
 }
 type ResourceResolver interface {
 	Properties(ctx context.Context, obj *ent.Resource) (map[string]interface{}, error)
@@ -177,6 +262,7 @@ type ResourceResolver interface {
 type ResourcePoolResolver interface {
 	ResourceType(ctx context.Context, obj *ent.ResourcePool) (*ent.ResourceType, error)
 	Resources(ctx context.Context, obj *ent.ResourcePool) ([]*ent.Resource, error)
+	AllocatedResources(ctx context.Context, obj *ent.ResourcePool, first *int, last *int, before *int, after *int) (*model.ResourceConnection, error)
 	Tags(ctx context.Context, obj *ent.ResourcePool) ([]*ent.Tag, error)
 	AllocationStrategy(ctx context.Context, obj *ent.ResourcePool) (*ent.AllocationStrategy, error)
 }
@@ -210,7 +296,7 @@ func (e *executableSchema) Complexity(typeName, field string, childComplexity in
 
 		return e.complexity.AllocationStrategy.Description(childComplexity), true
 
-	case "AllocationStrategy.ID":
+	case "AllocationStrategy.id":
 		if e.complexity.AllocationStrategy.ID == nil {
 			break
 		}
@@ -237,6 +323,97 @@ func (e *executableSchema) Complexity(typeName, field string, childComplexity in
 		}
 
 		return e.complexity.AllocationStrategy.Script(childComplexity), true
+
+	case "CreateAllocatingPoolPayload.pool":
+		if e.complexity.CreateAllocatingPoolPayload.Pool == nil {
+			break
+		}
+
+		return e.complexity.CreateAllocatingPoolPayload.Pool(childComplexity), true
+
+	case "CreateAllocationStrategyPayload.strategy":
+		if e.complexity.CreateAllocationStrategyPayload.Strategy == nil {
+			break
+		}
+
+		return e.complexity.CreateAllocationStrategyPayload.Strategy(childComplexity), true
+
+	case "CreateNestedAllocatingPoolPayload.pool":
+		if e.complexity.CreateNestedAllocatingPoolPayload.Pool == nil {
+			break
+		}
+
+		return e.complexity.CreateNestedAllocatingPoolPayload.Pool(childComplexity), true
+
+	case "CreateNestedSetPoolPayload.pool":
+		if e.complexity.CreateNestedSetPoolPayload.Pool == nil {
+			break
+		}
+
+		return e.complexity.CreateNestedSetPoolPayload.Pool(childComplexity), true
+
+	case "CreateNestedSingletonPoolPayload.pool":
+		if e.complexity.CreateNestedSingletonPoolPayload.Pool == nil {
+			break
+		}
+
+		return e.complexity.CreateNestedSingletonPoolPayload.Pool(childComplexity), true
+
+	case "CreateResourceTypePayload.resourceType":
+		if e.complexity.CreateResourceTypePayload.ResourceType == nil {
+			break
+		}
+
+		return e.complexity.CreateResourceTypePayload.ResourceType(childComplexity), true
+
+	case "CreateSetPoolPayload.pool":
+		if e.complexity.CreateSetPoolPayload.Pool == nil {
+			break
+		}
+
+		return e.complexity.CreateSetPoolPayload.Pool(childComplexity), true
+
+	case "CreateSingletonPoolPayload.pool":
+		if e.complexity.CreateSingletonPoolPayload.Pool == nil {
+			break
+		}
+
+		return e.complexity.CreateSingletonPoolPayload.Pool(childComplexity), true
+
+	case "CreateTagPayload.tag":
+		if e.complexity.CreateTagPayload.Tag == nil {
+			break
+		}
+
+		return e.complexity.CreateTagPayload.Tag(childComplexity), true
+
+	case "DeleteAllocationStrategyPayload.strategy":
+		if e.complexity.DeleteAllocationStrategyPayload.Strategy == nil {
+			break
+		}
+
+		return e.complexity.DeleteAllocationStrategyPayload.Strategy(childComplexity), true
+
+	case "DeleteResourcePoolPayload.resourcePoolId":
+		if e.complexity.DeleteResourcePoolPayload.ResourcePoolID == nil {
+			break
+		}
+
+		return e.complexity.DeleteResourcePoolPayload.ResourcePoolID(childComplexity), true
+
+	case "DeleteResourceTypePayload.resourceTypeId":
+		if e.complexity.DeleteResourceTypePayload.ResourceTypeID == nil {
+			break
+		}
+
+		return e.complexity.DeleteResourceTypePayload.ResourceTypeID(childComplexity), true
+
+	case "DeleteTagPayload.tagId":
+		if e.complexity.DeleteTagPayload.TagID == nil {
+			break
+		}
+
+		return e.complexity.DeleteTagPayload.TagID(childComplexity), true
 
 	case "Mutation.ClaimResource":
 		if e.complexity.Mutation.ClaimResource == nil {
@@ -272,7 +449,7 @@ func (e *executableSchema) Complexity(typeName, field string, childComplexity in
 			return 0, false
 		}
 
-		return e.complexity.Mutation.CreateAllocationStrategy(childComplexity, args["name"].(string), args["description"].(*string), args["script"].(string), args["lang"].(allocationstrategy.Lang)), true
+		return e.complexity.Mutation.CreateAllocationStrategy(childComplexity, args["input"].(*model.CreateAllocationStrategyInput)), true
 
 	case "Mutation.CreateNestedAllocatingPool":
 		if e.complexity.Mutation.CreateNestedAllocatingPool == nil {
@@ -284,7 +461,7 @@ func (e *executableSchema) Complexity(typeName, field string, childComplexity in
 			return 0, false
 		}
 
-		return e.complexity.Mutation.CreateNestedAllocatingPool(childComplexity, args["input"].(*model.CreateAllocatingPoolInput), args["parentResourceId"].(int)), true
+		return e.complexity.Mutation.CreateNestedAllocatingPool(childComplexity, args["input"].(model.CreateNestedAllocatingPoolInput)), true
 
 	case "Mutation.CreateNestedSetPool":
 		if e.complexity.Mutation.CreateNestedSetPool == nil {
@@ -296,7 +473,7 @@ func (e *executableSchema) Complexity(typeName, field string, childComplexity in
 			return 0, false
 		}
 
-		return e.complexity.Mutation.CreateNestedSetPool(childComplexity, args["input"].(model.CreateSetPoolInput), args["parentResourceId"].(int)), true
+		return e.complexity.Mutation.CreateNestedSetPool(childComplexity, args["input"].(model.CreateNestedSetPoolInput)), true
 
 	case "Mutation.CreateNestedSingletonPool":
 		if e.complexity.Mutation.CreateNestedSingletonPool == nil {
@@ -308,7 +485,7 @@ func (e *executableSchema) Complexity(typeName, field string, childComplexity in
 			return 0, false
 		}
 
-		return e.complexity.Mutation.CreateNestedSingletonPool(childComplexity, args["input"].(*model.CreateSingletonPoolInput), args["parentResourceId"].(int)), true
+		return e.complexity.Mutation.CreateNestedSingletonPool(childComplexity, args["input"].(model.CreateNestedSingletonPoolInput)), true
 
 	case "Mutation.CreateResourceType":
 		if e.complexity.Mutation.CreateResourceType == nil {
@@ -320,7 +497,7 @@ func (e *executableSchema) Complexity(typeName, field string, childComplexity in
 			return 0, false
 		}
 
-		return e.complexity.Mutation.CreateResourceType(childComplexity, args["resourceName"].(string), args["resourceProperties"].(map[string]interface{})), true
+		return e.complexity.Mutation.CreateResourceType(childComplexity, args["input"].(model.CreateResourceTypeInput)), true
 
 	case "Mutation.CreateSetPool":
 		if e.complexity.Mutation.CreateSetPool == nil {
@@ -356,7 +533,7 @@ func (e *executableSchema) Complexity(typeName, field string, childComplexity in
 			return 0, false
 		}
 
-		return e.complexity.Mutation.CreateTag(childComplexity, args["tag"].(string)), true
+		return e.complexity.Mutation.CreateTag(childComplexity, args["input"].(model.CreateTagInput)), true
 
 	case "Mutation.DeleteAllocationStrategy":
 		if e.complexity.Mutation.DeleteAllocationStrategy == nil {
@@ -368,7 +545,7 @@ func (e *executableSchema) Complexity(typeName, field string, childComplexity in
 			return 0, false
 		}
 
-		return e.complexity.Mutation.DeleteAllocationStrategy(childComplexity, args["allocationStrategyId"].(int)), true
+		return e.complexity.Mutation.DeleteAllocationStrategy(childComplexity, args["input"].(*model.DeleteAllocationStrategyInput)), true
 
 	case "Mutation.DeleteResourcePool":
 		if e.complexity.Mutation.DeleteResourcePool == nil {
@@ -380,7 +557,7 @@ func (e *executableSchema) Complexity(typeName, field string, childComplexity in
 			return 0, false
 		}
 
-		return e.complexity.Mutation.DeleteResourcePool(childComplexity, args["resourcePoolId"].(int)), true
+		return e.complexity.Mutation.DeleteResourcePool(childComplexity, args["input"].(model.DeleteResourcePoolInput)), true
 
 	case "Mutation.DeleteResourceType":
 		if e.complexity.Mutation.DeleteResourceType == nil {
@@ -392,7 +569,7 @@ func (e *executableSchema) Complexity(typeName, field string, childComplexity in
 			return 0, false
 		}
 
-		return e.complexity.Mutation.DeleteResourceType(childComplexity, args["resourceTypeId"].(int)), true
+		return e.complexity.Mutation.DeleteResourceType(childComplexity, args["input"].(model.DeleteResourceTypeInput)), true
 
 	case "Mutation.DeleteTag":
 		if e.complexity.Mutation.DeleteTag == nil {
@@ -404,7 +581,7 @@ func (e *executableSchema) Complexity(typeName, field string, childComplexity in
 			return 0, false
 		}
 
-		return e.complexity.Mutation.DeleteTag(childComplexity, args["tagId"].(int)), true
+		return e.complexity.Mutation.DeleteTag(childComplexity, args["input"].(model.DeleteTagInput)), true
 
 	case "Mutation.FreeResource":
 		if e.complexity.Mutation.FreeResource == nil {
@@ -428,7 +605,7 @@ func (e *executableSchema) Complexity(typeName, field string, childComplexity in
 			return 0, false
 		}
 
-		return e.complexity.Mutation.TagPool(childComplexity, args["tagId"].(int), args["poolId"].(int)), true
+		return e.complexity.Mutation.TagPool(childComplexity, args["input"].(model.TagPoolInput)), true
 
 	case "Mutation.TestAllocationStrategy":
 		if e.complexity.Mutation.TestAllocationStrategy == nil {
@@ -452,7 +629,7 @@ func (e *executableSchema) Complexity(typeName, field string, childComplexity in
 			return 0, false
 		}
 
-		return e.complexity.Mutation.UpdateResourceTypeName(childComplexity, args["resourceTypeId"].(int), args["resourceName"].(string)), true
+		return e.complexity.Mutation.UpdateResourceTypeName(childComplexity, args["input"].(model.UpdateResourceTypeNameInput)), true
 
 	case "Mutation.UpdateTag":
 		if e.complexity.Mutation.UpdateTag == nil {
@@ -464,7 +641,35 @@ func (e *executableSchema) Complexity(typeName, field string, childComplexity in
 			return 0, false
 		}
 
-		return e.complexity.Mutation.UpdateTag(childComplexity, args["tagId"].(int), args["tag"].(string)), true
+		return e.complexity.Mutation.UpdateTag(childComplexity, args["input"].(model.UpdateTagInput)), true
+
+	case "PageInfo.endCursor":
+		if e.complexity.PageInfo.EndCursor == nil {
+			break
+		}
+
+		return e.complexity.PageInfo.EndCursor(childComplexity), true
+
+	case "PageInfo.hasNextEdge":
+		if e.complexity.PageInfo.HasNextEdge == nil {
+			break
+		}
+
+		return e.complexity.PageInfo.HasNextEdge(childComplexity), true
+
+	case "PageInfo.hasPreviousEdge":
+		if e.complexity.PageInfo.HasPreviousEdge == nil {
+			break
+		}
+
+		return e.complexity.PageInfo.HasPreviousEdge(childComplexity), true
+
+	case "PageInfo.startCursor":
+		if e.complexity.PageInfo.StartCursor == nil {
+			break
+		}
+
+		return e.complexity.PageInfo.StartCursor(childComplexity), true
 
 	case "PropertyType.FloatVal":
 		if e.complexity.PropertyType.FloatVal == nil {
@@ -473,7 +678,7 @@ func (e *executableSchema) Complexity(typeName, field string, childComplexity in
 
 		return e.complexity.PropertyType.FloatVal(childComplexity), true
 
-	case "PropertyType.ID":
+	case "PropertyType.id":
 		if e.complexity.PropertyType.ID == nil {
 			break
 		}
@@ -514,6 +719,18 @@ func (e *executableSchema) Complexity(typeName, field string, childComplexity in
 		}
 
 		return e.complexity.PropertyType.Type(childComplexity), true
+
+	case "Query.node":
+		if e.complexity.Query.Node == nil {
+			break
+		}
+
+		args, err := ec.field_Query_node_args(context.TODO(), rawArgs)
+		if err != nil {
+			return 0, false
+		}
+
+		return e.complexity.Query.Node(childComplexity, args["id"].(int)), true
 
 	case "Query.QueryAllocationStrategies":
 		if e.complexity.Query.QueryAllocationStrategies == nil {
@@ -620,7 +837,7 @@ func (e *executableSchema) Complexity(typeName, field string, childComplexity in
 
 		return e.complexity.Query.SearchPoolsByTags(childComplexity, args["tags"].(*model.TagOr)), true
 
-	case "Resource.ID":
+	case "Resource.id":
 		if e.complexity.Resource.ID == nil {
 			break
 		}
@@ -641,6 +858,46 @@ func (e *executableSchema) Complexity(typeName, field string, childComplexity in
 
 		return e.complexity.Resource.Properties(childComplexity), true
 
+	case "ResourceConnection.edges":
+		if e.complexity.ResourceConnection.Edges == nil {
+			break
+		}
+
+		return e.complexity.ResourceConnection.Edges(childComplexity), true
+
+	case "ResourceConnection.pageInfo":
+		if e.complexity.ResourceConnection.PageInfo == nil {
+			break
+		}
+
+		return e.complexity.ResourceConnection.PageInfo(childComplexity), true
+
+	case "ResourceEdge.cursor":
+		if e.complexity.ResourceEdge.Cursor == nil {
+			break
+		}
+
+		return e.complexity.ResourceEdge.Cursor(childComplexity), true
+
+	case "ResourceEdge.node":
+		if e.complexity.ResourceEdge.Node == nil {
+			break
+		}
+
+		return e.complexity.ResourceEdge.Node(childComplexity), true
+
+	case "ResourcePool.allocatedResources":
+		if e.complexity.ResourcePool.AllocatedResources == nil {
+			break
+		}
+
+		args, err := ec.field_ResourcePool_allocatedResources_args(context.TODO(), rawArgs)
+		if err != nil {
+			return 0, false
+		}
+
+		return e.complexity.ResourcePool.AllocatedResources(childComplexity, args["first"].(*int), args["last"].(*int), args["before"].(*int), args["after"].(*int)), true
+
 	case "ResourcePool.AllocationStrategy":
 		if e.complexity.ResourcePool.AllocationStrategy == nil {
 			break
@@ -648,7 +905,7 @@ func (e *executableSchema) Complexity(typeName, field string, childComplexity in
 
 		return e.complexity.ResourcePool.AllocationStrategy(childComplexity), true
 
-	case "ResourcePool.ID":
+	case "ResourcePool.id":
 		if e.complexity.ResourcePool.ID == nil {
 			break
 		}
@@ -690,7 +947,7 @@ func (e *executableSchema) Complexity(typeName, field string, childComplexity in
 
 		return e.complexity.ResourcePool.Tags(childComplexity), true
 
-	case "ResourceType.ID":
+	case "ResourceType.id":
 		if e.complexity.ResourceType.ID == nil {
 			break
 		}
@@ -718,7 +975,7 @@ func (e *executableSchema) Complexity(typeName, field string, childComplexity in
 
 		return e.complexity.ResourceType.PropertyTypes(childComplexity), true
 
-	case "Tag.ID":
+	case "Tag.id":
 		if e.complexity.Tag.ID == nil {
 			break
 		}
@@ -738,6 +995,27 @@ func (e *executableSchema) Complexity(typeName, field string, childComplexity in
 		}
 
 		return e.complexity.Tag.Tag(childComplexity), true
+
+	case "TagPoolPayload.tag":
+		if e.complexity.TagPoolPayload.Tag == nil {
+			break
+		}
+
+		return e.complexity.TagPoolPayload.Tag(childComplexity), true
+
+	case "UpdateResourceTypeNamePayload.resourceTypeId":
+		if e.complexity.UpdateResourceTypeNamePayload.ResourceTypeID == nil {
+			break
+		}
+
+		return e.complexity.UpdateResourceTypeNamePayload.ResourceTypeID(childComplexity), true
+
+	case "UpdateTagPayload.tag":
+		if e.complexity.UpdateTagPayload.Tag == nil {
+			break
+		}
+
+		return e.complexity.UpdateTagPayload.Tag(childComplexity), true
 
 	}
 	return 0, false
@@ -810,17 +1088,22 @@ var sources = []*ast.Source{
     | INTERFACE
     | UNION
 
-type ResourceType
+interface Node
+@goModel(model: "github.com/net-auto/resourceManager/ent.Noder") {
+    id: ID!
+}
+
+type ResourceType implements Node
 @goModel(model: "github.com/net-auto/resourceManager/ent.ResourceType") {
-    ID: ID!
+    id: ID!
     Name: String!
     PropertyTypes: [PropertyType!]!
     Pools: [ResourcePool!]!
 }
 
-type PropertyType
+type PropertyType implements Node
 @goModel(model: "github.com/net-auto/resourceManager/ent.PropertyType"){
-    ID: ID!
+    id: ID!
     Name: String!
     Type: String!,
     IntVal: Int!,
@@ -829,13 +1112,31 @@ type PropertyType
     Mandatory: Boolean!
 }
 
-type ResourcePool
+type PageInfo {
+    hasPreviousEdge: Boolean!
+    hasNextEdge: Boolean!
+    startCursor: ID!
+    endCursor: ID!
+}
+
+type ResourceEdge {
+    node: Resource!
+    cursor: ID!
+}
+
+type ResourceConnection {
+    pageInfo: PageInfo!
+    edges: [ResourceEdge]!
+}
+
+type ResourcePool implements Node
 @goModel(model: "github.com/net-auto/resourceManager/ent.ResourcePool"){
-    ID: ID!
+    id: ID!
     Name: String!
     PoolType: PoolType!
     ResourceType: ResourceType!
     Resources: [Resource!]!
+    allocatedResources(first: Int, last: Int, before: ID, after: ID): ResourceConnection
     Tags: [Tag!]!
     AllocationStrategy: AllocationStrategy
 }
@@ -852,10 +1153,10 @@ enum PoolType
 
 scalar Map
 
-type Resource
+type Resource implements Node
 @goModel(model: "github.com/net-auto/resourceManager/ent.Resource")
 {
-    ID: ID!
+    id: ID!
     Properties: Map!
     NestedPool: ResourcePool
 }
@@ -869,18 +1170,18 @@ enum AllocationStrategyLang
     py
 }
 
-type AllocationStrategy
+type AllocationStrategy implements Node
 @goModel(model: "github.com/net-auto/resourceManager/ent.AllocationStrategy"){
-    ID: ID!
+    id: ID!
     Name: String!
     Description: String
     Lang: AllocationStrategyLang!
     Script: String!
 }
 
-type Tag
+type Tag implements Node
 @goModel(model: "github.com/net-auto/resourceManager/ent.Tag"){
-    ID: ID!
+    id: ID!
     Tag: String!
     Pools: [ResourcePool]
 }
@@ -912,11 +1213,53 @@ input CreateSetPoolInput {
     poolValues: [Map!]!
 }
 
+type CreateSetPoolPayload {
+    pool: ResourcePool
+}
+
+input CreateNestedSetPoolInput {
+    resourceTypeId: ID!
+    poolName: String!
+    description: String
+    poolDealocationSafetyPeriod: Int!
+    poolValues: [Map]!
+    parentResourceId: ID!
+}
+
+type CreateNestedSetPoolPayload {
+    pool: ResourcePool
+}
+
+input CreateNestedSingletonPoolInput {
+    resourceTypeId: ID!
+    poolName: String!
+    description: String
+    poolValues: [Map]!
+    parentResourceId: ID!
+}
+
+type CreateNestedSingletonPoolPayload {
+    pool: ResourcePool
+}
+
+input DeleteResourcePoolInput {
+    resourcePoolId: ID!
+}
+
+type DeleteResourcePoolPayload {
+    resourcePoolId: ID!
+}
+
+
 input CreateSingletonPoolInput {
     resourceTypeId: ID!
     poolName: String!
     description: String
     poolValues: [Map!]!
+}
+
+type CreateSingletonPoolPayload {
+    pool: ResourcePool
 }
 
 input CreateAllocatingPoolInput {
@@ -925,6 +1268,23 @@ input CreateAllocatingPoolInput {
     description: String
     allocationStrategyId: ID!
     poolDealocationSafetyPeriod: Int!
+}
+
+type CreateAllocatingPoolPayload {
+    pool: ResourcePool
+}
+
+input CreateNestedAllocatingPoolInput {
+    resourceTypeId: ID!
+    poolName: String!
+    description: String
+    allocationStrategyId: ID!
+    poolDealocationSafetyPeriod: Int!
+    parentResourceId: ID!
+}
+
+type CreateNestedAllocatingPoolPayload {
+    pool: ResourcePool
 }
 
 type Query {
@@ -940,18 +1300,101 @@ type Query {
     SearchPoolsByTags(tags: TagOr): [ResourcePool!]!
 
     QueryTags: [Tag!]!
+    node(id: ID!): Node
+}
+
+input CreateTagInput {
+    tagText: String!
+}
+
+type CreateTagPayload {
+    tag: Tag
+}
+
+input UpdateTagInput {
+    tagId: ID!,
+    tagText: String!
+}
+
+type UpdateTagPayload {
+    tag: Tag
+}
+
+input DeleteTagInput {
+    tagId: ID!
+}
+
+type DeleteTagPayload {
+    tagId: ID!
+}
+
+input TagPoolInput {
+    tagId: ID!,
+    poolId: ID!
+}
+
+type TagPoolPayload {
+    tag: Tag
+}
+
+input CreateAllocationStrategyInput {
+    name: String!,
+    description: String,
+    script: String!,
+    lang: AllocationStrategyLang!
+}
+
+type CreateAllocationStrategyPayload {
+    strategy: AllocationStrategy
+}
+
+input DeleteAllocationStrategyInput {
+    allocationStrategyId: ID!
+}
+
+type DeleteAllocationStrategyPayload {
+    strategy: AllocationStrategy
+}
+
+## resourceName: String! - name of the resource type AND property type (should they be different?)
+## resourceProperties: Map! - for key "init" the value is the initial value of the property type (like 7)
+##                            for key "type" the value is the name of the type like "int"
+input CreateResourceTypeInput {
+    resourceName: String!,
+    resourceProperties: Map!
+}
+
+type CreateResourceTypePayload {
+    resourceType: ResourceType!
+}
+
+input DeleteResourceTypeInput {
+    resourceTypeId: ID!
+}
+
+type DeleteResourceTypePayload {
+    resourceTypeId: ID!
+}
+
+input UpdateResourceTypeNameInput {
+    resourceTypeId: ID!,
+    resourceName: String!
+}
+
+type UpdateResourceTypeNamePayload {
+    resourceTypeId: ID!
 }
 
 type Mutation {
     # Tagging
-    CreateTag(tag: String!): Tag!
-    UpdateTag(tagId: ID!, tag: String!): Tag!
-    DeleteTag(tagId: ID!): Tag!
-    TagPool(tagId: ID!, poolId: ID!): Tag!
+    CreateTag(input: CreateTagInput!): CreateTagPayload!
+    UpdateTag(input: UpdateTagInput!): UpdateTagPayload!
+    DeleteTag(input: DeleteTagInput!): DeleteTagPayload!
+    TagPool(input: TagPoolInput!): TagPoolPayload!
 
     # Allocation strategy
-    CreateAllocationStrategy(name: String!, description: String, script: String!, lang: AllocationStrategyLang!): AllocationStrategy!
-    DeleteAllocationStrategy(allocationStrategyId: ID!): AllocationStrategy!
+    CreateAllocationStrategy(input: CreateAllocationStrategyInput): CreateAllocationStrategyPayload!
+    DeleteAllocationStrategy(input: DeleteAllocationStrategyInput): DeleteAllocationStrategyPayload!
     TestAllocationStrategy(allocationStrategyId: ID!, resourcePool: ResourcePoolInput!,
         currentResources: [ResourceInput!]!, userInput: Map!): Map!
 
@@ -960,22 +1403,19 @@ type Mutation {
     FreeResource(input: Map!, poolId: ID!): String!
 
     # create/update/delete resource pool
-    CreateSetPool(input: CreateSetPoolInput!): ResourcePool!
-    CreateNestedSetPool(input: CreateSetPoolInput!, parentResourceId: ID!): ResourcePool!
-    CreateSingletonPool(input: CreateSingletonPoolInput): ResourcePool!
-    CreateNestedSingletonPool(input: CreateSingletonPoolInput, parentResourceId: ID!): ResourcePool!
-    CreateAllocatingPool(input: CreateAllocatingPoolInput): ResourcePool!
-    CreateNestedAllocatingPool(input: CreateAllocatingPoolInput, parentResourceId: ID!): ResourcePool!
-    DeleteResourcePool(resourcePoolId: ID!): String!
+    CreateSetPool(input: CreateSetPoolInput!): CreateSetPoolPayload!
+    CreateNestedSetPool(input: CreateNestedSetPoolInput!): CreateNestedSetPoolPayload!
+    CreateSingletonPool(input: CreateSingletonPoolInput): CreateSingletonPoolPayload!
+    CreateNestedSingletonPool(input: CreateNestedSingletonPoolInput!): CreateNestedSingletonPoolPayload!
+    CreateAllocatingPool(input: CreateAllocatingPoolInput): CreateAllocatingPoolPayload!
+    CreateNestedAllocatingPool(input: CreateNestedAllocatingPoolInput!): CreateNestedAllocatingPoolPayload!
+    DeleteResourcePool(input: DeleteResourcePoolInput!): DeleteResourcePoolPayload!
 
     # create/update/delete resource type
-    ## resourceName: String! - name of the resource type AND property type (should they be different?)
-    ## resourceProperties: Map! - for key "init" the value is the initial value of the property type (like 7)
-    ##                            for key "type" the value is the name of the type like "int"
-    CreateResourceType(resourceName: String!, resourceProperties: Map!): ResourceType!
-    DeleteResourceType(resourceTypeId: ID!): String!
+    CreateResourceType(input: CreateResourceTypeInput!): CreateResourceTypePayload!
+    DeleteResourceType(input: DeleteResourceTypeInput!): DeleteResourceTypePayload!
     ## it only changes the name of the resource type
-    UpdateResourceTypeName(resourceTypeId: ID!, resourceName: String!): ResourceType!
+    UpdateResourceTypeName(input: UpdateResourceTypeNameInput!): UpdateResourceTypeNamePayload!
 }
 `, BuiltIn: false},
 }
@@ -1027,138 +1467,75 @@ func (ec *executionContext) field_Mutation_CreateAllocatingPool_args(ctx context
 func (ec *executionContext) field_Mutation_CreateAllocationStrategy_args(ctx context.Context, rawArgs map[string]interface{}) (map[string]interface{}, error) {
 	var err error
 	args := map[string]interface{}{}
-	var arg0 string
-	if tmp, ok := rawArgs["name"]; ok {
-		ctx := graphql.WithFieldInputContext(ctx, graphql.NewFieldInputWithField("name"))
-		arg0, err = ec.unmarshalNString2string(ctx, tmp)
+	var arg0 *model.CreateAllocationStrategyInput
+	if tmp, ok := rawArgs["input"]; ok {
+		ctx := graphql.WithFieldInputContext(ctx, graphql.NewFieldInputWithField("input"))
+		arg0, err = ec.unmarshalOCreateAllocationStrategyInput2ᚖgithubᚗcomᚋnetᚑautoᚋresourceManagerᚋgraphᚋgraphqlᚋmodelᚐCreateAllocationStrategyInput(ctx, tmp)
 		if err != nil {
 			return nil, err
 		}
 	}
-	args["name"] = arg0
-	var arg1 *string
-	if tmp, ok := rawArgs["description"]; ok {
-		ctx := graphql.WithFieldInputContext(ctx, graphql.NewFieldInputWithField("description"))
-		arg1, err = ec.unmarshalOString2ᚖstring(ctx, tmp)
-		if err != nil {
-			return nil, err
-		}
-	}
-	args["description"] = arg1
-	var arg2 string
-	if tmp, ok := rawArgs["script"]; ok {
-		ctx := graphql.WithFieldInputContext(ctx, graphql.NewFieldInputWithField("script"))
-		arg2, err = ec.unmarshalNString2string(ctx, tmp)
-		if err != nil {
-			return nil, err
-		}
-	}
-	args["script"] = arg2
-	var arg3 allocationstrategy.Lang
-	if tmp, ok := rawArgs["lang"]; ok {
-		ctx := graphql.WithFieldInputContext(ctx, graphql.NewFieldInputWithField("lang"))
-		arg3, err = ec.unmarshalNAllocationStrategyLang2githubᚗcomᚋnetᚑautoᚋresourceManagerᚋentᚋallocationstrategyᚐLang(ctx, tmp)
-		if err != nil {
-			return nil, err
-		}
-	}
-	args["lang"] = arg3
+	args["input"] = arg0
 	return args, nil
 }
 
 func (ec *executionContext) field_Mutation_CreateNestedAllocatingPool_args(ctx context.Context, rawArgs map[string]interface{}) (map[string]interface{}, error) {
 	var err error
 	args := map[string]interface{}{}
-	var arg0 *model.CreateAllocatingPoolInput
+	var arg0 model.CreateNestedAllocatingPoolInput
 	if tmp, ok := rawArgs["input"]; ok {
 		ctx := graphql.WithFieldInputContext(ctx, graphql.NewFieldInputWithField("input"))
-		arg0, err = ec.unmarshalOCreateAllocatingPoolInput2ᚖgithubᚗcomᚋnetᚑautoᚋresourceManagerᚋgraphᚋgraphqlᚋmodelᚐCreateAllocatingPoolInput(ctx, tmp)
+		arg0, err = ec.unmarshalNCreateNestedAllocatingPoolInput2githubᚗcomᚋnetᚑautoᚋresourceManagerᚋgraphᚋgraphqlᚋmodelᚐCreateNestedAllocatingPoolInput(ctx, tmp)
 		if err != nil {
 			return nil, err
 		}
 	}
 	args["input"] = arg0
-	var arg1 int
-	if tmp, ok := rawArgs["parentResourceId"]; ok {
-		ctx := graphql.WithFieldInputContext(ctx, graphql.NewFieldInputWithField("parentResourceId"))
-		arg1, err = ec.unmarshalNID2int(ctx, tmp)
-		if err != nil {
-			return nil, err
-		}
-	}
-	args["parentResourceId"] = arg1
 	return args, nil
 }
 
 func (ec *executionContext) field_Mutation_CreateNestedSetPool_args(ctx context.Context, rawArgs map[string]interface{}) (map[string]interface{}, error) {
 	var err error
 	args := map[string]interface{}{}
-	var arg0 model.CreateSetPoolInput
+	var arg0 model.CreateNestedSetPoolInput
 	if tmp, ok := rawArgs["input"]; ok {
 		ctx := graphql.WithFieldInputContext(ctx, graphql.NewFieldInputWithField("input"))
-		arg0, err = ec.unmarshalNCreateSetPoolInput2githubᚗcomᚋnetᚑautoᚋresourceManagerᚋgraphᚋgraphqlᚋmodelᚐCreateSetPoolInput(ctx, tmp)
+		arg0, err = ec.unmarshalNCreateNestedSetPoolInput2githubᚗcomᚋnetᚑautoᚋresourceManagerᚋgraphᚋgraphqlᚋmodelᚐCreateNestedSetPoolInput(ctx, tmp)
 		if err != nil {
 			return nil, err
 		}
 	}
 	args["input"] = arg0
-	var arg1 int
-	if tmp, ok := rawArgs["parentResourceId"]; ok {
-		ctx := graphql.WithFieldInputContext(ctx, graphql.NewFieldInputWithField("parentResourceId"))
-		arg1, err = ec.unmarshalNID2int(ctx, tmp)
-		if err != nil {
-			return nil, err
-		}
-	}
-	args["parentResourceId"] = arg1
 	return args, nil
 }
 
 func (ec *executionContext) field_Mutation_CreateNestedSingletonPool_args(ctx context.Context, rawArgs map[string]interface{}) (map[string]interface{}, error) {
 	var err error
 	args := map[string]interface{}{}
-	var arg0 *model.CreateSingletonPoolInput
+	var arg0 model.CreateNestedSingletonPoolInput
 	if tmp, ok := rawArgs["input"]; ok {
 		ctx := graphql.WithFieldInputContext(ctx, graphql.NewFieldInputWithField("input"))
-		arg0, err = ec.unmarshalOCreateSingletonPoolInput2ᚖgithubᚗcomᚋnetᚑautoᚋresourceManagerᚋgraphᚋgraphqlᚋmodelᚐCreateSingletonPoolInput(ctx, tmp)
+		arg0, err = ec.unmarshalNCreateNestedSingletonPoolInput2githubᚗcomᚋnetᚑautoᚋresourceManagerᚋgraphᚋgraphqlᚋmodelᚐCreateNestedSingletonPoolInput(ctx, tmp)
 		if err != nil {
 			return nil, err
 		}
 	}
 	args["input"] = arg0
-	var arg1 int
-	if tmp, ok := rawArgs["parentResourceId"]; ok {
-		ctx := graphql.WithFieldInputContext(ctx, graphql.NewFieldInputWithField("parentResourceId"))
-		arg1, err = ec.unmarshalNID2int(ctx, tmp)
-		if err != nil {
-			return nil, err
-		}
-	}
-	args["parentResourceId"] = arg1
 	return args, nil
 }
 
 func (ec *executionContext) field_Mutation_CreateResourceType_args(ctx context.Context, rawArgs map[string]interface{}) (map[string]interface{}, error) {
 	var err error
 	args := map[string]interface{}{}
-	var arg0 string
-	if tmp, ok := rawArgs["resourceName"]; ok {
-		ctx := graphql.WithFieldInputContext(ctx, graphql.NewFieldInputWithField("resourceName"))
-		arg0, err = ec.unmarshalNString2string(ctx, tmp)
+	var arg0 model.CreateResourceTypeInput
+	if tmp, ok := rawArgs["input"]; ok {
+		ctx := graphql.WithFieldInputContext(ctx, graphql.NewFieldInputWithField("input"))
+		arg0, err = ec.unmarshalNCreateResourceTypeInput2githubᚗcomᚋnetᚑautoᚋresourceManagerᚋgraphᚋgraphqlᚋmodelᚐCreateResourceTypeInput(ctx, tmp)
 		if err != nil {
 			return nil, err
 		}
 	}
-	args["resourceName"] = arg0
-	var arg1 map[string]interface{}
-	if tmp, ok := rawArgs["resourceProperties"]; ok {
-		ctx := graphql.WithFieldInputContext(ctx, graphql.NewFieldInputWithField("resourceProperties"))
-		arg1, err = ec.unmarshalNMap2map(ctx, tmp)
-		if err != nil {
-			return nil, err
-		}
-	}
-	args["resourceProperties"] = arg1
+	args["input"] = arg0
 	return args, nil
 }
 
@@ -1195,75 +1572,75 @@ func (ec *executionContext) field_Mutation_CreateSingletonPool_args(ctx context.
 func (ec *executionContext) field_Mutation_CreateTag_args(ctx context.Context, rawArgs map[string]interface{}) (map[string]interface{}, error) {
 	var err error
 	args := map[string]interface{}{}
-	var arg0 string
-	if tmp, ok := rawArgs["tag"]; ok {
-		ctx := graphql.WithFieldInputContext(ctx, graphql.NewFieldInputWithField("tag"))
-		arg0, err = ec.unmarshalNString2string(ctx, tmp)
+	var arg0 model.CreateTagInput
+	if tmp, ok := rawArgs["input"]; ok {
+		ctx := graphql.WithFieldInputContext(ctx, graphql.NewFieldInputWithField("input"))
+		arg0, err = ec.unmarshalNCreateTagInput2githubᚗcomᚋnetᚑautoᚋresourceManagerᚋgraphᚋgraphqlᚋmodelᚐCreateTagInput(ctx, tmp)
 		if err != nil {
 			return nil, err
 		}
 	}
-	args["tag"] = arg0
+	args["input"] = arg0
 	return args, nil
 }
 
 func (ec *executionContext) field_Mutation_DeleteAllocationStrategy_args(ctx context.Context, rawArgs map[string]interface{}) (map[string]interface{}, error) {
 	var err error
 	args := map[string]interface{}{}
-	var arg0 int
-	if tmp, ok := rawArgs["allocationStrategyId"]; ok {
-		ctx := graphql.WithFieldInputContext(ctx, graphql.NewFieldInputWithField("allocationStrategyId"))
-		arg0, err = ec.unmarshalNID2int(ctx, tmp)
+	var arg0 *model.DeleteAllocationStrategyInput
+	if tmp, ok := rawArgs["input"]; ok {
+		ctx := graphql.WithFieldInputContext(ctx, graphql.NewFieldInputWithField("input"))
+		arg0, err = ec.unmarshalODeleteAllocationStrategyInput2ᚖgithubᚗcomᚋnetᚑautoᚋresourceManagerᚋgraphᚋgraphqlᚋmodelᚐDeleteAllocationStrategyInput(ctx, tmp)
 		if err != nil {
 			return nil, err
 		}
 	}
-	args["allocationStrategyId"] = arg0
+	args["input"] = arg0
 	return args, nil
 }
 
 func (ec *executionContext) field_Mutation_DeleteResourcePool_args(ctx context.Context, rawArgs map[string]interface{}) (map[string]interface{}, error) {
 	var err error
 	args := map[string]interface{}{}
-	var arg0 int
-	if tmp, ok := rawArgs["resourcePoolId"]; ok {
-		ctx := graphql.WithFieldInputContext(ctx, graphql.NewFieldInputWithField("resourcePoolId"))
-		arg0, err = ec.unmarshalNID2int(ctx, tmp)
+	var arg0 model.DeleteResourcePoolInput
+	if tmp, ok := rawArgs["input"]; ok {
+		ctx := graphql.WithFieldInputContext(ctx, graphql.NewFieldInputWithField("input"))
+		arg0, err = ec.unmarshalNDeleteResourcePoolInput2githubᚗcomᚋnetᚑautoᚋresourceManagerᚋgraphᚋgraphqlᚋmodelᚐDeleteResourcePoolInput(ctx, tmp)
 		if err != nil {
 			return nil, err
 		}
 	}
-	args["resourcePoolId"] = arg0
+	args["input"] = arg0
 	return args, nil
 }
 
 func (ec *executionContext) field_Mutation_DeleteResourceType_args(ctx context.Context, rawArgs map[string]interface{}) (map[string]interface{}, error) {
 	var err error
 	args := map[string]interface{}{}
-	var arg0 int
-	if tmp, ok := rawArgs["resourceTypeId"]; ok {
-		ctx := graphql.WithFieldInputContext(ctx, graphql.NewFieldInputWithField("resourceTypeId"))
-		arg0, err = ec.unmarshalNID2int(ctx, tmp)
+	var arg0 model.DeleteResourceTypeInput
+	if tmp, ok := rawArgs["input"]; ok {
+		ctx := graphql.WithFieldInputContext(ctx, graphql.NewFieldInputWithField("input"))
+		arg0, err = ec.unmarshalNDeleteResourceTypeInput2githubᚗcomᚋnetᚑautoᚋresourceManagerᚋgraphᚋgraphqlᚋmodelᚐDeleteResourceTypeInput(ctx, tmp)
 		if err != nil {
 			return nil, err
 		}
 	}
-	args["resourceTypeId"] = arg0
+	args["input"] = arg0
 	return args, nil
 }
 
 func (ec *executionContext) field_Mutation_DeleteTag_args(ctx context.Context, rawArgs map[string]interface{}) (map[string]interface{}, error) {
 	var err error
 	args := map[string]interface{}{}
-	var arg0 int
-	if tmp, ok := rawArgs["tagId"]; ok {
-		ctx := graphql.WithFieldInputContext(ctx, graphql.NewFieldInputWithField("tagId"))
-		arg0, err = ec.unmarshalNID2int(ctx, tmp)
+	var arg0 model.DeleteTagInput
+	if tmp, ok := rawArgs["input"]; ok {
+		ctx := graphql.WithFieldInputContext(ctx, graphql.NewFieldInputWithField("input"))
+		arg0, err = ec.unmarshalNDeleteTagInput2githubᚗcomᚋnetᚑautoᚋresourceManagerᚋgraphᚋgraphqlᚋmodelᚐDeleteTagInput(ctx, tmp)
 		if err != nil {
 			return nil, err
 		}
 	}
-	args["tagId"] = arg0
+	args["input"] = arg0
 	return args, nil
 }
 
@@ -1294,24 +1671,15 @@ func (ec *executionContext) field_Mutation_FreeResource_args(ctx context.Context
 func (ec *executionContext) field_Mutation_TagPool_args(ctx context.Context, rawArgs map[string]interface{}) (map[string]interface{}, error) {
 	var err error
 	args := map[string]interface{}{}
-	var arg0 int
-	if tmp, ok := rawArgs["tagId"]; ok {
-		ctx := graphql.WithFieldInputContext(ctx, graphql.NewFieldInputWithField("tagId"))
-		arg0, err = ec.unmarshalNID2int(ctx, tmp)
+	var arg0 model.TagPoolInput
+	if tmp, ok := rawArgs["input"]; ok {
+		ctx := graphql.WithFieldInputContext(ctx, graphql.NewFieldInputWithField("input"))
+		arg0, err = ec.unmarshalNTagPoolInput2githubᚗcomᚋnetᚑautoᚋresourceManagerᚋgraphᚋgraphqlᚋmodelᚐTagPoolInput(ctx, tmp)
 		if err != nil {
 			return nil, err
 		}
 	}
-	args["tagId"] = arg0
-	var arg1 int
-	if tmp, ok := rawArgs["poolId"]; ok {
-		ctx := graphql.WithFieldInputContext(ctx, graphql.NewFieldInputWithField("poolId"))
-		arg1, err = ec.unmarshalNID2int(ctx, tmp)
-		if err != nil {
-			return nil, err
-		}
-	}
-	args["poolId"] = arg1
+	args["input"] = arg0
 	return args, nil
 }
 
@@ -1360,48 +1728,30 @@ func (ec *executionContext) field_Mutation_TestAllocationStrategy_args(ctx conte
 func (ec *executionContext) field_Mutation_UpdateResourceTypeName_args(ctx context.Context, rawArgs map[string]interface{}) (map[string]interface{}, error) {
 	var err error
 	args := map[string]interface{}{}
-	var arg0 int
-	if tmp, ok := rawArgs["resourceTypeId"]; ok {
-		ctx := graphql.WithFieldInputContext(ctx, graphql.NewFieldInputWithField("resourceTypeId"))
-		arg0, err = ec.unmarshalNID2int(ctx, tmp)
+	var arg0 model.UpdateResourceTypeNameInput
+	if tmp, ok := rawArgs["input"]; ok {
+		ctx := graphql.WithFieldInputContext(ctx, graphql.NewFieldInputWithField("input"))
+		arg0, err = ec.unmarshalNUpdateResourceTypeNameInput2githubᚗcomᚋnetᚑautoᚋresourceManagerᚋgraphᚋgraphqlᚋmodelᚐUpdateResourceTypeNameInput(ctx, tmp)
 		if err != nil {
 			return nil, err
 		}
 	}
-	args["resourceTypeId"] = arg0
-	var arg1 string
-	if tmp, ok := rawArgs["resourceName"]; ok {
-		ctx := graphql.WithFieldInputContext(ctx, graphql.NewFieldInputWithField("resourceName"))
-		arg1, err = ec.unmarshalNString2string(ctx, tmp)
-		if err != nil {
-			return nil, err
-		}
-	}
-	args["resourceName"] = arg1
+	args["input"] = arg0
 	return args, nil
 }
 
 func (ec *executionContext) field_Mutation_UpdateTag_args(ctx context.Context, rawArgs map[string]interface{}) (map[string]interface{}, error) {
 	var err error
 	args := map[string]interface{}{}
-	var arg0 int
-	if tmp, ok := rawArgs["tagId"]; ok {
-		ctx := graphql.WithFieldInputContext(ctx, graphql.NewFieldInputWithField("tagId"))
-		arg0, err = ec.unmarshalNID2int(ctx, tmp)
+	var arg0 model.UpdateTagInput
+	if tmp, ok := rawArgs["input"]; ok {
+		ctx := graphql.WithFieldInputContext(ctx, graphql.NewFieldInputWithField("input"))
+		arg0, err = ec.unmarshalNUpdateTagInput2githubᚗcomᚋnetᚑautoᚋresourceManagerᚋgraphᚋgraphqlᚋmodelᚐUpdateTagInput(ctx, tmp)
 		if err != nil {
 			return nil, err
 		}
 	}
-	args["tagId"] = arg0
-	var arg1 string
-	if tmp, ok := rawArgs["tag"]; ok {
-		ctx := graphql.WithFieldInputContext(ctx, graphql.NewFieldInputWithField("tag"))
-		arg1, err = ec.unmarshalNString2string(ctx, tmp)
-		if err != nil {
-			return nil, err
-		}
-	}
-	args["tag"] = arg1
+	args["input"] = arg0
 	return args, nil
 }
 
@@ -1534,6 +1884,63 @@ func (ec *executionContext) field_Query___type_args(ctx context.Context, rawArgs
 	return args, nil
 }
 
+func (ec *executionContext) field_Query_node_args(ctx context.Context, rawArgs map[string]interface{}) (map[string]interface{}, error) {
+	var err error
+	args := map[string]interface{}{}
+	var arg0 int
+	if tmp, ok := rawArgs["id"]; ok {
+		ctx := graphql.WithFieldInputContext(ctx, graphql.NewFieldInputWithField("id"))
+		arg0, err = ec.unmarshalNID2int(ctx, tmp)
+		if err != nil {
+			return nil, err
+		}
+	}
+	args["id"] = arg0
+	return args, nil
+}
+
+func (ec *executionContext) field_ResourcePool_allocatedResources_args(ctx context.Context, rawArgs map[string]interface{}) (map[string]interface{}, error) {
+	var err error
+	args := map[string]interface{}{}
+	var arg0 *int
+	if tmp, ok := rawArgs["first"]; ok {
+		ctx := graphql.WithFieldInputContext(ctx, graphql.NewFieldInputWithField("first"))
+		arg0, err = ec.unmarshalOInt2ᚖint(ctx, tmp)
+		if err != nil {
+			return nil, err
+		}
+	}
+	args["first"] = arg0
+	var arg1 *int
+	if tmp, ok := rawArgs["last"]; ok {
+		ctx := graphql.WithFieldInputContext(ctx, graphql.NewFieldInputWithField("last"))
+		arg1, err = ec.unmarshalOInt2ᚖint(ctx, tmp)
+		if err != nil {
+			return nil, err
+		}
+	}
+	args["last"] = arg1
+	var arg2 *int
+	if tmp, ok := rawArgs["before"]; ok {
+		ctx := graphql.WithFieldInputContext(ctx, graphql.NewFieldInputWithField("before"))
+		arg2, err = ec.unmarshalOID2ᚖint(ctx, tmp)
+		if err != nil {
+			return nil, err
+		}
+	}
+	args["before"] = arg2
+	var arg3 *int
+	if tmp, ok := rawArgs["after"]; ok {
+		ctx := graphql.WithFieldInputContext(ctx, graphql.NewFieldInputWithField("after"))
+		arg3, err = ec.unmarshalOID2ᚖint(ctx, tmp)
+		if err != nil {
+			return nil, err
+		}
+	}
+	args["after"] = arg3
+	return args, nil
+}
+
 func (ec *executionContext) field___Type_enumValues_args(ctx context.Context, rawArgs map[string]interface{}) (map[string]interface{}, error) {
 	var err error
 	args := map[string]interface{}{}
@@ -1572,7 +1979,7 @@ func (ec *executionContext) field___Type_fields_args(ctx context.Context, rawArg
 
 // region    **************************** field.gotpl *****************************
 
-func (ec *executionContext) _AllocationStrategy_ID(ctx context.Context, field graphql.CollectedField, obj *ent.AllocationStrategy) (ret graphql.Marshaler) {
+func (ec *executionContext) _AllocationStrategy_id(ctx context.Context, field graphql.CollectedField, obj *ent.AllocationStrategy) (ret graphql.Marshaler) {
 	defer func() {
 		if r := recover(); r != nil {
 			ec.Error(ctx, ec.Recover(ctx, r))
@@ -1739,6 +2146,421 @@ func (ec *executionContext) _AllocationStrategy_Script(ctx context.Context, fiel
 	return ec.marshalNString2string(ctx, field.Selections, res)
 }
 
+func (ec *executionContext) _CreateAllocatingPoolPayload_pool(ctx context.Context, field graphql.CollectedField, obj *model.CreateAllocatingPoolPayload) (ret graphql.Marshaler) {
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	fc := &graphql.FieldContext{
+		Object:   "CreateAllocatingPoolPayload",
+		Field:    field,
+		Args:     nil,
+		IsMethod: false,
+	}
+
+	ctx = graphql.WithFieldContext(ctx, fc)
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.Pool, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		return graphql.Null
+	}
+	res := resTmp.(*ent.ResourcePool)
+	fc.Result = res
+	return ec.marshalOResourcePool2ᚖgithubᚗcomᚋnetᚑautoᚋresourceManagerᚋentᚐResourcePool(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) _CreateAllocationStrategyPayload_strategy(ctx context.Context, field graphql.CollectedField, obj *model.CreateAllocationStrategyPayload) (ret graphql.Marshaler) {
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	fc := &graphql.FieldContext{
+		Object:   "CreateAllocationStrategyPayload",
+		Field:    field,
+		Args:     nil,
+		IsMethod: false,
+	}
+
+	ctx = graphql.WithFieldContext(ctx, fc)
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.Strategy, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		return graphql.Null
+	}
+	res := resTmp.(*ent.AllocationStrategy)
+	fc.Result = res
+	return ec.marshalOAllocationStrategy2ᚖgithubᚗcomᚋnetᚑautoᚋresourceManagerᚋentᚐAllocationStrategy(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) _CreateNestedAllocatingPoolPayload_pool(ctx context.Context, field graphql.CollectedField, obj *model.CreateNestedAllocatingPoolPayload) (ret graphql.Marshaler) {
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	fc := &graphql.FieldContext{
+		Object:   "CreateNestedAllocatingPoolPayload",
+		Field:    field,
+		Args:     nil,
+		IsMethod: false,
+	}
+
+	ctx = graphql.WithFieldContext(ctx, fc)
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.Pool, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		return graphql.Null
+	}
+	res := resTmp.(*ent.ResourcePool)
+	fc.Result = res
+	return ec.marshalOResourcePool2ᚖgithubᚗcomᚋnetᚑautoᚋresourceManagerᚋentᚐResourcePool(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) _CreateNestedSetPoolPayload_pool(ctx context.Context, field graphql.CollectedField, obj *model.CreateNestedSetPoolPayload) (ret graphql.Marshaler) {
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	fc := &graphql.FieldContext{
+		Object:   "CreateNestedSetPoolPayload",
+		Field:    field,
+		Args:     nil,
+		IsMethod: false,
+	}
+
+	ctx = graphql.WithFieldContext(ctx, fc)
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.Pool, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		return graphql.Null
+	}
+	res := resTmp.(*ent.ResourcePool)
+	fc.Result = res
+	return ec.marshalOResourcePool2ᚖgithubᚗcomᚋnetᚑautoᚋresourceManagerᚋentᚐResourcePool(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) _CreateNestedSingletonPoolPayload_pool(ctx context.Context, field graphql.CollectedField, obj *model.CreateNestedSingletonPoolPayload) (ret graphql.Marshaler) {
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	fc := &graphql.FieldContext{
+		Object:   "CreateNestedSingletonPoolPayload",
+		Field:    field,
+		Args:     nil,
+		IsMethod: false,
+	}
+
+	ctx = graphql.WithFieldContext(ctx, fc)
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.Pool, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		return graphql.Null
+	}
+	res := resTmp.(*ent.ResourcePool)
+	fc.Result = res
+	return ec.marshalOResourcePool2ᚖgithubᚗcomᚋnetᚑautoᚋresourceManagerᚋentᚐResourcePool(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) _CreateResourceTypePayload_resourceType(ctx context.Context, field graphql.CollectedField, obj *model.CreateResourceTypePayload) (ret graphql.Marshaler) {
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	fc := &graphql.FieldContext{
+		Object:   "CreateResourceTypePayload",
+		Field:    field,
+		Args:     nil,
+		IsMethod: false,
+	}
+
+	ctx = graphql.WithFieldContext(ctx, fc)
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.ResourceType, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(*ent.ResourceType)
+	fc.Result = res
+	return ec.marshalNResourceType2ᚖgithubᚗcomᚋnetᚑautoᚋresourceManagerᚋentᚐResourceType(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) _CreateSetPoolPayload_pool(ctx context.Context, field graphql.CollectedField, obj *model.CreateSetPoolPayload) (ret graphql.Marshaler) {
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	fc := &graphql.FieldContext{
+		Object:   "CreateSetPoolPayload",
+		Field:    field,
+		Args:     nil,
+		IsMethod: false,
+	}
+
+	ctx = graphql.WithFieldContext(ctx, fc)
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.Pool, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		return graphql.Null
+	}
+	res := resTmp.(*ent.ResourcePool)
+	fc.Result = res
+	return ec.marshalOResourcePool2ᚖgithubᚗcomᚋnetᚑautoᚋresourceManagerᚋentᚐResourcePool(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) _CreateSingletonPoolPayload_pool(ctx context.Context, field graphql.CollectedField, obj *model.CreateSingletonPoolPayload) (ret graphql.Marshaler) {
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	fc := &graphql.FieldContext{
+		Object:   "CreateSingletonPoolPayload",
+		Field:    field,
+		Args:     nil,
+		IsMethod: false,
+	}
+
+	ctx = graphql.WithFieldContext(ctx, fc)
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.Pool, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		return graphql.Null
+	}
+	res := resTmp.(*ent.ResourcePool)
+	fc.Result = res
+	return ec.marshalOResourcePool2ᚖgithubᚗcomᚋnetᚑautoᚋresourceManagerᚋentᚐResourcePool(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) _CreateTagPayload_tag(ctx context.Context, field graphql.CollectedField, obj *model.CreateTagPayload) (ret graphql.Marshaler) {
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	fc := &graphql.FieldContext{
+		Object:   "CreateTagPayload",
+		Field:    field,
+		Args:     nil,
+		IsMethod: false,
+	}
+
+	ctx = graphql.WithFieldContext(ctx, fc)
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.Tag, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		return graphql.Null
+	}
+	res := resTmp.(*ent.Tag)
+	fc.Result = res
+	return ec.marshalOTag2ᚖgithubᚗcomᚋnetᚑautoᚋresourceManagerᚋentᚐTag(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) _DeleteAllocationStrategyPayload_strategy(ctx context.Context, field graphql.CollectedField, obj *model.DeleteAllocationStrategyPayload) (ret graphql.Marshaler) {
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	fc := &graphql.FieldContext{
+		Object:   "DeleteAllocationStrategyPayload",
+		Field:    field,
+		Args:     nil,
+		IsMethod: false,
+	}
+
+	ctx = graphql.WithFieldContext(ctx, fc)
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.Strategy, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		return graphql.Null
+	}
+	res := resTmp.(*ent.AllocationStrategy)
+	fc.Result = res
+	return ec.marshalOAllocationStrategy2ᚖgithubᚗcomᚋnetᚑautoᚋresourceManagerᚋentᚐAllocationStrategy(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) _DeleteResourcePoolPayload_resourcePoolId(ctx context.Context, field graphql.CollectedField, obj *model.DeleteResourcePoolPayload) (ret graphql.Marshaler) {
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	fc := &graphql.FieldContext{
+		Object:   "DeleteResourcePoolPayload",
+		Field:    field,
+		Args:     nil,
+		IsMethod: false,
+	}
+
+	ctx = graphql.WithFieldContext(ctx, fc)
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.ResourcePoolID, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(int)
+	fc.Result = res
+	return ec.marshalNID2int(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) _DeleteResourceTypePayload_resourceTypeId(ctx context.Context, field graphql.CollectedField, obj *model.DeleteResourceTypePayload) (ret graphql.Marshaler) {
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	fc := &graphql.FieldContext{
+		Object:   "DeleteResourceTypePayload",
+		Field:    field,
+		Args:     nil,
+		IsMethod: false,
+	}
+
+	ctx = graphql.WithFieldContext(ctx, fc)
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.ResourceTypeID, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(int)
+	fc.Result = res
+	return ec.marshalNID2int(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) _DeleteTagPayload_tagId(ctx context.Context, field graphql.CollectedField, obj *model.DeleteTagPayload) (ret graphql.Marshaler) {
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	fc := &graphql.FieldContext{
+		Object:   "DeleteTagPayload",
+		Field:    field,
+		Args:     nil,
+		IsMethod: false,
+	}
+
+	ctx = graphql.WithFieldContext(ctx, fc)
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.TagID, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(int)
+	fc.Result = res
+	return ec.marshalNID2int(ctx, field.Selections, res)
+}
+
 func (ec *executionContext) _Mutation_CreateTag(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
 	defer func() {
 		if r := recover(); r != nil {
@@ -1763,7 +2585,7 @@ func (ec *executionContext) _Mutation_CreateTag(ctx context.Context, field graph
 	fc.Args = args
 	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
 		ctx = rctx // use context from middleware stack in children
-		return ec.resolvers.Mutation().CreateTag(rctx, args["tag"].(string))
+		return ec.resolvers.Mutation().CreateTag(rctx, args["input"].(model.CreateTagInput))
 	})
 	if err != nil {
 		ec.Error(ctx, err)
@@ -1775,9 +2597,9 @@ func (ec *executionContext) _Mutation_CreateTag(ctx context.Context, field graph
 		}
 		return graphql.Null
 	}
-	res := resTmp.(*ent.Tag)
+	res := resTmp.(*model.CreateTagPayload)
 	fc.Result = res
-	return ec.marshalNTag2ᚖgithubᚗcomᚋnetᚑautoᚋresourceManagerᚋentᚐTag(ctx, field.Selections, res)
+	return ec.marshalNCreateTagPayload2ᚖgithubᚗcomᚋnetᚑautoᚋresourceManagerᚋgraphᚋgraphqlᚋmodelᚐCreateTagPayload(ctx, field.Selections, res)
 }
 
 func (ec *executionContext) _Mutation_UpdateTag(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
@@ -1804,7 +2626,7 @@ func (ec *executionContext) _Mutation_UpdateTag(ctx context.Context, field graph
 	fc.Args = args
 	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
 		ctx = rctx // use context from middleware stack in children
-		return ec.resolvers.Mutation().UpdateTag(rctx, args["tagId"].(int), args["tag"].(string))
+		return ec.resolvers.Mutation().UpdateTag(rctx, args["input"].(model.UpdateTagInput))
 	})
 	if err != nil {
 		ec.Error(ctx, err)
@@ -1816,9 +2638,9 @@ func (ec *executionContext) _Mutation_UpdateTag(ctx context.Context, field graph
 		}
 		return graphql.Null
 	}
-	res := resTmp.(*ent.Tag)
+	res := resTmp.(*model.UpdateTagPayload)
 	fc.Result = res
-	return ec.marshalNTag2ᚖgithubᚗcomᚋnetᚑautoᚋresourceManagerᚋentᚐTag(ctx, field.Selections, res)
+	return ec.marshalNUpdateTagPayload2ᚖgithubᚗcomᚋnetᚑautoᚋresourceManagerᚋgraphᚋgraphqlᚋmodelᚐUpdateTagPayload(ctx, field.Selections, res)
 }
 
 func (ec *executionContext) _Mutation_DeleteTag(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
@@ -1845,7 +2667,7 @@ func (ec *executionContext) _Mutation_DeleteTag(ctx context.Context, field graph
 	fc.Args = args
 	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
 		ctx = rctx // use context from middleware stack in children
-		return ec.resolvers.Mutation().DeleteTag(rctx, args["tagId"].(int))
+		return ec.resolvers.Mutation().DeleteTag(rctx, args["input"].(model.DeleteTagInput))
 	})
 	if err != nil {
 		ec.Error(ctx, err)
@@ -1857,9 +2679,9 @@ func (ec *executionContext) _Mutation_DeleteTag(ctx context.Context, field graph
 		}
 		return graphql.Null
 	}
-	res := resTmp.(*ent.Tag)
+	res := resTmp.(*model.DeleteTagPayload)
 	fc.Result = res
-	return ec.marshalNTag2ᚖgithubᚗcomᚋnetᚑautoᚋresourceManagerᚋentᚐTag(ctx, field.Selections, res)
+	return ec.marshalNDeleteTagPayload2ᚖgithubᚗcomᚋnetᚑautoᚋresourceManagerᚋgraphᚋgraphqlᚋmodelᚐDeleteTagPayload(ctx, field.Selections, res)
 }
 
 func (ec *executionContext) _Mutation_TagPool(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
@@ -1886,7 +2708,7 @@ func (ec *executionContext) _Mutation_TagPool(ctx context.Context, field graphql
 	fc.Args = args
 	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
 		ctx = rctx // use context from middleware stack in children
-		return ec.resolvers.Mutation().TagPool(rctx, args["tagId"].(int), args["poolId"].(int))
+		return ec.resolvers.Mutation().TagPool(rctx, args["input"].(model.TagPoolInput))
 	})
 	if err != nil {
 		ec.Error(ctx, err)
@@ -1898,9 +2720,9 @@ func (ec *executionContext) _Mutation_TagPool(ctx context.Context, field graphql
 		}
 		return graphql.Null
 	}
-	res := resTmp.(*ent.Tag)
+	res := resTmp.(*model.TagPoolPayload)
 	fc.Result = res
-	return ec.marshalNTag2ᚖgithubᚗcomᚋnetᚑautoᚋresourceManagerᚋentᚐTag(ctx, field.Selections, res)
+	return ec.marshalNTagPoolPayload2ᚖgithubᚗcomᚋnetᚑautoᚋresourceManagerᚋgraphᚋgraphqlᚋmodelᚐTagPoolPayload(ctx, field.Selections, res)
 }
 
 func (ec *executionContext) _Mutation_CreateAllocationStrategy(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
@@ -1927,7 +2749,7 @@ func (ec *executionContext) _Mutation_CreateAllocationStrategy(ctx context.Conte
 	fc.Args = args
 	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
 		ctx = rctx // use context from middleware stack in children
-		return ec.resolvers.Mutation().CreateAllocationStrategy(rctx, args["name"].(string), args["description"].(*string), args["script"].(string), args["lang"].(allocationstrategy.Lang))
+		return ec.resolvers.Mutation().CreateAllocationStrategy(rctx, args["input"].(*model.CreateAllocationStrategyInput))
 	})
 	if err != nil {
 		ec.Error(ctx, err)
@@ -1939,9 +2761,9 @@ func (ec *executionContext) _Mutation_CreateAllocationStrategy(ctx context.Conte
 		}
 		return graphql.Null
 	}
-	res := resTmp.(*ent.AllocationStrategy)
+	res := resTmp.(*model.CreateAllocationStrategyPayload)
 	fc.Result = res
-	return ec.marshalNAllocationStrategy2ᚖgithubᚗcomᚋnetᚑautoᚋresourceManagerᚋentᚐAllocationStrategy(ctx, field.Selections, res)
+	return ec.marshalNCreateAllocationStrategyPayload2ᚖgithubᚗcomᚋnetᚑautoᚋresourceManagerᚋgraphᚋgraphqlᚋmodelᚐCreateAllocationStrategyPayload(ctx, field.Selections, res)
 }
 
 func (ec *executionContext) _Mutation_DeleteAllocationStrategy(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
@@ -1968,7 +2790,7 @@ func (ec *executionContext) _Mutation_DeleteAllocationStrategy(ctx context.Conte
 	fc.Args = args
 	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
 		ctx = rctx // use context from middleware stack in children
-		return ec.resolvers.Mutation().DeleteAllocationStrategy(rctx, args["allocationStrategyId"].(int))
+		return ec.resolvers.Mutation().DeleteAllocationStrategy(rctx, args["input"].(*model.DeleteAllocationStrategyInput))
 	})
 	if err != nil {
 		ec.Error(ctx, err)
@@ -1980,9 +2802,9 @@ func (ec *executionContext) _Mutation_DeleteAllocationStrategy(ctx context.Conte
 		}
 		return graphql.Null
 	}
-	res := resTmp.(*ent.AllocationStrategy)
+	res := resTmp.(*model.DeleteAllocationStrategyPayload)
 	fc.Result = res
-	return ec.marshalNAllocationStrategy2ᚖgithubᚗcomᚋnetᚑautoᚋresourceManagerᚋentᚐAllocationStrategy(ctx, field.Selections, res)
+	return ec.marshalNDeleteAllocationStrategyPayload2ᚖgithubᚗcomᚋnetᚑautoᚋresourceManagerᚋgraphᚋgraphqlᚋmodelᚐDeleteAllocationStrategyPayload(ctx, field.Selections, res)
 }
 
 func (ec *executionContext) _Mutation_TestAllocationStrategy(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
@@ -2144,9 +2966,9 @@ func (ec *executionContext) _Mutation_CreateSetPool(ctx context.Context, field g
 		}
 		return graphql.Null
 	}
-	res := resTmp.(*ent.ResourcePool)
+	res := resTmp.(*model.CreateSetPoolPayload)
 	fc.Result = res
-	return ec.marshalNResourcePool2ᚖgithubᚗcomᚋnetᚑautoᚋresourceManagerᚋentᚐResourcePool(ctx, field.Selections, res)
+	return ec.marshalNCreateSetPoolPayload2ᚖgithubᚗcomᚋnetᚑautoᚋresourceManagerᚋgraphᚋgraphqlᚋmodelᚐCreateSetPoolPayload(ctx, field.Selections, res)
 }
 
 func (ec *executionContext) _Mutation_CreateNestedSetPool(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
@@ -2173,7 +2995,7 @@ func (ec *executionContext) _Mutation_CreateNestedSetPool(ctx context.Context, f
 	fc.Args = args
 	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
 		ctx = rctx // use context from middleware stack in children
-		return ec.resolvers.Mutation().CreateNestedSetPool(rctx, args["input"].(model.CreateSetPoolInput), args["parentResourceId"].(int))
+		return ec.resolvers.Mutation().CreateNestedSetPool(rctx, args["input"].(model.CreateNestedSetPoolInput))
 	})
 	if err != nil {
 		ec.Error(ctx, err)
@@ -2185,9 +3007,9 @@ func (ec *executionContext) _Mutation_CreateNestedSetPool(ctx context.Context, f
 		}
 		return graphql.Null
 	}
-	res := resTmp.(*ent.ResourcePool)
+	res := resTmp.(*model.CreateNestedSetPoolPayload)
 	fc.Result = res
-	return ec.marshalNResourcePool2ᚖgithubᚗcomᚋnetᚑautoᚋresourceManagerᚋentᚐResourcePool(ctx, field.Selections, res)
+	return ec.marshalNCreateNestedSetPoolPayload2ᚖgithubᚗcomᚋnetᚑautoᚋresourceManagerᚋgraphᚋgraphqlᚋmodelᚐCreateNestedSetPoolPayload(ctx, field.Selections, res)
 }
 
 func (ec *executionContext) _Mutation_CreateSingletonPool(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
@@ -2226,9 +3048,9 @@ func (ec *executionContext) _Mutation_CreateSingletonPool(ctx context.Context, f
 		}
 		return graphql.Null
 	}
-	res := resTmp.(*ent.ResourcePool)
+	res := resTmp.(*model.CreateSingletonPoolPayload)
 	fc.Result = res
-	return ec.marshalNResourcePool2ᚖgithubᚗcomᚋnetᚑautoᚋresourceManagerᚋentᚐResourcePool(ctx, field.Selections, res)
+	return ec.marshalNCreateSingletonPoolPayload2ᚖgithubᚗcomᚋnetᚑautoᚋresourceManagerᚋgraphᚋgraphqlᚋmodelᚐCreateSingletonPoolPayload(ctx, field.Selections, res)
 }
 
 func (ec *executionContext) _Mutation_CreateNestedSingletonPool(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
@@ -2255,7 +3077,7 @@ func (ec *executionContext) _Mutation_CreateNestedSingletonPool(ctx context.Cont
 	fc.Args = args
 	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
 		ctx = rctx // use context from middleware stack in children
-		return ec.resolvers.Mutation().CreateNestedSingletonPool(rctx, args["input"].(*model.CreateSingletonPoolInput), args["parentResourceId"].(int))
+		return ec.resolvers.Mutation().CreateNestedSingletonPool(rctx, args["input"].(model.CreateNestedSingletonPoolInput))
 	})
 	if err != nil {
 		ec.Error(ctx, err)
@@ -2267,9 +3089,9 @@ func (ec *executionContext) _Mutation_CreateNestedSingletonPool(ctx context.Cont
 		}
 		return graphql.Null
 	}
-	res := resTmp.(*ent.ResourcePool)
+	res := resTmp.(*model.CreateNestedSingletonPoolPayload)
 	fc.Result = res
-	return ec.marshalNResourcePool2ᚖgithubᚗcomᚋnetᚑautoᚋresourceManagerᚋentᚐResourcePool(ctx, field.Selections, res)
+	return ec.marshalNCreateNestedSingletonPoolPayload2ᚖgithubᚗcomᚋnetᚑautoᚋresourceManagerᚋgraphᚋgraphqlᚋmodelᚐCreateNestedSingletonPoolPayload(ctx, field.Selections, res)
 }
 
 func (ec *executionContext) _Mutation_CreateAllocatingPool(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
@@ -2308,9 +3130,9 @@ func (ec *executionContext) _Mutation_CreateAllocatingPool(ctx context.Context, 
 		}
 		return graphql.Null
 	}
-	res := resTmp.(*ent.ResourcePool)
+	res := resTmp.(*model.CreateAllocatingPoolPayload)
 	fc.Result = res
-	return ec.marshalNResourcePool2ᚖgithubᚗcomᚋnetᚑautoᚋresourceManagerᚋentᚐResourcePool(ctx, field.Selections, res)
+	return ec.marshalNCreateAllocatingPoolPayload2ᚖgithubᚗcomᚋnetᚑautoᚋresourceManagerᚋgraphᚋgraphqlᚋmodelᚐCreateAllocatingPoolPayload(ctx, field.Selections, res)
 }
 
 func (ec *executionContext) _Mutation_CreateNestedAllocatingPool(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
@@ -2337,7 +3159,7 @@ func (ec *executionContext) _Mutation_CreateNestedAllocatingPool(ctx context.Con
 	fc.Args = args
 	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
 		ctx = rctx // use context from middleware stack in children
-		return ec.resolvers.Mutation().CreateNestedAllocatingPool(rctx, args["input"].(*model.CreateAllocatingPoolInput), args["parentResourceId"].(int))
+		return ec.resolvers.Mutation().CreateNestedAllocatingPool(rctx, args["input"].(model.CreateNestedAllocatingPoolInput))
 	})
 	if err != nil {
 		ec.Error(ctx, err)
@@ -2349,9 +3171,9 @@ func (ec *executionContext) _Mutation_CreateNestedAllocatingPool(ctx context.Con
 		}
 		return graphql.Null
 	}
-	res := resTmp.(*ent.ResourcePool)
+	res := resTmp.(*model.CreateNestedAllocatingPoolPayload)
 	fc.Result = res
-	return ec.marshalNResourcePool2ᚖgithubᚗcomᚋnetᚑautoᚋresourceManagerᚋentᚐResourcePool(ctx, field.Selections, res)
+	return ec.marshalNCreateNestedAllocatingPoolPayload2ᚖgithubᚗcomᚋnetᚑautoᚋresourceManagerᚋgraphᚋgraphqlᚋmodelᚐCreateNestedAllocatingPoolPayload(ctx, field.Selections, res)
 }
 
 func (ec *executionContext) _Mutation_DeleteResourcePool(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
@@ -2378,7 +3200,7 @@ func (ec *executionContext) _Mutation_DeleteResourcePool(ctx context.Context, fi
 	fc.Args = args
 	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
 		ctx = rctx // use context from middleware stack in children
-		return ec.resolvers.Mutation().DeleteResourcePool(rctx, args["resourcePoolId"].(int))
+		return ec.resolvers.Mutation().DeleteResourcePool(rctx, args["input"].(model.DeleteResourcePoolInput))
 	})
 	if err != nil {
 		ec.Error(ctx, err)
@@ -2390,9 +3212,9 @@ func (ec *executionContext) _Mutation_DeleteResourcePool(ctx context.Context, fi
 		}
 		return graphql.Null
 	}
-	res := resTmp.(string)
+	res := resTmp.(*model.DeleteResourcePoolPayload)
 	fc.Result = res
-	return ec.marshalNString2string(ctx, field.Selections, res)
+	return ec.marshalNDeleteResourcePoolPayload2ᚖgithubᚗcomᚋnetᚑautoᚋresourceManagerᚋgraphᚋgraphqlᚋmodelᚐDeleteResourcePoolPayload(ctx, field.Selections, res)
 }
 
 func (ec *executionContext) _Mutation_CreateResourceType(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
@@ -2419,7 +3241,7 @@ func (ec *executionContext) _Mutation_CreateResourceType(ctx context.Context, fi
 	fc.Args = args
 	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
 		ctx = rctx // use context from middleware stack in children
-		return ec.resolvers.Mutation().CreateResourceType(rctx, args["resourceName"].(string), args["resourceProperties"].(map[string]interface{}))
+		return ec.resolvers.Mutation().CreateResourceType(rctx, args["input"].(model.CreateResourceTypeInput))
 	})
 	if err != nil {
 		ec.Error(ctx, err)
@@ -2431,9 +3253,9 @@ func (ec *executionContext) _Mutation_CreateResourceType(ctx context.Context, fi
 		}
 		return graphql.Null
 	}
-	res := resTmp.(*ent.ResourceType)
+	res := resTmp.(*model.CreateResourceTypePayload)
 	fc.Result = res
-	return ec.marshalNResourceType2ᚖgithubᚗcomᚋnetᚑautoᚋresourceManagerᚋentᚐResourceType(ctx, field.Selections, res)
+	return ec.marshalNCreateResourceTypePayload2ᚖgithubᚗcomᚋnetᚑautoᚋresourceManagerᚋgraphᚋgraphqlᚋmodelᚐCreateResourceTypePayload(ctx, field.Selections, res)
 }
 
 func (ec *executionContext) _Mutation_DeleteResourceType(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
@@ -2460,7 +3282,7 @@ func (ec *executionContext) _Mutation_DeleteResourceType(ctx context.Context, fi
 	fc.Args = args
 	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
 		ctx = rctx // use context from middleware stack in children
-		return ec.resolvers.Mutation().DeleteResourceType(rctx, args["resourceTypeId"].(int))
+		return ec.resolvers.Mutation().DeleteResourceType(rctx, args["input"].(model.DeleteResourceTypeInput))
 	})
 	if err != nil {
 		ec.Error(ctx, err)
@@ -2472,9 +3294,9 @@ func (ec *executionContext) _Mutation_DeleteResourceType(ctx context.Context, fi
 		}
 		return graphql.Null
 	}
-	res := resTmp.(string)
+	res := resTmp.(*model.DeleteResourceTypePayload)
 	fc.Result = res
-	return ec.marshalNString2string(ctx, field.Selections, res)
+	return ec.marshalNDeleteResourceTypePayload2ᚖgithubᚗcomᚋnetᚑautoᚋresourceManagerᚋgraphᚋgraphqlᚋmodelᚐDeleteResourceTypePayload(ctx, field.Selections, res)
 }
 
 func (ec *executionContext) _Mutation_UpdateResourceTypeName(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
@@ -2501,7 +3323,7 @@ func (ec *executionContext) _Mutation_UpdateResourceTypeName(ctx context.Context
 	fc.Args = args
 	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
 		ctx = rctx // use context from middleware stack in children
-		return ec.resolvers.Mutation().UpdateResourceTypeName(rctx, args["resourceTypeId"].(int), args["resourceName"].(string))
+		return ec.resolvers.Mutation().UpdateResourceTypeName(rctx, args["input"].(model.UpdateResourceTypeNameInput))
 	})
 	if err != nil {
 		ec.Error(ctx, err)
@@ -2513,12 +3335,148 @@ func (ec *executionContext) _Mutation_UpdateResourceTypeName(ctx context.Context
 		}
 		return graphql.Null
 	}
-	res := resTmp.(*ent.ResourceType)
+	res := resTmp.(*model.UpdateResourceTypeNamePayload)
 	fc.Result = res
-	return ec.marshalNResourceType2ᚖgithubᚗcomᚋnetᚑautoᚋresourceManagerᚋentᚐResourceType(ctx, field.Selections, res)
+	return ec.marshalNUpdateResourceTypeNamePayload2ᚖgithubᚗcomᚋnetᚑautoᚋresourceManagerᚋgraphᚋgraphqlᚋmodelᚐUpdateResourceTypeNamePayload(ctx, field.Selections, res)
 }
 
-func (ec *executionContext) _PropertyType_ID(ctx context.Context, field graphql.CollectedField, obj *ent.PropertyType) (ret graphql.Marshaler) {
+func (ec *executionContext) _PageInfo_hasPreviousEdge(ctx context.Context, field graphql.CollectedField, obj *model.PageInfo) (ret graphql.Marshaler) {
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	fc := &graphql.FieldContext{
+		Object:   "PageInfo",
+		Field:    field,
+		Args:     nil,
+		IsMethod: false,
+	}
+
+	ctx = graphql.WithFieldContext(ctx, fc)
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.HasPreviousEdge, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(bool)
+	fc.Result = res
+	return ec.marshalNBoolean2bool(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) _PageInfo_hasNextEdge(ctx context.Context, field graphql.CollectedField, obj *model.PageInfo) (ret graphql.Marshaler) {
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	fc := &graphql.FieldContext{
+		Object:   "PageInfo",
+		Field:    field,
+		Args:     nil,
+		IsMethod: false,
+	}
+
+	ctx = graphql.WithFieldContext(ctx, fc)
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.HasNextEdge, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(bool)
+	fc.Result = res
+	return ec.marshalNBoolean2bool(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) _PageInfo_startCursor(ctx context.Context, field graphql.CollectedField, obj *model.PageInfo) (ret graphql.Marshaler) {
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	fc := &graphql.FieldContext{
+		Object:   "PageInfo",
+		Field:    field,
+		Args:     nil,
+		IsMethod: false,
+	}
+
+	ctx = graphql.WithFieldContext(ctx, fc)
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.StartCursor, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(int)
+	fc.Result = res
+	return ec.marshalNID2int(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) _PageInfo_endCursor(ctx context.Context, field graphql.CollectedField, obj *model.PageInfo) (ret graphql.Marshaler) {
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	fc := &graphql.FieldContext{
+		Object:   "PageInfo",
+		Field:    field,
+		Args:     nil,
+		IsMethod: false,
+	}
+
+	ctx = graphql.WithFieldContext(ctx, fc)
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.EndCursor, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(int)
+	fc.Result = res
+	return ec.marshalNID2int(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) _PropertyType_id(ctx context.Context, field graphql.CollectedField, obj *ent.PropertyType) (ret graphql.Marshaler) {
 	defer func() {
 		if r := recover(); r != nil {
 			ec.Error(ctx, ec.Recover(ctx, r))
@@ -3145,6 +4103,44 @@ func (ec *executionContext) _Query_QueryTags(ctx context.Context, field graphql.
 	return ec.marshalNTag2ᚕᚖgithubᚗcomᚋnetᚑautoᚋresourceManagerᚋentᚐTagᚄ(ctx, field.Selections, res)
 }
 
+func (ec *executionContext) _Query_node(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	fc := &graphql.FieldContext{
+		Object:   "Query",
+		Field:    field,
+		Args:     nil,
+		IsMethod: true,
+	}
+
+	ctx = graphql.WithFieldContext(ctx, fc)
+	rawArgs := field.ArgumentMap(ec.Variables)
+	args, err := ec.field_Query_node_args(ctx, rawArgs)
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	fc.Args = args
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return ec.resolvers.Query().Node(rctx, args["id"].(int))
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		return graphql.Null
+	}
+	res := resTmp.(ent.Noder)
+	fc.Result = res
+	return ec.marshalONode2githubᚗcomᚋnetᚑautoᚋresourceManagerᚋentᚐNoder(ctx, field.Selections, res)
+}
+
 func (ec *executionContext) _Query___type(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
 	defer func() {
 		if r := recover(); r != nil {
@@ -3214,7 +4210,7 @@ func (ec *executionContext) _Query___schema(ctx context.Context, field graphql.C
 	return ec.marshalO__Schema2ᚖgithubᚗcomᚋ99designsᚋgqlgenᚋgraphqlᚋintrospectionᚐSchema(ctx, field.Selections, res)
 }
 
-func (ec *executionContext) _Resource_ID(ctx context.Context, field graphql.CollectedField, obj *ent.Resource) (ret graphql.Marshaler) {
+func (ec *executionContext) _Resource_id(ctx context.Context, field graphql.CollectedField, obj *ent.Resource) (ret graphql.Marshaler) {
 	defer func() {
 		if r := recover(); r != nil {
 			ec.Error(ctx, ec.Recover(ctx, r))
@@ -3313,7 +4309,143 @@ func (ec *executionContext) _Resource_NestedPool(ctx context.Context, field grap
 	return ec.marshalOResourcePool2ᚖgithubᚗcomᚋnetᚑautoᚋresourceManagerᚋentᚐResourcePool(ctx, field.Selections, res)
 }
 
-func (ec *executionContext) _ResourcePool_ID(ctx context.Context, field graphql.CollectedField, obj *ent.ResourcePool) (ret graphql.Marshaler) {
+func (ec *executionContext) _ResourceConnection_pageInfo(ctx context.Context, field graphql.CollectedField, obj *model.ResourceConnection) (ret graphql.Marshaler) {
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	fc := &graphql.FieldContext{
+		Object:   "ResourceConnection",
+		Field:    field,
+		Args:     nil,
+		IsMethod: false,
+	}
+
+	ctx = graphql.WithFieldContext(ctx, fc)
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.PageInfo, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(*model.PageInfo)
+	fc.Result = res
+	return ec.marshalNPageInfo2ᚖgithubᚗcomᚋnetᚑautoᚋresourceManagerᚋgraphᚋgraphqlᚋmodelᚐPageInfo(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) _ResourceConnection_edges(ctx context.Context, field graphql.CollectedField, obj *model.ResourceConnection) (ret graphql.Marshaler) {
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	fc := &graphql.FieldContext{
+		Object:   "ResourceConnection",
+		Field:    field,
+		Args:     nil,
+		IsMethod: false,
+	}
+
+	ctx = graphql.WithFieldContext(ctx, fc)
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.Edges, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.([]*model.ResourceEdge)
+	fc.Result = res
+	return ec.marshalNResourceEdge2ᚕᚖgithubᚗcomᚋnetᚑautoᚋresourceManagerᚋgraphᚋgraphqlᚋmodelᚐResourceEdge(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) _ResourceEdge_node(ctx context.Context, field graphql.CollectedField, obj *model.ResourceEdge) (ret graphql.Marshaler) {
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	fc := &graphql.FieldContext{
+		Object:   "ResourceEdge",
+		Field:    field,
+		Args:     nil,
+		IsMethod: false,
+	}
+
+	ctx = graphql.WithFieldContext(ctx, fc)
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.Node, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(*ent.Resource)
+	fc.Result = res
+	return ec.marshalNResource2ᚖgithubᚗcomᚋnetᚑautoᚋresourceManagerᚋentᚐResource(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) _ResourceEdge_cursor(ctx context.Context, field graphql.CollectedField, obj *model.ResourceEdge) (ret graphql.Marshaler) {
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	fc := &graphql.FieldContext{
+		Object:   "ResourceEdge",
+		Field:    field,
+		Args:     nil,
+		IsMethod: false,
+	}
+
+	ctx = graphql.WithFieldContext(ctx, fc)
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.Cursor, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(int)
+	fc.Result = res
+	return ec.marshalNID2int(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) _ResourcePool_id(ctx context.Context, field graphql.CollectedField, obj *ent.ResourcePool) (ret graphql.Marshaler) {
 	defer func() {
 		if r := recover(); r != nil {
 			ec.Error(ctx, ec.Recover(ctx, r))
@@ -3483,6 +4615,44 @@ func (ec *executionContext) _ResourcePool_Resources(ctx context.Context, field g
 	return ec.marshalNResource2ᚕᚖgithubᚗcomᚋnetᚑautoᚋresourceManagerᚋentᚐResourceᚄ(ctx, field.Selections, res)
 }
 
+func (ec *executionContext) _ResourcePool_allocatedResources(ctx context.Context, field graphql.CollectedField, obj *ent.ResourcePool) (ret graphql.Marshaler) {
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	fc := &graphql.FieldContext{
+		Object:   "ResourcePool",
+		Field:    field,
+		Args:     nil,
+		IsMethod: true,
+	}
+
+	ctx = graphql.WithFieldContext(ctx, fc)
+	rawArgs := field.ArgumentMap(ec.Variables)
+	args, err := ec.field_ResourcePool_allocatedResources_args(ctx, rawArgs)
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	fc.Args = args
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return ec.resolvers.ResourcePool().AllocatedResources(rctx, obj, args["first"].(*int), args["last"].(*int), args["before"].(*int), args["after"].(*int))
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		return graphql.Null
+	}
+	res := resTmp.(*model.ResourceConnection)
+	fc.Result = res
+	return ec.marshalOResourceConnection2ᚖgithubᚗcomᚋnetᚑautoᚋresourceManagerᚋgraphᚋgraphqlᚋmodelᚐResourceConnection(ctx, field.Selections, res)
+}
+
 func (ec *executionContext) _ResourcePool_Tags(ctx context.Context, field graphql.CollectedField, obj *ent.ResourcePool) (ret graphql.Marshaler) {
 	defer func() {
 		if r := recover(); r != nil {
@@ -3548,7 +4718,7 @@ func (ec *executionContext) _ResourcePool_AllocationStrategy(ctx context.Context
 	return ec.marshalOAllocationStrategy2ᚖgithubᚗcomᚋnetᚑautoᚋresourceManagerᚋentᚐAllocationStrategy(ctx, field.Selections, res)
 }
 
-func (ec *executionContext) _ResourceType_ID(ctx context.Context, field graphql.CollectedField, obj *ent.ResourceType) (ret graphql.Marshaler) {
+func (ec *executionContext) _ResourceType_id(ctx context.Context, field graphql.CollectedField, obj *ent.ResourceType) (ret graphql.Marshaler) {
 	defer func() {
 		if r := recover(); r != nil {
 			ec.Error(ctx, ec.Recover(ctx, r))
@@ -3684,7 +4854,7 @@ func (ec *executionContext) _ResourceType_Pools(ctx context.Context, field graph
 	return ec.marshalNResourcePool2ᚕᚖgithubᚗcomᚋnetᚑautoᚋresourceManagerᚋentᚐResourcePoolᚄ(ctx, field.Selections, res)
 }
 
-func (ec *executionContext) _Tag_ID(ctx context.Context, field graphql.CollectedField, obj *ent.Tag) (ret graphql.Marshaler) {
+func (ec *executionContext) _Tag_id(ctx context.Context, field graphql.CollectedField, obj *ent.Tag) (ret graphql.Marshaler) {
 	defer func() {
 		if r := recover(); r != nil {
 			ec.Error(ctx, ec.Recover(ctx, r))
@@ -3781,6 +4951,102 @@ func (ec *executionContext) _Tag_Pools(ctx context.Context, field graphql.Collec
 	res := resTmp.([]*ent.ResourcePool)
 	fc.Result = res
 	return ec.marshalOResourcePool2ᚕᚖgithubᚗcomᚋnetᚑautoᚋresourceManagerᚋentᚐResourcePool(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) _TagPoolPayload_tag(ctx context.Context, field graphql.CollectedField, obj *model.TagPoolPayload) (ret graphql.Marshaler) {
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	fc := &graphql.FieldContext{
+		Object:   "TagPoolPayload",
+		Field:    field,
+		Args:     nil,
+		IsMethod: false,
+	}
+
+	ctx = graphql.WithFieldContext(ctx, fc)
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.Tag, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		return graphql.Null
+	}
+	res := resTmp.(*ent.Tag)
+	fc.Result = res
+	return ec.marshalOTag2ᚖgithubᚗcomᚋnetᚑautoᚋresourceManagerᚋentᚐTag(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) _UpdateResourceTypeNamePayload_resourceTypeId(ctx context.Context, field graphql.CollectedField, obj *model.UpdateResourceTypeNamePayload) (ret graphql.Marshaler) {
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	fc := &graphql.FieldContext{
+		Object:   "UpdateResourceTypeNamePayload",
+		Field:    field,
+		Args:     nil,
+		IsMethod: false,
+	}
+
+	ctx = graphql.WithFieldContext(ctx, fc)
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.ResourceTypeID, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(int)
+	fc.Result = res
+	return ec.marshalNID2int(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) _UpdateTagPayload_tag(ctx context.Context, field graphql.CollectedField, obj *model.UpdateTagPayload) (ret graphql.Marshaler) {
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	fc := &graphql.FieldContext{
+		Object:   "UpdateTagPayload",
+		Field:    field,
+		Args:     nil,
+		IsMethod: false,
+	}
+
+	ctx = graphql.WithFieldContext(ctx, fc)
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.Tag, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		return graphql.Null
+	}
+	res := resTmp.(*ent.Tag)
+	fc.Result = res
+	return ec.marshalOTag2ᚖgithubᚗcomᚋnetᚑautoᚋresourceManagerᚋentᚐTag(ctx, field.Selections, res)
 }
 
 func (ec *executionContext) ___Directive_name(ctx context.Context, field graphql.CollectedField, obj *introspection.Directive) (ret graphql.Marshaler) {
@@ -4890,6 +6156,250 @@ func (ec *executionContext) unmarshalInputCreateAllocatingPoolInput(ctx context.
 	return it, nil
 }
 
+func (ec *executionContext) unmarshalInputCreateAllocationStrategyInput(ctx context.Context, obj interface{}) (model.CreateAllocationStrategyInput, error) {
+	var it model.CreateAllocationStrategyInput
+	var asMap = obj.(map[string]interface{})
+
+	for k, v := range asMap {
+		switch k {
+		case "name":
+			var err error
+
+			ctx := graphql.WithFieldInputContext(ctx, graphql.NewFieldInputWithField("name"))
+			it.Name, err = ec.unmarshalNString2string(ctx, v)
+			if err != nil {
+				return it, err
+			}
+		case "description":
+			var err error
+
+			ctx := graphql.WithFieldInputContext(ctx, graphql.NewFieldInputWithField("description"))
+			it.Description, err = ec.unmarshalOString2ᚖstring(ctx, v)
+			if err != nil {
+				return it, err
+			}
+		case "script":
+			var err error
+
+			ctx := graphql.WithFieldInputContext(ctx, graphql.NewFieldInputWithField("script"))
+			it.Script, err = ec.unmarshalNString2string(ctx, v)
+			if err != nil {
+				return it, err
+			}
+		case "lang":
+			var err error
+
+			ctx := graphql.WithFieldInputContext(ctx, graphql.NewFieldInputWithField("lang"))
+			it.Lang, err = ec.unmarshalNAllocationStrategyLang2githubᚗcomᚋnetᚑautoᚋresourceManagerᚋentᚋallocationstrategyᚐLang(ctx, v)
+			if err != nil {
+				return it, err
+			}
+		}
+	}
+
+	return it, nil
+}
+
+func (ec *executionContext) unmarshalInputCreateNestedAllocatingPoolInput(ctx context.Context, obj interface{}) (model.CreateNestedAllocatingPoolInput, error) {
+	var it model.CreateNestedAllocatingPoolInput
+	var asMap = obj.(map[string]interface{})
+
+	for k, v := range asMap {
+		switch k {
+		case "resourceTypeId":
+			var err error
+
+			ctx := graphql.WithFieldInputContext(ctx, graphql.NewFieldInputWithField("resourceTypeId"))
+			it.ResourceTypeID, err = ec.unmarshalNID2int(ctx, v)
+			if err != nil {
+				return it, err
+			}
+		case "poolName":
+			var err error
+
+			ctx := graphql.WithFieldInputContext(ctx, graphql.NewFieldInputWithField("poolName"))
+			it.PoolName, err = ec.unmarshalNString2string(ctx, v)
+			if err != nil {
+				return it, err
+			}
+		case "description":
+			var err error
+
+			ctx := graphql.WithFieldInputContext(ctx, graphql.NewFieldInputWithField("description"))
+			it.Description, err = ec.unmarshalOString2ᚖstring(ctx, v)
+			if err != nil {
+				return it, err
+			}
+		case "allocationStrategyId":
+			var err error
+
+			ctx := graphql.WithFieldInputContext(ctx, graphql.NewFieldInputWithField("allocationStrategyId"))
+			it.AllocationStrategyID, err = ec.unmarshalNID2int(ctx, v)
+			if err != nil {
+				return it, err
+			}
+		case "poolDealocationSafetyPeriod":
+			var err error
+
+			ctx := graphql.WithFieldInputContext(ctx, graphql.NewFieldInputWithField("poolDealocationSafetyPeriod"))
+			it.PoolDealocationSafetyPeriod, err = ec.unmarshalNInt2int(ctx, v)
+			if err != nil {
+				return it, err
+			}
+		case "parentResourceId":
+			var err error
+
+			ctx := graphql.WithFieldInputContext(ctx, graphql.NewFieldInputWithField("parentResourceId"))
+			it.ParentResourceID, err = ec.unmarshalNID2int(ctx, v)
+			if err != nil {
+				return it, err
+			}
+		}
+	}
+
+	return it, nil
+}
+
+func (ec *executionContext) unmarshalInputCreateNestedSetPoolInput(ctx context.Context, obj interface{}) (model.CreateNestedSetPoolInput, error) {
+	var it model.CreateNestedSetPoolInput
+	var asMap = obj.(map[string]interface{})
+
+	for k, v := range asMap {
+		switch k {
+		case "resourceTypeId":
+			var err error
+
+			ctx := graphql.WithFieldInputContext(ctx, graphql.NewFieldInputWithField("resourceTypeId"))
+			it.ResourceTypeID, err = ec.unmarshalNID2int(ctx, v)
+			if err != nil {
+				return it, err
+			}
+		case "poolName":
+			var err error
+
+			ctx := graphql.WithFieldInputContext(ctx, graphql.NewFieldInputWithField("poolName"))
+			it.PoolName, err = ec.unmarshalNString2string(ctx, v)
+			if err != nil {
+				return it, err
+			}
+		case "description":
+			var err error
+
+			ctx := graphql.WithFieldInputContext(ctx, graphql.NewFieldInputWithField("description"))
+			it.Description, err = ec.unmarshalOString2ᚖstring(ctx, v)
+			if err != nil {
+				return it, err
+			}
+		case "poolDealocationSafetyPeriod":
+			var err error
+
+			ctx := graphql.WithFieldInputContext(ctx, graphql.NewFieldInputWithField("poolDealocationSafetyPeriod"))
+			it.PoolDealocationSafetyPeriod, err = ec.unmarshalNInt2int(ctx, v)
+			if err != nil {
+				return it, err
+			}
+		case "poolValues":
+			var err error
+
+			ctx := graphql.WithFieldInputContext(ctx, graphql.NewFieldInputWithField("poolValues"))
+			it.PoolValues, err = ec.unmarshalNMap2ᚕmap(ctx, v)
+			if err != nil {
+				return it, err
+			}
+		case "parentResourceId":
+			var err error
+
+			ctx := graphql.WithFieldInputContext(ctx, graphql.NewFieldInputWithField("parentResourceId"))
+			it.ParentResourceID, err = ec.unmarshalNID2int(ctx, v)
+			if err != nil {
+				return it, err
+			}
+		}
+	}
+
+	return it, nil
+}
+
+func (ec *executionContext) unmarshalInputCreateNestedSingletonPoolInput(ctx context.Context, obj interface{}) (model.CreateNestedSingletonPoolInput, error) {
+	var it model.CreateNestedSingletonPoolInput
+	var asMap = obj.(map[string]interface{})
+
+	for k, v := range asMap {
+		switch k {
+		case "resourceTypeId":
+			var err error
+
+			ctx := graphql.WithFieldInputContext(ctx, graphql.NewFieldInputWithField("resourceTypeId"))
+			it.ResourceTypeID, err = ec.unmarshalNID2int(ctx, v)
+			if err != nil {
+				return it, err
+			}
+		case "poolName":
+			var err error
+
+			ctx := graphql.WithFieldInputContext(ctx, graphql.NewFieldInputWithField("poolName"))
+			it.PoolName, err = ec.unmarshalNString2string(ctx, v)
+			if err != nil {
+				return it, err
+			}
+		case "description":
+			var err error
+
+			ctx := graphql.WithFieldInputContext(ctx, graphql.NewFieldInputWithField("description"))
+			it.Description, err = ec.unmarshalOString2ᚖstring(ctx, v)
+			if err != nil {
+				return it, err
+			}
+		case "poolValues":
+			var err error
+
+			ctx := graphql.WithFieldInputContext(ctx, graphql.NewFieldInputWithField("poolValues"))
+			it.PoolValues, err = ec.unmarshalNMap2ᚕmap(ctx, v)
+			if err != nil {
+				return it, err
+			}
+		case "parentResourceId":
+			var err error
+
+			ctx := graphql.WithFieldInputContext(ctx, graphql.NewFieldInputWithField("parentResourceId"))
+			it.ParentResourceID, err = ec.unmarshalNID2int(ctx, v)
+			if err != nil {
+				return it, err
+			}
+		}
+	}
+
+	return it, nil
+}
+
+func (ec *executionContext) unmarshalInputCreateResourceTypeInput(ctx context.Context, obj interface{}) (model.CreateResourceTypeInput, error) {
+	var it model.CreateResourceTypeInput
+	var asMap = obj.(map[string]interface{})
+
+	for k, v := range asMap {
+		switch k {
+		case "resourceName":
+			var err error
+
+			ctx := graphql.WithFieldInputContext(ctx, graphql.NewFieldInputWithField("resourceName"))
+			it.ResourceName, err = ec.unmarshalNString2string(ctx, v)
+			if err != nil {
+				return it, err
+			}
+		case "resourceProperties":
+			var err error
+
+			ctx := graphql.WithFieldInputContext(ctx, graphql.NewFieldInputWithField("resourceProperties"))
+			it.ResourceProperties, err = ec.unmarshalNMap2map(ctx, v)
+			if err != nil {
+				return it, err
+			}
+		}
+	}
+
+	return it, nil
+}
+
 func (ec *executionContext) unmarshalInputCreateSetPoolInput(ctx context.Context, obj interface{}) (model.CreateSetPoolInput, error) {
 	var it model.CreateSetPoolInput
 	var asMap = obj.(map[string]interface{})
@@ -4977,6 +6487,106 @@ func (ec *executionContext) unmarshalInputCreateSingletonPoolInput(ctx context.C
 
 			ctx := graphql.WithFieldInputContext(ctx, graphql.NewFieldInputWithField("poolValues"))
 			it.PoolValues, err = ec.unmarshalNMap2ᚕmapᚄ(ctx, v)
+			if err != nil {
+				return it, err
+			}
+		}
+	}
+
+	return it, nil
+}
+
+func (ec *executionContext) unmarshalInputCreateTagInput(ctx context.Context, obj interface{}) (model.CreateTagInput, error) {
+	var it model.CreateTagInput
+	var asMap = obj.(map[string]interface{})
+
+	for k, v := range asMap {
+		switch k {
+		case "tagText":
+			var err error
+
+			ctx := graphql.WithFieldInputContext(ctx, graphql.NewFieldInputWithField("tagText"))
+			it.TagText, err = ec.unmarshalNString2string(ctx, v)
+			if err != nil {
+				return it, err
+			}
+		}
+	}
+
+	return it, nil
+}
+
+func (ec *executionContext) unmarshalInputDeleteAllocationStrategyInput(ctx context.Context, obj interface{}) (model.DeleteAllocationStrategyInput, error) {
+	var it model.DeleteAllocationStrategyInput
+	var asMap = obj.(map[string]interface{})
+
+	for k, v := range asMap {
+		switch k {
+		case "allocationStrategyId":
+			var err error
+
+			ctx := graphql.WithFieldInputContext(ctx, graphql.NewFieldInputWithField("allocationStrategyId"))
+			it.AllocationStrategyID, err = ec.unmarshalNID2int(ctx, v)
+			if err != nil {
+				return it, err
+			}
+		}
+	}
+
+	return it, nil
+}
+
+func (ec *executionContext) unmarshalInputDeleteResourcePoolInput(ctx context.Context, obj interface{}) (model.DeleteResourcePoolInput, error) {
+	var it model.DeleteResourcePoolInput
+	var asMap = obj.(map[string]interface{})
+
+	for k, v := range asMap {
+		switch k {
+		case "resourcePoolId":
+			var err error
+
+			ctx := graphql.WithFieldInputContext(ctx, graphql.NewFieldInputWithField("resourcePoolId"))
+			it.ResourcePoolID, err = ec.unmarshalNID2int(ctx, v)
+			if err != nil {
+				return it, err
+			}
+		}
+	}
+
+	return it, nil
+}
+
+func (ec *executionContext) unmarshalInputDeleteResourceTypeInput(ctx context.Context, obj interface{}) (model.DeleteResourceTypeInput, error) {
+	var it model.DeleteResourceTypeInput
+	var asMap = obj.(map[string]interface{})
+
+	for k, v := range asMap {
+		switch k {
+		case "resourceTypeId":
+			var err error
+
+			ctx := graphql.WithFieldInputContext(ctx, graphql.NewFieldInputWithField("resourceTypeId"))
+			it.ResourceTypeID, err = ec.unmarshalNID2int(ctx, v)
+			if err != nil {
+				return it, err
+			}
+		}
+	}
+
+	return it, nil
+}
+
+func (ec *executionContext) unmarshalInputDeleteTagInput(ctx context.Context, obj interface{}) (model.DeleteTagInput, error) {
+	var it model.DeleteTagInput
+	var asMap = obj.(map[string]interface{})
+
+	for k, v := range asMap {
+		switch k {
+		case "tagId":
+			var err error
+
+			ctx := graphql.WithFieldInputContext(ctx, graphql.NewFieldInputWithField("tagId"))
+			it.TagID, err = ec.unmarshalNID2int(ctx, v)
 			if err != nil {
 				return it, err
 			}
@@ -5082,15 +6692,138 @@ func (ec *executionContext) unmarshalInputTagOr(ctx context.Context, obj interfa
 	return it, nil
 }
 
+func (ec *executionContext) unmarshalInputTagPoolInput(ctx context.Context, obj interface{}) (model.TagPoolInput, error) {
+	var it model.TagPoolInput
+	var asMap = obj.(map[string]interface{})
+
+	for k, v := range asMap {
+		switch k {
+		case "tagId":
+			var err error
+
+			ctx := graphql.WithFieldInputContext(ctx, graphql.NewFieldInputWithField("tagId"))
+			it.TagID, err = ec.unmarshalNID2int(ctx, v)
+			if err != nil {
+				return it, err
+			}
+		case "poolId":
+			var err error
+
+			ctx := graphql.WithFieldInputContext(ctx, graphql.NewFieldInputWithField("poolId"))
+			it.PoolID, err = ec.unmarshalNID2int(ctx, v)
+			if err != nil {
+				return it, err
+			}
+		}
+	}
+
+	return it, nil
+}
+
+func (ec *executionContext) unmarshalInputUpdateResourceTypeNameInput(ctx context.Context, obj interface{}) (model.UpdateResourceTypeNameInput, error) {
+	var it model.UpdateResourceTypeNameInput
+	var asMap = obj.(map[string]interface{})
+
+	for k, v := range asMap {
+		switch k {
+		case "resourceTypeId":
+			var err error
+
+			ctx := graphql.WithFieldInputContext(ctx, graphql.NewFieldInputWithField("resourceTypeId"))
+			it.ResourceTypeID, err = ec.unmarshalNID2int(ctx, v)
+			if err != nil {
+				return it, err
+			}
+		case "resourceName":
+			var err error
+
+			ctx := graphql.WithFieldInputContext(ctx, graphql.NewFieldInputWithField("resourceName"))
+			it.ResourceName, err = ec.unmarshalNString2string(ctx, v)
+			if err != nil {
+				return it, err
+			}
+		}
+	}
+
+	return it, nil
+}
+
+func (ec *executionContext) unmarshalInputUpdateTagInput(ctx context.Context, obj interface{}) (model.UpdateTagInput, error) {
+	var it model.UpdateTagInput
+	var asMap = obj.(map[string]interface{})
+
+	for k, v := range asMap {
+		switch k {
+		case "tagId":
+			var err error
+
+			ctx := graphql.WithFieldInputContext(ctx, graphql.NewFieldInputWithField("tagId"))
+			it.TagID, err = ec.unmarshalNID2int(ctx, v)
+			if err != nil {
+				return it, err
+			}
+		case "tagText":
+			var err error
+
+			ctx := graphql.WithFieldInputContext(ctx, graphql.NewFieldInputWithField("tagText"))
+			it.TagText, err = ec.unmarshalNString2string(ctx, v)
+			if err != nil {
+				return it, err
+			}
+		}
+	}
+
+	return it, nil
+}
+
 // endregion **************************** input.gotpl *****************************
 
 // region    ************************** interface.gotpl ***************************
+
+func (ec *executionContext) _Node(ctx context.Context, sel ast.SelectionSet, obj ent.Noder) graphql.Marshaler {
+	switch obj := (obj).(type) {
+	case nil:
+		return graphql.Null
+	case *ent.ResourceType:
+		if obj == nil {
+			return graphql.Null
+		}
+		return ec._ResourceType(ctx, sel, obj)
+	case *ent.PropertyType:
+		if obj == nil {
+			return graphql.Null
+		}
+		return ec._PropertyType(ctx, sel, obj)
+	case *ent.ResourcePool:
+		if obj == nil {
+			return graphql.Null
+		}
+		return ec._ResourcePool(ctx, sel, obj)
+	case *ent.Resource:
+		if obj == nil {
+			return graphql.Null
+		}
+		return ec._Resource(ctx, sel, obj)
+	case *ent.AllocationStrategy:
+		if obj == nil {
+			return graphql.Null
+		}
+		return ec._AllocationStrategy(ctx, sel, obj)
+	case *ent.Tag:
+		if obj == nil {
+			return graphql.Null
+		}
+		return ec._Tag(ctx, sel, obj)
+	default:
+		panic(fmt.Errorf("unexpected type %T", obj))
+	}
+}
 
 // endregion ************************** interface.gotpl ***************************
 
 // region    **************************** object.gotpl ****************************
 
-var allocationStrategyImplementors = []string{"AllocationStrategy"}
+var allocationStrategyImplementors = []string{"AllocationStrategy", "Node"}
 
 func (ec *executionContext) _AllocationStrategy(ctx context.Context, sel ast.SelectionSet, obj *ent.AllocationStrategy) graphql.Marshaler {
 	fields := graphql.CollectFields(ec.OperationContext, sel, allocationStrategyImplementors)
@@ -5101,8 +6834,8 @@ func (ec *executionContext) _AllocationStrategy(ctx context.Context, sel ast.Sel
 		switch field.Name {
 		case "__typename":
 			out.Values[i] = graphql.MarshalString("AllocationStrategy")
-		case "ID":
-			out.Values[i] = ec._AllocationStrategy_ID(ctx, field, obj)
+		case "id":
+			out.Values[i] = ec._AllocationStrategy_id(ctx, field, obj)
 			if out.Values[i] == graphql.Null {
 				invalids++
 			}
@@ -5120,6 +6853,330 @@ func (ec *executionContext) _AllocationStrategy(ctx context.Context, sel ast.Sel
 			}
 		case "Script":
 			out.Values[i] = ec._AllocationStrategy_Script(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				invalids++
+			}
+		default:
+			panic("unknown field " + strconv.Quote(field.Name))
+		}
+	}
+	out.Dispatch()
+	if invalids > 0 {
+		return graphql.Null
+	}
+	return out
+}
+
+var createAllocatingPoolPayloadImplementors = []string{"CreateAllocatingPoolPayload"}
+
+func (ec *executionContext) _CreateAllocatingPoolPayload(ctx context.Context, sel ast.SelectionSet, obj *model.CreateAllocatingPoolPayload) graphql.Marshaler {
+	fields := graphql.CollectFields(ec.OperationContext, sel, createAllocatingPoolPayloadImplementors)
+
+	out := graphql.NewFieldSet(fields)
+	var invalids uint32
+	for i, field := range fields {
+		switch field.Name {
+		case "__typename":
+			out.Values[i] = graphql.MarshalString("CreateAllocatingPoolPayload")
+		case "pool":
+			out.Values[i] = ec._CreateAllocatingPoolPayload_pool(ctx, field, obj)
+		default:
+			panic("unknown field " + strconv.Quote(field.Name))
+		}
+	}
+	out.Dispatch()
+	if invalids > 0 {
+		return graphql.Null
+	}
+	return out
+}
+
+var createAllocationStrategyPayloadImplementors = []string{"CreateAllocationStrategyPayload"}
+
+func (ec *executionContext) _CreateAllocationStrategyPayload(ctx context.Context, sel ast.SelectionSet, obj *model.CreateAllocationStrategyPayload) graphql.Marshaler {
+	fields := graphql.CollectFields(ec.OperationContext, sel, createAllocationStrategyPayloadImplementors)
+
+	out := graphql.NewFieldSet(fields)
+	var invalids uint32
+	for i, field := range fields {
+		switch field.Name {
+		case "__typename":
+			out.Values[i] = graphql.MarshalString("CreateAllocationStrategyPayload")
+		case "strategy":
+			out.Values[i] = ec._CreateAllocationStrategyPayload_strategy(ctx, field, obj)
+		default:
+			panic("unknown field " + strconv.Quote(field.Name))
+		}
+	}
+	out.Dispatch()
+	if invalids > 0 {
+		return graphql.Null
+	}
+	return out
+}
+
+var createNestedAllocatingPoolPayloadImplementors = []string{"CreateNestedAllocatingPoolPayload"}
+
+func (ec *executionContext) _CreateNestedAllocatingPoolPayload(ctx context.Context, sel ast.SelectionSet, obj *model.CreateNestedAllocatingPoolPayload) graphql.Marshaler {
+	fields := graphql.CollectFields(ec.OperationContext, sel, createNestedAllocatingPoolPayloadImplementors)
+
+	out := graphql.NewFieldSet(fields)
+	var invalids uint32
+	for i, field := range fields {
+		switch field.Name {
+		case "__typename":
+			out.Values[i] = graphql.MarshalString("CreateNestedAllocatingPoolPayload")
+		case "pool":
+			out.Values[i] = ec._CreateNestedAllocatingPoolPayload_pool(ctx, field, obj)
+		default:
+			panic("unknown field " + strconv.Quote(field.Name))
+		}
+	}
+	out.Dispatch()
+	if invalids > 0 {
+		return graphql.Null
+	}
+	return out
+}
+
+var createNestedSetPoolPayloadImplementors = []string{"CreateNestedSetPoolPayload"}
+
+func (ec *executionContext) _CreateNestedSetPoolPayload(ctx context.Context, sel ast.SelectionSet, obj *model.CreateNestedSetPoolPayload) graphql.Marshaler {
+	fields := graphql.CollectFields(ec.OperationContext, sel, createNestedSetPoolPayloadImplementors)
+
+	out := graphql.NewFieldSet(fields)
+	var invalids uint32
+	for i, field := range fields {
+		switch field.Name {
+		case "__typename":
+			out.Values[i] = graphql.MarshalString("CreateNestedSetPoolPayload")
+		case "pool":
+			out.Values[i] = ec._CreateNestedSetPoolPayload_pool(ctx, field, obj)
+		default:
+			panic("unknown field " + strconv.Quote(field.Name))
+		}
+	}
+	out.Dispatch()
+	if invalids > 0 {
+		return graphql.Null
+	}
+	return out
+}
+
+var createNestedSingletonPoolPayloadImplementors = []string{"CreateNestedSingletonPoolPayload"}
+
+func (ec *executionContext) _CreateNestedSingletonPoolPayload(ctx context.Context, sel ast.SelectionSet, obj *model.CreateNestedSingletonPoolPayload) graphql.Marshaler {
+	fields := graphql.CollectFields(ec.OperationContext, sel, createNestedSingletonPoolPayloadImplementors)
+
+	out := graphql.NewFieldSet(fields)
+	var invalids uint32
+	for i, field := range fields {
+		switch field.Name {
+		case "__typename":
+			out.Values[i] = graphql.MarshalString("CreateNestedSingletonPoolPayload")
+		case "pool":
+			out.Values[i] = ec._CreateNestedSingletonPoolPayload_pool(ctx, field, obj)
+		default:
+			panic("unknown field " + strconv.Quote(field.Name))
+		}
+	}
+	out.Dispatch()
+	if invalids > 0 {
+		return graphql.Null
+	}
+	return out
+}
+
+var createResourceTypePayloadImplementors = []string{"CreateResourceTypePayload"}
+
+func (ec *executionContext) _CreateResourceTypePayload(ctx context.Context, sel ast.SelectionSet, obj *model.CreateResourceTypePayload) graphql.Marshaler {
+	fields := graphql.CollectFields(ec.OperationContext, sel, createResourceTypePayloadImplementors)
+
+	out := graphql.NewFieldSet(fields)
+	var invalids uint32
+	for i, field := range fields {
+		switch field.Name {
+		case "__typename":
+			out.Values[i] = graphql.MarshalString("CreateResourceTypePayload")
+		case "resourceType":
+			out.Values[i] = ec._CreateResourceTypePayload_resourceType(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				invalids++
+			}
+		default:
+			panic("unknown field " + strconv.Quote(field.Name))
+		}
+	}
+	out.Dispatch()
+	if invalids > 0 {
+		return graphql.Null
+	}
+	return out
+}
+
+var createSetPoolPayloadImplementors = []string{"CreateSetPoolPayload"}
+
+func (ec *executionContext) _CreateSetPoolPayload(ctx context.Context, sel ast.SelectionSet, obj *model.CreateSetPoolPayload) graphql.Marshaler {
+	fields := graphql.CollectFields(ec.OperationContext, sel, createSetPoolPayloadImplementors)
+
+	out := graphql.NewFieldSet(fields)
+	var invalids uint32
+	for i, field := range fields {
+		switch field.Name {
+		case "__typename":
+			out.Values[i] = graphql.MarshalString("CreateSetPoolPayload")
+		case "pool":
+			out.Values[i] = ec._CreateSetPoolPayload_pool(ctx, field, obj)
+		default:
+			panic("unknown field " + strconv.Quote(field.Name))
+		}
+	}
+	out.Dispatch()
+	if invalids > 0 {
+		return graphql.Null
+	}
+	return out
+}
+
+var createSingletonPoolPayloadImplementors = []string{"CreateSingletonPoolPayload"}
+
+func (ec *executionContext) _CreateSingletonPoolPayload(ctx context.Context, sel ast.SelectionSet, obj *model.CreateSingletonPoolPayload) graphql.Marshaler {
+	fields := graphql.CollectFields(ec.OperationContext, sel, createSingletonPoolPayloadImplementors)
+
+	out := graphql.NewFieldSet(fields)
+	var invalids uint32
+	for i, field := range fields {
+		switch field.Name {
+		case "__typename":
+			out.Values[i] = graphql.MarshalString("CreateSingletonPoolPayload")
+		case "pool":
+			out.Values[i] = ec._CreateSingletonPoolPayload_pool(ctx, field, obj)
+		default:
+			panic("unknown field " + strconv.Quote(field.Name))
+		}
+	}
+	out.Dispatch()
+	if invalids > 0 {
+		return graphql.Null
+	}
+	return out
+}
+
+var createTagPayloadImplementors = []string{"CreateTagPayload"}
+
+func (ec *executionContext) _CreateTagPayload(ctx context.Context, sel ast.SelectionSet, obj *model.CreateTagPayload) graphql.Marshaler {
+	fields := graphql.CollectFields(ec.OperationContext, sel, createTagPayloadImplementors)
+
+	out := graphql.NewFieldSet(fields)
+	var invalids uint32
+	for i, field := range fields {
+		switch field.Name {
+		case "__typename":
+			out.Values[i] = graphql.MarshalString("CreateTagPayload")
+		case "tag":
+			out.Values[i] = ec._CreateTagPayload_tag(ctx, field, obj)
+		default:
+			panic("unknown field " + strconv.Quote(field.Name))
+		}
+	}
+	out.Dispatch()
+	if invalids > 0 {
+		return graphql.Null
+	}
+	return out
+}
+
+var deleteAllocationStrategyPayloadImplementors = []string{"DeleteAllocationStrategyPayload"}
+
+func (ec *executionContext) _DeleteAllocationStrategyPayload(ctx context.Context, sel ast.SelectionSet, obj *model.DeleteAllocationStrategyPayload) graphql.Marshaler {
+	fields := graphql.CollectFields(ec.OperationContext, sel, deleteAllocationStrategyPayloadImplementors)
+
+	out := graphql.NewFieldSet(fields)
+	var invalids uint32
+	for i, field := range fields {
+		switch field.Name {
+		case "__typename":
+			out.Values[i] = graphql.MarshalString("DeleteAllocationStrategyPayload")
+		case "strategy":
+			out.Values[i] = ec._DeleteAllocationStrategyPayload_strategy(ctx, field, obj)
+		default:
+			panic("unknown field " + strconv.Quote(field.Name))
+		}
+	}
+	out.Dispatch()
+	if invalids > 0 {
+		return graphql.Null
+	}
+	return out
+}
+
+var deleteResourcePoolPayloadImplementors = []string{"DeleteResourcePoolPayload"}
+
+func (ec *executionContext) _DeleteResourcePoolPayload(ctx context.Context, sel ast.SelectionSet, obj *model.DeleteResourcePoolPayload) graphql.Marshaler {
+	fields := graphql.CollectFields(ec.OperationContext, sel, deleteResourcePoolPayloadImplementors)
+
+	out := graphql.NewFieldSet(fields)
+	var invalids uint32
+	for i, field := range fields {
+		switch field.Name {
+		case "__typename":
+			out.Values[i] = graphql.MarshalString("DeleteResourcePoolPayload")
+		case "resourcePoolId":
+			out.Values[i] = ec._DeleteResourcePoolPayload_resourcePoolId(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				invalids++
+			}
+		default:
+			panic("unknown field " + strconv.Quote(field.Name))
+		}
+	}
+	out.Dispatch()
+	if invalids > 0 {
+		return graphql.Null
+	}
+	return out
+}
+
+var deleteResourceTypePayloadImplementors = []string{"DeleteResourceTypePayload"}
+
+func (ec *executionContext) _DeleteResourceTypePayload(ctx context.Context, sel ast.SelectionSet, obj *model.DeleteResourceTypePayload) graphql.Marshaler {
+	fields := graphql.CollectFields(ec.OperationContext, sel, deleteResourceTypePayloadImplementors)
+
+	out := graphql.NewFieldSet(fields)
+	var invalids uint32
+	for i, field := range fields {
+		switch field.Name {
+		case "__typename":
+			out.Values[i] = graphql.MarshalString("DeleteResourceTypePayload")
+		case "resourceTypeId":
+			out.Values[i] = ec._DeleteResourceTypePayload_resourceTypeId(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				invalids++
+			}
+		default:
+			panic("unknown field " + strconv.Quote(field.Name))
+		}
+	}
+	out.Dispatch()
+	if invalids > 0 {
+		return graphql.Null
+	}
+	return out
+}
+
+var deleteTagPayloadImplementors = []string{"DeleteTagPayload"}
+
+func (ec *executionContext) _DeleteTagPayload(ctx context.Context, sel ast.SelectionSet, obj *model.DeleteTagPayload) graphql.Marshaler {
+	fields := graphql.CollectFields(ec.OperationContext, sel, deleteTagPayloadImplementors)
+
+	out := graphql.NewFieldSet(fields)
+	var invalids uint32
+	for i, field := range fields {
+		switch field.Name {
+		case "__typename":
+			out.Values[i] = graphql.MarshalString("DeleteTagPayload")
+		case "tagId":
+			out.Values[i] = ec._DeleteTagPayload_tagId(ctx, field, obj)
 			if out.Values[i] == graphql.Null {
 				invalids++
 			}
@@ -5255,7 +7312,49 @@ func (ec *executionContext) _Mutation(ctx context.Context, sel ast.SelectionSet)
 	return out
 }
 
-var propertyTypeImplementors = []string{"PropertyType"}
+var pageInfoImplementors = []string{"PageInfo"}
+
+func (ec *executionContext) _PageInfo(ctx context.Context, sel ast.SelectionSet, obj *model.PageInfo) graphql.Marshaler {
+	fields := graphql.CollectFields(ec.OperationContext, sel, pageInfoImplementors)
+
+	out := graphql.NewFieldSet(fields)
+	var invalids uint32
+	for i, field := range fields {
+		switch field.Name {
+		case "__typename":
+			out.Values[i] = graphql.MarshalString("PageInfo")
+		case "hasPreviousEdge":
+			out.Values[i] = ec._PageInfo_hasPreviousEdge(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				invalids++
+			}
+		case "hasNextEdge":
+			out.Values[i] = ec._PageInfo_hasNextEdge(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				invalids++
+			}
+		case "startCursor":
+			out.Values[i] = ec._PageInfo_startCursor(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				invalids++
+			}
+		case "endCursor":
+			out.Values[i] = ec._PageInfo_endCursor(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				invalids++
+			}
+		default:
+			panic("unknown field " + strconv.Quote(field.Name))
+		}
+	}
+	out.Dispatch()
+	if invalids > 0 {
+		return graphql.Null
+	}
+	return out
+}
+
+var propertyTypeImplementors = []string{"PropertyType", "Node"}
 
 func (ec *executionContext) _PropertyType(ctx context.Context, sel ast.SelectionSet, obj *ent.PropertyType) graphql.Marshaler {
 	fields := graphql.CollectFields(ec.OperationContext, sel, propertyTypeImplementors)
@@ -5266,8 +7365,8 @@ func (ec *executionContext) _PropertyType(ctx context.Context, sel ast.Selection
 		switch field.Name {
 		case "__typename":
 			out.Values[i] = graphql.MarshalString("PropertyType")
-		case "ID":
-			out.Values[i] = ec._PropertyType_ID(ctx, field, obj)
+		case "id":
+			out.Values[i] = ec._PropertyType_id(ctx, field, obj)
 			if out.Values[i] == graphql.Null {
 				atomic.AddUint32(&invalids, 1)
 			}
@@ -5476,6 +7575,17 @@ func (ec *executionContext) _Query(ctx context.Context, sel ast.SelectionSet) gr
 				}
 				return res
 			})
+		case "node":
+			field := field
+			out.Concurrently(i, func() (res graphql.Marshaler) {
+				defer func() {
+					if r := recover(); r != nil {
+						ec.Error(ctx, ec.Recover(ctx, r))
+					}
+				}()
+				res = ec._Query_node(ctx, field)
+				return res
+			})
 		case "__type":
 			out.Values[i] = ec._Query___type(ctx, field)
 		case "__schema":
@@ -5491,7 +7601,7 @@ func (ec *executionContext) _Query(ctx context.Context, sel ast.SelectionSet) gr
 	return out
 }
 
-var resourceImplementors = []string{"Resource"}
+var resourceImplementors = []string{"Resource", "Node"}
 
 func (ec *executionContext) _Resource(ctx context.Context, sel ast.SelectionSet, obj *ent.Resource) graphql.Marshaler {
 	fields := graphql.CollectFields(ec.OperationContext, sel, resourceImplementors)
@@ -5502,8 +7612,8 @@ func (ec *executionContext) _Resource(ctx context.Context, sel ast.SelectionSet,
 		switch field.Name {
 		case "__typename":
 			out.Values[i] = graphql.MarshalString("Resource")
-		case "ID":
-			out.Values[i] = ec._Resource_ID(ctx, field, obj)
+		case "id":
+			out.Values[i] = ec._Resource_id(ctx, field, obj)
 			if out.Values[i] == graphql.Null {
 				atomic.AddUint32(&invalids, 1)
 			}
@@ -5543,7 +7653,71 @@ func (ec *executionContext) _Resource(ctx context.Context, sel ast.SelectionSet,
 	return out
 }
 
-var resourcePoolImplementors = []string{"ResourcePool"}
+var resourceConnectionImplementors = []string{"ResourceConnection"}
+
+func (ec *executionContext) _ResourceConnection(ctx context.Context, sel ast.SelectionSet, obj *model.ResourceConnection) graphql.Marshaler {
+	fields := graphql.CollectFields(ec.OperationContext, sel, resourceConnectionImplementors)
+
+	out := graphql.NewFieldSet(fields)
+	var invalids uint32
+	for i, field := range fields {
+		switch field.Name {
+		case "__typename":
+			out.Values[i] = graphql.MarshalString("ResourceConnection")
+		case "pageInfo":
+			out.Values[i] = ec._ResourceConnection_pageInfo(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				invalids++
+			}
+		case "edges":
+			out.Values[i] = ec._ResourceConnection_edges(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				invalids++
+			}
+		default:
+			panic("unknown field " + strconv.Quote(field.Name))
+		}
+	}
+	out.Dispatch()
+	if invalids > 0 {
+		return graphql.Null
+	}
+	return out
+}
+
+var resourceEdgeImplementors = []string{"ResourceEdge"}
+
+func (ec *executionContext) _ResourceEdge(ctx context.Context, sel ast.SelectionSet, obj *model.ResourceEdge) graphql.Marshaler {
+	fields := graphql.CollectFields(ec.OperationContext, sel, resourceEdgeImplementors)
+
+	out := graphql.NewFieldSet(fields)
+	var invalids uint32
+	for i, field := range fields {
+		switch field.Name {
+		case "__typename":
+			out.Values[i] = graphql.MarshalString("ResourceEdge")
+		case "node":
+			out.Values[i] = ec._ResourceEdge_node(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				invalids++
+			}
+		case "cursor":
+			out.Values[i] = ec._ResourceEdge_cursor(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				invalids++
+			}
+		default:
+			panic("unknown field " + strconv.Quote(field.Name))
+		}
+	}
+	out.Dispatch()
+	if invalids > 0 {
+		return graphql.Null
+	}
+	return out
+}
+
+var resourcePoolImplementors = []string{"ResourcePool", "Node"}
 
 func (ec *executionContext) _ResourcePool(ctx context.Context, sel ast.SelectionSet, obj *ent.ResourcePool) graphql.Marshaler {
 	fields := graphql.CollectFields(ec.OperationContext, sel, resourcePoolImplementors)
@@ -5554,8 +7728,8 @@ func (ec *executionContext) _ResourcePool(ctx context.Context, sel ast.Selection
 		switch field.Name {
 		case "__typename":
 			out.Values[i] = graphql.MarshalString("ResourcePool")
-		case "ID":
-			out.Values[i] = ec._ResourcePool_ID(ctx, field, obj)
+		case "id":
+			out.Values[i] = ec._ResourcePool_id(ctx, field, obj)
 			if out.Values[i] == graphql.Null {
 				atomic.AddUint32(&invalids, 1)
 			}
@@ -5597,6 +7771,17 @@ func (ec *executionContext) _ResourcePool(ctx context.Context, sel ast.Selection
 				}
 				return res
 			})
+		case "allocatedResources":
+			field := field
+			out.Concurrently(i, func() (res graphql.Marshaler) {
+				defer func() {
+					if r := recover(); r != nil {
+						ec.Error(ctx, ec.Recover(ctx, r))
+					}
+				}()
+				res = ec._ResourcePool_allocatedResources(ctx, field, obj)
+				return res
+			})
 		case "Tags":
 			field := field
 			out.Concurrently(i, func() (res graphql.Marshaler) {
@@ -5633,7 +7818,7 @@ func (ec *executionContext) _ResourcePool(ctx context.Context, sel ast.Selection
 	return out
 }
 
-var resourceTypeImplementors = []string{"ResourceType"}
+var resourceTypeImplementors = []string{"ResourceType", "Node"}
 
 func (ec *executionContext) _ResourceType(ctx context.Context, sel ast.SelectionSet, obj *ent.ResourceType) graphql.Marshaler {
 	fields := graphql.CollectFields(ec.OperationContext, sel, resourceTypeImplementors)
@@ -5644,8 +7829,8 @@ func (ec *executionContext) _ResourceType(ctx context.Context, sel ast.Selection
 		switch field.Name {
 		case "__typename":
 			out.Values[i] = graphql.MarshalString("ResourceType")
-		case "ID":
-			out.Values[i] = ec._ResourceType_ID(ctx, field, obj)
+		case "id":
+			out.Values[i] = ec._ResourceType_id(ctx, field, obj)
 			if out.Values[i] == graphql.Null {
 				atomic.AddUint32(&invalids, 1)
 			}
@@ -5693,7 +7878,7 @@ func (ec *executionContext) _ResourceType(ctx context.Context, sel ast.Selection
 	return out
 }
 
-var tagImplementors = []string{"Tag"}
+var tagImplementors = []string{"Tag", "Node"}
 
 func (ec *executionContext) _Tag(ctx context.Context, sel ast.SelectionSet, obj *ent.Tag) graphql.Marshaler {
 	fields := graphql.CollectFields(ec.OperationContext, sel, tagImplementors)
@@ -5704,8 +7889,8 @@ func (ec *executionContext) _Tag(ctx context.Context, sel ast.SelectionSet, obj 
 		switch field.Name {
 		case "__typename":
 			out.Values[i] = graphql.MarshalString("Tag")
-		case "ID":
-			out.Values[i] = ec._Tag_ID(ctx, field, obj)
+		case "id":
+			out.Values[i] = ec._Tag_id(ctx, field, obj)
 			if out.Values[i] == graphql.Null {
 				atomic.AddUint32(&invalids, 1)
 			}
@@ -5725,6 +7910,81 @@ func (ec *executionContext) _Tag(ctx context.Context, sel ast.SelectionSet, obj 
 				res = ec._Tag_Pools(ctx, field, obj)
 				return res
 			})
+		default:
+			panic("unknown field " + strconv.Quote(field.Name))
+		}
+	}
+	out.Dispatch()
+	if invalids > 0 {
+		return graphql.Null
+	}
+	return out
+}
+
+var tagPoolPayloadImplementors = []string{"TagPoolPayload"}
+
+func (ec *executionContext) _TagPoolPayload(ctx context.Context, sel ast.SelectionSet, obj *model.TagPoolPayload) graphql.Marshaler {
+	fields := graphql.CollectFields(ec.OperationContext, sel, tagPoolPayloadImplementors)
+
+	out := graphql.NewFieldSet(fields)
+	var invalids uint32
+	for i, field := range fields {
+		switch field.Name {
+		case "__typename":
+			out.Values[i] = graphql.MarshalString("TagPoolPayload")
+		case "tag":
+			out.Values[i] = ec._TagPoolPayload_tag(ctx, field, obj)
+		default:
+			panic("unknown field " + strconv.Quote(field.Name))
+		}
+	}
+	out.Dispatch()
+	if invalids > 0 {
+		return graphql.Null
+	}
+	return out
+}
+
+var updateResourceTypeNamePayloadImplementors = []string{"UpdateResourceTypeNamePayload"}
+
+func (ec *executionContext) _UpdateResourceTypeNamePayload(ctx context.Context, sel ast.SelectionSet, obj *model.UpdateResourceTypeNamePayload) graphql.Marshaler {
+	fields := graphql.CollectFields(ec.OperationContext, sel, updateResourceTypeNamePayloadImplementors)
+
+	out := graphql.NewFieldSet(fields)
+	var invalids uint32
+	for i, field := range fields {
+		switch field.Name {
+		case "__typename":
+			out.Values[i] = graphql.MarshalString("UpdateResourceTypeNamePayload")
+		case "resourceTypeId":
+			out.Values[i] = ec._UpdateResourceTypeNamePayload_resourceTypeId(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				invalids++
+			}
+		default:
+			panic("unknown field " + strconv.Quote(field.Name))
+		}
+	}
+	out.Dispatch()
+	if invalids > 0 {
+		return graphql.Null
+	}
+	return out
+}
+
+var updateTagPayloadImplementors = []string{"UpdateTagPayload"}
+
+func (ec *executionContext) _UpdateTagPayload(ctx context.Context, sel ast.SelectionSet, obj *model.UpdateTagPayload) graphql.Marshaler {
+	fields := graphql.CollectFields(ec.OperationContext, sel, updateTagPayloadImplementors)
+
+	out := graphql.NewFieldSet(fields)
+	var invalids uint32
+	for i, field := range fields {
+		switch field.Name {
+		case "__typename":
+			out.Values[i] = graphql.MarshalString("UpdateTagPayload")
+		case "tag":
+			out.Values[i] = ec._UpdateTagPayload_tag(ctx, field, obj)
 		default:
 			panic("unknown field " + strconv.Quote(field.Name))
 		}
@@ -6057,9 +8317,231 @@ func (ec *executionContext) marshalNBoolean2bool(ctx context.Context, sel ast.Se
 	return res
 }
 
+func (ec *executionContext) marshalNCreateAllocatingPoolPayload2githubᚗcomᚋnetᚑautoᚋresourceManagerᚋgraphᚋgraphqlᚋmodelᚐCreateAllocatingPoolPayload(ctx context.Context, sel ast.SelectionSet, v model.CreateAllocatingPoolPayload) graphql.Marshaler {
+	return ec._CreateAllocatingPoolPayload(ctx, sel, &v)
+}
+
+func (ec *executionContext) marshalNCreateAllocatingPoolPayload2ᚖgithubᚗcomᚋnetᚑautoᚋresourceManagerᚋgraphᚋgraphqlᚋmodelᚐCreateAllocatingPoolPayload(ctx context.Context, sel ast.SelectionSet, v *model.CreateAllocatingPoolPayload) graphql.Marshaler {
+	if v == nil {
+		if !graphql.HasFieldError(ctx, graphql.GetFieldContext(ctx)) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	return ec._CreateAllocatingPoolPayload(ctx, sel, v)
+}
+
+func (ec *executionContext) marshalNCreateAllocationStrategyPayload2githubᚗcomᚋnetᚑautoᚋresourceManagerᚋgraphᚋgraphqlᚋmodelᚐCreateAllocationStrategyPayload(ctx context.Context, sel ast.SelectionSet, v model.CreateAllocationStrategyPayload) graphql.Marshaler {
+	return ec._CreateAllocationStrategyPayload(ctx, sel, &v)
+}
+
+func (ec *executionContext) marshalNCreateAllocationStrategyPayload2ᚖgithubᚗcomᚋnetᚑautoᚋresourceManagerᚋgraphᚋgraphqlᚋmodelᚐCreateAllocationStrategyPayload(ctx context.Context, sel ast.SelectionSet, v *model.CreateAllocationStrategyPayload) graphql.Marshaler {
+	if v == nil {
+		if !graphql.HasFieldError(ctx, graphql.GetFieldContext(ctx)) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	return ec._CreateAllocationStrategyPayload(ctx, sel, v)
+}
+
+func (ec *executionContext) unmarshalNCreateNestedAllocatingPoolInput2githubᚗcomᚋnetᚑautoᚋresourceManagerᚋgraphᚋgraphqlᚋmodelᚐCreateNestedAllocatingPoolInput(ctx context.Context, v interface{}) (model.CreateNestedAllocatingPoolInput, error) {
+	res, err := ec.unmarshalInputCreateNestedAllocatingPoolInput(ctx, v)
+	return res, graphql.WrapErrorWithInputPath(ctx, err)
+}
+
+func (ec *executionContext) marshalNCreateNestedAllocatingPoolPayload2githubᚗcomᚋnetᚑautoᚋresourceManagerᚋgraphᚋgraphqlᚋmodelᚐCreateNestedAllocatingPoolPayload(ctx context.Context, sel ast.SelectionSet, v model.CreateNestedAllocatingPoolPayload) graphql.Marshaler {
+	return ec._CreateNestedAllocatingPoolPayload(ctx, sel, &v)
+}
+
+func (ec *executionContext) marshalNCreateNestedAllocatingPoolPayload2ᚖgithubᚗcomᚋnetᚑautoᚋresourceManagerᚋgraphᚋgraphqlᚋmodelᚐCreateNestedAllocatingPoolPayload(ctx context.Context, sel ast.SelectionSet, v *model.CreateNestedAllocatingPoolPayload) graphql.Marshaler {
+	if v == nil {
+		if !graphql.HasFieldError(ctx, graphql.GetFieldContext(ctx)) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	return ec._CreateNestedAllocatingPoolPayload(ctx, sel, v)
+}
+
+func (ec *executionContext) unmarshalNCreateNestedSetPoolInput2githubᚗcomᚋnetᚑautoᚋresourceManagerᚋgraphᚋgraphqlᚋmodelᚐCreateNestedSetPoolInput(ctx context.Context, v interface{}) (model.CreateNestedSetPoolInput, error) {
+	res, err := ec.unmarshalInputCreateNestedSetPoolInput(ctx, v)
+	return res, graphql.WrapErrorWithInputPath(ctx, err)
+}
+
+func (ec *executionContext) marshalNCreateNestedSetPoolPayload2githubᚗcomᚋnetᚑautoᚋresourceManagerᚋgraphᚋgraphqlᚋmodelᚐCreateNestedSetPoolPayload(ctx context.Context, sel ast.SelectionSet, v model.CreateNestedSetPoolPayload) graphql.Marshaler {
+	return ec._CreateNestedSetPoolPayload(ctx, sel, &v)
+}
+
+func (ec *executionContext) marshalNCreateNestedSetPoolPayload2ᚖgithubᚗcomᚋnetᚑautoᚋresourceManagerᚋgraphᚋgraphqlᚋmodelᚐCreateNestedSetPoolPayload(ctx context.Context, sel ast.SelectionSet, v *model.CreateNestedSetPoolPayload) graphql.Marshaler {
+	if v == nil {
+		if !graphql.HasFieldError(ctx, graphql.GetFieldContext(ctx)) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	return ec._CreateNestedSetPoolPayload(ctx, sel, v)
+}
+
+func (ec *executionContext) unmarshalNCreateNestedSingletonPoolInput2githubᚗcomᚋnetᚑautoᚋresourceManagerᚋgraphᚋgraphqlᚋmodelᚐCreateNestedSingletonPoolInput(ctx context.Context, v interface{}) (model.CreateNestedSingletonPoolInput, error) {
+	res, err := ec.unmarshalInputCreateNestedSingletonPoolInput(ctx, v)
+	return res, graphql.WrapErrorWithInputPath(ctx, err)
+}
+
+func (ec *executionContext) marshalNCreateNestedSingletonPoolPayload2githubᚗcomᚋnetᚑautoᚋresourceManagerᚋgraphᚋgraphqlᚋmodelᚐCreateNestedSingletonPoolPayload(ctx context.Context, sel ast.SelectionSet, v model.CreateNestedSingletonPoolPayload) graphql.Marshaler {
+	return ec._CreateNestedSingletonPoolPayload(ctx, sel, &v)
+}
+
+func (ec *executionContext) marshalNCreateNestedSingletonPoolPayload2ᚖgithubᚗcomᚋnetᚑautoᚋresourceManagerᚋgraphᚋgraphqlᚋmodelᚐCreateNestedSingletonPoolPayload(ctx context.Context, sel ast.SelectionSet, v *model.CreateNestedSingletonPoolPayload) graphql.Marshaler {
+	if v == nil {
+		if !graphql.HasFieldError(ctx, graphql.GetFieldContext(ctx)) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	return ec._CreateNestedSingletonPoolPayload(ctx, sel, v)
+}
+
+func (ec *executionContext) unmarshalNCreateResourceTypeInput2githubᚗcomᚋnetᚑautoᚋresourceManagerᚋgraphᚋgraphqlᚋmodelᚐCreateResourceTypeInput(ctx context.Context, v interface{}) (model.CreateResourceTypeInput, error) {
+	res, err := ec.unmarshalInputCreateResourceTypeInput(ctx, v)
+	return res, graphql.WrapErrorWithInputPath(ctx, err)
+}
+
+func (ec *executionContext) marshalNCreateResourceTypePayload2githubᚗcomᚋnetᚑautoᚋresourceManagerᚋgraphᚋgraphqlᚋmodelᚐCreateResourceTypePayload(ctx context.Context, sel ast.SelectionSet, v model.CreateResourceTypePayload) graphql.Marshaler {
+	return ec._CreateResourceTypePayload(ctx, sel, &v)
+}
+
+func (ec *executionContext) marshalNCreateResourceTypePayload2ᚖgithubᚗcomᚋnetᚑautoᚋresourceManagerᚋgraphᚋgraphqlᚋmodelᚐCreateResourceTypePayload(ctx context.Context, sel ast.SelectionSet, v *model.CreateResourceTypePayload) graphql.Marshaler {
+	if v == nil {
+		if !graphql.HasFieldError(ctx, graphql.GetFieldContext(ctx)) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	return ec._CreateResourceTypePayload(ctx, sel, v)
+}
+
 func (ec *executionContext) unmarshalNCreateSetPoolInput2githubᚗcomᚋnetᚑautoᚋresourceManagerᚋgraphᚋgraphqlᚋmodelᚐCreateSetPoolInput(ctx context.Context, v interface{}) (model.CreateSetPoolInput, error) {
 	res, err := ec.unmarshalInputCreateSetPoolInput(ctx, v)
 	return res, graphql.WrapErrorWithInputPath(ctx, err)
+}
+
+func (ec *executionContext) marshalNCreateSetPoolPayload2githubᚗcomᚋnetᚑautoᚋresourceManagerᚋgraphᚋgraphqlᚋmodelᚐCreateSetPoolPayload(ctx context.Context, sel ast.SelectionSet, v model.CreateSetPoolPayload) graphql.Marshaler {
+	return ec._CreateSetPoolPayload(ctx, sel, &v)
+}
+
+func (ec *executionContext) marshalNCreateSetPoolPayload2ᚖgithubᚗcomᚋnetᚑautoᚋresourceManagerᚋgraphᚋgraphqlᚋmodelᚐCreateSetPoolPayload(ctx context.Context, sel ast.SelectionSet, v *model.CreateSetPoolPayload) graphql.Marshaler {
+	if v == nil {
+		if !graphql.HasFieldError(ctx, graphql.GetFieldContext(ctx)) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	return ec._CreateSetPoolPayload(ctx, sel, v)
+}
+
+func (ec *executionContext) marshalNCreateSingletonPoolPayload2githubᚗcomᚋnetᚑautoᚋresourceManagerᚋgraphᚋgraphqlᚋmodelᚐCreateSingletonPoolPayload(ctx context.Context, sel ast.SelectionSet, v model.CreateSingletonPoolPayload) graphql.Marshaler {
+	return ec._CreateSingletonPoolPayload(ctx, sel, &v)
+}
+
+func (ec *executionContext) marshalNCreateSingletonPoolPayload2ᚖgithubᚗcomᚋnetᚑautoᚋresourceManagerᚋgraphᚋgraphqlᚋmodelᚐCreateSingletonPoolPayload(ctx context.Context, sel ast.SelectionSet, v *model.CreateSingletonPoolPayload) graphql.Marshaler {
+	if v == nil {
+		if !graphql.HasFieldError(ctx, graphql.GetFieldContext(ctx)) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	return ec._CreateSingletonPoolPayload(ctx, sel, v)
+}
+
+func (ec *executionContext) unmarshalNCreateTagInput2githubᚗcomᚋnetᚑautoᚋresourceManagerᚋgraphᚋgraphqlᚋmodelᚐCreateTagInput(ctx context.Context, v interface{}) (model.CreateTagInput, error) {
+	res, err := ec.unmarshalInputCreateTagInput(ctx, v)
+	return res, graphql.WrapErrorWithInputPath(ctx, err)
+}
+
+func (ec *executionContext) marshalNCreateTagPayload2githubᚗcomᚋnetᚑautoᚋresourceManagerᚋgraphᚋgraphqlᚋmodelᚐCreateTagPayload(ctx context.Context, sel ast.SelectionSet, v model.CreateTagPayload) graphql.Marshaler {
+	return ec._CreateTagPayload(ctx, sel, &v)
+}
+
+func (ec *executionContext) marshalNCreateTagPayload2ᚖgithubᚗcomᚋnetᚑautoᚋresourceManagerᚋgraphᚋgraphqlᚋmodelᚐCreateTagPayload(ctx context.Context, sel ast.SelectionSet, v *model.CreateTagPayload) graphql.Marshaler {
+	if v == nil {
+		if !graphql.HasFieldError(ctx, graphql.GetFieldContext(ctx)) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	return ec._CreateTagPayload(ctx, sel, v)
+}
+
+func (ec *executionContext) marshalNDeleteAllocationStrategyPayload2githubᚗcomᚋnetᚑautoᚋresourceManagerᚋgraphᚋgraphqlᚋmodelᚐDeleteAllocationStrategyPayload(ctx context.Context, sel ast.SelectionSet, v model.DeleteAllocationStrategyPayload) graphql.Marshaler {
+	return ec._DeleteAllocationStrategyPayload(ctx, sel, &v)
+}
+
+func (ec *executionContext) marshalNDeleteAllocationStrategyPayload2ᚖgithubᚗcomᚋnetᚑautoᚋresourceManagerᚋgraphᚋgraphqlᚋmodelᚐDeleteAllocationStrategyPayload(ctx context.Context, sel ast.SelectionSet, v *model.DeleteAllocationStrategyPayload) graphql.Marshaler {
+	if v == nil {
+		if !graphql.HasFieldError(ctx, graphql.GetFieldContext(ctx)) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	return ec._DeleteAllocationStrategyPayload(ctx, sel, v)
+}
+
+func (ec *executionContext) unmarshalNDeleteResourcePoolInput2githubᚗcomᚋnetᚑautoᚋresourceManagerᚋgraphᚋgraphqlᚋmodelᚐDeleteResourcePoolInput(ctx context.Context, v interface{}) (model.DeleteResourcePoolInput, error) {
+	res, err := ec.unmarshalInputDeleteResourcePoolInput(ctx, v)
+	return res, graphql.WrapErrorWithInputPath(ctx, err)
+}
+
+func (ec *executionContext) marshalNDeleteResourcePoolPayload2githubᚗcomᚋnetᚑautoᚋresourceManagerᚋgraphᚋgraphqlᚋmodelᚐDeleteResourcePoolPayload(ctx context.Context, sel ast.SelectionSet, v model.DeleteResourcePoolPayload) graphql.Marshaler {
+	return ec._DeleteResourcePoolPayload(ctx, sel, &v)
+}
+
+func (ec *executionContext) marshalNDeleteResourcePoolPayload2ᚖgithubᚗcomᚋnetᚑautoᚋresourceManagerᚋgraphᚋgraphqlᚋmodelᚐDeleteResourcePoolPayload(ctx context.Context, sel ast.SelectionSet, v *model.DeleteResourcePoolPayload) graphql.Marshaler {
+	if v == nil {
+		if !graphql.HasFieldError(ctx, graphql.GetFieldContext(ctx)) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	return ec._DeleteResourcePoolPayload(ctx, sel, v)
+}
+
+func (ec *executionContext) unmarshalNDeleteResourceTypeInput2githubᚗcomᚋnetᚑautoᚋresourceManagerᚋgraphᚋgraphqlᚋmodelᚐDeleteResourceTypeInput(ctx context.Context, v interface{}) (model.DeleteResourceTypeInput, error) {
+	res, err := ec.unmarshalInputDeleteResourceTypeInput(ctx, v)
+	return res, graphql.WrapErrorWithInputPath(ctx, err)
+}
+
+func (ec *executionContext) marshalNDeleteResourceTypePayload2githubᚗcomᚋnetᚑautoᚋresourceManagerᚋgraphᚋgraphqlᚋmodelᚐDeleteResourceTypePayload(ctx context.Context, sel ast.SelectionSet, v model.DeleteResourceTypePayload) graphql.Marshaler {
+	return ec._DeleteResourceTypePayload(ctx, sel, &v)
+}
+
+func (ec *executionContext) marshalNDeleteResourceTypePayload2ᚖgithubᚗcomᚋnetᚑautoᚋresourceManagerᚋgraphᚋgraphqlᚋmodelᚐDeleteResourceTypePayload(ctx context.Context, sel ast.SelectionSet, v *model.DeleteResourceTypePayload) graphql.Marshaler {
+	if v == nil {
+		if !graphql.HasFieldError(ctx, graphql.GetFieldContext(ctx)) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	return ec._DeleteResourceTypePayload(ctx, sel, v)
+}
+
+func (ec *executionContext) unmarshalNDeleteTagInput2githubᚗcomᚋnetᚑautoᚋresourceManagerᚋgraphᚋgraphqlᚋmodelᚐDeleteTagInput(ctx context.Context, v interface{}) (model.DeleteTagInput, error) {
+	res, err := ec.unmarshalInputDeleteTagInput(ctx, v)
+	return res, graphql.WrapErrorWithInputPath(ctx, err)
+}
+
+func (ec *executionContext) marshalNDeleteTagPayload2githubᚗcomᚋnetᚑautoᚋresourceManagerᚋgraphᚋgraphqlᚋmodelᚐDeleteTagPayload(ctx context.Context, sel ast.SelectionSet, v model.DeleteTagPayload) graphql.Marshaler {
+	return ec._DeleteTagPayload(ctx, sel, &v)
+}
+
+func (ec *executionContext) marshalNDeleteTagPayload2ᚖgithubᚗcomᚋnetᚑautoᚋresourceManagerᚋgraphᚋgraphqlᚋmodelᚐDeleteTagPayload(ctx context.Context, sel ast.SelectionSet, v *model.DeleteTagPayload) graphql.Marshaler {
+	if v == nil {
+		if !graphql.HasFieldError(ctx, graphql.GetFieldContext(ctx)) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	return ec._DeleteTagPayload(ctx, sel, v)
 }
 
 func (ec *executionContext) unmarshalNFloat2ᚖfloat64(ctx context.Context, v interface{}) (*float64, error) {
@@ -6155,6 +8637,36 @@ func (ec *executionContext) marshalNMap2map(ctx context.Context, sel ast.Selecti
 	return res
 }
 
+func (ec *executionContext) unmarshalNMap2ᚕmap(ctx context.Context, v interface{}) ([]map[string]interface{}, error) {
+	var vSlice []interface{}
+	if v != nil {
+		if tmp1, ok := v.([]interface{}); ok {
+			vSlice = tmp1
+		} else {
+			vSlice = []interface{}{v}
+		}
+	}
+	var err error
+	res := make([]map[string]interface{}, len(vSlice))
+	for i := range vSlice {
+		ctx := graphql.WithFieldInputContext(ctx, graphql.NewFieldInputWithIndex(i))
+		res[i], err = ec.unmarshalOMap2map(ctx, vSlice[i])
+		if err != nil {
+			return nil, graphql.WrapErrorWithInputPath(ctx, err)
+		}
+	}
+	return res, nil
+}
+
+func (ec *executionContext) marshalNMap2ᚕmap(ctx context.Context, sel ast.SelectionSet, v []map[string]interface{}) graphql.Marshaler {
+	ret := make(graphql.Array, len(v))
+	for i := range v {
+		ret[i] = ec.marshalOMap2map(ctx, sel, v[i])
+	}
+
+	return ret
+}
+
 func (ec *executionContext) unmarshalNMap2ᚕmapᚄ(ctx context.Context, v interface{}) ([]map[string]interface{}, error) {
 	var vSlice []interface{}
 	if v != nil {
@@ -6183,6 +8695,16 @@ func (ec *executionContext) marshalNMap2ᚕmapᚄ(ctx context.Context, sel ast.S
 	}
 
 	return ret
+}
+
+func (ec *executionContext) marshalNPageInfo2ᚖgithubᚗcomᚋnetᚑautoᚋresourceManagerᚋgraphᚋgraphqlᚋmodelᚐPageInfo(ctx context.Context, sel ast.SelectionSet, v *model.PageInfo) graphql.Marshaler {
+	if v == nil {
+		if !graphql.HasFieldError(ctx, graphql.GetFieldContext(ctx)) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	return ec._PageInfo(ctx, sel, v)
 }
 
 func (ec *executionContext) unmarshalNPoolType2githubᚗcomᚋnetᚑautoᚋresourceManagerᚋentᚋresourcepoolᚐPoolType(ctx context.Context, v interface{}) (resourcepool.PoolType, error) {
@@ -6293,6 +8815,43 @@ func (ec *executionContext) marshalNResource2ᚖgithubᚗcomᚋnetᚑautoᚋreso
 	return ec._Resource(ctx, sel, v)
 }
 
+func (ec *executionContext) marshalNResourceEdge2ᚕᚖgithubᚗcomᚋnetᚑautoᚋresourceManagerᚋgraphᚋgraphqlᚋmodelᚐResourceEdge(ctx context.Context, sel ast.SelectionSet, v []*model.ResourceEdge) graphql.Marshaler {
+	ret := make(graphql.Array, len(v))
+	var wg sync.WaitGroup
+	isLen1 := len(v) == 1
+	if !isLen1 {
+		wg.Add(len(v))
+	}
+	for i := range v {
+		i := i
+		fc := &graphql.FieldContext{
+			Index:  &i,
+			Result: &v[i],
+		}
+		ctx := graphql.WithFieldContext(ctx, fc)
+		f := func(i int) {
+			defer func() {
+				if r := recover(); r != nil {
+					ec.Error(ctx, ec.Recover(ctx, r))
+					ret = nil
+				}
+			}()
+			if !isLen1 {
+				defer wg.Done()
+			}
+			ret[i] = ec.marshalOResourceEdge2ᚖgithubᚗcomᚋnetᚑautoᚋresourceManagerᚋgraphᚋgraphqlᚋmodelᚐResourceEdge(ctx, sel, v[i])
+		}
+		if isLen1 {
+			f(i)
+		} else {
+			go f(i)
+		}
+
+	}
+	wg.Wait()
+	return ret
+}
+
 func (ec *executionContext) unmarshalNResourceInput2ᚕᚖgithubᚗcomᚋnetᚑautoᚋresourceManagerᚋgraphᚋgraphqlᚋmodelᚐResourceInputᚄ(ctx context.Context, v interface{}) ([]*model.ResourceInput, error) {
 	var vSlice []interface{}
 	if v != nil {
@@ -6317,10 +8876,6 @@ func (ec *executionContext) unmarshalNResourceInput2ᚕᚖgithubᚗcomᚋnetᚑa
 func (ec *executionContext) unmarshalNResourceInput2ᚖgithubᚗcomᚋnetᚑautoᚋresourceManagerᚋgraphᚋgraphqlᚋmodelᚐResourceInput(ctx context.Context, v interface{}) (*model.ResourceInput, error) {
 	res, err := ec.unmarshalInputResourceInput(ctx, v)
 	return &res, graphql.WrapErrorWithInputPath(ctx, err)
-}
-
-func (ec *executionContext) marshalNResourcePool2githubᚗcomᚋnetᚑautoᚋresourceManagerᚋentᚐResourcePool(ctx context.Context, sel ast.SelectionSet, v ent.ResourcePool) graphql.Marshaler {
-	return ec._ResourcePool(ctx, sel, &v)
 }
 
 func (ec *executionContext) marshalNResourcePool2ᚕᚖgithubᚗcomᚋnetᚑautoᚋresourceManagerᚋentᚐResourcePoolᚄ(ctx context.Context, sel ast.SelectionSet, v []*ent.ResourcePool) graphql.Marshaler {
@@ -6492,10 +9047,6 @@ func (ec *executionContext) marshalNString2ᚖstring(ctx context.Context, sel as
 	return res
 }
 
-func (ec *executionContext) marshalNTag2githubᚗcomᚋnetᚑautoᚋresourceManagerᚋentᚐTag(ctx context.Context, sel ast.SelectionSet, v ent.Tag) graphql.Marshaler {
-	return ec._Tag(ctx, sel, &v)
-}
-
 func (ec *executionContext) marshalNTag2ᚕᚖgithubᚗcomᚋnetᚑautoᚋresourceManagerᚋentᚐTagᚄ(ctx context.Context, sel ast.SelectionSet, v []*ent.Tag) graphql.Marshaler {
 	ret := make(graphql.Array, len(v))
 	var wg sync.WaitGroup
@@ -6567,6 +9118,63 @@ func (ec *executionContext) unmarshalNTagAnd2ᚕᚖgithubᚗcomᚋnetᚑautoᚋr
 func (ec *executionContext) unmarshalNTagAnd2ᚖgithubᚗcomᚋnetᚑautoᚋresourceManagerᚋgraphᚋgraphqlᚋmodelᚐTagAnd(ctx context.Context, v interface{}) (*model.TagAnd, error) {
 	res, err := ec.unmarshalInputTagAnd(ctx, v)
 	return &res, graphql.WrapErrorWithInputPath(ctx, err)
+}
+
+func (ec *executionContext) unmarshalNTagPoolInput2githubᚗcomᚋnetᚑautoᚋresourceManagerᚋgraphᚋgraphqlᚋmodelᚐTagPoolInput(ctx context.Context, v interface{}) (model.TagPoolInput, error) {
+	res, err := ec.unmarshalInputTagPoolInput(ctx, v)
+	return res, graphql.WrapErrorWithInputPath(ctx, err)
+}
+
+func (ec *executionContext) marshalNTagPoolPayload2githubᚗcomᚋnetᚑautoᚋresourceManagerᚋgraphᚋgraphqlᚋmodelᚐTagPoolPayload(ctx context.Context, sel ast.SelectionSet, v model.TagPoolPayload) graphql.Marshaler {
+	return ec._TagPoolPayload(ctx, sel, &v)
+}
+
+func (ec *executionContext) marshalNTagPoolPayload2ᚖgithubᚗcomᚋnetᚑautoᚋresourceManagerᚋgraphᚋgraphqlᚋmodelᚐTagPoolPayload(ctx context.Context, sel ast.SelectionSet, v *model.TagPoolPayload) graphql.Marshaler {
+	if v == nil {
+		if !graphql.HasFieldError(ctx, graphql.GetFieldContext(ctx)) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	return ec._TagPoolPayload(ctx, sel, v)
+}
+
+func (ec *executionContext) unmarshalNUpdateResourceTypeNameInput2githubᚗcomᚋnetᚑautoᚋresourceManagerᚋgraphᚋgraphqlᚋmodelᚐUpdateResourceTypeNameInput(ctx context.Context, v interface{}) (model.UpdateResourceTypeNameInput, error) {
+	res, err := ec.unmarshalInputUpdateResourceTypeNameInput(ctx, v)
+	return res, graphql.WrapErrorWithInputPath(ctx, err)
+}
+
+func (ec *executionContext) marshalNUpdateResourceTypeNamePayload2githubᚗcomᚋnetᚑautoᚋresourceManagerᚋgraphᚋgraphqlᚋmodelᚐUpdateResourceTypeNamePayload(ctx context.Context, sel ast.SelectionSet, v model.UpdateResourceTypeNamePayload) graphql.Marshaler {
+	return ec._UpdateResourceTypeNamePayload(ctx, sel, &v)
+}
+
+func (ec *executionContext) marshalNUpdateResourceTypeNamePayload2ᚖgithubᚗcomᚋnetᚑautoᚋresourceManagerᚋgraphᚋgraphqlᚋmodelᚐUpdateResourceTypeNamePayload(ctx context.Context, sel ast.SelectionSet, v *model.UpdateResourceTypeNamePayload) graphql.Marshaler {
+	if v == nil {
+		if !graphql.HasFieldError(ctx, graphql.GetFieldContext(ctx)) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	return ec._UpdateResourceTypeNamePayload(ctx, sel, v)
+}
+
+func (ec *executionContext) unmarshalNUpdateTagInput2githubᚗcomᚋnetᚑautoᚋresourceManagerᚋgraphᚋgraphqlᚋmodelᚐUpdateTagInput(ctx context.Context, v interface{}) (model.UpdateTagInput, error) {
+	res, err := ec.unmarshalInputUpdateTagInput(ctx, v)
+	return res, graphql.WrapErrorWithInputPath(ctx, err)
+}
+
+func (ec *executionContext) marshalNUpdateTagPayload2githubᚗcomᚋnetᚑautoᚋresourceManagerᚋgraphᚋgraphqlᚋmodelᚐUpdateTagPayload(ctx context.Context, sel ast.SelectionSet, v model.UpdateTagPayload) graphql.Marshaler {
+	return ec._UpdateTagPayload(ctx, sel, &v)
+}
+
+func (ec *executionContext) marshalNUpdateTagPayload2ᚖgithubᚗcomᚋnetᚑautoᚋresourceManagerᚋgraphᚋgraphqlᚋmodelᚐUpdateTagPayload(ctx context.Context, sel ast.SelectionSet, v *model.UpdateTagPayload) graphql.Marshaler {
+	if v == nil {
+		if !graphql.HasFieldError(ctx, graphql.GetFieldContext(ctx)) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	return ec._UpdateTagPayload(ctx, sel, v)
 }
 
 func (ec *executionContext) marshalN__Directive2githubᚗcomᚋ99designsᚋgqlgenᚋgraphqlᚋintrospectionᚐDirective(ctx context.Context, sel ast.SelectionSet, v introspection.Directive) graphql.Marshaler {
@@ -6837,11 +9445,27 @@ func (ec *executionContext) unmarshalOCreateAllocatingPoolInput2ᚖgithubᚗcom�
 	return &res, graphql.WrapErrorWithInputPath(ctx, err)
 }
 
+func (ec *executionContext) unmarshalOCreateAllocationStrategyInput2ᚖgithubᚗcomᚋnetᚑautoᚋresourceManagerᚋgraphᚋgraphqlᚋmodelᚐCreateAllocationStrategyInput(ctx context.Context, v interface{}) (*model.CreateAllocationStrategyInput, error) {
+	if v == nil {
+		return nil, nil
+	}
+	res, err := ec.unmarshalInputCreateAllocationStrategyInput(ctx, v)
+	return &res, graphql.WrapErrorWithInputPath(ctx, err)
+}
+
 func (ec *executionContext) unmarshalOCreateSingletonPoolInput2ᚖgithubᚗcomᚋnetᚑautoᚋresourceManagerᚋgraphᚋgraphqlᚋmodelᚐCreateSingletonPoolInput(ctx context.Context, v interface{}) (*model.CreateSingletonPoolInput, error) {
 	if v == nil {
 		return nil, nil
 	}
 	res, err := ec.unmarshalInputCreateSingletonPoolInput(ctx, v)
+	return &res, graphql.WrapErrorWithInputPath(ctx, err)
+}
+
+func (ec *executionContext) unmarshalODeleteAllocationStrategyInput2ᚖgithubᚗcomᚋnetᚑautoᚋresourceManagerᚋgraphᚋgraphqlᚋmodelᚐDeleteAllocationStrategyInput(ctx context.Context, v interface{}) (*model.DeleteAllocationStrategyInput, error) {
+	if v == nil {
+		return nil, nil
+	}
+	res, err := ec.unmarshalInputDeleteAllocationStrategyInput(ctx, v)
 	return &res, graphql.WrapErrorWithInputPath(ctx, err)
 }
 
@@ -6858,6 +9482,57 @@ func (ec *executionContext) marshalOID2ᚖint(ctx context.Context, sel ast.Selec
 		return graphql.Null
 	}
 	return graphql.MarshalIntID(*v)
+}
+
+func (ec *executionContext) unmarshalOInt2ᚖint(ctx context.Context, v interface{}) (*int, error) {
+	if v == nil {
+		return nil, nil
+	}
+	res, err := graphql.UnmarshalInt(v)
+	return &res, graphql.WrapErrorWithInputPath(ctx, err)
+}
+
+func (ec *executionContext) marshalOInt2ᚖint(ctx context.Context, sel ast.SelectionSet, v *int) graphql.Marshaler {
+	if v == nil {
+		return graphql.Null
+	}
+	return graphql.MarshalInt(*v)
+}
+
+func (ec *executionContext) unmarshalOMap2map(ctx context.Context, v interface{}) (map[string]interface{}, error) {
+	if v == nil {
+		return nil, nil
+	}
+	res, err := graphql.UnmarshalMap(v)
+	return res, graphql.WrapErrorWithInputPath(ctx, err)
+}
+
+func (ec *executionContext) marshalOMap2map(ctx context.Context, sel ast.SelectionSet, v map[string]interface{}) graphql.Marshaler {
+	if v == nil {
+		return graphql.Null
+	}
+	return graphql.MarshalMap(v)
+}
+
+func (ec *executionContext) marshalONode2githubᚗcomᚋnetᚑautoᚋresourceManagerᚋentᚐNoder(ctx context.Context, sel ast.SelectionSet, v ent.Noder) graphql.Marshaler {
+	if v == nil {
+		return graphql.Null
+	}
+	return ec._Node(ctx, sel, v)
+}
+
+func (ec *executionContext) marshalOResourceConnection2ᚖgithubᚗcomᚋnetᚑautoᚋresourceManagerᚋgraphᚋgraphqlᚋmodelᚐResourceConnection(ctx context.Context, sel ast.SelectionSet, v *model.ResourceConnection) graphql.Marshaler {
+	if v == nil {
+		return graphql.Null
+	}
+	return ec._ResourceConnection(ctx, sel, v)
+}
+
+func (ec *executionContext) marshalOResourceEdge2ᚖgithubᚗcomᚋnetᚑautoᚋresourceManagerᚋgraphᚋgraphqlᚋmodelᚐResourceEdge(ctx context.Context, sel ast.SelectionSet, v *model.ResourceEdge) graphql.Marshaler {
+	if v == nil {
+		return graphql.Null
+	}
+	return ec._ResourceEdge(ctx, sel, v)
 }
 
 func (ec *executionContext) marshalOResourcePool2ᚕᚖgithubᚗcomᚋnetᚑautoᚋresourceManagerᚋentᚐResourcePool(ctx context.Context, sel ast.SelectionSet, v []*ent.ResourcePool) graphql.Marshaler {
@@ -6965,6 +9640,13 @@ func (ec *executionContext) marshalOString2ᚖstring(ctx context.Context, sel as
 		return graphql.Null
 	}
 	return graphql.MarshalString(*v)
+}
+
+func (ec *executionContext) marshalOTag2ᚖgithubᚗcomᚋnetᚑautoᚋresourceManagerᚋentᚐTag(ctx context.Context, sel ast.SelectionSet, v *ent.Tag) graphql.Marshaler {
+	if v == nil {
+		return graphql.Null
+	}
+	return ec._Tag(ctx, sel, v)
 }
 
 func (ec *executionContext) unmarshalOTagOr2ᚖgithubᚗcomᚋnetᚑautoᚋresourceManagerᚋgraphᚋgraphqlᚋmodelᚐTagOr(ctx context.Context, v interface{}) (*model.TagOr, error) {

@@ -8,7 +8,6 @@ import (
 
 	"github.com/net-auto/resourceManager/graph/graphql/generated"
 	"github.com/net-auto/resourceManager/ent"
-	"github.com/net-auto/resourceManager/ent/allocationstrategy"
 	"github.com/net-auto/resourceManager/graph/graphql/model"
 )
 
@@ -42,86 +41,68 @@ func (tr txResolver) WithTransaction(ctx context.Context, f func(context.Context
 	return nil
 }
 
-func (tr txResolver) CreateTag(ctx context.Context, tag string) (*ent.Tag, error) {
-	var result, zero *ent.Tag
+func (tr txResolver) CreateTag(ctx context.Context, input model.CreateTagInput) (*model.CreateTagPayload, error) {
+	var result, zero *model.CreateTagPayload
 	if err := tr.WithTransaction(ctx, func(ctx context.Context, mr generated.MutationResolver) (err error) {
-		result, err = mr.CreateTag(ctx, tag)
+		result, err = mr.CreateTag(ctx, input)
 		return
 	}); err != nil {
 		return zero, err
-	}
-	if result != nil {
-		result = result.Unwrap()
 	}
 	return result, nil
 }
 
-func (tr txResolver) UpdateTag(ctx context.Context, tagID int, tag string) (*ent.Tag, error) {
-	var result, zero *ent.Tag
+func (tr txResolver) UpdateTag(ctx context.Context, input model.UpdateTagInput) (*model.UpdateTagPayload, error) {
+	var result, zero *model.UpdateTagPayload
 	if err := tr.WithTransaction(ctx, func(ctx context.Context, mr generated.MutationResolver) (err error) {
-		result, err = mr.UpdateTag(ctx, tagID, tag)
+		result, err = mr.UpdateTag(ctx, input)
 		return
 	}); err != nil {
 		return zero, err
-	}
-	if result != nil {
-		result = result.Unwrap()
 	}
 	return result, nil
 }
 
-func (tr txResolver) DeleteTag(ctx context.Context, tagID int) (*ent.Tag, error) {
-	var result, zero *ent.Tag
+func (tr txResolver) DeleteTag(ctx context.Context, input model.DeleteTagInput) (*model.DeleteTagPayload, error) {
+	var result, zero *model.DeleteTagPayload
 	if err := tr.WithTransaction(ctx, func(ctx context.Context, mr generated.MutationResolver) (err error) {
-		result, err = mr.DeleteTag(ctx, tagID)
+		result, err = mr.DeleteTag(ctx, input)
 		return
 	}); err != nil {
 		return zero, err
-	}
-	if result != nil {
-		result = result.Unwrap()
 	}
 	return result, nil
 }
 
-func (tr txResolver) TagPool(ctx context.Context, tagID int, poolID int) (*ent.Tag, error) {
-	var result, zero *ent.Tag
+func (tr txResolver) TagPool(ctx context.Context, input model.TagPoolInput) (*model.TagPoolPayload, error) {
+	var result, zero *model.TagPoolPayload
 	if err := tr.WithTransaction(ctx, func(ctx context.Context, mr generated.MutationResolver) (err error) {
-		result, err = mr.TagPool(ctx, tagID, poolID)
+		result, err = mr.TagPool(ctx, input)
 		return
 	}); err != nil {
 		return zero, err
-	}
-	if result != nil {
-		result = result.Unwrap()
 	}
 	return result, nil
 }
 
-func (tr txResolver) CreateAllocationStrategy(ctx context.Context, name string, description *string, script string, lang allocationstrategy.Lang) (*ent.AllocationStrategy, error) {
-	var result, zero *ent.AllocationStrategy
+func (tr txResolver) CreateAllocationStrategy(ctx context.Context, input *model.CreateAllocationStrategyInput) (*model.CreateAllocationStrategyPayload, error) {
+	var result, zero *model.CreateAllocationStrategyPayload
 	if err := tr.WithTransaction(ctx, func(ctx context.Context, mr generated.MutationResolver) (err error) {
-		result, err = mr.CreateAllocationStrategy(ctx, name, description, script, lang)
+		result, err = mr.CreateAllocationStrategy(ctx, input)
 		return
 	}); err != nil {
 		return zero, err
-	}
-	if result != nil {
-		result = result.Unwrap()
 	}
 	return result, nil
 }
 
-func (tr txResolver) DeleteAllocationStrategy(ctx context.Context, allocationStrategyID int) (*ent.AllocationStrategy, error) {
-	var result, zero *ent.AllocationStrategy
+func (tr txResolver) DeleteAllocationStrategy(ctx context.Context, input *model.DeleteAllocationStrategyInput) (*model.DeleteAllocationStrategyPayload, error) {
+	var result, zero *model.DeleteAllocationStrategyPayload
 	if err := tr.WithTransaction(ctx, func(ctx context.Context, mr generated.MutationResolver) (err error) {
-		result, err = mr.DeleteAllocationStrategy(ctx, allocationStrategyID)
+		result, err = mr.DeleteAllocationStrategy(ctx, input)
 		return
 	}); err != nil {
 		return zero, err
-	}
-	if result != nil {
-		result = result.Unwrap()
 	}
 	return result, nil
 }
@@ -162,94 +143,65 @@ func (tr txResolver) FreeResource(ctx context.Context, input map[string]interfac
 	return result, nil
 }
 
-func (tr txResolver) CreateSetPool(ctx context.Context, input model.CreateSetPoolInput) (*ent.ResourcePool, error) {
-	var result, zero *ent.ResourcePool
+func (tr txResolver) CreateSetPool(ctx context.Context, input model.CreateSetPoolInput) (*model.CreateSetPoolPayload, error) {
+	var result, zero *model.CreateSetPoolPayload
 	if err := tr.WithTransaction(ctx, func(ctx context.Context, mr generated.MutationResolver) (err error) {
 		result, err = mr.CreateSetPool(ctx, input)
 		return
 	}); err != nil {
 		return zero, err
 	}
-	if result != nil {
-		result = result.Unwrap()
-	}
 	return result, nil
 }
 
-func (tr txResolver) CreateNestedSetPool(ctx context.Context, input model.CreateSetPoolInput, parentResourceID int) (*ent.ResourcePool, error) {
-	var result, zero *ent.ResourcePool
+func (tr txResolver) CreateNestedSetPool(ctx context.Context, input model.CreateNestedSetPoolInput) (*model.CreateNestedSetPoolPayload, error) {
+	var result, zero *model.CreateNestedSetPoolPayload
 	if err := tr.WithTransaction(ctx, func(ctx context.Context, mr generated.MutationResolver) (err error) {
-		result, err = mr.CreateNestedSetPool(ctx, input, parentResourceID)
+		result, err = mr.CreateNestedSetPool(ctx, input)
 		return
 	}); err != nil {
 		return zero, err
 	}
-	if result != nil {
-		result = result.Unwrap()
-	}
 	return result, nil
 }
 
-func (tr txResolver) CreateSingletonPool(ctx context.Context, input *model.CreateSingletonPoolInput) (*ent.ResourcePool, error) {
-	var result, zero *ent.ResourcePool
+func (tr txResolver) CreateSingletonPool(ctx context.Context, input *model.CreateSingletonPoolInput) (*model.CreateSingletonPoolPayload, error) {
+	var result, zero *model.CreateSingletonPoolPayload
 	if err := tr.WithTransaction(ctx, func(ctx context.Context, mr generated.MutationResolver) (err error) {
 		result, err = mr.CreateSingletonPool(ctx, input)
 		return
 	}); err != nil {
 		return zero, err
 	}
-	if result != nil {
-		result = result.Unwrap()
-	}
 	return result, nil
 }
 
-func (tr txResolver) CreateNestedSingletonPool(ctx context.Context, input *model.CreateSingletonPoolInput, parentResourceID int) (*ent.ResourcePool, error) {
-	var result, zero *ent.ResourcePool
+func (tr txResolver) CreateNestedSingletonPool(ctx context.Context, input model.CreateNestedSingletonPoolInput) (*model.CreateNestedSingletonPoolPayload, error) {
+	var result, zero *model.CreateNestedSingletonPoolPayload
 	if err := tr.WithTransaction(ctx, func(ctx context.Context, mr generated.MutationResolver) (err error) {
-		result, err = mr.CreateNestedSingletonPool(ctx, input, parentResourceID)
+		result, err = mr.CreateNestedSingletonPool(ctx, input)
 		return
 	}); err != nil {
 		return zero, err
 	}
-	if result != nil {
-		result = result.Unwrap()
-	}
 	return result, nil
 }
 
-func (tr txResolver) CreateAllocatingPool(ctx context.Context, input *model.CreateAllocatingPoolInput) (*ent.ResourcePool, error) {
-	var result, zero *ent.ResourcePool
+func (tr txResolver) CreateAllocatingPool(ctx context.Context, input *model.CreateAllocatingPoolInput) (*model.CreateAllocatingPoolPayload, error) {
+	var result, zero *model.CreateAllocatingPoolPayload
 	if err := tr.WithTransaction(ctx, func(ctx context.Context, mr generated.MutationResolver) (err error) {
 		result, err = mr.CreateAllocatingPool(ctx, input)
 		return
 	}); err != nil {
 		return zero, err
 	}
-	if result != nil {
-		result = result.Unwrap()
-	}
 	return result, nil
 }
 
-func (tr txResolver) CreateNestedAllocatingPool(ctx context.Context, input *model.CreateAllocatingPoolInput, parentResourceID int) (*ent.ResourcePool, error) {
-	var result, zero *ent.ResourcePool
+func (tr txResolver) CreateNestedAllocatingPool(ctx context.Context, input model.CreateNestedAllocatingPoolInput) (*model.CreateNestedAllocatingPoolPayload, error) {
+	var result, zero *model.CreateNestedAllocatingPoolPayload
 	if err := tr.WithTransaction(ctx, func(ctx context.Context, mr generated.MutationResolver) (err error) {
-		result, err = mr.CreateNestedAllocatingPool(ctx, input, parentResourceID)
-		return
-	}); err != nil {
-		return zero, err
-	}
-	if result != nil {
-		result = result.Unwrap()
-	}
-	return result, nil
-}
-
-func (tr txResolver) DeleteResourcePool(ctx context.Context, resourcePoolID int) (string, error) {
-	var result, zero string
-	if err := tr.WithTransaction(ctx, func(ctx context.Context, mr generated.MutationResolver) (err error) {
-		result, err = mr.DeleteResourcePool(ctx, resourcePoolID)
+		result, err = mr.CreateNestedAllocatingPool(ctx, input)
 		return
 	}); err != nil {
 		return zero, err
@@ -257,24 +209,10 @@ func (tr txResolver) DeleteResourcePool(ctx context.Context, resourcePoolID int)
 	return result, nil
 }
 
-func (tr txResolver) CreateResourceType(ctx context.Context, resourceName string, resourceProperties map[string]interface{}) (*ent.ResourceType, error) {
-	var result, zero *ent.ResourceType
+func (tr txResolver) DeleteResourcePool(ctx context.Context, input model.DeleteResourcePoolInput) (*model.DeleteResourcePoolPayload, error) {
+	var result, zero *model.DeleteResourcePoolPayload
 	if err := tr.WithTransaction(ctx, func(ctx context.Context, mr generated.MutationResolver) (err error) {
-		result, err = mr.CreateResourceType(ctx, resourceName, resourceProperties)
-		return
-	}); err != nil {
-		return zero, err
-	}
-	if result != nil {
-		result = result.Unwrap()
-	}
-	return result, nil
-}
-
-func (tr txResolver) DeleteResourceType(ctx context.Context, resourceTypeID int) (string, error) {
-	var result, zero string
-	if err := tr.WithTransaction(ctx, func(ctx context.Context, mr generated.MutationResolver) (err error) {
-		result, err = mr.DeleteResourceType(ctx, resourceTypeID)
+		result, err = mr.DeleteResourcePool(ctx, input)
 		return
 	}); err != nil {
 		return zero, err
@@ -282,16 +220,35 @@ func (tr txResolver) DeleteResourceType(ctx context.Context, resourceTypeID int)
 	return result, nil
 }
 
-func (tr txResolver) UpdateResourceTypeName(ctx context.Context, resourceTypeID int, resourceName string) (*ent.ResourceType, error) {
-	var result, zero *ent.ResourceType
+func (tr txResolver) CreateResourceType(ctx context.Context, input model.CreateResourceTypeInput) (*model.CreateResourceTypePayload, error) {
+	var result, zero *model.CreateResourceTypePayload
 	if err := tr.WithTransaction(ctx, func(ctx context.Context, mr generated.MutationResolver) (err error) {
-		result, err = mr.UpdateResourceTypeName(ctx, resourceTypeID, resourceName)
+		result, err = mr.CreateResourceType(ctx, input)
 		return
 	}); err != nil {
 		return zero, err
 	}
-	if result != nil {
-		result = result.Unwrap()
+	return result, nil
+}
+
+func (tr txResolver) DeleteResourceType(ctx context.Context, input model.DeleteResourceTypeInput) (*model.DeleteResourceTypePayload, error) {
+	var result, zero *model.DeleteResourceTypePayload
+	if err := tr.WithTransaction(ctx, func(ctx context.Context, mr generated.MutationResolver) (err error) {
+		result, err = mr.DeleteResourceType(ctx, input)
+		return
+	}); err != nil {
+		return zero, err
+	}
+	return result, nil
+}
+
+func (tr txResolver) UpdateResourceTypeName(ctx context.Context, input model.UpdateResourceTypeNameInput) (*model.UpdateResourceTypeNamePayload, error) {
+	var result, zero *model.UpdateResourceTypeNamePayload
+	if err := tr.WithTransaction(ctx, func(ctx context.Context, mr generated.MutationResolver) (err error) {
+		result, err = mr.UpdateResourceTypeName(ctx, input)
+		return
+	}); err != nil {
+		return zero, err
 	}
 	return result, nil
 }
