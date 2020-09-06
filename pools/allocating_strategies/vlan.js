@@ -5,7 +5,7 @@ var userInput = {}
 // framework managed constants
 
 /*
-VLAN range allocation strategy
+VLAN allocation strategy
 
 - Expects VLAN resource type to have 1 properties of type int ["vlan"]
 - Logs utilisation stats
@@ -78,7 +78,7 @@ function invoke() {
     let parentRangeStr = resourcePool.ResourcePoolName
     let parentRange = parse_range(parentRangeStr)
     if (parentRange == null) {
-        console.error("Unable to allocate VLAN range" +
+        console.error("Unable to allocate VLAN" +
             ". Unable to extract parent vlan range from pool name: " + parentRangeStr)
         return null
     }

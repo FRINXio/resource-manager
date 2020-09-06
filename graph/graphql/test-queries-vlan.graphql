@@ -249,7 +249,7 @@ mutation CreateVlanAllocationStratJs {
 
 
 /*
-VLAN range allocation strategy
+VLAN allocation strategy
 
 - Expects VLAN resource type to have 1 properties of type int ["vlan"]
 - Logs utilisation stats
@@ -322,7 +322,7 @@ function invoke() {
     let parentRangeStr = resourcePool.ResourcePoolName
     let parentRange = parse_range(parentRangeStr)
     if (parentRange == null) {
-        console.error("Unable to allocate VLAN range" +
+        console.error("Unable to allocate VLAN" +
             ". Unable to extract parent vlan range from pool name: " + parentRangeStr)
         return null
     }
@@ -399,7 +399,7 @@ mutation CreateLevel2Pool1_allocating {
     }
 }
 
-# Pool 10.128.0.0/9 on level #2
+# Pool 2001-4095 on level #2
 mutation ClaimResourceFromRoot {
     ClaimResource(poolId:17179869184, userInput: {desiredSize:2095}) {
         ID

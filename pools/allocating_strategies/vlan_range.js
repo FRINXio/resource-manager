@@ -131,38 +131,29 @@ function invoke() {
         "to": parentRange.to
     }
 
-    if (currentResourcesUnwrapped.length === 0) {
-        findingAvailableRange.to = userInput.desiredSize - 1
-        if (rangeCapacity(findingAvailableRange) <= rangeCapacity(parentRange)) {
-            // FIXME How to pass these stats ?
-            // logStats(findingAvailableRange, parentRange)
-            return findingAvailableRange
-        }
-    } else {
-        // iterate over allocated ranges and see if a desired new range can be squeezed in
-        for (let allocatedRange of currentResourcesUnwrapped) {
-            // set to bound to from bound of next range
-            findingAvailableRange.to = allocatedRange.from - 1
-            // if there is enough space, allocate a chunk of that range
-            if (rangeCapacity(findingAvailableRange) >= userInput.desiredSize) {
-                findingAvailableRange.to = findingAvailableRange.from + userInput.desiredSize - 1
-                // FIXME How to pass these stats ?
-                // logStats(findingAvailableRange, parentRange, currentResourcesUnwrapped)
-                return findingAvailableRange
-            }
-
-            findingAvailableRange.from = allocatedRange.to + 1
-            findingAvailableRange.to = allocatedRange.to + 1
-        }
-
-        // check if there is some space left at the end of parent range
-        findingAvailableRange.to = parentRange.to
+    // iterate over allocated ranges and see if a desired new range can be squeezed in
+    for (let allocatedRange of currentResourcesUnwrapped) {
+        // set to bound to from bound of next range
+        findingAvailableRange.to = allocatedRange.from - 1
+        // if there is enough space, allocate a chunk of that range
         if (rangeCapacity(findingAvailableRange) >= userInput.desiredSize) {
             findingAvailableRange.to = findingAvailableRange.from + userInput.desiredSize - 1
             // FIXME How to pass these stats ?
             // logStats(findingAvailableRange, parentRange, currentResourcesUnwrapped)
             return findingAvailableRange
         }
+
+        findingAvailableRange.from = allocatedRange.to + 1
+        findingAvailableRange.to = allocatedRange.to + 1
+    }
+
+    // check if there is some space left at the end of parent range
+    findingAvailableRange.to = parentRange.to
+    if (rangeCapacity(findingAvailableRange) >= userInput.desiredSize) {
+        findingAvailableRange.to = findingAvailableRange.from + userInput.desiredSize - 1
+        // FIXME How to pass these stats ?
+        // logStats(findingAvailableRange, parentRange, currentResourcesUnwrapped)
+        return findingAvailableRange
     }
 
     // no suitable range found
@@ -184,7 +175,7 @@ function rangeToStr(range) {
 
 // For testing purposes
 function invokeWithParams(currentResourcesArg, resourcePoolArg, userInputArg) {
-    currentResources = currentResourcesUnwrappedArg
+    currentResources = currentResourcesArg
     resourcePool = resourcePoolArg
     userInput = userInputArg
     return invoke()

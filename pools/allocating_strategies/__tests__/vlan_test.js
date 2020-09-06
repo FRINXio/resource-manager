@@ -1,28 +1,28 @@
-const strat = require('../vlan');
+const strat = require('../vlan')
 
 test("missing parent range", () => {
     expect(strat.invokeWithParams([], {}))
-        .toStrictEqual(null);
+        .toStrictEqual(null)
 })
 
 test("allocate vlan", () => {
     expect(strat.invokeWithParams([], {'ResourcePoolName': "[0-4095]"}))
-        .toStrictEqual(vlan(0));
+        .toStrictEqual(vlan(0).Properties)
     expect(strat.invokeWithParams([vlan(1)], {'ResourcePoolName': "[0-4095]"}))
-        .toStrictEqual(vlan(0));
+        .toStrictEqual(vlan(0).Properties)
     expect(strat.invokeWithParams([vlan(278)], {'ResourcePoolName': "[278-333]"}))
-        .toStrictEqual(vlan(279));
+        .toStrictEqual(vlan(279).Properties)
     expect(strat.invokeWithParams(vlans(0, 4094), {'ResourcePoolName': "[0-4095]"}))
-        .toStrictEqual(vlan(4095));
+        .toStrictEqual(vlan(4095).Properties)
 })
 
 test("allocate vlan full", () => {
     expect(strat.invokeWithParams(vlans(0, 4095), {'ResourcePoolName': "[0-4095]"}))
-        .toStrictEqual(null);
+        .toStrictEqual(null)
 })
 
 test("free capacity", () => {
-    expect(strat.freeCapacity(range(100, 900), 100)).toStrictEqual(701)
+    expect(strat.freeCapacity(range(100, 900).Properties, 100)).toStrictEqual(701)
 })
 
 test("utilisation", () => {
