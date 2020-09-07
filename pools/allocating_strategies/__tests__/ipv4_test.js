@@ -1,4 +1,4 @@
-const strat = require('../ipv4')
+const strat = require('../ipv4_strategy')
 
 test("allocate all addresses 24", () => {
     addresses = []

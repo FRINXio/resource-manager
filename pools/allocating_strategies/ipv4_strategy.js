@@ -4,8 +4,10 @@ var resourcePool = {}
 var userInput = {}
 // framework managed constants
 
+// STRATEGY_START
+
 /*
-IPv4 prefix allocation strategy
+IPv4 address allocation strategy
 
 - Expects IPv4 prefix resource type to have 2 properties of type int ["address:string", "mask:int"]
 - userInput.subnet is an optional parameter specifying whether root prefix will be used as a real subnet or just
@@ -181,6 +183,8 @@ function invoke() {
     logStats(null, rootPrefixParsed, userInput.subnet === true, currentResourcesUnwrapped, "error")
     return null
 }
+
+// STRATEGY_END
 
 // For testing purposes
 function invokeWithParams(currentResourcesArg, resourcePoolArg, userInputArg) {

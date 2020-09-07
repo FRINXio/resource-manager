@@ -1,4 +1,4 @@
-const strat = require('../vlan_range');
+const strat = require('../vlan_range_strategy');
 test("missing parent range", () => {
     expect(strat.invokeWithParams([], {}, {}))
         .toStrictEqual(null);

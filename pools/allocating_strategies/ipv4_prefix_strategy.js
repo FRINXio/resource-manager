@@ -4,6 +4,8 @@ var resourcePool = {}
 var userInput = {}
 // framework managed constants
 
+// STRATEGY_START
+
 /*
 IPv4 prefix allocation strategy
 
@@ -253,6 +255,8 @@ function invoke() {
     logStats(null, rootPrefixParsed, currentResourcesUnwrapped, "error")
     return null
 }
+
+// STRATEGY_END
 
 // For testing purposes
 function invokeWithParams(currentResourcesArg, resourcePoolArg, userInputArg) {

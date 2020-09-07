@@ -10,6 +10,7 @@ import (
 	"context"
 	"database/sql"
 	"fmt"
+	"github.com/net-auto/resourceManager/pools/allocating_strategies"
 	"runtime"
 	"sync"
 
@@ -160,6 +161,12 @@ func (m *MySQLTenancy) ClientFor(ctx context.Context, name string) (*ent.Client,
 	if err := m.migrate(ctx, client); err != nil {
 		return nil, err
 	}
+
+	m.logger.For(ctx).Debug("Loading built-in resource types for tenant", zap.String("tenant", name))
+	if err := pools.LoadBuiltinTypes(ctx, client); err != nil {
+		return nil, err
+	}
+
 	return client, nil
 }
 

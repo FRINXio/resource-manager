@@ -4,6 +4,8 @@ var resourcePool = {}
 var userInput = {}
 // framework managed constants
 
+// STRATEGY_START
+
 /*
 VLAN allocation strategy
 
@@ -107,6 +109,8 @@ function invoke() {
 function rangeToStr(range) {
     return `[${range.from}-${range.to}]`
 }
+
+// STRATEGY_END
 
 // For testing purposes
 function invokeWithParams(currentResourcesArg, resourcePoolArg) {

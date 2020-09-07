@@ -1,4 +1,4 @@
-const strat = require('../ipv4_prefix')
+const strat = require('../ipv4_prefix_strategy')
 
 test("single allocation pool", () => {
     for (let i = 1; i <= 8; i++) {

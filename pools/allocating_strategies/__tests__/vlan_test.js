@@ -1,4 +1,4 @@
-const strat = require('../vlan')
+const strat = require('../vlan_strategy')
 
 test("missing parent range", () => {
     expect(strat.invokeWithParams([], {}))

@@ -4,6 +4,8 @@ var resourcePool = {}
 var userInput = {}
 // framework managed constants
 
+// STRATEGY_START
+
 /*
 signed int32 random allocation strategy
 
@@ -114,6 +116,8 @@ function getRandomInt(min, max) {
 function rangeToStr(range) {
     return `[${range.from}-${range.to}]`
 }
+
+// STRATEGY_END
 
 // For testing purposes
 function invokeWithParams(currentResourcesArg, resourcePoolArg) {

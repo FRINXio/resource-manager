@@ -1,4 +1,4 @@
-const strat = require('../random_s_int32')
+const strat = require('../random_s_int32_strategy')
 
 test("allocate randomInt", () => {
     for (let i = 0; i < 10000; i++) {
