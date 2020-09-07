@@ -50,6 +50,8 @@ function subnetAddresses(mask) {
     return 1<<(32-mask)
 }
 
+// TODO code reuse between strategies
+
 const prefixRegex = /([0-9.]+)\/([0-9]{1,2})/
 
 // parse prefix from a string e.g. 1.2.3.4/18 into an object
@@ -261,7 +263,6 @@ function invokeWithParams(currentResourcesArg, resourcePoolArg, userInputArg) {
 }
 exports.invoke = invoke
 exports.invokeWithParams = invokeWithParams
-exports.parsePrefix = parsePrefix
 exports.utilizedCapacity = utilizedCapacity
 exports.freeCapacity = freeCapacity
 exports.parsePrefix = parsePrefix
