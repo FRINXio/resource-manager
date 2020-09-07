@@ -7,9 +7,8 @@ var userInput = {}
 // STRATEGY_START
 
 /*
-IPv4 address allocation strategy
-
-- Expects IPv4 prefix resource type to have 2 properties of type int ["address:string", "mask:int"]
+IPv6 address allocation strategy
+- Expects Ipv6 prefix resource type to have 2 properties of type int ["address:string", "mask:int"]
 - userInput.subnet is an optional parameter specifying whether root prefix will be used as a real subnet or just
   as an IP pool. Essentially whether to consider subnet address and broadcast when allocating addresses.
 - Logs utilisation stats
@@ -17,42 +16,71 @@ IPv4 address allocation strategy
 - All addresses from parent prefix are used, including the first and last one
  */
 
-// ipv4 int to str
-function inet_ntoa(addrint) {
-    return ((addrint >> 24) & 0xff) + "." +
-        ((addrint >> 16) & 0xff) + "." +
-        ((addrint >> 8) & 0xff) + "." +
-        (addrint & 0xff)
-}
+// ipv6 int to str
+function inet_ntoa(addrBigInt) {
+    try {
+        let step = BigInt(112)
+        let remain = addrBigInt
+        const parts = []
 
-// ipv4 str to int
-function inet_aton(addrstr) {
-    var re = /^([0-9]{1,3})\.([0-9]{1,3})\.([0-9]{1,3})\.([0-9]{1,3})$/
-    var res = re.exec(addrstr)
+        while (step > BigInt(0)) {
+            const divisor = BigInt(2) ** BigInt(step)
+            parts.push(remain / divisor)
+            remain = addrBigInt % divisor
+            step -= BigInt(16)
+        }
+        parts.push(remain)
 
-    if (res === null) {
-        console.error("Address: " + addrstr + " is invalid, doesn't match regex: " + re)
+        let ip = parts.map(n => Number(n).toString(16)).join(":")
+        return ip.replace(/\b:?(?:0+:?){2,}/, "::")
+    } catch (error) {
+        console.error("Address is invalid, cannot be serialized from: " + addrBigInt)
         return null
     }
+}
 
-    for (var i = 1; i <= 4; i++) {
-        if (res[i] < 0 || res[i] > 255) {
-            console.error("Address: " + addrstr + " is invalid, outside of ipv4 range: " + addrstr)
-            return null
+// ipv6 str to BigInt
+function inet_aton(addrstr) {
+    let number = BigInt(0)
+    let exp = BigInt(0)
+
+    try {
+        const parts = addrstr.split(":")
+        const index = parts.indexOf("")
+
+        for (const part of parts) {
+            if (part.length > 4 || part > "ffff") {
+                console.error("Address is invalid, cannot be parsed: " + addrstr + ". Contains invalid part: " + part)
+                return null
+            }
         }
-    }
 
-    return (res[1] << 24) | (res[2] << 16) | (res[3] << 8) | res[4]
+        if (index !== -1) {
+            while (parts.length < 8) {
+                parts.splice(index, 0, "")
+            }
+        }
+
+        for (const n of parts.map(part => part ? `0x${part}` : `0`).map(Number).reverse()) {
+            number += BigInt(n) * (BigInt(2) ** BigInt(exp))
+            exp += BigInt(16)
+        }
+
+        return number
+    } catch (error) {
+        console.error("Address is invalid, cannot be parsed: " + addrstr)
+        return null
+    }
 }
 
 // number of addresses in a subnet based on its mask
 function subnetAddresses(mask) {
-    return 1<<(32-mask)
+    return BigInt(1) << BigInt(128 - mask)
 }
 
-const prefixRegex = /([0-9.]+)\/([0-9]{1,2})/
+const prefixRegex = /([0-9a-f:]+)\/([0-9]{1,3})/
 
-// parse prefix from a string e.g. 1.2.3.4/18 into an object
+// parse prefix from a string e.g. beef::/64 into an object
 function parsePrefix(str) {
     let res = prefixRegex.exec(str)
     if (res == null) {
@@ -60,63 +88,28 @@ function parsePrefix(str) {
         return null
     }
 
-    let addrNum = inet_aton(res[1])
-    if (addrNum == null) {
+    let addrBigInt = inet_aton(res[1])
+    if (addrBigInt == null) {
         return null
     }
 
     let mask = parseInt(res[2], 10)
-    if (mask < 0 || mask > 32) {
-        console.error("Mask is invalid outside of ipv4 range: " + mask)
+    if (mask < 0 || mask > 128) {
+        console.error("Mask is invalid outside of ipv6 range: " + mask)
         return null
     }
 
     if (mask === 0) {
-        addrNum = 0
+        addrBigInt = 0
     } else {
         // making sure to nullify any bits set to 1 in subnet addr outside of mask
-        addrNum = (addrNum >>> (32-mask)) << (32-mask)
+        addrBigInt = (addrBigInt >> BigInt(128 - mask)) << BigInt(128 - mask)
     }
 
     return {
-        "address": inet_ntoa(addrNum),
+        "address": inet_ntoa(addrBigInt),
         "prefix": mask
     }
-}
-
-// calculate utilized capacity based on previously allocated prefixes + a newly allocated prefix
-function utilizedCapacity(allocatedAddresses, newlyAllocatedRangeCapacity) {
-    return allocatedAddresses.length + newlyAllocatedRangeCapacity
-}
-
-// calculate free capacity based on previously allocated prefixes
-function freeCapacity(parentPrefix, utilisedCapacity) {
-    return subnetAddresses(parentPrefix.prefix) - utilisedCapacity
-}
-
-// log utilisation stats
-function logStats(newlyAllocatedAddr, parentRange, isSubnet = false, allocatedAddresses = [], level = "log") {
-    let newlyAllocatedPrefixCapacity = 0
-    if (newlyAllocatedAddr) {
-        newlyAllocatedPrefixCapacity = 1
-    } else {
-        newlyAllocatedPrefixCapacity = 0
-    }
-
-    let utilisedCapacity = utilizedCapacity(allocatedAddresses, newlyAllocatedPrefixCapacity)
-    if(isSubnet) {
-        utilisedCapacity += 2
-    }
-    let remainingCapacity = freeCapacity(parentRange, utilisedCapacity)
-    let utilPercentage
-    if (remainingCapacity === 0) {
-        utilPercentage = 100.0
-    } else {
-        utilPercentage = (utilisedCapacity / subnetAddresses(parentRange.prefix)) * 100
-    }
-    console[level]("Remaining capacity: " + remainingCapacity)
-    console[level]("Utilised capacity: " + utilisedCapacity)
-    console[level](`Utilisation: ${utilPercentage.toFixed(1)}%`)
 }
 
 function addressesToStr(currentResourcesUnwrapped) {
@@ -130,6 +123,43 @@ function addressesToStr(currentResourcesUnwrapped) {
 
 function prefixToStr(prefix) {
     return `${prefix.address}/${prefix.prefix}`
+}
+
+// calculate utilized capacity based on previously allocated prefixes + a newly allocated prefix
+function utilizedCapacity(allocatedAddresses, newlyAllocatedRangeCapacity) {
+    return BigInt(allocatedAddresses.length) + BigInt(newlyAllocatedRangeCapacity)
+}
+
+// calculate free capacity based on previously allocated prefixes
+function freeCapacity(parentPrefix, utilisedCapacity) {
+    return subnetAddresses(parentPrefix.prefix) - BigInt(utilisedCapacity)
+}
+
+// log utilisation stats
+function logStats(newlyAllocatedAddr, parentRange, isSubnet = false, allocatedAddresses = [], level = "log") {
+    let newlyAllocatedPrefixCapacity
+    if (newlyAllocatedAddr) {
+        newlyAllocatedPrefixCapacity = BigInt(1)
+    } else {
+        newlyAllocatedPrefixCapacity = BigInt(0)
+    }
+
+    let utilisedCapacity = utilizedCapacity(allocatedAddresses, newlyAllocatedPrefixCapacity)
+    if(isSubnet) {
+        utilisedCapacity += BigInt(2)
+    }
+    let remainingCapacity = freeCapacity(parentRange, utilisedCapacity)
+    let utilPercentage
+    if (remainingCapacity === BigInt(0)) {
+        utilPercentage = 100.0
+    } else {
+        let utilFloat = Number(utilisedCapacity * BigInt(1000) / subnetAddresses(parentRange.prefix)) / 1000
+        utilPercentage = (utilFloat * 100)
+    }
+
+    console[level]("Remaining capacity: " + remainingCapacity)
+    console[level]("Utilised capacity: " + utilisedCapacity)
+    console[level](`Utilisation: ${utilPercentage.toFixed(1)}%`)
 }
 
 // main
@@ -151,11 +181,11 @@ function invoke() {
     currentResourcesUnwrapped = currentResources.map(cR => cR.Properties)
     let currentResourcesSet = new Set(currentResourcesUnwrapped.map(ip => ip.address))
 
-    let firstPossibleAddr = 0
-    let lastPossibleAddr = 0
+    let firstPossibleAddr
+    let lastPossibleAddr
     if (userInput.subnet === true) {
-        firstPossibleAddr = rootAddressNum + 1
-        lastPossibleAddr = rootAddressNum + rootCapacity - 1
+        firstPossibleAddr = rootAddressNum + BigInt(1)
+        lastPossibleAddr = rootAddressNum + rootCapacity - BigInt(1)
     } else {
         firstPossibleAddr = rootAddressNum
         lastPossibleAddr = rootAddressNum + rootCapacity
@@ -172,7 +202,7 @@ function invoke() {
     }
 
     // no suitable range found
-    console.error("Unable to allocate Ipv4 address from: " + rootPrefixStr +
+    console.error("Unable to allocate Ipv6 address from: " + rootPrefixStr +
         ". Insufficient capacity to allocate a new address")
     console.error("Currently allocated addresses: " + addressesToStr(currentResourcesUnwrapped))
     logStats(null, rootPrefixParsed, userInput.subnet === true, currentResourcesUnwrapped, "error")

@@ -56,6 +56,53 @@ func loadIpv4Prefix(ctx context.Context, client *ent.Tx) error {
 	return nil
 }
 
+func loadIpv6Prefix(ctx context.Context, client *ent.Tx) error {
+
+	exists, err := client.ResourceType.Query().Where(resourcetype.Name("ipv6_prefix")).Exist(ctx)
+	if err != nil {
+		return err
+	}
+	if exists {
+		// TODO update if exists
+		// TODO prevent users from overriding these
+		return nil
+	}
+
+	propAddr, err := client.PropertyType.Create().
+		SetName("address").
+		SetType(propertytype.TypeString).
+		Save(ctx)
+	if err != nil {
+		return err
+	}
+	propPrefix, err := client.PropertyType.Create().
+		SetName("prefix").
+		SetType(propertytype.TypeInt).
+		Save(ctx)
+	if err != nil {
+		return err
+	}
+
+	_, err = client.ResourceType.Create().
+		SetName("ipv6_prefix").
+		AddPropertyTypes(propAddr, propPrefix).
+		Save(ctx)
+	if err != nil {
+		return err
+	}
+
+	_, err = client.AllocationStrategy.Create().
+		SetName("ipv6_prefix").
+		SetLang(allocationstrategy.LangJs).
+		SetScript(IPV6_PREFIX).
+		Save(ctx)
+	if err != nil {
+		return err
+	}
+
+	return nil
+}
+
 func loadIpv4(ctx context.Context, client *ent.Tx) error {
 	exists, err := client.ResourceType.Query().Where(resourcetype.Name("ipv4")).Exist(ctx)
 	if err != nil {
@@ -85,6 +132,43 @@ func loadIpv4(ctx context.Context, client *ent.Tx) error {
 		SetName("ipv4").
 		SetLang(allocationstrategy.LangJs).
 		SetScript(IPV4).
+		Save(ctx)
+	if err != nil {
+		return err
+	}
+
+	return nil
+}
+
+func loadIpv6(ctx context.Context, client *ent.Tx) error {
+	exists, err := client.ResourceType.Query().Where(resourcetype.Name("ipv6")).Exist(ctx)
+	if err != nil {
+		return err
+	}
+	if exists {
+		return nil
+	}
+
+	propAddr, err := client.PropertyType.Create().
+		SetName("address").
+		SetType(propertytype.TypeString).
+		Save(ctx)
+	if err != nil {
+		return err
+	}
+
+	_, err = client.ResourceType.Create().
+		SetName("ipv6").
+		AddPropertyTypes(propAddr).
+		Save(ctx)
+	if err != nil {
+		return err
+	}
+
+	_, err = client.AllocationStrategy.Create().
+		SetName("ipv6").
+		SetLang(allocationstrategy.LangJs).
+		SetScript(IPV6).
 		Save(ctx)
 	if err != nil {
 		return err
@@ -188,6 +272,7 @@ func loadInner(ctx context.Context, client *ent.Tx) error {
 	if err != nil {
 		return errors.Wrapf(err, "Unable to load ipv4 resource type")
 	}
+
 	err = loadVlanRange(ctx, client)
 	if err != nil {
 		return errors.Wrapf(err, "Unable to load vlan_range resource type")
@@ -195,6 +280,15 @@ func loadInner(ctx context.Context, client *ent.Tx) error {
 	err = loadVlan(ctx, client)
 	if err != nil {
 		return errors.Wrapf(err, "Unable to load vlan resource type")
+	}
+
+	err = loadIpv6Prefix(ctx, client)
+	if err != nil {
+		return errors.Wrapf(err, "Unable to load ipv6_prefix resource type")
+	}
+	err = loadIpv6(ctx, client)
+	if err != nil {
+		return errors.Wrapf(err, "Unable to load ipv6 resource type")
 	}
 
 	return nil
