@@ -104,9 +104,9 @@ type PoolType string
 
 // PoolType values.
 const (
-	PoolTypeAllocating PoolType = "allocating"
-	PoolTypeSet        PoolType = "set"
 	PoolTypeSingleton  PoolType = "singleton"
+	PoolTypeSet        PoolType = "set"
+	PoolTypeAllocating PoolType = "allocating"
 )
 
 func (pt PoolType) String() string {
@@ -116,7 +116,7 @@ func (pt PoolType) String() string {
 // PoolTypeValidator is a validator for the "pool_type" field enum values. It is called by the builders before save.
 func PoolTypeValidator(pt PoolType) error {
 	switch pt {
-	case PoolTypeAllocating, PoolTypeSet, PoolTypeSingleton:
+	case PoolTypeSingleton, PoolTypeSet, PoolTypeAllocating:
 		return nil
 	default:
 		return fmt.Errorf("resourcepool: invalid enum value for pool_type field: %q", pt)

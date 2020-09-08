@@ -7,9 +7,9 @@ import (
 	"errors"
 	"fmt"
 
-	"github.com/facebookincubator/ent/dialect/sql"
-	"github.com/facebookincubator/ent/dialect/sql/sqlgraph"
-	"github.com/facebookincubator/ent/schema/field"
+	"github.com/facebook/ent/dialect/sql"
+	"github.com/facebook/ent/dialect/sql/sqlgraph"
+	"github.com/facebook/ent/schema/field"
 	"github.com/net-auto/resourceManager/ent/predicate"
 	"github.com/net-auto/resourceManager/ent/property"
 	"github.com/net-auto/resourceManager/ent/propertytype"
@@ -247,7 +247,7 @@ func (pu *PropertyUpdate) Mutation() *PropertyMutation {
 	return pu.mutation
 }
 
-// ClearType clears the type edge to PropertyType.
+// ClearType clears the "type" edge to type PropertyType.
 func (pu *PropertyUpdate) ClearType() *PropertyUpdate {
 	pu.mutation.ClearType()
 	return pu
@@ -743,7 +743,7 @@ func (puo *PropertyUpdateOne) Mutation() *PropertyMutation {
 	return puo.mutation
 }
 
-// ClearType clears the type edge to PropertyType.
+// ClearType clears the "type" edge to type PropertyType.
 func (puo *PropertyUpdateOne) ClearType() *PropertyUpdateOne {
 	puo.mutation.ClearType()
 	return puo

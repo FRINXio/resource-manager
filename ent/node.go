@@ -10,8 +10,8 @@ import (
 	"sync/atomic"
 
 	"github.com/99designs/gqlgen/graphql/errcode"
-	"github.com/facebookincubator/ent/dialect/sql"
-	"github.com/facebookincubator/ent/dialect/sql/schema"
+	"github.com/facebook/ent/dialect/sql"
+	"github.com/facebook/ent/dialect/sql/schema"
 	"github.com/hashicorp/go-multierror"
 	"github.com/net-auto/resourceManager/ent/allocationstrategy"
 	"github.com/net-auto/resourceManager/ent/property"
@@ -24,9 +24,10 @@ import (
 	"golang.org/x/sync/semaphore"
 )
 
-// Noder wraps the basic Node method.
+// Noder wraps Node/IsNode methods.
 type Noder interface {
 	Node(context.Context) (*Node, error)
+	IsNode()
 }
 
 // Node in the graph.
@@ -105,6 +106,8 @@ func (as *AllocationStrategy) Node(ctx context.Context) (node *Node, err error) 
 	}
 	return node, nil
 }
+
+func (AllocationStrategy) IsNode() {}
 
 func (pr *Property) Node(ctx context.Context) (node *Node, err error) {
 	node = &Node{
@@ -192,6 +195,8 @@ func (pr *Property) Node(ctx context.Context) (node *Node, err error) {
 	}
 	return node, nil
 }
+
+func (Property) IsNode() {}
 
 func (pt *PropertyType) Node(ctx context.Context) (node *Node, err error) {
 	node = &Node{
@@ -371,6 +376,8 @@ func (pt *PropertyType) Node(ctx context.Context) (node *Node, err error) {
 	return node, nil
 }
 
+func (PropertyType) IsNode() {}
+
 func (r *Resource) Node(ctx context.Context) (node *Node, err error) {
 	node = &Node{
 		ID:     r.ID,
@@ -431,6 +438,8 @@ func (r *Resource) Node(ctx context.Context) (node *Node, err error) {
 	}
 	return node, nil
 }
+
+func (Resource) IsNode() {}
 
 func (rp *ResourcePool) Node(ctx context.Context) (node *Node, err error) {
 	node = &Node{
@@ -531,6 +540,8 @@ func (rp *ResourcePool) Node(ctx context.Context) (node *Node, err error) {
 	return node, nil
 }
 
+func (ResourcePool) IsNode() {}
+
 func (rt *ResourceType) Node(ctx context.Context) (node *Node, err error) {
 	node = &Node{
 		ID:     rt.ID,
@@ -573,6 +584,8 @@ func (rt *ResourceType) Node(ctx context.Context) (node *Node, err error) {
 	return node, nil
 }
 
+func (ResourceType) IsNode() {}
+
 func (t *Tag) Node(ctx context.Context) (node *Node, err error) {
 	node = &Node{
 		ID:     t.ID,
@@ -603,6 +616,8 @@ func (t *Tag) Node(ctx context.Context) (node *Node, err error) {
 	}
 	return node, nil
 }
+
+func (Tag) IsNode() {}
 
 func (c *Client) Node(ctx context.Context, id int) (*Node, error) {
 	n, err := c.Noder(ctx, id)

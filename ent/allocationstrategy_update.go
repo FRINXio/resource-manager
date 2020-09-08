@@ -6,9 +6,9 @@ import (
 	"context"
 	"fmt"
 
-	"github.com/facebookincubator/ent/dialect/sql"
-	"github.com/facebookincubator/ent/dialect/sql/sqlgraph"
-	"github.com/facebookincubator/ent/schema/field"
+	"github.com/facebook/ent/dialect/sql"
+	"github.com/facebook/ent/dialect/sql/sqlgraph"
+	"github.com/facebook/ent/schema/field"
 	"github.com/net-auto/resourceManager/ent/allocationstrategy"
 	"github.com/net-auto/resourceManager/ent/predicate"
 	"github.com/net-auto/resourceManager/ent/resourcepool"
@@ -92,6 +92,12 @@ func (asu *AllocationStrategyUpdate) AddPools(r ...*ResourcePool) *AllocationStr
 // Mutation returns the AllocationStrategyMutation object of the builder.
 func (asu *AllocationStrategyUpdate) Mutation() *AllocationStrategyMutation {
 	return asu.mutation
+}
+
+// ClearPools clears all "pools" edges to type ResourcePool.
+func (asu *AllocationStrategyUpdate) ClearPools() *AllocationStrategyUpdate {
+	asu.mutation.ClearPools()
+	return asu
 }
 
 // RemovePoolIDs removes the pools edge to ResourcePool by ids.
@@ -228,7 +234,23 @@ func (asu *AllocationStrategyUpdate) sqlSave(ctx context.Context) (n int, err er
 			Column: allocationstrategy.FieldScript,
 		})
 	}
-	if nodes := asu.mutation.RemovedPoolsIDs(); len(nodes) > 0 {
+	if asu.mutation.PoolsCleared() {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: true,
+			Table:   allocationstrategy.PoolsTable,
+			Columns: []string{allocationstrategy.PoolsColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: &sqlgraph.FieldSpec{
+					Type:   field.TypeInt,
+					Column: resourcepool.FieldID,
+				},
+			},
+		}
+		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
+	}
+	if nodes := asu.mutation.RemovedPoolsIDs(); len(nodes) > 0 && !asu.mutation.PoolsCleared() {
 		edge := &sqlgraph.EdgeSpec{
 			Rel:     sqlgraph.O2M,
 			Inverse: true,
@@ -348,6 +370,12 @@ func (asuo *AllocationStrategyUpdateOne) AddPools(r ...*ResourcePool) *Allocatio
 // Mutation returns the AllocationStrategyMutation object of the builder.
 func (asuo *AllocationStrategyUpdateOne) Mutation() *AllocationStrategyMutation {
 	return asuo.mutation
+}
+
+// ClearPools clears all "pools" edges to type ResourcePool.
+func (asuo *AllocationStrategyUpdateOne) ClearPools() *AllocationStrategyUpdateOne {
+	asuo.mutation.ClearPools()
+	return asuo
 }
 
 // RemovePoolIDs removes the pools edge to ResourcePool by ids.
@@ -482,7 +510,23 @@ func (asuo *AllocationStrategyUpdateOne) sqlSave(ctx context.Context) (as *Alloc
 			Column: allocationstrategy.FieldScript,
 		})
 	}
-	if nodes := asuo.mutation.RemovedPoolsIDs(); len(nodes) > 0 {
+	if asuo.mutation.PoolsCleared() {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: true,
+			Table:   allocationstrategy.PoolsTable,
+			Columns: []string{allocationstrategy.PoolsColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: &sqlgraph.FieldSpec{
+					Type:   field.TypeInt,
+					Column: resourcepool.FieldID,
+				},
+			},
+		}
+		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
+	}
+	if nodes := asuo.mutation.RemovedPoolsIDs(); len(nodes) > 0 && !asuo.mutation.PoolsCleared() {
 		edge := &sqlgraph.EdgeSpec{
 			Rel:     sqlgraph.O2M,
 			Inverse: true,

@@ -5,11 +5,12 @@
 package schema
 
 import (
+	"github.com/facebookincubator/symphony/pkg/ent-contrib/entgql"
 	"time"
 
-	"github.com/facebookincubator/ent"
-	"github.com/facebookincubator/ent/schema/edge"
-	"github.com/facebookincubator/ent/schema/field"
+	"github.com/facebook/ent"
+	"github.com/facebook/ent/schema/edge"
+	"github.com/facebook/ent/schema/field"
 	// "github.com/facebookincubator/symphony/pkg/authz"
 	// "github.com/net-auto/resourceManager/ent/privacy"
 	// "github.com/net-auto/resourceManager/ent/privacy"
@@ -33,8 +34,10 @@ func (ResourceType) Fields() []ent.Field {
 // Edges of the ResourceType.
 func (ResourceType) Edges() []ent.Edge {
 	return []ent.Edge{
-		edge.To("property_types", PropertyType.Type),
-		edge.To("pools", ResourcePool.Type),
+		edge.To("property_types", PropertyType.Type).
+			Annotations(entgql.Bind()),
+		edge.To("pools", ResourcePool.Type).
+			Annotations(entgql.Bind()),
 	}
 }
 
@@ -63,7 +66,8 @@ func (Tag) Fields() []ent.Field {
 
 func (Tag) Edges() []ent.Edge {
 	return []ent.Edge{
-		edge.To("pools", ResourcePool.Type),
+		edge.To("pools", ResourcePool.Type).
+			Annotations(entgql.Bind()),
 	}
 }
 
@@ -129,9 +133,11 @@ func (ResourcePool) Edges() []ent.Edge {
 			Unique(),
 		edge.From("tags", Tag.Type).
 			Ref("pools"),
-		edge.To("claims", Resource.Type),
+		edge.To("claims", Resource.Type).
+			Annotations(entgql.Bind()),
 		edge.To("allocation_strategy", AllocationStrategy.Type).
-			Unique(),
+			Unique().
+			Annotations(entgql.Bind()),
 		edge.From("parent_resource", Resource.Type).
 			Ref("nested_pool").
 			Comment("pool hierarchies can use this link between resoruce and pool").
@@ -161,9 +167,11 @@ func (Resource) Edges() []ent.Edge {
 		edge.From("pool", ResourcePool.Type).
 			Ref("claims").
 			Unique(),
-		edge.To("properties", Property.Type),
+		edge.To("properties", Property.Type).
+			Annotations(entgql.Bind()),
 		edge.To("nested_pool", ResourcePool.Type).
 			Comment("pool hierarchies can use this link between resoruce and pool").
-			Unique(),
+			Unique().
+			Annotations(entgql.Bind()),
 	}
 }

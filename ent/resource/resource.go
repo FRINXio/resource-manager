@@ -75,10 +75,10 @@ type Status string
 
 // Status values.
 const (
-	StatusBench   Status = "bench"
-	StatusClaimed Status = "claimed"
 	StatusFree    Status = "free"
+	StatusClaimed Status = "claimed"
 	StatusRetired Status = "retired"
+	StatusBench   Status = "bench"
 )
 
 func (s Status) String() string {
@@ -88,7 +88,7 @@ func (s Status) String() string {
 // StatusValidator is a validator for the "status" field enum values. It is called by the builders before save.
 func StatusValidator(s Status) error {
 	switch s {
-	case StatusBench, StatusClaimed, StatusFree, StatusRetired:
+	case StatusFree, StatusClaimed, StatusRetired, StatusBench:
 		return nil
 	default:
 		return fmt.Errorf("resource: invalid enum value for status field: %q", s)

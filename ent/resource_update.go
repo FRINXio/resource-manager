@@ -7,9 +7,9 @@ import (
 	"fmt"
 	"time"
 
-	"github.com/facebookincubator/ent/dialect/sql"
-	"github.com/facebookincubator/ent/dialect/sql/sqlgraph"
-	"github.com/facebookincubator/ent/schema/field"
+	"github.com/facebook/ent/dialect/sql"
+	"github.com/facebook/ent/dialect/sql/sqlgraph"
+	"github.com/facebook/ent/schema/field"
 	"github.com/net-auto/resourceManager/ent/predicate"
 	"github.com/net-auto/resourceManager/ent/property"
 	"github.com/net-auto/resourceManager/ent/resource"
@@ -100,9 +100,15 @@ func (ru *ResourceUpdate) Mutation() *ResourceMutation {
 	return ru.mutation
 }
 
-// ClearPool clears the pool edge to ResourcePool.
+// ClearPool clears the "pool" edge to type ResourcePool.
 func (ru *ResourceUpdate) ClearPool() *ResourceUpdate {
 	ru.mutation.ClearPool()
+	return ru
+}
+
+// ClearProperties clears all "properties" edges to type Property.
+func (ru *ResourceUpdate) ClearProperties() *ResourceUpdate {
+	ru.mutation.ClearProperties()
 	return ru
 }
 
@@ -121,7 +127,7 @@ func (ru *ResourceUpdate) RemoveProperties(p ...*Property) *ResourceUpdate {
 	return ru.RemovePropertyIDs(ids...)
 }
 
-// ClearNestedPool clears the nested_pool edge to ResourcePool.
+// ClearNestedPool clears the "nested_pool" edge to type ResourcePool.
 func (ru *ResourceUpdate) ClearNestedPool() *ResourceUpdate {
 	ru.mutation.ClearNestedPool()
 	return ru
@@ -255,7 +261,23 @@ func (ru *ResourceUpdate) sqlSave(ctx context.Context) (n int, err error) {
 		}
 		_spec.Edges.Add = append(_spec.Edges.Add, edge)
 	}
-	if nodes := ru.mutation.RemovedPropertiesIDs(); len(nodes) > 0 {
+	if ru.mutation.PropertiesCleared() {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: false,
+			Table:   resource.PropertiesTable,
+			Columns: []string{resource.PropertiesColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: &sqlgraph.FieldSpec{
+					Type:   field.TypeInt,
+					Column: property.FieldID,
+				},
+			},
+		}
+		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
+	}
+	if nodes := ru.mutation.RemovedPropertiesIDs(); len(nodes) > 0 && !ru.mutation.PropertiesCleared() {
 		edge := &sqlgraph.EdgeSpec{
 			Rel:     sqlgraph.O2M,
 			Inverse: false,
@@ -416,9 +438,15 @@ func (ruo *ResourceUpdateOne) Mutation() *ResourceMutation {
 	return ruo.mutation
 }
 
-// ClearPool clears the pool edge to ResourcePool.
+// ClearPool clears the "pool" edge to type ResourcePool.
 func (ruo *ResourceUpdateOne) ClearPool() *ResourceUpdateOne {
 	ruo.mutation.ClearPool()
+	return ruo
+}
+
+// ClearProperties clears all "properties" edges to type Property.
+func (ruo *ResourceUpdateOne) ClearProperties() *ResourceUpdateOne {
+	ruo.mutation.ClearProperties()
 	return ruo
 }
 
@@ -437,7 +465,7 @@ func (ruo *ResourceUpdateOne) RemoveProperties(p ...*Property) *ResourceUpdateOn
 	return ruo.RemovePropertyIDs(ids...)
 }
 
-// ClearNestedPool clears the nested_pool edge to ResourcePool.
+// ClearNestedPool clears the "nested_pool" edge to type ResourcePool.
 func (ruo *ResourceUpdateOne) ClearNestedPool() *ResourceUpdateOne {
 	ruo.mutation.ClearNestedPool()
 	return ruo
@@ -569,7 +597,23 @@ func (ruo *ResourceUpdateOne) sqlSave(ctx context.Context) (r *Resource, err err
 		}
 		_spec.Edges.Add = append(_spec.Edges.Add, edge)
 	}
-	if nodes := ruo.mutation.RemovedPropertiesIDs(); len(nodes) > 0 {
+	if ruo.mutation.PropertiesCleared() {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: false,
+			Table:   resource.PropertiesTable,
+			Columns: []string{resource.PropertiesColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: &sqlgraph.FieldSpec{
+					Type:   field.TypeInt,
+					Column: property.FieldID,
+				},
+			},
+		}
+		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
+	}
+	if nodes := ruo.mutation.RemovedPropertiesIDs(); len(nodes) > 0 && !ruo.mutation.PropertiesCleared() {
 		edge := &sqlgraph.EdgeSpec{
 			Rel:     sqlgraph.O2M,
 			Inverse: false,

@@ -3,8 +3,8 @@
 package migrate
 
 import (
-	"github.com/facebookincubator/ent/dialect/sql/schema"
-	"github.com/facebookincubator/ent/schema/field"
+	"github.com/facebook/ent/dialect/sql/schema"
+	"github.com/facebook/ent/schema/field"
 )
 
 var (
@@ -13,7 +13,7 @@ var (
 		{Name: "id", Type: field.TypeInt, Increment: true},
 		{Name: "name", Type: field.TypeString, Unique: true},
 		{Name: "description", Type: field.TypeString, Nullable: true, Size: 2147483647},
-		{Name: "lang", Type: field.TypeEnum, Enums: []string{"js", "py"}, Default: "js"},
+		{Name: "lang", Type: field.TypeEnum, Enums: []string{"py", "js"}, Default: "js"},
 		{Name: "script", Type: field.TypeString, Size: 2147483647},
 	}
 	// AllocationStrategiesTable holds the schema information for the "allocation_strategies" table.
@@ -62,7 +62,7 @@ var (
 	// PropertyTypesColumns holds the columns for the "property_types" table.
 	PropertyTypesColumns = []*schema.Column{
 		{Name: "id", Type: field.TypeInt, Increment: true},
-		{Name: "type", Type: field.TypeEnum, Enums: []string{"bool", "date", "datetime_local", "email", "enum", "float", "gps_location", "int", "node", "range", "string"}},
+		{Name: "type", Type: field.TypeEnum, Enums: []string{"string", "int", "bool", "float", "date", "enum", "range", "email", "gps_location", "datetime_local", "node"}},
 		{Name: "name", Type: field.TypeString},
 		{Name: "external_id", Type: field.TypeString, Unique: true, Nullable: true},
 		{Name: "index", Type: field.TypeInt, Nullable: true},
@@ -100,7 +100,7 @@ var (
 	// ResourcesColumns holds the columns for the "resources" table.
 	ResourcesColumns = []*schema.Column{
 		{Name: "id", Type: field.TypeInt, Increment: true},
-		{Name: "status", Type: field.TypeEnum, Enums: []string{"bench", "claimed", "free", "retired"}},
+		{Name: "status", Type: field.TypeEnum, Enums: []string{"free", "claimed", "retired", "bench"}},
 		{Name: "updated_at", Type: field.TypeTime},
 		{Name: "resource_pool_claims", Type: field.TypeInt, Nullable: true},
 	}
@@ -124,7 +124,7 @@ var (
 		{Name: "id", Type: field.TypeInt, Increment: true},
 		{Name: "name", Type: field.TypeString, Unique: true},
 		{Name: "description", Type: field.TypeString, Nullable: true, Size: 2147483647},
-		{Name: "pool_type", Type: field.TypeEnum, Enums: []string{"allocating", "set", "singleton"}},
+		{Name: "pool_type", Type: field.TypeEnum, Enums: []string{"singleton", "set", "allocating"}},
 		{Name: "dealocation_safety_period", Type: field.TypeInt},
 		{Name: "resource_nested_pool", Type: field.TypeInt, Unique: true, Nullable: true},
 		{Name: "resource_pool_allocation_strategy", Type: field.TypeInt, Nullable: true},

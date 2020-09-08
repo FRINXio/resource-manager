@@ -5,6 +5,6 @@ package runtime
 // The schema-stitching logic is generated in github.com/net-auto/resourceManager/ent/runtime.go
 
 const (
-	Version = "v0.2.8-0.20200726173043-ff6163f1a068"            // Version of ent codegen.
-	Sum     = "h1:00F6lNRbD2U7dC/sZR89uK0eFolOpNVKMd3oVgi0bLw=" // Sum of ent codegen.
+	Version = "v0.4.3-0.20200907090222-545048151374"            // Version of ent codegen.
+	Sum     = "h1:1NlkWZx4sUWO7/OSN81sCXWTivqIjG53sL5d4GWc7Mk=" // Sum of ent codegen.
 )

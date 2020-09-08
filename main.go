@@ -6,8 +6,8 @@ package main
 
 import (
 	"context"
+	"github.com/alecthomas/kong"
 	stdlog "log"
-	"net"
 	"os"
 	"syscall"
 
@@ -19,41 +19,21 @@ import (
 	"github.com/facebookincubator/symphony/pkg/telemetry"
 	"github.com/facebookincubator/symphony/pkg/viewer"
 
-	"go.uber.org/zap"
-	"gopkg.in/alecthomas/kingpin.v2"
-
 	_ "github.com/net-auto/resourceManager/ent/runtime"
+	"go.uber.org/zap"
 )
 
 type cliFlags struct {
-	HTTPAddress     *net.TCPAddr
-	MySQLConfig     mysql.Config
-	LogConfig       log.Config
-	TelemetryConfig telemetry.Config
-	TenancyConfig   viewer.Config
+	HTTPAddr           string           `name:"web.listen-address" default:":http" help:"Web address to listen on."`
+	MySQLConfig        mysql.Config     `name:"mysql.dsn" env:"MYSQL_DSN" required:"" placeholder:"STRING" help:"MySQL data source name."`
+	LogConfig          log.Config       `embed:""`
+	TelemetryConfig    telemetry.Config `embed:""`
+	TenancyConfig      viewer.Config    `embed:""`
 }
 
 func main() {
 	var cf cliFlags
-	kingpin.HelpFlag.Short('h')
-	kingpin.Flag(
-		"web.listen-address",
-		"Web address to listen on",
-	).
-		Default(":http").
-		TCPVar(&cf.HTTPAddress)
-	kingpin.Flag(
-		"mysql.dsn",
-		"mysql connection string",
-	).
-		Envar("MYSQL_DSN").
-		Required().
-		SetValue(&cf.MySQLConfig)
-
-	log.AddFlagsVar(kingpin.CommandLine, &cf.LogConfig)
-	telemetry.AddFlagsVar(kingpin.CommandLine, &cf.TelemetryConfig)
-	viewer.AddFlagsVar(kingpin.CommandLine, &cf.TenancyConfig)
-	kingpin.Parse()
+	kong.Parse(&cf, cf.TelemetryConfig)
 
 	ctx := ctxutil.WithSignal(
 		context.Background(),
@@ -66,9 +46,7 @@ func main() {
 	}
 	defer cleanup()
 
-	app.Info("starting application",
-		zap.Stringer("http", cf.HTTPAddress),
-	)
+	app.Info("starting application", zap.String("httpEndpoint", cf.HTTPAddr))
 	err = app.run(ctx)
 	app.Info("terminating application", zap.Error(err))
 }

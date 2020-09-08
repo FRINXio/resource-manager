@@ -16,7 +16,7 @@ import (
 	"github.com/net-auto/resourceManager/ent/resourcetype"
 	"github.com/net-auto/resourceManager/ent/tag"
 
-	"github.com/facebookincubator/ent"
+	"github.com/facebook/ent"
 )
 
 const (
@@ -51,6 +51,7 @@ type AllocationStrategyMutation struct {
 	clearedFields map[string]struct{}
 	pools         map[int]struct{}
 	removedpools  map[int]struct{}
+	clearedpools  bool
 	done          bool
 	oldValue      func(context.Context) (*AllocationStrategy, error)
 }
@@ -305,6 +306,16 @@ func (m *AllocationStrategyMutation) AddPoolIDs(ids ...int) {
 	}
 }
 
+// ClearPools clears the pools edge to ResourcePool.
+func (m *AllocationStrategyMutation) ClearPools() {
+	m.clearedpools = true
+}
+
+// PoolsCleared returns if the edge pools was cleared.
+func (m *AllocationStrategyMutation) PoolsCleared() bool {
+	return m.clearedpools
+}
+
 // RemovePoolIDs removes the pools edge to ResourcePool by ids.
 func (m *AllocationStrategyMutation) RemovePoolIDs(ids ...int) {
 	if m.removedpools == nil {
@@ -334,6 +345,7 @@ func (m *AllocationStrategyMutation) PoolsIDs() (ids []int) {
 // ResetPools reset all changes of the "pools" edge.
 func (m *AllocationStrategyMutation) ResetPools() {
 	m.pools = nil
+	m.clearedpools = false
 	m.removedpools = nil
 }
 
@@ -561,6 +573,9 @@ func (m *AllocationStrategyMutation) RemovedIDs(name string) []ent.Value {
 // mutation.
 func (m *AllocationStrategyMutation) ClearedEdges() []string {
 	edges := make([]string, 0, 1)
+	if m.clearedpools {
+		edges = append(edges, allocationstrategy.EdgePools)
+	}
 	return edges
 }
 
@@ -568,6 +583,8 @@ func (m *AllocationStrategyMutation) ClearedEdges() []string {
 // cleared in this mutation.
 func (m *AllocationStrategyMutation) EdgeCleared(name string) bool {
 	switch name {
+	case allocationstrategy.EdgePools:
+		return m.clearedpools
 	}
 	return false
 }
@@ -1736,6 +1753,7 @@ type PropertyTypeMutation struct {
 	clearedFields        map[string]struct{}
 	properties           map[int]struct{}
 	removedproperties    map[int]struct{}
+	clearedproperties    bool
 	resource_type        *int
 	clearedresource_type bool
 	done                 bool
@@ -2800,6 +2818,16 @@ func (m *PropertyTypeMutation) AddPropertyIDs(ids ...int) {
 	}
 }
 
+// ClearProperties clears the properties edge to Property.
+func (m *PropertyTypeMutation) ClearProperties() {
+	m.clearedproperties = true
+}
+
+// PropertiesCleared returns if the edge properties was cleared.
+func (m *PropertyTypeMutation) PropertiesCleared() bool {
+	return m.clearedproperties
+}
+
 // RemovePropertyIDs removes the properties edge to Property by ids.
 func (m *PropertyTypeMutation) RemovePropertyIDs(ids ...int) {
 	if m.removedproperties == nil {
@@ -2829,6 +2857,7 @@ func (m *PropertyTypeMutation) PropertiesIDs() (ids []int) {
 // ResetProperties reset all changes of the "properties" edge.
 func (m *PropertyTypeMutation) ResetProperties() {
 	m.properties = nil
+	m.clearedproperties = false
 	m.removedproperties = nil
 }
 
@@ -3493,6 +3522,9 @@ func (m *PropertyTypeMutation) RemovedIDs(name string) []ent.Value {
 // mutation.
 func (m *PropertyTypeMutation) ClearedEdges() []string {
 	edges := make([]string, 0, 2)
+	if m.clearedproperties {
+		edges = append(edges, propertytype.EdgeProperties)
+	}
 	if m.clearedresource_type {
 		edges = append(edges, propertytype.EdgeResourceType)
 	}
@@ -3503,6 +3535,8 @@ func (m *PropertyTypeMutation) ClearedEdges() []string {
 // cleared in this mutation.
 func (m *PropertyTypeMutation) EdgeCleared(name string) bool {
 	switch name {
+	case propertytype.EdgeProperties:
+		return m.clearedproperties
 	case propertytype.EdgeResourceType:
 		return m.clearedresource_type
 	}
@@ -3549,6 +3583,7 @@ type ResourceMutation struct {
 	clearedpool        bool
 	properties         map[int]struct{}
 	removedproperties  map[int]struct{}
+	clearedproperties  bool
 	nested_pool        *int
 	clearednested_pool bool
 	done               bool
@@ -3757,6 +3792,16 @@ func (m *ResourceMutation) AddPropertyIDs(ids ...int) {
 	}
 }
 
+// ClearProperties clears the properties edge to Property.
+func (m *ResourceMutation) ClearProperties() {
+	m.clearedproperties = true
+}
+
+// PropertiesCleared returns if the edge properties was cleared.
+func (m *ResourceMutation) PropertiesCleared() bool {
+	return m.clearedproperties
+}
+
 // RemovePropertyIDs removes the properties edge to Property by ids.
 func (m *ResourceMutation) RemovePropertyIDs(ids ...int) {
 	if m.removedproperties == nil {
@@ -3786,6 +3831,7 @@ func (m *ResourceMutation) PropertiesIDs() (ids []int) {
 // ResetProperties reset all changes of the "properties" edge.
 func (m *ResourceMutation) ResetProperties() {
 	m.properties = nil
+	m.clearedproperties = false
 	m.removedproperties = nil
 }
 
@@ -4026,6 +4072,9 @@ func (m *ResourceMutation) ClearedEdges() []string {
 	if m.clearedpool {
 		edges = append(edges, resource.EdgePool)
 	}
+	if m.clearedproperties {
+		edges = append(edges, resource.EdgeProperties)
+	}
 	if m.clearednested_pool {
 		edges = append(edges, resource.EdgeNestedPool)
 	}
@@ -4038,6 +4087,8 @@ func (m *ResourceMutation) EdgeCleared(name string) bool {
 	switch name {
 	case resource.EdgePool:
 		return m.clearedpool
+	case resource.EdgeProperties:
+		return m.clearedproperties
 	case resource.EdgeNestedPool:
 		return m.clearednested_pool
 	}
@@ -4093,8 +4144,10 @@ type ResourcePoolMutation struct {
 	clearedresource_type         bool
 	tags                         map[int]struct{}
 	removedtags                  map[int]struct{}
+	clearedtags                  bool
 	claims                       map[int]struct{}
 	removedclaims                map[int]struct{}
+	clearedclaims                bool
 	allocation_strategy          *int
 	clearedallocation_strategy   bool
 	parent_resource              *int
@@ -4412,6 +4465,16 @@ func (m *ResourcePoolMutation) AddTagIDs(ids ...int) {
 	}
 }
 
+// ClearTags clears the tags edge to Tag.
+func (m *ResourcePoolMutation) ClearTags() {
+	m.clearedtags = true
+}
+
+// TagsCleared returns if the edge tags was cleared.
+func (m *ResourcePoolMutation) TagsCleared() bool {
+	return m.clearedtags
+}
+
 // RemoveTagIDs removes the tags edge to Tag by ids.
 func (m *ResourcePoolMutation) RemoveTagIDs(ids ...int) {
 	if m.removedtags == nil {
@@ -4441,6 +4504,7 @@ func (m *ResourcePoolMutation) TagsIDs() (ids []int) {
 // ResetTags reset all changes of the "tags" edge.
 func (m *ResourcePoolMutation) ResetTags() {
 	m.tags = nil
+	m.clearedtags = false
 	m.removedtags = nil
 }
 
@@ -4452,6 +4516,16 @@ func (m *ResourcePoolMutation) AddClaimIDs(ids ...int) {
 	for i := range ids {
 		m.claims[ids[i]] = struct{}{}
 	}
+}
+
+// ClearClaims clears the claims edge to Resource.
+func (m *ResourcePoolMutation) ClearClaims() {
+	m.clearedclaims = true
+}
+
+// ClaimsCleared returns if the edge claims was cleared.
+func (m *ResourcePoolMutation) ClaimsCleared() bool {
+	return m.clearedclaims
 }
 
 // RemoveClaimIDs removes the claims edge to Resource by ids.
@@ -4483,6 +4557,7 @@ func (m *ResourcePoolMutation) ClaimsIDs() (ids []int) {
 // ResetClaims reset all changes of the "claims" edge.
 func (m *ResourcePoolMutation) ResetClaims() {
 	m.claims = nil
+	m.clearedclaims = false
 	m.removedclaims = nil
 }
 
@@ -4845,6 +4920,12 @@ func (m *ResourcePoolMutation) ClearedEdges() []string {
 	if m.clearedresource_type {
 		edges = append(edges, resourcepool.EdgeResourceType)
 	}
+	if m.clearedtags {
+		edges = append(edges, resourcepool.EdgeTags)
+	}
+	if m.clearedclaims {
+		edges = append(edges, resourcepool.EdgeClaims)
+	}
 	if m.clearedallocation_strategy {
 		edges = append(edges, resourcepool.EdgeAllocationStrategy)
 	}
@@ -4860,6 +4941,10 @@ func (m *ResourcePoolMutation) EdgeCleared(name string) bool {
 	switch name {
 	case resourcepool.EdgeResourceType:
 		return m.clearedresource_type
+	case resourcepool.EdgeTags:
+		return m.clearedtags
+	case resourcepool.EdgeClaims:
+		return m.clearedclaims
 	case resourcepool.EdgeAllocationStrategy:
 		return m.clearedallocation_strategy
 	case resourcepool.EdgeParentResource:
@@ -4920,8 +5005,10 @@ type ResourceTypeMutation struct {
 	clearedFields         map[string]struct{}
 	property_types        map[int]struct{}
 	removedproperty_types map[int]struct{}
+	clearedproperty_types bool
 	pools                 map[int]struct{}
 	removedpools          map[int]struct{}
+	clearedpools          bool
 	done                  bool
 	oldValue              func(context.Context) (*ResourceType, error)
 }
@@ -5052,6 +5139,16 @@ func (m *ResourceTypeMutation) AddPropertyTypeIDs(ids ...int) {
 	}
 }
 
+// ClearPropertyTypes clears the property_types edge to PropertyType.
+func (m *ResourceTypeMutation) ClearPropertyTypes() {
+	m.clearedproperty_types = true
+}
+
+// PropertyTypesCleared returns if the edge property_types was cleared.
+func (m *ResourceTypeMutation) PropertyTypesCleared() bool {
+	return m.clearedproperty_types
+}
+
 // RemovePropertyTypeIDs removes the property_types edge to PropertyType by ids.
 func (m *ResourceTypeMutation) RemovePropertyTypeIDs(ids ...int) {
 	if m.removedproperty_types == nil {
@@ -5081,6 +5178,7 @@ func (m *ResourceTypeMutation) PropertyTypesIDs() (ids []int) {
 // ResetPropertyTypes reset all changes of the "property_types" edge.
 func (m *ResourceTypeMutation) ResetPropertyTypes() {
 	m.property_types = nil
+	m.clearedproperty_types = false
 	m.removedproperty_types = nil
 }
 
@@ -5092,6 +5190,16 @@ func (m *ResourceTypeMutation) AddPoolIDs(ids ...int) {
 	for i := range ids {
 		m.pools[ids[i]] = struct{}{}
 	}
+}
+
+// ClearPools clears the pools edge to ResourcePool.
+func (m *ResourceTypeMutation) ClearPools() {
+	m.clearedpools = true
+}
+
+// PoolsCleared returns if the edge pools was cleared.
+func (m *ResourceTypeMutation) PoolsCleared() bool {
+	return m.clearedpools
 }
 
 // RemovePoolIDs removes the pools edge to ResourcePool by ids.
@@ -5123,6 +5231,7 @@ func (m *ResourceTypeMutation) PoolsIDs() (ids []int) {
 // ResetPools reset all changes of the "pools" edge.
 func (m *ResourceTypeMutation) ResetPools() {
 	m.pools = nil
+	m.clearedpools = false
 	m.removedpools = nil
 }
 
@@ -5308,6 +5417,12 @@ func (m *ResourceTypeMutation) RemovedIDs(name string) []ent.Value {
 // mutation.
 func (m *ResourceTypeMutation) ClearedEdges() []string {
 	edges := make([]string, 0, 2)
+	if m.clearedproperty_types {
+		edges = append(edges, resourcetype.EdgePropertyTypes)
+	}
+	if m.clearedpools {
+		edges = append(edges, resourcetype.EdgePools)
+	}
 	return edges
 }
 
@@ -5315,6 +5430,10 @@ func (m *ResourceTypeMutation) ClearedEdges() []string {
 // cleared in this mutation.
 func (m *ResourceTypeMutation) EdgeCleared(name string) bool {
 	switch name {
+	case resourcetype.EdgePropertyTypes:
+		return m.clearedproperty_types
+	case resourcetype.EdgePools:
+		return m.clearedpools
 	}
 	return false
 }
@@ -5353,6 +5472,7 @@ type TagMutation struct {
 	clearedFields map[string]struct{}
 	pools         map[int]struct{}
 	removedpools  map[int]struct{}
+	clearedpools  bool
 	done          bool
 	oldValue      func(context.Context) (*Tag, error)
 }
@@ -5483,6 +5603,16 @@ func (m *TagMutation) AddPoolIDs(ids ...int) {
 	}
 }
 
+// ClearPools clears the pools edge to ResourcePool.
+func (m *TagMutation) ClearPools() {
+	m.clearedpools = true
+}
+
+// PoolsCleared returns if the edge pools was cleared.
+func (m *TagMutation) PoolsCleared() bool {
+	return m.clearedpools
+}
+
 // RemovePoolIDs removes the pools edge to ResourcePool by ids.
 func (m *TagMutation) RemovePoolIDs(ids ...int) {
 	if m.removedpools == nil {
@@ -5512,6 +5642,7 @@ func (m *TagMutation) PoolsIDs() (ids []int) {
 // ResetPools reset all changes of the "pools" edge.
 func (m *TagMutation) ResetPools() {
 	m.pools = nil
+	m.clearedpools = false
 	m.removedpools = nil
 }
 
@@ -5679,6 +5810,9 @@ func (m *TagMutation) RemovedIDs(name string) []ent.Value {
 // mutation.
 func (m *TagMutation) ClearedEdges() []string {
 	edges := make([]string, 0, 1)
+	if m.clearedpools {
+		edges = append(edges, tag.EdgePools)
+	}
 	return edges
 }
 
@@ -5686,6 +5820,8 @@ func (m *TagMutation) ClearedEdges() []string {
 // cleared in this mutation.
 func (m *TagMutation) EdgeCleared(name string) bool {
 	switch name {
+	case tag.EdgePools:
+		return m.clearedpools
 	}
 	return false
 }

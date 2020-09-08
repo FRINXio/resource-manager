@@ -31,7 +31,7 @@ func (pr *PropertyQuery) CollectFields(ctx context.Context, satisfies ...string)
 func (pr *PropertyQuery) collectField(ctx *graphql.OperationContext, field graphql.CollectedField, satisfies ...string) *PropertyQuery {
 	for _, field := range graphql.CollectFields(ctx, field.Selections, satisfies) {
 		switch field.Name {
-		case "propertyType":
+		case "type":
 			pr = pr.WithType(func(query *PropertyTypeQuery) {
 				query.collectField(ctx, field)
 			})
@@ -61,6 +61,18 @@ func (r *ResourceQuery) CollectFields(ctx context.Context, satisfies ...string) 
 }
 
 func (r *ResourceQuery) collectField(ctx *graphql.OperationContext, field graphql.CollectedField, satisfies ...string) *ResourceQuery {
+	for _, field := range graphql.CollectFields(ctx, field.Selections, satisfies) {
+		switch field.Name {
+		case "nested_pool":
+			r = r.WithNestedPool(func(query *ResourcePoolQuery) {
+				query.collectField(ctx, field)
+			})
+		case "properties":
+			r = r.WithProperties(func(query *PropertyQuery) {
+				query.collectField(ctx, field)
+			})
+		}
+	}
 	return r
 }
 
@@ -73,6 +85,18 @@ func (rp *ResourcePoolQuery) CollectFields(ctx context.Context, satisfies ...str
 }
 
 func (rp *ResourcePoolQuery) collectField(ctx *graphql.OperationContext, field graphql.CollectedField, satisfies ...string) *ResourcePoolQuery {
+	for _, field := range graphql.CollectFields(ctx, field.Selections, satisfies) {
+		switch field.Name {
+		case "allocation_strategy":
+			rp = rp.WithAllocationStrategy(func(query *AllocationStrategyQuery) {
+				query.collectField(ctx, field)
+			})
+		case "claims":
+			rp = rp.WithClaims(func(query *ResourceQuery) {
+				query.collectField(ctx, field)
+			})
+		}
+	}
 	return rp
 }
 
@@ -85,6 +109,18 @@ func (rt *ResourceTypeQuery) CollectFields(ctx context.Context, satisfies ...str
 }
 
 func (rt *ResourceTypeQuery) collectField(ctx *graphql.OperationContext, field graphql.CollectedField, satisfies ...string) *ResourceTypeQuery {
+	for _, field := range graphql.CollectFields(ctx, field.Selections, satisfies) {
+		switch field.Name {
+		case "pools":
+			rt = rt.WithPools(func(query *ResourcePoolQuery) {
+				query.collectField(ctx, field)
+			})
+		case "property_types":
+			rt = rt.WithPropertyTypes(func(query *PropertyTypeQuery) {
+				query.collectField(ctx, field)
+			})
+		}
+	}
 	return rt
 }
 
@@ -97,5 +133,13 @@ func (t *TagQuery) CollectFields(ctx context.Context, satisfies ...string) *TagQ
 }
 
 func (t *TagQuery) collectField(ctx *graphql.OperationContext, field graphql.CollectedField, satisfies ...string) *TagQuery {
+	for _, field := range graphql.CollectFields(ctx, field.Selections, satisfies) {
+		switch field.Name {
+		case "pools":
+			t = t.WithPools(func(query *ResourcePoolQuery) {
+				query.collectField(ctx, field)
+			})
+		}
+	}
 	return t
 }

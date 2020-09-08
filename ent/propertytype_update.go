@@ -6,9 +6,9 @@ import (
 	"context"
 	"fmt"
 
-	"github.com/facebookincubator/ent/dialect/sql"
-	"github.com/facebookincubator/ent/dialect/sql/sqlgraph"
-	"github.com/facebookincubator/ent/schema/field"
+	"github.com/facebook/ent/dialect/sql"
+	"github.com/facebook/ent/dialect/sql/sqlgraph"
+	"github.com/facebook/ent/schema/field"
 	"github.com/net-auto/resourceManager/ent/predicate"
 	"github.com/net-auto/resourceManager/ent/property"
 	"github.com/net-auto/resourceManager/ent/propertytype"
@@ -425,6 +425,12 @@ func (ptu *PropertyTypeUpdate) Mutation() *PropertyTypeMutation {
 	return ptu.mutation
 }
 
+// ClearProperties clears all "properties" edges to type Property.
+func (ptu *PropertyTypeUpdate) ClearProperties() *PropertyTypeUpdate {
+	ptu.mutation.ClearProperties()
+	return ptu
+}
+
 // RemovePropertyIDs removes the properties edge to Property by ids.
 func (ptu *PropertyTypeUpdate) RemovePropertyIDs(ids ...int) *PropertyTypeUpdate {
 	ptu.mutation.RemovePropertyIDs(ids...)
@@ -440,7 +446,7 @@ func (ptu *PropertyTypeUpdate) RemoveProperties(p ...*Property) *PropertyTypeUpd
 	return ptu.RemovePropertyIDs(ids...)
 }
 
-// ClearResourceType clears the resource_type edge to ResourceType.
+// ClearResourceType clears the "resource_type" edge to type ResourceType.
 func (ptu *PropertyTypeUpdate) ClearResourceType() *PropertyTypeUpdate {
 	ptu.mutation.ClearResourceType()
 	return ptu
@@ -768,7 +774,23 @@ func (ptu *PropertyTypeUpdate) sqlSave(ctx context.Context) (n int, err error) {
 			Column: propertytype.FieldNodeType,
 		})
 	}
-	if nodes := ptu.mutation.RemovedPropertiesIDs(); len(nodes) > 0 {
+	if ptu.mutation.PropertiesCleared() {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: true,
+			Table:   propertytype.PropertiesTable,
+			Columns: []string{propertytype.PropertiesColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: &sqlgraph.FieldSpec{
+					Type:   field.TypeInt,
+					Column: property.FieldID,
+				},
+			},
+		}
+		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
+	}
+	if nodes := ptu.mutation.RemovedPropertiesIDs(); len(nodes) > 0 && !ptu.mutation.PropertiesCleared() {
 		edge := &sqlgraph.EdgeSpec{
 			Rel:     sqlgraph.O2M,
 			Inverse: true,
@@ -1255,6 +1277,12 @@ func (ptuo *PropertyTypeUpdateOne) Mutation() *PropertyTypeMutation {
 	return ptuo.mutation
 }
 
+// ClearProperties clears all "properties" edges to type Property.
+func (ptuo *PropertyTypeUpdateOne) ClearProperties() *PropertyTypeUpdateOne {
+	ptuo.mutation.ClearProperties()
+	return ptuo
+}
+
 // RemovePropertyIDs removes the properties edge to Property by ids.
 func (ptuo *PropertyTypeUpdateOne) RemovePropertyIDs(ids ...int) *PropertyTypeUpdateOne {
 	ptuo.mutation.RemovePropertyIDs(ids...)
@@ -1270,7 +1298,7 @@ func (ptuo *PropertyTypeUpdateOne) RemoveProperties(p ...*Property) *PropertyTyp
 	return ptuo.RemovePropertyIDs(ids...)
 }
 
-// ClearResourceType clears the resource_type edge to ResourceType.
+// ClearResourceType clears the "resource_type" edge to type ResourceType.
 func (ptuo *PropertyTypeUpdateOne) ClearResourceType() *PropertyTypeUpdateOne {
 	ptuo.mutation.ClearResourceType()
 	return ptuo
@@ -1596,7 +1624,23 @@ func (ptuo *PropertyTypeUpdateOne) sqlSave(ctx context.Context) (pt *PropertyTyp
 			Column: propertytype.FieldNodeType,
 		})
 	}
-	if nodes := ptuo.mutation.RemovedPropertiesIDs(); len(nodes) > 0 {
+	if ptuo.mutation.PropertiesCleared() {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: true,
+			Table:   propertytype.PropertiesTable,
+			Columns: []string{propertytype.PropertiesColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: &sqlgraph.FieldSpec{
+					Type:   field.TypeInt,
+					Column: property.FieldID,
+				},
+			},
+		}
+		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
+	}
+	if nodes := ptuo.mutation.RemovedPropertiesIDs(); len(nodes) > 0 && !ptuo.mutation.PropertiesCleared() {
 		edge := &sqlgraph.EdgeSpec{
 			Rel:     sqlgraph.O2M,
 			Inverse: true,

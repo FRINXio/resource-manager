@@ -14,8 +14,8 @@ import (
 	"runtime"
 	"sync"
 
-	"github.com/facebookincubator/ent/dialect"
-	entsql "github.com/facebookincubator/ent/dialect/sql"
+	"github.com/facebook/ent/dialect"
+	entsql "github.com/facebook/ent/dialect/sql"
 	"github.com/facebookincubator/symphony/pkg/ent/migrate"
 	"github.com/facebookincubator/symphony/pkg/log"
 	pkgmysql "github.com/facebookincubator/symphony/pkg/mysql"

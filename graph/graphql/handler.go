@@ -45,7 +45,7 @@ func init() {
 	// 	ocgql.DefaultServerViews,
 	// 	directive.ServerDeprecatedCountByObjectInputField,
 	// )
-	views := ocgql.DefaultServerViews
+	views := ocgql.DefaultViews
 
 	for _, v := range views {
 		v.TagKeys = append(v.TagKeys,
@@ -67,10 +67,10 @@ func NewHandler(cfg HandlerConfig) (http.Handler, func(), error) {
 
 	// TODO directive
 	// views := append(
-	// 	ocgql.DefaultServerViews,
+	// 	ocgql.DefaultViews,
 	// 	directive.ServerDeprecatedCountByObjectInputField,
 	// )
-	views := ocgql.DefaultServerViews
+	views := ocgql.DefaultViews
 
 	if err := view.Register(views...); err != nil {
 		return nil, nil, fmt.Errorf("registering views: %w", err)

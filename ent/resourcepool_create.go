@@ -7,8 +7,8 @@ import (
 	"errors"
 	"fmt"
 
-	"github.com/facebookincubator/ent/dialect/sql/sqlgraph"
-	"github.com/facebookincubator/ent/schema/field"
+	"github.com/facebook/ent/dialect/sql/sqlgraph"
+	"github.com/facebook/ent/schema/field"
 	"github.com/net-auto/resourceManager/ent/allocationstrategy"
 	"github.com/net-auto/resourceManager/ent/resource"
 	"github.com/net-auto/resourceManager/ent/resourcepool"
@@ -387,8 +387,8 @@ func (rpcb *ResourcePoolCreateBulk) Save(ctx context.Context) ([]*ResourcePool, 
 	mutators := make([]Mutator, len(rpcb.builders))
 	for i := range rpcb.builders {
 		func(i int, root context.Context) {
+			builder := rpcb.builders[i]
 			var mut Mutator = MutateFunc(func(ctx context.Context, m Mutation) (Value, error) {
-				builder := rpcb.builders[i]
 				if err := builder.preSave(); err != nil {
 					return nil, err
 				}
@@ -417,14 +417,16 @@ func (rpcb *ResourcePoolCreateBulk) Save(ctx context.Context) ([]*ResourcePool, 
 				nodes[i].ID = int(id)
 				return nodes[i], nil
 			})
-			for i := len(rpcb.builders[i].hooks) - 1; i >= 0; i-- {
-				mut = rpcb.builders[i].hooks[i](mut)
+			for i := len(builder.hooks) - 1; i >= 0; i-- {
+				mut = builder.hooks[i](mut)
 			}
 			mutators[i] = mut
 		}(i, ctx)
 	}
-	if _, err := mutators[0].Mutate(ctx, rpcb.builders[0].mutation); err != nil {
-		return nil, err
+	if len(mutators) > 0 {
+		if _, err := mutators[0].Mutate(ctx, rpcb.builders[0].mutation); err != nil {
+			return nil, err
+		}
 	}
 	return nodes, nil
 }

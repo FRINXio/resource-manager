@@ -17,9 +17,9 @@ import (
 	"github.com/net-auto/resourceManager/ent/resourcetype"
 	"github.com/net-auto/resourceManager/ent/tag"
 
-	"github.com/facebookincubator/ent/dialect"
-	"github.com/facebookincubator/ent/dialect/sql"
-	"github.com/facebookincubator/ent/dialect/sql/sqlgraph"
+	"github.com/facebook/ent/dialect"
+	"github.com/facebook/ent/dialect/sql"
+	"github.com/facebook/ent/dialect/sql/sqlgraph"
 )
 
 // Client is the client that holds all ent builders.
@@ -226,7 +226,7 @@ func (c *AllocationStrategyClient) DeleteOneID(id int) *AllocationStrategyDelete
 	return &AllocationStrategyDeleteOne{builder}
 }
 
-// Create returns a query builder for AllocationStrategy.
+// Query returns a query builder for AllocationStrategy.
 func (c *AllocationStrategyClient) Query() *AllocationStrategyQuery {
 	return &AllocationStrategyQuery{config: c.config}
 }
@@ -330,7 +330,7 @@ func (c *PropertyClient) DeleteOneID(id int) *PropertyDeleteOne {
 	return &PropertyDeleteOne{builder}
 }
 
-// Create returns a query builder for Property.
+// Query returns a query builder for Property.
 func (c *PropertyClient) Query() *PropertyQuery {
 	return &PropertyQuery{config: c.config}
 }
@@ -434,7 +434,7 @@ func (c *PropertyTypeClient) DeleteOneID(id int) *PropertyTypeDeleteOne {
 	return &PropertyTypeDeleteOne{builder}
 }
 
-// Create returns a query builder for PropertyType.
+// Query returns a query builder for PropertyType.
 func (c *PropertyTypeClient) Query() *PropertyTypeQuery {
 	return &PropertyTypeQuery{config: c.config}
 }
@@ -554,7 +554,7 @@ func (c *ResourceClient) DeleteOneID(id int) *ResourceDeleteOne {
 	return &ResourceDeleteOne{builder}
 }
 
-// Create returns a query builder for Resource.
+// Query returns a query builder for Resource.
 func (c *ResourceClient) Query() *ResourceQuery {
 	return &ResourceQuery{config: c.config}
 }
@@ -690,7 +690,7 @@ func (c *ResourcePoolClient) DeleteOneID(id int) *ResourcePoolDeleteOne {
 	return &ResourcePoolDeleteOne{builder}
 }
 
-// Create returns a query builder for ResourcePool.
+// Query returns a query builder for ResourcePool.
 func (c *ResourcePoolClient) Query() *ResourcePoolQuery {
 	return &ResourcePoolQuery{config: c.config}
 }
@@ -858,7 +858,7 @@ func (c *ResourceTypeClient) DeleteOneID(id int) *ResourceTypeDeleteOne {
 	return &ResourceTypeDeleteOne{builder}
 }
 
-// Create returns a query builder for ResourceType.
+// Query returns a query builder for ResourceType.
 func (c *ResourceTypeClient) Query() *ResourceTypeQuery {
 	return &ResourceTypeQuery{config: c.config}
 }
@@ -978,7 +978,7 @@ func (c *TagClient) DeleteOneID(id int) *TagDeleteOne {
 	return &TagDeleteOne{builder}
 }
 
-// Create returns a query builder for Tag.
+// Query returns a query builder for Tag.
 func (c *TagClient) Query() *TagQuery {
 	return &TagQuery{config: c.config}
 }

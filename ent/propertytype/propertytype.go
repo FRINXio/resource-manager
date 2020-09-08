@@ -117,17 +117,17 @@ type Type string
 
 // Type values.
 const (
-	TypeBool          Type = "bool"
-	TypeDate          Type = "date"
-	TypeDatetimeLocal Type = "datetime_local"
-	TypeEmail         Type = "email"
-	TypeEnum          Type = "enum"
-	TypeFloat         Type = "float"
-	TypeGpsLocation   Type = "gps_location"
-	TypeInt           Type = "int"
-	TypeNode          Type = "node"
-	TypeRange         Type = "range"
 	TypeString        Type = "string"
+	TypeInt           Type = "int"
+	TypeBool          Type = "bool"
+	TypeFloat         Type = "float"
+	TypeDate          Type = "date"
+	TypeEnum          Type = "enum"
+	TypeRange         Type = "range"
+	TypeEmail         Type = "email"
+	TypeGpsLocation   Type = "gps_location"
+	TypeDatetimeLocal Type = "datetime_local"
+	TypeNode          Type = "node"
 )
 
 func (_type Type) String() string {
@@ -137,7 +137,7 @@ func (_type Type) String() string {
 // TypeValidator is a validator for the "type" field enum values. It is called by the builders before save.
 func TypeValidator(_type Type) error {
 	switch _type {
-	case TypeBool, TypeDate, TypeDatetimeLocal, TypeEmail, TypeEnum, TypeFloat, TypeGpsLocation, TypeInt, TypeNode, TypeRange, TypeString:
+	case TypeString, TypeInt, TypeBool, TypeFloat, TypeDate, TypeEnum, TypeRange, TypeEmail, TypeGpsLocation, TypeDatetimeLocal, TypeNode:
 		return nil
 	default:
 		return fmt.Errorf("propertytype: invalid enum value for type field: %q", _type)

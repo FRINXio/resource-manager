@@ -60,8 +60,8 @@ const DefaultLang = LangJs
 
 // Lang values.
 const (
-	LangJs Lang = "js"
 	LangPy Lang = "py"
+	LangJs Lang = "js"
 )
 
 func (l Lang) String() string {
@@ -71,7 +71,7 @@ func (l Lang) String() string {
 // LangValidator is a validator for the "lang" field enum values. It is called by the builders before save.
 func LangValidator(l Lang) error {
 	switch l {
-	case LangJs, LangPy:
+	case LangPy, LangJs:
 		return nil
 	default:
 		return fmt.Errorf("allocationstrategy: invalid enum value for lang field: %q", l)

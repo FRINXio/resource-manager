@@ -6,9 +6,9 @@ import (
 	"context"
 	"fmt"
 
-	"github.com/facebookincubator/ent/dialect/sql"
-	"github.com/facebookincubator/ent/dialect/sql/sqlgraph"
-	"github.com/facebookincubator/ent/schema/field"
+	"github.com/facebook/ent/dialect/sql"
+	"github.com/facebook/ent/dialect/sql/sqlgraph"
+	"github.com/facebook/ent/schema/field"
 	"github.com/net-auto/resourceManager/ent/predicate"
 	"github.com/net-auto/resourceManager/ent/resourcepool"
 	"github.com/net-auto/resourceManager/ent/tag"
@@ -52,6 +52,12 @@ func (tu *TagUpdate) AddPools(r ...*ResourcePool) *TagUpdate {
 // Mutation returns the TagMutation object of the builder.
 func (tu *TagUpdate) Mutation() *TagMutation {
 	return tu.mutation
+}
+
+// ClearPools clears all "pools" edges to type ResourcePool.
+func (tu *TagUpdate) ClearPools() *TagUpdate {
+	tu.mutation.ClearPools()
+	return tu
 }
 
 // RemovePoolIDs removes the pools edge to ResourcePool by ids.
@@ -151,7 +157,23 @@ func (tu *TagUpdate) sqlSave(ctx context.Context) (n int, err error) {
 			Column: tag.FieldTag,
 		})
 	}
-	if nodes := tu.mutation.RemovedPoolsIDs(); len(nodes) > 0 {
+	if tu.mutation.PoolsCleared() {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.M2M,
+			Inverse: false,
+			Table:   tag.PoolsTable,
+			Columns: tag.PoolsPrimaryKey,
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: &sqlgraph.FieldSpec{
+					Type:   field.TypeInt,
+					Column: resourcepool.FieldID,
+				},
+			},
+		}
+		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
+	}
+	if nodes := tu.mutation.RemovedPoolsIDs(); len(nodes) > 0 && !tu.mutation.PoolsCleared() {
 		edge := &sqlgraph.EdgeSpec{
 			Rel:     sqlgraph.M2M,
 			Inverse: false,
@@ -231,6 +253,12 @@ func (tuo *TagUpdateOne) AddPools(r ...*ResourcePool) *TagUpdateOne {
 // Mutation returns the TagMutation object of the builder.
 func (tuo *TagUpdateOne) Mutation() *TagMutation {
 	return tuo.mutation
+}
+
+// ClearPools clears all "pools" edges to type ResourcePool.
+func (tuo *TagUpdateOne) ClearPools() *TagUpdateOne {
+	tuo.mutation.ClearPools()
+	return tuo
 }
 
 // RemovePoolIDs removes the pools edge to ResourcePool by ids.
@@ -328,7 +356,23 @@ func (tuo *TagUpdateOne) sqlSave(ctx context.Context) (t *Tag, err error) {
 			Column: tag.FieldTag,
 		})
 	}
-	if nodes := tuo.mutation.RemovedPoolsIDs(); len(nodes) > 0 {
+	if tuo.mutation.PoolsCleared() {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.M2M,
+			Inverse: false,
+			Table:   tag.PoolsTable,
+			Columns: tag.PoolsPrimaryKey,
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: &sqlgraph.FieldSpec{
+					Type:   field.TypeInt,
+					Column: resourcepool.FieldID,
+				},
+			},
+		}
+		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
+	}
+	if nodes := tuo.mutation.RemovedPoolsIDs(); len(nodes) > 0 && !tuo.mutation.PoolsCleared() {
 		edge := &sqlgraph.EdgeSpec{
 			Rel:     sqlgraph.M2M,
 			Inverse: false,

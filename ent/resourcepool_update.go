@@ -6,9 +6,9 @@ import (
 	"context"
 	"fmt"
 
-	"github.com/facebookincubator/ent/dialect/sql"
-	"github.com/facebookincubator/ent/dialect/sql/sqlgraph"
-	"github.com/facebookincubator/ent/schema/field"
+	"github.com/facebook/ent/dialect/sql"
+	"github.com/facebook/ent/dialect/sql/sqlgraph"
+	"github.com/facebook/ent/schema/field"
 	"github.com/net-auto/resourceManager/ent/allocationstrategy"
 	"github.com/net-auto/resourceManager/ent/predicate"
 	"github.com/net-auto/resourceManager/ent/resource"
@@ -176,9 +176,15 @@ func (rpu *ResourcePoolUpdate) Mutation() *ResourcePoolMutation {
 	return rpu.mutation
 }
 
-// ClearResourceType clears the resource_type edge to ResourceType.
+// ClearResourceType clears the "resource_type" edge to type ResourceType.
 func (rpu *ResourcePoolUpdate) ClearResourceType() *ResourcePoolUpdate {
 	rpu.mutation.ClearResourceType()
+	return rpu
+}
+
+// ClearTags clears all "tags" edges to type Tag.
+func (rpu *ResourcePoolUpdate) ClearTags() *ResourcePoolUpdate {
+	rpu.mutation.ClearTags()
 	return rpu
 }
 
@@ -197,6 +203,12 @@ func (rpu *ResourcePoolUpdate) RemoveTags(t ...*Tag) *ResourcePoolUpdate {
 	return rpu.RemoveTagIDs(ids...)
 }
 
+// ClearClaims clears all "claims" edges to type Resource.
+func (rpu *ResourcePoolUpdate) ClearClaims() *ResourcePoolUpdate {
+	rpu.mutation.ClearClaims()
+	return rpu
+}
+
 // RemoveClaimIDs removes the claims edge to Resource by ids.
 func (rpu *ResourcePoolUpdate) RemoveClaimIDs(ids ...int) *ResourcePoolUpdate {
 	rpu.mutation.RemoveClaimIDs(ids...)
@@ -212,13 +224,13 @@ func (rpu *ResourcePoolUpdate) RemoveClaims(r ...*Resource) *ResourcePoolUpdate 
 	return rpu.RemoveClaimIDs(ids...)
 }
 
-// ClearAllocationStrategy clears the allocation_strategy edge to AllocationStrategy.
+// ClearAllocationStrategy clears the "allocation_strategy" edge to type AllocationStrategy.
 func (rpu *ResourcePoolUpdate) ClearAllocationStrategy() *ResourcePoolUpdate {
 	rpu.mutation.ClearAllocationStrategy()
 	return rpu
 }
 
-// ClearParentResource clears the parent_resource edge to Resource.
+// ClearParentResource clears the "parent_resource" edge to type Resource.
 func (rpu *ResourcePoolUpdate) ClearParentResource() *ResourcePoolUpdate {
 	rpu.mutation.ClearParentResource()
 	return rpu
@@ -380,7 +392,23 @@ func (rpu *ResourcePoolUpdate) sqlSave(ctx context.Context) (n int, err error) {
 		}
 		_spec.Edges.Add = append(_spec.Edges.Add, edge)
 	}
-	if nodes := rpu.mutation.RemovedTagsIDs(); len(nodes) > 0 {
+	if rpu.mutation.TagsCleared() {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.M2M,
+			Inverse: true,
+			Table:   resourcepool.TagsTable,
+			Columns: resourcepool.TagsPrimaryKey,
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: &sqlgraph.FieldSpec{
+					Type:   field.TypeInt,
+					Column: tag.FieldID,
+				},
+			},
+		}
+		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
+	}
+	if nodes := rpu.mutation.RemovedTagsIDs(); len(nodes) > 0 && !rpu.mutation.TagsCleared() {
 		edge := &sqlgraph.EdgeSpec{
 			Rel:     sqlgraph.M2M,
 			Inverse: true,
@@ -418,7 +446,23 @@ func (rpu *ResourcePoolUpdate) sqlSave(ctx context.Context) (n int, err error) {
 		}
 		_spec.Edges.Add = append(_spec.Edges.Add, edge)
 	}
-	if nodes := rpu.mutation.RemovedClaimsIDs(); len(nodes) > 0 {
+	if rpu.mutation.ClaimsCleared() {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: false,
+			Table:   resourcepool.ClaimsTable,
+			Columns: []string{resourcepool.ClaimsColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: &sqlgraph.FieldSpec{
+					Type:   field.TypeInt,
+					Column: resource.FieldID,
+				},
+			},
+		}
+		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
+	}
+	if nodes := rpu.mutation.RemovedClaimsIDs(); len(nodes) > 0 && !rpu.mutation.ClaimsCleared() {
 		edge := &sqlgraph.EdgeSpec{
 			Rel:     sqlgraph.O2M,
 			Inverse: false,
@@ -689,9 +733,15 @@ func (rpuo *ResourcePoolUpdateOne) Mutation() *ResourcePoolMutation {
 	return rpuo.mutation
 }
 
-// ClearResourceType clears the resource_type edge to ResourceType.
+// ClearResourceType clears the "resource_type" edge to type ResourceType.
 func (rpuo *ResourcePoolUpdateOne) ClearResourceType() *ResourcePoolUpdateOne {
 	rpuo.mutation.ClearResourceType()
+	return rpuo
+}
+
+// ClearTags clears all "tags" edges to type Tag.
+func (rpuo *ResourcePoolUpdateOne) ClearTags() *ResourcePoolUpdateOne {
+	rpuo.mutation.ClearTags()
 	return rpuo
 }
 
@@ -710,6 +760,12 @@ func (rpuo *ResourcePoolUpdateOne) RemoveTags(t ...*Tag) *ResourcePoolUpdateOne 
 	return rpuo.RemoveTagIDs(ids...)
 }
 
+// ClearClaims clears all "claims" edges to type Resource.
+func (rpuo *ResourcePoolUpdateOne) ClearClaims() *ResourcePoolUpdateOne {
+	rpuo.mutation.ClearClaims()
+	return rpuo
+}
+
 // RemoveClaimIDs removes the claims edge to Resource by ids.
 func (rpuo *ResourcePoolUpdateOne) RemoveClaimIDs(ids ...int) *ResourcePoolUpdateOne {
 	rpuo.mutation.RemoveClaimIDs(ids...)
@@ -725,13 +781,13 @@ func (rpuo *ResourcePoolUpdateOne) RemoveClaims(r ...*Resource) *ResourcePoolUpd
 	return rpuo.RemoveClaimIDs(ids...)
 }
 
-// ClearAllocationStrategy clears the allocation_strategy edge to AllocationStrategy.
+// ClearAllocationStrategy clears the "allocation_strategy" edge to type AllocationStrategy.
 func (rpuo *ResourcePoolUpdateOne) ClearAllocationStrategy() *ResourcePoolUpdateOne {
 	rpuo.mutation.ClearAllocationStrategy()
 	return rpuo
 }
 
-// ClearParentResource clears the parent_resource edge to Resource.
+// ClearParentResource clears the "parent_resource" edge to type Resource.
 func (rpuo *ResourcePoolUpdateOne) ClearParentResource() *ResourcePoolUpdateOne {
 	rpuo.mutation.ClearParentResource()
 	return rpuo
@@ -891,7 +947,23 @@ func (rpuo *ResourcePoolUpdateOne) sqlSave(ctx context.Context) (rp *ResourcePoo
 		}
 		_spec.Edges.Add = append(_spec.Edges.Add, edge)
 	}
-	if nodes := rpuo.mutation.RemovedTagsIDs(); len(nodes) > 0 {
+	if rpuo.mutation.TagsCleared() {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.M2M,
+			Inverse: true,
+			Table:   resourcepool.TagsTable,
+			Columns: resourcepool.TagsPrimaryKey,
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: &sqlgraph.FieldSpec{
+					Type:   field.TypeInt,
+					Column: tag.FieldID,
+				},
+			},
+		}
+		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
+	}
+	if nodes := rpuo.mutation.RemovedTagsIDs(); len(nodes) > 0 && !rpuo.mutation.TagsCleared() {
 		edge := &sqlgraph.EdgeSpec{
 			Rel:     sqlgraph.M2M,
 			Inverse: true,
@@ -929,7 +1001,23 @@ func (rpuo *ResourcePoolUpdateOne) sqlSave(ctx context.Context) (rp *ResourcePoo
 		}
 		_spec.Edges.Add = append(_spec.Edges.Add, edge)
 	}
-	if nodes := rpuo.mutation.RemovedClaimsIDs(); len(nodes) > 0 {
+	if rpuo.mutation.ClaimsCleared() {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: false,
+			Table:   resourcepool.ClaimsTable,
+			Columns: []string{resourcepool.ClaimsColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: &sqlgraph.FieldSpec{
+					Type:   field.TypeInt,
+					Column: resource.FieldID,
+				},
+			},
+		}
+		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
+	}
+	if nodes := rpuo.mutation.RemovedClaimsIDs(); len(nodes) > 0 && !rpuo.mutation.ClaimsCleared() {
 		edge := &sqlgraph.EdgeSpec{
 			Rel:     sqlgraph.O2M,
 			Inverse: false,

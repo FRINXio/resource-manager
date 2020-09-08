@@ -5,17 +5,15 @@ package ent
 import (
 	"context"
 	"encoding/base64"
-	"encoding/gob"
 	"errors"
 	"fmt"
 	"io"
 	"strconv"
 	"strings"
-	"time"
 
 	"github.com/99designs/gqlgen/graphql"
 	"github.com/99designs/gqlgen/graphql/errcode"
-	"github.com/facebookincubator/ent/dialect/sql"
+	"github.com/facebook/ent/dialect/sql"
 	"github.com/net-auto/resourceManager/ent/allocationstrategy"
 	"github.com/net-auto/resourceManager/ent/property"
 	"github.com/net-auto/resourceManager/ent/propertytype"
@@ -24,11 +22,8 @@ import (
 	"github.com/net-auto/resourceManager/ent/resourcetype"
 	"github.com/net-auto/resourceManager/ent/tag"
 	"github.com/vektah/gqlparser/v2/gqlerror"
+	"github.com/vmihailenco/msgpack/v5"
 )
-
-func init() {
-	gob.Register(time.Time{})
-}
 
 // OrderDirection defines the directions in which to order a list of items.
 type OrderDirection string
@@ -155,8 +150,8 @@ type PageInfo struct {
 
 // Cursor of an edge type.
 type Cursor struct {
-	ID    int
-	Value Value
+	ID    int   `msgpack:"i"`
+	Value Value `msgpack:"v,omitempty"`
 }
 
 // MarshalGQL implements graphql.Marshaler interface.
@@ -166,7 +161,7 @@ func (c Cursor) MarshalGQL(w io.Writer) {
 	defer w.Write(quote)
 	wc := base64.NewEncoder(base64.RawStdEncoding, w)
 	defer wc.Close()
-	_ = gob.NewEncoder(wc).Encode(c)
+	_ = msgpack.NewEncoder(wc).Encode(c)
 }
 
 // UnmarshalGQL implements graphql.Unmarshaler interface.
@@ -175,7 +170,7 @@ func (c *Cursor) UnmarshalGQL(v interface{}) error {
 	if !ok {
 		return fmt.Errorf("%T is not a string", v)
 	}
-	if err := gob.NewDecoder(
+	if err := msgpack.NewDecoder(
 		base64.NewDecoder(
 			base64.RawStdEncoding,
 			strings.NewReader(s),

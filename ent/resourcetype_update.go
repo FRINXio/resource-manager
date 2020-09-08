@@ -6,9 +6,9 @@ import (
 	"context"
 	"fmt"
 
-	"github.com/facebookincubator/ent/dialect/sql"
-	"github.com/facebookincubator/ent/dialect/sql/sqlgraph"
-	"github.com/facebookincubator/ent/schema/field"
+	"github.com/facebook/ent/dialect/sql"
+	"github.com/facebook/ent/dialect/sql/sqlgraph"
+	"github.com/facebook/ent/schema/field"
 	"github.com/net-auto/resourceManager/ent/predicate"
 	"github.com/net-auto/resourceManager/ent/propertytype"
 	"github.com/net-auto/resourceManager/ent/resourcepool"
@@ -70,6 +70,12 @@ func (rtu *ResourceTypeUpdate) Mutation() *ResourceTypeMutation {
 	return rtu.mutation
 }
 
+// ClearPropertyTypes clears all "property_types" edges to type PropertyType.
+func (rtu *ResourceTypeUpdate) ClearPropertyTypes() *ResourceTypeUpdate {
+	rtu.mutation.ClearPropertyTypes()
+	return rtu
+}
+
 // RemovePropertyTypeIDs removes the property_types edge to PropertyType by ids.
 func (rtu *ResourceTypeUpdate) RemovePropertyTypeIDs(ids ...int) *ResourceTypeUpdate {
 	rtu.mutation.RemovePropertyTypeIDs(ids...)
@@ -83,6 +89,12 @@ func (rtu *ResourceTypeUpdate) RemovePropertyTypes(p ...*PropertyType) *Resource
 		ids[i] = p[i].ID
 	}
 	return rtu.RemovePropertyTypeIDs(ids...)
+}
+
+// ClearPools clears all "pools" edges to type ResourcePool.
+func (rtu *ResourceTypeUpdate) ClearPools() *ResourceTypeUpdate {
+	rtu.mutation.ClearPools()
+	return rtu
 }
 
 // RemovePoolIDs removes the pools edge to ResourcePool by ids.
@@ -182,7 +194,23 @@ func (rtu *ResourceTypeUpdate) sqlSave(ctx context.Context) (n int, err error) {
 			Column: resourcetype.FieldName,
 		})
 	}
-	if nodes := rtu.mutation.RemovedPropertyTypesIDs(); len(nodes) > 0 {
+	if rtu.mutation.PropertyTypesCleared() {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: false,
+			Table:   resourcetype.PropertyTypesTable,
+			Columns: []string{resourcetype.PropertyTypesColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: &sqlgraph.FieldSpec{
+					Type:   field.TypeInt,
+					Column: propertytype.FieldID,
+				},
+			},
+		}
+		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
+	}
+	if nodes := rtu.mutation.RemovedPropertyTypesIDs(); len(nodes) > 0 && !rtu.mutation.PropertyTypesCleared() {
 		edge := &sqlgraph.EdgeSpec{
 			Rel:     sqlgraph.O2M,
 			Inverse: false,
@@ -220,7 +248,23 @@ func (rtu *ResourceTypeUpdate) sqlSave(ctx context.Context) (n int, err error) {
 		}
 		_spec.Edges.Add = append(_spec.Edges.Add, edge)
 	}
-	if nodes := rtu.mutation.RemovedPoolsIDs(); len(nodes) > 0 {
+	if rtu.mutation.PoolsCleared() {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: false,
+			Table:   resourcetype.PoolsTable,
+			Columns: []string{resourcetype.PoolsColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: &sqlgraph.FieldSpec{
+					Type:   field.TypeInt,
+					Column: resourcepool.FieldID,
+				},
+			},
+		}
+		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
+	}
+	if nodes := rtu.mutation.RemovedPoolsIDs(); len(nodes) > 0 && !rtu.mutation.PoolsCleared() {
 		edge := &sqlgraph.EdgeSpec{
 			Rel:     sqlgraph.O2M,
 			Inverse: false,
@@ -317,6 +361,12 @@ func (rtuo *ResourceTypeUpdateOne) Mutation() *ResourceTypeMutation {
 	return rtuo.mutation
 }
 
+// ClearPropertyTypes clears all "property_types" edges to type PropertyType.
+func (rtuo *ResourceTypeUpdateOne) ClearPropertyTypes() *ResourceTypeUpdateOne {
+	rtuo.mutation.ClearPropertyTypes()
+	return rtuo
+}
+
 // RemovePropertyTypeIDs removes the property_types edge to PropertyType by ids.
 func (rtuo *ResourceTypeUpdateOne) RemovePropertyTypeIDs(ids ...int) *ResourceTypeUpdateOne {
 	rtuo.mutation.RemovePropertyTypeIDs(ids...)
@@ -330,6 +380,12 @@ func (rtuo *ResourceTypeUpdateOne) RemovePropertyTypes(p ...*PropertyType) *Reso
 		ids[i] = p[i].ID
 	}
 	return rtuo.RemovePropertyTypeIDs(ids...)
+}
+
+// ClearPools clears all "pools" edges to type ResourcePool.
+func (rtuo *ResourceTypeUpdateOne) ClearPools() *ResourceTypeUpdateOne {
+	rtuo.mutation.ClearPools()
+	return rtuo
 }
 
 // RemovePoolIDs removes the pools edge to ResourcePool by ids.
@@ -427,7 +483,23 @@ func (rtuo *ResourceTypeUpdateOne) sqlSave(ctx context.Context) (rt *ResourceTyp
 			Column: resourcetype.FieldName,
 		})
 	}
-	if nodes := rtuo.mutation.RemovedPropertyTypesIDs(); len(nodes) > 0 {
+	if rtuo.mutation.PropertyTypesCleared() {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: false,
+			Table:   resourcetype.PropertyTypesTable,
+			Columns: []string{resourcetype.PropertyTypesColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: &sqlgraph.FieldSpec{
+					Type:   field.TypeInt,
+					Column: propertytype.FieldID,
+				},
+			},
+		}
+		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
+	}
+	if nodes := rtuo.mutation.RemovedPropertyTypesIDs(); len(nodes) > 0 && !rtuo.mutation.PropertyTypesCleared() {
 		edge := &sqlgraph.EdgeSpec{
 			Rel:     sqlgraph.O2M,
 			Inverse: false,
@@ -465,7 +537,23 @@ func (rtuo *ResourceTypeUpdateOne) sqlSave(ctx context.Context) (rt *ResourceTyp
 		}
 		_spec.Edges.Add = append(_spec.Edges.Add, edge)
 	}
-	if nodes := rtuo.mutation.RemovedPoolsIDs(); len(nodes) > 0 {
+	if rtuo.mutation.PoolsCleared() {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: false,
+			Table:   resourcetype.PoolsTable,
+			Columns: []string{resourcetype.PoolsColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: &sqlgraph.FieldSpec{
+					Type:   field.TypeInt,
+					Column: resourcepool.FieldID,
+				},
+			},
+		}
+		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
+	}
+	if nodes := rtuo.mutation.RemovedPoolsIDs(); len(nodes) > 0 && !rtuo.mutation.PoolsCleared() {
 		edge := &sqlgraph.EdgeSpec{
 			Rel:     sqlgraph.O2M,
 			Inverse: false,
