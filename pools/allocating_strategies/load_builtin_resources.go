@@ -263,6 +263,83 @@ func loadVlan(ctx context.Context, client *ent.Tx) error {
 	return nil
 }
 
+func loadRd(ctx context.Context, client *ent.Tx) error {
+
+	exists, err := client.ResourceType.Query().Where(resourcetype.Name("route_distinguisher")).Exist(ctx)
+	if err != nil {
+		return err
+	}
+	if exists {
+		return nil
+	}
+
+	propAddr, err := client.PropertyType.Create().
+		SetName("rd").
+		SetType(propertytype.TypeString).
+		Save(ctx)
+	if err != nil {
+		return err
+	}
+
+	_, err = client.ResourceType.Create().
+		SetName("route_distinguisher").
+		AddPropertyTypes(propAddr).
+		Save(ctx)
+	if err != nil {
+		return err
+	}
+
+	_, err = client.AllocationStrategy.Create().
+		SetName("route_distinguisher").
+		SetLang(allocationstrategy.LangJs).
+		SetScript(ROUTE_DISTINGUISHER).
+		Save(ctx)
+	if err != nil {
+		return err
+	}
+
+	return nil
+}
+
+func loadRandomSignedInt32(ctx context.Context, client *ent.Tx) error {
+
+	exists, err := client.ResourceType.Query().Where(resourcetype.Name("random_signed_int32")).Exist(ctx)
+	if err != nil {
+		return err
+	}
+	if exists {
+		return nil
+	}
+
+	propAddr, err := client.PropertyType.Create().
+		SetName("int").
+		SetType(propertytype.TypeInt).
+		Save(ctx)
+	if err != nil {
+		return err
+	}
+
+	_, err = client.ResourceType.Create().
+		SetName("random_signed_int32").
+		AddPropertyTypes(propAddr).
+		Save(ctx)
+	if err != nil {
+		return err
+	}
+
+	_, err = client.AllocationStrategy.Create().
+		SetName("random_signed_int32").
+		SetLang(allocationstrategy.LangJs).
+		SetScript(RANDOM_S_INT32).
+		Save(ctx)
+	if err != nil {
+		return err
+	}
+
+	return nil
+}
+
+
 func loadInner(ctx context.Context, client *ent.Tx) error {
 	err := loadIpv4Prefix(ctx, client)
 	if err != nil {
@@ -289,6 +366,15 @@ func loadInner(ctx context.Context, client *ent.Tx) error {
 	err = loadIpv6(ctx, client)
 	if err != nil {
 		return errors.Wrapf(err, "Unable to load ipv6 resource type")
+	}
+
+	err = loadRd(ctx, client)
+	if err != nil {
+		return errors.Wrapf(err, "Unable to load route distinguisher resource type")
+	}
+	err = loadRandomSignedInt32(ctx, client)
+	if err != nil {
+		return errors.Wrapf(err, "Unable to load random signed int32 resource type")
 	}
 
 	return nil

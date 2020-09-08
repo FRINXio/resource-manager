@@ -1,0 +1,190 @@
+# Test RD
+# Involves Ipv4 pool, AS (singleton) pool, random_s_int32 pool and RD pool
+
+query QueryRT {
+    QueryResourceTypes {
+        ID
+        Name
+        PropertyTypes {
+            Name
+            Type
+        }
+    }
+}
+query QueryStrats {
+    QueryAllocationStrategies {
+        ID
+        Name
+        Lang
+    }
+}
+
+mutation TestAllocationStrat_rd {
+    TestAllocationStrategy(
+        allocationStrategyId: 7,
+        resourcePool: { ResourcePoolName: "test"},
+        currentResources: [],
+        userInput: {ipv4: "1.2.3.4", assignedNumber: 2})
+}
+
+mutation TestAllocationStrat_rd_duplicate {
+    TestAllocationStrategy(
+        allocationStrategyId: 7,
+        resourcePool: { ResourcePoolName: "test"},
+        currentResources: [{Properties: {rd: "1.2.3.4:2"},
+            Status: "claimed",
+            UpdatedAt: "2020-08-30 11:38:48.0 +0200 CEST"
+        }],
+        userInput: {ipv4: "1.2.3.4", assignedNumber: 2})
+}
+
+mutation TestAllocationStrat_rd_as {
+    TestAllocationStrategy(
+        allocationStrategyId: 7,
+        resourcePool: { ResourcePoolName: "test"},
+        currentResources: [],
+        userInput: {asNumber: 22, assignedNumber: 288})
+}
+
+# Pool setup
+
+# Ipv4 pool
+mutation CreateIpv4Pool {
+    CreateAllocatingPool(input: {
+        resourceTypeId: 21474836481,
+        poolName: "192.168.1.0/24",
+        allocationStrategyId: 2,
+        poolDealocationSafetyPeriod: 10000}
+    ){
+        ID
+    }
+}
+
+
+# AS number global singleton pool
+mutation createASnumberResourceType {
+    CreateResourceType(
+        resourceName: "as",
+        resourceProperties: {
+            as: "int"
+        }
+    ) {
+        ID
+        Name
+    }
+}
+mutation CreateASPool {
+    CreateSingletonPool(input: {
+        resourceTypeId: 21474836488,
+        poolName: "global_AS",
+        poolValues: [{as: 4545}]}
+    ){
+        ID
+    }
+}
+
+# Random INT32 pool for RD->assignedNumbers
+mutation CreateRandomINTForAssignedNumbers {
+    CreateAllocatingPool(input: {
+        resourceTypeId: 21474836487,
+        poolName: "[1-999]",
+        allocationStrategyId: 8,
+        poolDealocationSafetyPeriod: 10000}
+    ){
+        ID
+    }
+}
+
+# RD pool
+mutation CreateRandomINTForAssignedNumbers {
+    CreateAllocatingPool(input: {
+        resourceTypeId: 21474836486,
+        poolName: "customer_RDs",
+        allocationStrategyId: 7,
+        poolDealocationSafetyPeriod: 10000}
+    ){
+        ID
+    }
+}
+
+query checkPools {
+    QueryResourcePools {
+        ID
+        Name
+        PoolType
+        Resources {
+            ID
+            Properties
+        }
+    }
+}
+
+# Case #1
+# Get AS + get random number => get RD 4545:748
+mutation ClaimAS {
+    ClaimResource(poolId:17179869185, userInput: {}) {
+        ID
+        Properties
+    }
+}
+mutation ClaimAssignedNumberFromRandom {
+    ClaimResource(poolId:17179869186, userInput: {}) {
+        ID
+        Properties
+    }
+}
+mutation ClaimRDFromPreviousResources {
+    ClaimResource(poolId:17179869187, userInput: {asNumber: 4545, assignedNumber: 748}) {
+        ID
+        Properties
+    }
+}
+## This one should fail as it requests duplicate entry
+mutation ClaimRDFromPreviousResources_duplicate {
+    ClaimResource(poolId:17179869187, userInput: {asNumber: 4545, assignedNumber: 748}) {
+        ID
+        Properties
+    }
+}
+## Instead read existing resource
+query ReadRD {
+    QueryResource(input: {rd: "4545:748"}, poolId: 17179869187) {
+        ID
+        Properties
+    }
+}
+
+# Case #2
+# Get IPv4 + get random number => get RD 192.168.1.1:183
+mutation ClaimAS {
+    ClaimResource(poolId:17179869184, userInput: {subnet: true}) {
+        ID
+        Properties
+    }
+}
+mutation ClaimAssignedNumberFromRandom {
+    ClaimResource(poolId:17179869186, userInput: {}) {
+        ID
+        Properties
+    }
+}
+mutation ClaimRDFromPreviousResources {
+    ClaimResource(poolId:17179869187, userInput: {ipv4: "192.168.1.1", assignedNumber: 183}) {
+        ID
+        Properties
+    }
+}
+## This one should fail as it requests duplicate entry
+mutation ClaimRDFromPreviousResources {
+    ClaimResource(poolId:17179869187, userInput: {ipv4: "192.168.1.1", assignedNumber: 183}) {
+        ID
+        Properties
+    }
+}
+## Instead read existing resource
+query ReadRD {
+    QueryResource(input: {rd: "192.168.1.1:183"}, poolId: 17179869187) {
+        ID
+        Properties
+    }
+}
