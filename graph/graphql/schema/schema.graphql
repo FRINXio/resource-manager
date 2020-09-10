@@ -254,6 +254,15 @@ type TagPoolPayload {
     tag: Tag
 }
 
+input UntagPoolInput {
+    tagId: ID!,
+    poolId: ID!
+}
+
+type UntagPoolPayload {
+    tag: Tag
+}
+
 input CreateAllocationStrategyInput {
     name: String!,
     description: String,
@@ -308,6 +317,7 @@ type Mutation {
     UpdateTag(input: UpdateTagInput!): UpdateTagPayload!
     DeleteTag(input: DeleteTagInput!): DeleteTagPayload!
     TagPool(input: TagPoolInput!): TagPoolPayload!
+    UntagPool(input: UntagPoolInput!): UntagPoolPayload!
 
     # Allocation strategy
     CreateAllocationStrategy(input: CreateAllocationStrategyInput): CreateAllocationStrategyPayload!

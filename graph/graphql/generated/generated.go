@@ -130,6 +130,7 @@ type ComplexityRoot struct {
 		FreeResource               func(childComplexity int, input map[string]interface{}, poolID int) int
 		TagPool                    func(childComplexity int, input model.TagPoolInput) int
 		TestAllocationStrategy     func(childComplexity int, allocationStrategyID int, resourcePool model.ResourcePoolInput, currentResources []*model.ResourceInput, userInput map[string]interface{}) int
+		UntagPool                  func(childComplexity int, input model.UntagPoolInput) int
 		UpdateResourceTypeName     func(childComplexity int, input model.UpdateResourceTypeNameInput) int
 		UpdateTag                  func(childComplexity int, input model.UpdateTagInput) int
 	}
@@ -209,6 +210,10 @@ type ComplexityRoot struct {
 		Tag func(childComplexity int) int
 	}
 
+	UntagPoolPayload struct {
+		Tag func(childComplexity int) int
+	}
+
 	UpdateResourceTypeNamePayload struct {
 		ResourceTypeID func(childComplexity int) int
 	}
@@ -223,6 +228,7 @@ type MutationResolver interface {
 	UpdateTag(ctx context.Context, input model.UpdateTagInput) (*model.UpdateTagPayload, error)
 	DeleteTag(ctx context.Context, input model.DeleteTagInput) (*model.DeleteTagPayload, error)
 	TagPool(ctx context.Context, input model.TagPoolInput) (*model.TagPoolPayload, error)
+	UntagPool(ctx context.Context, input model.UntagPoolInput) (*model.UntagPoolPayload, error)
 	CreateAllocationStrategy(ctx context.Context, input *model.CreateAllocationStrategyInput) (*model.CreateAllocationStrategyPayload, error)
 	DeleteAllocationStrategy(ctx context.Context, input *model.DeleteAllocationStrategyInput) (*model.DeleteAllocationStrategyPayload, error)
 	TestAllocationStrategy(ctx context.Context, allocationStrategyID int, resourcePool model.ResourcePoolInput, currentResources []*model.ResourceInput, userInput map[string]interface{}) (map[string]interface{}, error)
@@ -619,6 +625,18 @@ func (e *executableSchema) Complexity(typeName, field string, childComplexity in
 
 		return e.complexity.Mutation.TestAllocationStrategy(childComplexity, args["allocationStrategyId"].(int), args["resourcePool"].(model.ResourcePoolInput), args["currentResources"].([]*model.ResourceInput), args["userInput"].(map[string]interface{})), true
 
+	case "Mutation.UntagPool":
+		if e.complexity.Mutation.UntagPool == nil {
+			break
+		}
+
+		args, err := ec.field_Mutation_UntagPool_args(context.TODO(), rawArgs)
+		if err != nil {
+			return 0, false
+		}
+
+		return e.complexity.Mutation.UntagPool(childComplexity, args["input"].(model.UntagPoolInput)), true
+
 	case "Mutation.UpdateResourceTypeName":
 		if e.complexity.Mutation.UpdateResourceTypeName == nil {
 			break
@@ -1003,6 +1021,13 @@ func (e *executableSchema) Complexity(typeName, field string, childComplexity in
 
 		return e.complexity.TagPoolPayload.Tag(childComplexity), true
 
+	case "UntagPoolPayload.tag":
+		if e.complexity.UntagPoolPayload.Tag == nil {
+			break
+		}
+
+		return e.complexity.UntagPoolPayload.Tag(childComplexity), true
+
 	case "UpdateResourceTypeNamePayload.resourceTypeId":
 		if e.complexity.UpdateResourceTypeNamePayload.ResourceTypeID == nil {
 			break
@@ -1337,6 +1362,15 @@ type TagPoolPayload {
     tag: Tag
 }
 
+input UntagPoolInput {
+    tagId: ID!,
+    poolId: ID!
+}
+
+type UntagPoolPayload {
+    tag: Tag
+}
+
 input CreateAllocationStrategyInput {
     name: String!,
     description: String,
@@ -1391,6 +1425,7 @@ type Mutation {
     UpdateTag(input: UpdateTagInput!): UpdateTagPayload!
     DeleteTag(input: DeleteTagInput!): DeleteTagPayload!
     TagPool(input: TagPoolInput!): TagPoolPayload!
+    UntagPool(input: UntagPoolInput!): UntagPoolPayload!
 
     # Allocation strategy
     CreateAllocationStrategy(input: CreateAllocationStrategyInput): CreateAllocationStrategyPayload!
@@ -1722,6 +1757,21 @@ func (ec *executionContext) field_Mutation_TestAllocationStrategy_args(ctx conte
 		}
 	}
 	args["userInput"] = arg3
+	return args, nil
+}
+
+func (ec *executionContext) field_Mutation_UntagPool_args(ctx context.Context, rawArgs map[string]interface{}) (map[string]interface{}, error) {
+	var err error
+	args := map[string]interface{}{}
+	var arg0 model.UntagPoolInput
+	if tmp, ok := rawArgs["input"]; ok {
+		ctx := graphql.WithFieldInputContext(ctx, graphql.NewFieldInputWithField("input"))
+		arg0, err = ec.unmarshalNUntagPoolInput2githubᚗcomᚋnetᚑautoᚋresourceManagerᚋgraphᚋgraphqlᚋmodelᚐUntagPoolInput(ctx, tmp)
+		if err != nil {
+			return nil, err
+		}
+	}
+	args["input"] = arg0
 	return args, nil
 }
 
@@ -2723,6 +2773,47 @@ func (ec *executionContext) _Mutation_TagPool(ctx context.Context, field graphql
 	res := resTmp.(*model.TagPoolPayload)
 	fc.Result = res
 	return ec.marshalNTagPoolPayload2ᚖgithubᚗcomᚋnetᚑautoᚋresourceManagerᚋgraphᚋgraphqlᚋmodelᚐTagPoolPayload(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) _Mutation_UntagPool(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	fc := &graphql.FieldContext{
+		Object:   "Mutation",
+		Field:    field,
+		Args:     nil,
+		IsMethod: true,
+	}
+
+	ctx = graphql.WithFieldContext(ctx, fc)
+	rawArgs := field.ArgumentMap(ec.Variables)
+	args, err := ec.field_Mutation_UntagPool_args(ctx, rawArgs)
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	fc.Args = args
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return ec.resolvers.Mutation().UntagPool(rctx, args["input"].(model.UntagPoolInput))
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(*model.UntagPoolPayload)
+	fc.Result = res
+	return ec.marshalNUntagPoolPayload2ᚖgithubᚗcomᚋnetᚑautoᚋresourceManagerᚋgraphᚋgraphqlᚋmodelᚐUntagPoolPayload(ctx, field.Selections, res)
 }
 
 func (ec *executionContext) _Mutation_CreateAllocationStrategy(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
@@ -4984,6 +5075,37 @@ func (ec *executionContext) _TagPoolPayload_tag(ctx context.Context, field graph
 	return ec.marshalOTag2ᚖgithubᚗcomᚋnetᚑautoᚋresourceManagerᚋentᚐTag(ctx, field.Selections, res)
 }
 
+func (ec *executionContext) _UntagPoolPayload_tag(ctx context.Context, field graphql.CollectedField, obj *model.UntagPoolPayload) (ret graphql.Marshaler) {
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	fc := &graphql.FieldContext{
+		Object:   "UntagPoolPayload",
+		Field:    field,
+		Args:     nil,
+		IsMethod: false,
+	}
+
+	ctx = graphql.WithFieldContext(ctx, fc)
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.Tag, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		return graphql.Null
+	}
+	res := resTmp.(*ent.Tag)
+	fc.Result = res
+	return ec.marshalOTag2ᚖgithubᚗcomᚋnetᚑautoᚋresourceManagerᚋentᚐTag(ctx, field.Selections, res)
+}
+
 func (ec *executionContext) _UpdateResourceTypeNamePayload_resourceTypeId(ctx context.Context, field graphql.CollectedField, obj *model.UpdateResourceTypeNamePayload) (ret graphql.Marshaler) {
 	defer func() {
 		if r := recover(); r != nil {
@@ -6720,6 +6842,34 @@ func (ec *executionContext) unmarshalInputTagPoolInput(ctx context.Context, obj 
 	return it, nil
 }
 
+func (ec *executionContext) unmarshalInputUntagPoolInput(ctx context.Context, obj interface{}) (model.UntagPoolInput, error) {
+	var it model.UntagPoolInput
+	var asMap = obj.(map[string]interface{})
+
+	for k, v := range asMap {
+		switch k {
+		case "tagId":
+			var err error
+
+			ctx := graphql.WithFieldInputContext(ctx, graphql.NewFieldInputWithField("tagId"))
+			it.TagID, err = ec.unmarshalNID2int(ctx, v)
+			if err != nil {
+				return it, err
+			}
+		case "poolId":
+			var err error
+
+			ctx := graphql.WithFieldInputContext(ctx, graphql.NewFieldInputWithField("poolId"))
+			it.PoolID, err = ec.unmarshalNID2int(ctx, v)
+			if err != nil {
+				return it, err
+			}
+		}
+	}
+
+	return it, nil
+}
+
 func (ec *executionContext) unmarshalInputUpdateResourceTypeNameInput(ctx context.Context, obj interface{}) (model.UpdateResourceTypeNameInput, error) {
 	var it model.UpdateResourceTypeNameInput
 	var asMap = obj.(map[string]interface{})
@@ -7223,6 +7373,11 @@ func (ec *executionContext) _Mutation(ctx context.Context, sel ast.SelectionSet)
 			}
 		case "TagPool":
 			out.Values[i] = ec._Mutation_TagPool(ctx, field)
+			if out.Values[i] == graphql.Null {
+				invalids++
+			}
+		case "UntagPool":
+			out.Values[i] = ec._Mutation_UntagPool(ctx, field)
 			if out.Values[i] == graphql.Null {
 				invalids++
 			}
@@ -7934,6 +8089,30 @@ func (ec *executionContext) _TagPoolPayload(ctx context.Context, sel ast.Selecti
 			out.Values[i] = graphql.MarshalString("TagPoolPayload")
 		case "tag":
 			out.Values[i] = ec._TagPoolPayload_tag(ctx, field, obj)
+		default:
+			panic("unknown field " + strconv.Quote(field.Name))
+		}
+	}
+	out.Dispatch()
+	if invalids > 0 {
+		return graphql.Null
+	}
+	return out
+}
+
+var untagPoolPayloadImplementors = []string{"UntagPoolPayload"}
+
+func (ec *executionContext) _UntagPoolPayload(ctx context.Context, sel ast.SelectionSet, obj *model.UntagPoolPayload) graphql.Marshaler {
+	fields := graphql.CollectFields(ec.OperationContext, sel, untagPoolPayloadImplementors)
+
+	out := graphql.NewFieldSet(fields)
+	var invalids uint32
+	for i, field := range fields {
+		switch field.Name {
+		case "__typename":
+			out.Values[i] = graphql.MarshalString("UntagPoolPayload")
+		case "tag":
+			out.Values[i] = ec._UntagPoolPayload_tag(ctx, field, obj)
 		default:
 			panic("unknown field " + strconv.Quote(field.Name))
 		}
@@ -9137,6 +9316,25 @@ func (ec *executionContext) marshalNTagPoolPayload2ᚖgithubᚗcomᚋnetᚑauto�
 		return graphql.Null
 	}
 	return ec._TagPoolPayload(ctx, sel, v)
+}
+
+func (ec *executionContext) unmarshalNUntagPoolInput2githubᚗcomᚋnetᚑautoᚋresourceManagerᚋgraphᚋgraphqlᚋmodelᚐUntagPoolInput(ctx context.Context, v interface{}) (model.UntagPoolInput, error) {
+	res, err := ec.unmarshalInputUntagPoolInput(ctx, v)
+	return res, graphql.WrapErrorWithInputPath(ctx, err)
+}
+
+func (ec *executionContext) marshalNUntagPoolPayload2githubᚗcomᚋnetᚑautoᚋresourceManagerᚋgraphᚋgraphqlᚋmodelᚐUntagPoolPayload(ctx context.Context, sel ast.SelectionSet, v model.UntagPoolPayload) graphql.Marshaler {
+	return ec._UntagPoolPayload(ctx, sel, &v)
+}
+
+func (ec *executionContext) marshalNUntagPoolPayload2ᚖgithubᚗcomᚋnetᚑautoᚋresourceManagerᚋgraphᚋgraphqlᚋmodelᚐUntagPoolPayload(ctx context.Context, sel ast.SelectionSet, v *model.UntagPoolPayload) graphql.Marshaler {
+	if v == nil {
+		if !graphql.HasFieldError(ctx, graphql.GetFieldContext(ctx)) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	return ec._UntagPoolPayload(ctx, sel, v)
 }
 
 func (ec *executionContext) unmarshalNUpdateResourceTypeNameInput2githubᚗcomᚋnetᚑautoᚋresourceManagerᚋgraphᚋgraphqlᚋmodelᚐUpdateResourceTypeNameInput(ctx context.Context, v interface{}) (model.UpdateResourceTypeNameInput, error) {

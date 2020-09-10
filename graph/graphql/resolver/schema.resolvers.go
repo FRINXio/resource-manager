@@ -60,6 +60,15 @@ func (r *mutationResolver) TagPool(ctx context.Context, input model.TagPoolInput
 	return &model.TagPoolPayload{Tag: tag}, nil
 }
 
+func (r *mutationResolver) UntagPool(ctx context.Context, input model.UntagPoolInput) (*model.UntagPoolPayload, error) {
+	var client = r.ClientFrom(ctx)
+	tag, err := client.Tag.UpdateOneID(input.TagID).RemovePoolIDs(input.PoolID).Save(ctx)
+	if err != nil {
+		return &model.UntagPoolPayload{Tag: nil}, gqlerror.Errorf("Unable to un-tag pool: %v", err)
+	}
+	return &model.UntagPoolPayload{Tag: tag}, nil
+}
+
 func (r *mutationResolver) CreateAllocationStrategy(ctx context.Context, input *model.CreateAllocationStrategyInput) (*model.CreateAllocationStrategyPayload, error) {
 	var client = r.ClientFrom(ctx)
 	strat, err := client.AllocationStrategy.Create().

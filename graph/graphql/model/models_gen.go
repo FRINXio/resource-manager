@@ -184,6 +184,15 @@ type TagPoolPayload struct {
 	Tag *ent.Tag `json:"tag"`
 }
 
+type UntagPoolInput struct {
+	TagID  int `json:"tagId"`
+	PoolID int `json:"poolId"`
+}
+
+type UntagPoolPayload struct {
+	Tag *ent.Tag `json:"tag"`
+}
+
 type UpdateResourceTypeNameInput struct {
 	ResourceTypeID int    `json:"resourceTypeId"`
 	ResourceName   string `json:"resourceName"`

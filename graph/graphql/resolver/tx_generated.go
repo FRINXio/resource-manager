@@ -85,6 +85,17 @@ func (tr txResolver) TagPool(ctx context.Context, input model.TagPoolInput) (*mo
 	return result, nil
 }
 
+func (tr txResolver) UntagPool(ctx context.Context, input model.UntagPoolInput) (*model.UntagPoolPayload, error) {
+	var result, zero *model.UntagPoolPayload
+	if err := tr.WithTransaction(ctx, func(ctx context.Context, mr generated.MutationResolver) (err error) {
+		result, err = mr.UntagPool(ctx, input)
+		return
+	}); err != nil {
+		return zero, err
+	}
+	return result, nil
+}
+
 func (tr txResolver) CreateAllocationStrategy(ctx context.Context, input *model.CreateAllocationStrategyInput) (*model.CreateAllocationStrategyPayload, error) {
 	var result, zero *model.CreateAllocationStrategyPayload
 	if err := tr.WithTransaction(ctx, func(ctx context.Context, mr generated.MutationResolver) (err error) {
