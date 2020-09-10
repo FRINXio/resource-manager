@@ -13,4 +13,5 @@ COPY --from=wasmer /app/wasm-worker/wasm ./wasm
 RUN ./.wasmer/bin/wasmer ./wasm/quickjs/quickjs.wasm -- --std -e 'console.log("Wasmer works!")'
 
 RUN ./build.sh
+RUN go get github.com/go-delve/delve/cmd/dlv
 CMD ./run.sh
