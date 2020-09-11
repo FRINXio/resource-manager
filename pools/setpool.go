@@ -2,6 +2,7 @@ package pools
 
 import (
 	"context"
+	"github.com/net-auto/resourceManager/ent/predicate"
 	"time"
 
 	"github.com/net-auto/resourceManager/ent"
@@ -140,7 +141,7 @@ func (pool SetPool) freeResourceInner(raw RawResourceProps,
 		return errors.Wrapf(err, "Unable to free a resource in pool \"%s\". " +
 			"Unable to check nested pools", pool.Name)
 	} else if nestedPool != nil {
-		return errors.Wrapf(err, "Unable to free a resource in pool \"%s\". " +
+		return errors.Errorf("Unable to free a resource in pool \"%s\". " +
 			"There is a nested pool attached to it \"%v\"", pool.Name, nestedPool.ID)
 	}
 
@@ -178,8 +179,13 @@ func (pool SetPool) findResource(raw RawResourceProps) (*ent.ResourceQuery, erro
 		return nil, errors.Wrapf(err, "Unable to find resource in pool: \"%s\"", pool.Name)
 	}
 
-	return pool.findResources().
-		Where(resource.HasPropertiesWith(propComparator...)), nil
+	resources := pool.findResources()
+	var resourceComparator []predicate.Resource
+	for _, propPred := range propComparator {
+		resourceComparator = append(resourceComparator, resource.HasPropertiesWith(propPred))
+
+	}
+	return resources.Where(resourceComparator...), nil
 }
 
 // QueryResource returns a resource identified by its properties
