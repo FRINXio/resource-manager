@@ -1,3 +1,7 @@
+query poolTypes {
+    QueryPoolTypes
+}
+
 mutation createNewResourceType {
     CreateResourceType( input: {
         resourceName: "vlan",

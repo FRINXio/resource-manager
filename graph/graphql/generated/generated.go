@@ -157,6 +157,7 @@ type ComplexityRoot struct {
 		QueryAllocationStrategies func(childComplexity int) int
 		QueryAllocationStrategy   func(childComplexity int, allocationStrategyID int) int
 		QueryLeafResourcePools    func(childComplexity int, resourceTypeID *int) int
+		QueryPoolTypes            func(childComplexity int) int
 		QueryResource             func(childComplexity int, input map[string]interface{}, poolID int) int
 		QueryResourcePools        func(childComplexity int, resourceTypeID *int) int
 		QueryResourceTypes        func(childComplexity int) int
@@ -249,6 +250,7 @@ type PropertyTypeResolver interface {
 	Type(ctx context.Context, obj *ent.PropertyType) (string, error)
 }
 type QueryResolver interface {
+	QueryPoolTypes(ctx context.Context) ([]resourcepool.PoolType, error)
 	QueryResource(ctx context.Context, input map[string]interface{}, poolID int) (*ent.Resource, error)
 	QueryResources(ctx context.Context, poolID int) ([]*ent.Resource, error)
 	QueryAllocationStrategy(ctx context.Context, allocationStrategyID int) (*ent.AllocationStrategy, error)
@@ -780,6 +782,13 @@ func (e *executableSchema) Complexity(typeName, field string, childComplexity in
 		}
 
 		return e.complexity.Query.QueryLeafResourcePools(childComplexity, args["resourceTypeId"].(*int)), true
+
+	case "Query.QueryPoolTypes":
+		if e.complexity.Query.QueryPoolTypes == nil {
+			break
+		}
+
+		return e.complexity.Query.QueryPoolTypes(childComplexity), true
 
 	case "Query.QueryResource":
 		if e.complexity.Query.QueryResource == nil {
@@ -1313,6 +1322,7 @@ type CreateNestedAllocatingPoolPayload {
 }
 
 type Query {
+    QueryPoolTypes: [PoolType!]!
     QueryResource(input: Map!, poolId: ID!): Resource!
     QueryResources(poolId: ID!): [Resource!]!
     QueryAllocationStrategy(allocationStrategyId: ID!): AllocationStrategy!
@@ -3803,6 +3813,40 @@ func (ec *executionContext) _PropertyType_Mandatory(ctx context.Context, field g
 	res := resTmp.(bool)
 	fc.Result = res
 	return ec.marshalNBoolean2bool(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) _Query_QueryPoolTypes(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	fc := &graphql.FieldContext{
+		Object:   "Query",
+		Field:    field,
+		Args:     nil,
+		IsMethod: true,
+	}
+
+	ctx = graphql.WithFieldContext(ctx, fc)
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return ec.resolvers.Query().QueryPoolTypes(rctx)
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.([]resourcepool.PoolType)
+	fc.Result = res
+	return ec.marshalNPoolType2ᚕgithubᚗcomᚋnetᚑautoᚋresourceManagerᚋentᚋresourcepoolᚐPoolTypeᚄ(ctx, field.Selections, res)
 }
 
 func (ec *executionContext) _Query_QueryResource(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
@@ -7590,6 +7634,20 @@ func (ec *executionContext) _Query(ctx context.Context, sel ast.SelectionSet) gr
 		switch field.Name {
 		case "__typename":
 			out.Values[i] = graphql.MarshalString("Query")
+		case "QueryPoolTypes":
+			field := field
+			out.Concurrently(i, func() (res graphql.Marshaler) {
+				defer func() {
+					if r := recover(); r != nil {
+						ec.Error(ctx, ec.Recover(ctx, r))
+					}
+				}()
+				res = ec._Query_QueryPoolTypes(ctx, field)
+				if res == graphql.Null {
+					atomic.AddUint32(&invalids, 1)
+				}
+				return res
+			})
 		case "QueryResource":
 			field := field
 			out.Concurrently(i, func() (res graphql.Marshaler) {
@@ -8894,6 +8952,64 @@ func (ec *executionContext) unmarshalNPoolType2githubᚗcomᚋnetᚑautoᚋresou
 
 func (ec *executionContext) marshalNPoolType2githubᚗcomᚋnetᚑautoᚋresourceManagerᚋentᚋresourcepoolᚐPoolType(ctx context.Context, sel ast.SelectionSet, v resourcepool.PoolType) graphql.Marshaler {
 	return v
+}
+
+func (ec *executionContext) unmarshalNPoolType2ᚕgithubᚗcomᚋnetᚑautoᚋresourceManagerᚋentᚋresourcepoolᚐPoolTypeᚄ(ctx context.Context, v interface{}) ([]resourcepool.PoolType, error) {
+	var vSlice []interface{}
+	if v != nil {
+		if tmp1, ok := v.([]interface{}); ok {
+			vSlice = tmp1
+		} else {
+			vSlice = []interface{}{v}
+		}
+	}
+	var err error
+	res := make([]resourcepool.PoolType, len(vSlice))
+	for i := range vSlice {
+		ctx := graphql.WithFieldInputContext(ctx, graphql.NewFieldInputWithIndex(i))
+		res[i], err = ec.unmarshalNPoolType2githubᚗcomᚋnetᚑautoᚋresourceManagerᚋentᚋresourcepoolᚐPoolType(ctx, vSlice[i])
+		if err != nil {
+			return nil, graphql.WrapErrorWithInputPath(ctx, err)
+		}
+	}
+	return res, nil
+}
+
+func (ec *executionContext) marshalNPoolType2ᚕgithubᚗcomᚋnetᚑautoᚋresourceManagerᚋentᚋresourcepoolᚐPoolTypeᚄ(ctx context.Context, sel ast.SelectionSet, v []resourcepool.PoolType) graphql.Marshaler {
+	ret := make(graphql.Array, len(v))
+	var wg sync.WaitGroup
+	isLen1 := len(v) == 1
+	if !isLen1 {
+		wg.Add(len(v))
+	}
+	for i := range v {
+		i := i
+		fc := &graphql.FieldContext{
+			Index:  &i,
+			Result: &v[i],
+		}
+		ctx := graphql.WithFieldContext(ctx, fc)
+		f := func(i int) {
+			defer func() {
+				if r := recover(); r != nil {
+					ec.Error(ctx, ec.Recover(ctx, r))
+					ret = nil
+				}
+			}()
+			if !isLen1 {
+				defer wg.Done()
+			}
+			ret[i] = ec.marshalNPoolType2githubᚗcomᚋnetᚑautoᚋresourceManagerᚋentᚋresourcepoolᚐPoolType(ctx, sel, v[i])
+		}
+		if isLen1 {
+			f(i)
+		} else {
+			go f(i)
+		}
+
+	}
+	wg.Wait()
+	return ret
 }
 
 func (ec *executionContext) marshalNPropertyType2ᚕᚖgithubᚗcomᚋnetᚑautoᚋresourceManagerᚋentᚐPropertyTypeᚄ(ctx context.Context, sel ast.SelectionSet, v []*ent.PropertyType) graphql.Marshaler {

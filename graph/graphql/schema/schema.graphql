@@ -205,6 +205,7 @@ type CreateNestedAllocatingPoolPayload {
 }
 
 type Query {
+    QueryPoolTypes: [PoolType!]!
     QueryResource(input: Map!, poolId: ID!): Resource!
     QueryResources(poolId: ID!): [Resource!]!
     QueryAllocationStrategy(allocationStrategyId: ID!): AllocationStrategy!

@@ -368,6 +368,14 @@ func (r *propertyTypeResolver) Type(ctx context.Context, obj *ent.PropertyType) 
 	return obj.Type.String(), nil
 }
 
+func (r *queryResolver) QueryPoolTypes(ctx context.Context) ([]resourcePool.PoolType, error) {
+	poolTypes := []resourcePool.PoolType{
+		resourcePool.PoolTypeSingleton,
+		resourcePool.PoolTypeSet,
+		resourcePool.PoolTypeAllocating}
+	return poolTypes, nil
+}
+
 func (r *queryResolver) QueryResource(ctx context.Context, input map[string]interface{}, poolID int) (*ent.Resource, error) {
 	pool, err := p.ExistingPoolFromId(ctx, r.ClientFrom(ctx), poolID)
 	if err != nil {
