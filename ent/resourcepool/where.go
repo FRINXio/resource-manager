@@ -556,6 +556,34 @@ func HasClaimsWith(preds ...predicate.Resource) predicate.ResourcePool {
 	})
 }
 
+// HasPoolProperties applies the HasEdge predicate on the "poolProperties" edge.
+func HasPoolProperties() predicate.ResourcePool {
+	return predicate.ResourcePool(func(s *sql.Selector) {
+		step := sqlgraph.NewStep(
+			sqlgraph.From(Table, FieldID),
+			sqlgraph.To(PoolPropertiesTable, FieldID),
+			sqlgraph.Edge(sqlgraph.O2O, false, PoolPropertiesTable, PoolPropertiesColumn),
+		)
+		sqlgraph.HasNeighbors(s, step)
+	})
+}
+
+// HasPoolPropertiesWith applies the HasEdge predicate on the "poolProperties" edge with a given conditions (other predicates).
+func HasPoolPropertiesWith(preds ...predicate.PoolProperties) predicate.ResourcePool {
+	return predicate.ResourcePool(func(s *sql.Selector) {
+		step := sqlgraph.NewStep(
+			sqlgraph.From(Table, FieldID),
+			sqlgraph.To(PoolPropertiesInverseTable, FieldID),
+			sqlgraph.Edge(sqlgraph.O2O, false, PoolPropertiesTable, PoolPropertiesColumn),
+		)
+		sqlgraph.HasNeighborsWith(s, step, func(s *sql.Selector) {
+			for _, p := range preds {
+				p(s)
+			}
+		})
+	})
+}
+
 // HasAllocationStrategy applies the HasEdge predicate on the "allocation_strategy" edge.
 func HasAllocationStrategy() predicate.ResourcePool {
 	return predicate.ResourcePool(func(s *sql.Selector) {

@@ -83,6 +83,7 @@ type ScriptInvoker interface {
 	invokeJs(strategyScript string, userInput map[string]interface{},
 		resourcePool model.ResourcePoolInput,
 		currentResources []*model.ResourceInput,
+		poolPropertiesMaps map[string]interface{},
 	) (map[string]interface{}, string, error)
 	invokePy(strategyScript string, userInput map[string]interface{},
 		resourcePool model.ResourcePoolInput,
@@ -96,11 +97,12 @@ func InvokeAllocationStrategy(
 	userInput map[string]interface{},
 	resourcePool model.ResourcePoolInput,
 	currentResources []*model.ResourceInput,
+	poolPropertiesMaps map[string]interface{},
 ) (map[string]interface{}, string, error) {
 
 	switch strat.Lang {
 	case allocationstrategy.LangJs:
-		return invoker.invokeJs(strat.Script, userInput, resourcePool, currentResources)
+		return invoker.invokeJs(strat.Script, userInput, resourcePool, currentResources, poolPropertiesMaps)
 	case allocationstrategy.LangPy:
 		return invoker.invokePy(strat.Script, userInput, resourcePool, currentResources)
 	default:
@@ -121,6 +123,7 @@ func (wasmer Wasmer) invokeJs(
 	userInput map[string]interface{},
 	resourcePool model.ResourcePoolInput,
 	currentResources []*model.ResourceInput,
+	poolPropertiesMaps map[string]interface{},
 ) (map[string]interface{}, string, error) {
 
 	// Append script to invoke the function, parse inputs and serialize outputs
@@ -136,6 +139,12 @@ const log = console.error;
 		userInput = map[string]interface{}{}
 	}
 	addition, err := serializeJsVariable("userInput", userInput)
+	if err != nil {
+		return nil, "", err
+	}
+	header += addition
+
+	addition, err = serializeJsVariable("resourcePoolProperties", poolPropertiesMaps)
 	if err != nil {
 		return nil, "", err
 	}

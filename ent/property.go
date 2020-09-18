@@ -34,9 +34,10 @@ type Property struct {
 	StringVal *string `json:"stringValue" gqlgen:"stringValue"`
 	// Edges holds the relations/edges for other nodes in the graph.
 	// The values are being populated by the PropertyQuery when eager-loading is set.
-	Edges               PropertyEdges `json:"edges"`
-	property_type       *int
-	resource_properties *int
+	Edges                      PropertyEdges `json:"edges"`
+	pool_properties_properties *int
+	property_type              *int
+	resource_properties        *int
 }
 
 // PropertyEdges holds the relations/edges for other nodes in the graph.
@@ -80,6 +81,7 @@ func (*Property) scanValues() []interface{} {
 // fkValues returns the types for scanning foreign-keys values from sql.Rows.
 func (*Property) fkValues() []interface{} {
 	return []interface{}{
+		&sql.NullInt64{}, // pool_properties_properties
 		&sql.NullInt64{}, // property_type
 		&sql.NullInt64{}, // resource_properties
 	}
@@ -148,12 +150,18 @@ func (pr *Property) assignValues(values ...interface{}) error {
 	values = values[8:]
 	if len(values) == len(property.ForeignKeys) {
 		if value, ok := values[0].(*sql.NullInt64); !ok {
+			return fmt.Errorf("unexpected type %T for edge-field pool_properties_properties", value)
+		} else if value.Valid {
+			pr.pool_properties_properties = new(int)
+			*pr.pool_properties_properties = int(value.Int64)
+		}
+		if value, ok := values[1].(*sql.NullInt64); !ok {
 			return fmt.Errorf("unexpected type %T for edge-field property_type", value)
 		} else if value.Valid {
 			pr.property_type = new(int)
 			*pr.property_type = int(value.Int64)
 		}
-		if value, ok := values[1].(*sql.NullInt64); !ok {
+		if value, ok := values[2].(*sql.NullInt64); !ok {
 			return fmt.Errorf("unexpected type %T for edge-field resource_properties", value)
 		} else if value.Valid {
 			pr.resource_properties = new(int)

@@ -15,6 +15,7 @@ import (
 	"github.com/99designs/gqlgen/graphql/errcode"
 	"github.com/facebook/ent/dialect/sql"
 	"github.com/net-auto/resourceManager/ent/allocationstrategy"
+	"github.com/net-auto/resourceManager/ent/poolproperties"
 	"github.com/net-auto/resourceManager/ent/property"
 	"github.com/net-auto/resourceManager/ent/propertytype"
 	"github.com/net-auto/resourceManager/ent/resource"
@@ -453,6 +454,225 @@ var DefaultAllocationStrategyOrder = &AllocationStrategyOrder{
 		field: allocationstrategy.FieldID,
 		toCursor: func(as *AllocationStrategy) Cursor {
 			return Cursor{ID: as.ID}
+		},
+	},
+}
+
+// PoolPropertiesEdge is the edge representation of PoolProperties.
+type PoolPropertiesEdge struct {
+	Node   *PoolProperties `json:"node"`
+	Cursor Cursor          `json:"cursor"`
+}
+
+// PoolPropertiesConnection is the connection containing edges to PoolProperties.
+type PoolPropertiesConnection struct {
+	Edges      []*PoolPropertiesEdge `json:"edges"`
+	PageInfo   PageInfo              `json:"pageInfo"`
+	TotalCount int                   `json:"totalCount"`
+}
+
+// PoolPropertiesPaginateOption enables pagination customization.
+type PoolPropertiesPaginateOption func(*poolPropertiesPager) error
+
+// WithPoolPropertiesOrder configures pagination ordering.
+func WithPoolPropertiesOrder(order *PoolPropertiesOrder) PoolPropertiesPaginateOption {
+	if order == nil {
+		order = DefaultPoolPropertiesOrder
+	}
+	o := *order
+	return func(pager *poolPropertiesPager) error {
+		if err := o.Direction.Validate(); err != nil {
+			return err
+		}
+		if o.Field == nil {
+			o.Field = DefaultPoolPropertiesOrder.Field
+		}
+		pager.order = &o
+		return nil
+	}
+}
+
+// WithPoolPropertiesFilter configures pagination filter.
+func WithPoolPropertiesFilter(filter func(*PoolPropertiesQuery) (*PoolPropertiesQuery, error)) PoolPropertiesPaginateOption {
+	return func(pager *poolPropertiesPager) error {
+		if filter == nil {
+			return errors.New("PoolPropertiesQuery filter cannot be nil")
+		}
+		pager.filter = filter
+		return nil
+	}
+}
+
+type poolPropertiesPager struct {
+	order  *PoolPropertiesOrder
+	filter func(*PoolPropertiesQuery) (*PoolPropertiesQuery, error)
+}
+
+func newPoolPropertiesPager(opts []PoolPropertiesPaginateOption) (*poolPropertiesPager, error) {
+	pager := &poolPropertiesPager{}
+	for _, opt := range opts {
+		if err := opt(pager); err != nil {
+			return nil, err
+		}
+	}
+	if pager.order == nil {
+		pager.order = DefaultPoolPropertiesOrder
+	}
+	return pager, nil
+}
+
+func (p *poolPropertiesPager) applyFilter(query *PoolPropertiesQuery) (*PoolPropertiesQuery, error) {
+	if p.filter != nil {
+		return p.filter(query)
+	}
+	return query, nil
+}
+
+func (p *poolPropertiesPager) toCursor(pp *PoolProperties) Cursor {
+	return p.order.Field.toCursor(pp)
+}
+
+func (p *poolPropertiesPager) applyCursors(query *PoolPropertiesQuery, after, before *Cursor) *PoolPropertiesQuery {
+	for _, predicate := range cursorsToPredicates(
+		p.order.Direction, after, before,
+		p.order.Field.field, DefaultPoolPropertiesOrder.Field.field,
+	) {
+		query = query.Where(predicate)
+	}
+	return query
+}
+
+func (p *poolPropertiesPager) applyOrder(query *PoolPropertiesQuery, reverse bool) *PoolPropertiesQuery {
+	direction := p.order.Direction
+	if reverse {
+		direction = direction.reverse()
+	}
+	query = query.Order(direction.orderFunc(p.order.Field.field))
+	if p.order.Field != DefaultPoolPropertiesOrder.Field {
+		query = query.Order(Asc(DefaultPoolPropertiesOrder.Field.field))
+	}
+	return query
+}
+
+// Paginate executes the query and returns a relay based cursor connection to PoolProperties.
+func (pp *PoolPropertiesQuery) Paginate(
+	ctx context.Context, after *Cursor, first *int,
+	before *Cursor, last *int, opts ...PoolPropertiesPaginateOption,
+) (*PoolPropertiesConnection, error) {
+	if err := validateFirstLast(first, last); err != nil {
+		return nil, err
+	}
+	pager, err := newPoolPropertiesPager(opts)
+	if err != nil {
+		return nil, err
+	}
+
+	if pp, err = pager.applyFilter(pp); err != nil {
+		return nil, err
+	}
+
+	conn := &PoolPropertiesConnection{Edges: []*PoolPropertiesEdge{}}
+	if !hasCollectedField(ctx, edgesField) ||
+		first != nil && *first == 0 ||
+		last != nil && *last == 0 {
+		if hasCollectedField(ctx, totalCountField) ||
+			hasCollectedField(ctx, pageInfoField) {
+			count, err := pp.Count(ctx)
+			if err != nil {
+				return nil, err
+			}
+			conn.TotalCount = count
+			conn.PageInfo.HasNextPage = first != nil && count > 0
+			conn.PageInfo.HasPreviousPage = last != nil && count > 0
+		}
+		return conn, nil
+	}
+
+	if (after != nil || first != nil || before != nil || last != nil) &&
+		hasCollectedField(ctx, totalCountField) {
+		count, err := pp.Clone().Count(ctx)
+		if err != nil {
+			return nil, err
+		}
+		conn.TotalCount = count
+	}
+
+	pp = pager.applyCursors(pp, after, before)
+	pp = pager.applyOrder(pp, last != nil)
+	var limit int
+	if first != nil {
+		limit = *first + 1
+	} else if last != nil {
+		limit = *last + 1
+	}
+	if limit > 0 {
+		pp = pp.Limit(limit)
+	}
+
+	if field := getCollectedField(ctx, edgesField, nodeField); field != nil {
+		pp = pp.collectField(graphql.GetOperationContext(ctx), *field)
+	}
+
+	nodes, err := pp.All(ctx)
+	if err != nil || len(nodes) == 0 {
+		return conn, err
+	}
+
+	if len(nodes) == limit {
+		conn.PageInfo.HasNextPage = first != nil
+		conn.PageInfo.HasPreviousPage = last != nil
+		nodes = nodes[:len(nodes)-1]
+	}
+
+	var nodeAt func(int) *PoolProperties
+	if last != nil {
+		n := len(nodes) - 1
+		nodeAt = func(i int) *PoolProperties {
+			return nodes[n-i]
+		}
+	} else {
+		nodeAt = func(i int) *PoolProperties {
+			return nodes[i]
+		}
+	}
+
+	conn.Edges = make([]*PoolPropertiesEdge, len(nodes))
+	for i := range nodes {
+		node := nodeAt(i)
+		conn.Edges[i] = &PoolPropertiesEdge{
+			Node:   node,
+			Cursor: pager.toCursor(node),
+		}
+	}
+
+	conn.PageInfo.StartCursor = &conn.Edges[0].Cursor
+	conn.PageInfo.EndCursor = &conn.Edges[len(conn.Edges)-1].Cursor
+	if conn.TotalCount == 0 {
+		conn.TotalCount = len(nodes)
+	}
+
+	return conn, nil
+}
+
+// PoolPropertiesOrderField defines the ordering field of PoolProperties.
+type PoolPropertiesOrderField struct {
+	field    string
+	toCursor func(*PoolProperties) Cursor
+}
+
+// PoolPropertiesOrder defines the ordering of PoolProperties.
+type PoolPropertiesOrder struct {
+	Direction OrderDirection            `json:"direction"`
+	Field     *PoolPropertiesOrderField `json:"field"`
+}
+
+// DefaultPoolPropertiesOrder is the default ordering of PoolProperties.
+var DefaultPoolPropertiesOrder = &PoolPropertiesOrder{
+	Direction: OrderDirectionAsc,
+	Field: &PoolPropertiesOrderField{
+		field: poolproperties.FieldID,
+		toCursor: func(pp *PoolProperties) Cursor {
+			return Cursor{ID: pp.ID}
 		},
 	},
 }

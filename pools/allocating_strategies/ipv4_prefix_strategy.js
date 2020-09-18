@@ -1,5 +1,6 @@
 // framework managed constants
 var currentResources = []
+var resourcePoolProperties = {}
 var resourcePool = {}
 var userInput = {}
 // framework managed constants
@@ -178,9 +179,7 @@ function findNextFreeSubnetAddress(allocatedSubnet, newSubnetMask) {
 
 // main
 function invoke() {
-    let rootPrefix = resourcePool.ResourcePoolName
-
-    let rootPrefixParsed = parsePrefix(rootPrefix)
+    let rootPrefixParsed = resourcePoolProperties
     if (rootPrefixParsed == null) {
         console.error("Unable to extract root prefix from pool name: " + rootPrefix)
         return null
@@ -261,7 +260,7 @@ function invoke() {
 // For testing purposes
 function invokeWithParams(currentResourcesArg, resourcePoolArg, userInputArg) {
     currentResources = currentResourcesArg
-    resourcePool = resourcePoolArg
+    resourcePoolProperties = resourcePoolArg
     userInput = userInputArg
     return invoke()
 }

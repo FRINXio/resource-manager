@@ -22,6 +22,19 @@ func (f AllocationStrategyFunc) Mutate(ctx context.Context, m ent.Mutation) (ent
 	return f(ctx, mv)
 }
 
+// The PoolPropertiesFunc type is an adapter to allow the use of ordinary
+// function as PoolProperties mutator.
+type PoolPropertiesFunc func(context.Context, *ent.PoolPropertiesMutation) (ent.Value, error)
+
+// Mutate calls f(ctx, m).
+func (f PoolPropertiesFunc) Mutate(ctx context.Context, m ent.Mutation) (ent.Value, error) {
+	mv, ok := m.(*ent.PoolPropertiesMutation)
+	if !ok {
+		return nil, fmt.Errorf("unexpected mutation type %T. expect *ent.PoolPropertiesMutation", m)
+	}
+	return f(ctx, mv)
+}
+
 // The PropertyFunc type is an adapter to allow the use of ordinary
 // function as Property mutator.
 type PropertyFunc func(context.Context, *ent.PropertyMutation) (ent.Value, error)

@@ -14,6 +14,8 @@ type Tx struct {
 	config
 	// AllocationStrategy is the client for interacting with the AllocationStrategy builders.
 	AllocationStrategy *AllocationStrategyClient
+	// PoolProperties is the client for interacting with the PoolProperties builders.
+	PoolProperties *PoolPropertiesClient
 	// Property is the client for interacting with the Property builders.
 	Property *PropertyClient
 	// PropertyType is the client for interacting with the PropertyType builders.
@@ -162,6 +164,7 @@ func (tx *Tx) Client() *Client {
 
 func (tx *Tx) init() {
 	tx.AllocationStrategy = NewAllocationStrategyClient(tx.config)
+	tx.PoolProperties = NewPoolPropertiesClient(tx.config)
 	tx.Property = NewPropertyClient(tx.config)
 	tx.PropertyType = NewPropertyTypeClient(tx.config)
 	tx.Resource = NewResourceClient(tx.config)

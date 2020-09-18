@@ -176,9 +176,7 @@ function findNextFreeSubnetAddress(allocatedSubnet, newSubnetMask) {
 
 // main
 function invoke() {
-    let rootPrefix = resourcePool.ResourcePoolName
-
-    let rootPrefixParsed = parsePrefix(rootPrefix)
+    let rootPrefixParsed = resourcePoolProperties
     if (rootPrefixParsed == null) {
         console.error("Unable to extract root prefix from pool name: " + rootPrefix)
         return null
@@ -387,11 +385,9 @@ function prefixToStr(prefix) {
 
 // main
 function invoke() {
-    let rootPrefix = resourcePool.ResourcePoolName
-
-    let rootPrefixParsed = parsePrefix(rootPrefix)
+    let rootPrefixParsed = resourcePoolProperties
     if (rootPrefixParsed == null) {
-        console.error("Unable to extract root prefix from pool name: " + rootPrefix)
+        console.error("Unable to extract root prefix from pool name: " + resourcePoolProperties)
         return null
     }
     let rootAddressStr = rootPrefixParsed.address
@@ -401,7 +397,7 @@ function invoke() {
     let rootAddressNum = inet_aton(rootAddressStr)
 
     // unwrap and sort currentResources
-    currentResourcesUnwrapped = currentResources.map(cR => cR.Properties)
+    let currentResourcesUnwrapped = currentResources.map(cR => cR.Properties)
     let currentResourcesSet = new Set(currentResourcesUnwrapped.map(ip => ip.address))
 
     let firstPossibleAddr = 0
@@ -651,9 +647,7 @@ function findNextFreeSubnetAddress(allocatedSubnet, newSubnetMask) {
 
 // main
 function invoke() {
-    let rootPrefix = resourcePool.ResourcePoolName
-
-    let rootPrefixParsed = parsePrefix(rootPrefix)
+    let rootPrefixParsed = resourcePoolProperties
     if (rootPrefixParsed == null) {
         console.error("Unable to extract root prefix from pool name: " + rootPrefix)
         return null
@@ -688,7 +682,7 @@ function invoke() {
     let {newSubnetMask, newSubnetCapacity} = calculateDesiredSubnetMask()
 
     // unwrap and sort currentResources
-    currentResourcesUnwrapped = currentResources.map(cR => cR.Properties)
+    let currentResourcesUnwrapped = currentResources.map(cR => cR.Properties)
     currentResourcesUnwrapped.sort(comparePrefix)
 
     let possibleSubnetNum = rootAddressNum
@@ -895,9 +889,7 @@ function logStats(newlyAllocatedAddr, parentRange, isSubnet = false, allocatedAd
 
 // main
 function invoke() {
-    let rootPrefix = resourcePool.ResourcePoolName
-
-    let rootPrefixParsed = parsePrefix(rootPrefix)
+    let rootPrefixParsed = resourcePoolProperties
     if (rootPrefixParsed == null) {
         console.error("Unable to extract root prefix from pool name: " + rootPrefix)
         return null
@@ -909,7 +901,7 @@ function invoke() {
     let rootAddressNum = inet_aton(rootAddressStr)
 
     // unwrap and sort currentResources
-    currentResourcesUnwrapped = currentResources.map(cR => cR.Properties)
+    let currentResourcesUnwrapped = currentResources.map(cR => cR.Properties)
     let currentResourcesSet = new Set(currentResourcesUnwrapped.map(ip => ip.address))
 
     let firstPossibleAddr
@@ -1109,7 +1101,7 @@ function logStats(newlyAllocatedRd, allocatedRds = [], level = "log") {
 }
 
 function invoke() {
-    currentResourcesUnwrapped = currentResources.map(cR => cR.Properties)
+    let currentResourcesUnwrapped = currentResources.map(cR => cR.Properties)
     let currentResourcesSet = new Set(currentResourcesUnwrapped.map(ip => ip.rd))
 
     let is2ByteAssignedNumber = false
@@ -1241,40 +1233,6 @@ VLAN range allocation strategy
 - Allocates previously freed resources
  */
 
-const rangeRegx = /\[([0-9]+)-([0-9]+)\]/
-
-const VLAN_MIN = 0
-const VLAN_MAX = 4095
-
-function parse_range(str) {
-    let res = rangeRegx.exec(str)
-    if (res == null) {
-        console.error("VLAN range cannot be parsed from pool name: " + str + ". Not matching pattern: " + rangeRegx)
-        return null
-    }
-
-    from = parseInt(res[1])
-    to = parseInt(res[2])
-    if (from < VLAN_MIN || from >= VLAN_MAX) {
-        console.error("VLAN range invalid, from end is: " + from)
-        return null
-    }
-    if (to <= VLAN_MIN || to > VLAN_MAX) {
-        console.error("VLAN range invalid, to end is: " + from)
-        return null
-    }
-
-    if (from >= to) {
-        console.error("VLAN range invalid, from end: " + from + " and to end: " + to + " do not form a range")
-        return null
-    }
-
-    return {
-        "from": from,
-        "to": to
-    }
-}
-
 function rangeCapacity(vlanRange) {
     return vlanRange.to - vlanRange.from + 1
 }
@@ -1325,11 +1283,10 @@ function logStats(newlyAllocatedRange, parentRange, allocatedRanges = [], level 
 }
 
 function invoke() {
-    let parentRangeStr = resourcePool.ResourcePoolName
-    let parentRange = parse_range(parentRangeStr)
+    let parentRange = resourcePoolProperties
     if (parentRange == null) {
         console.error("Unable to allocate VLAN range" +
-            ". Unable to extract parent vlan range from pool name: " + parentRangeStr)
+            ". Unable to extract parent vlan range from pool name: " + resourcePoolProperties)
         return null
     }
 
@@ -1346,7 +1303,7 @@ function invoke() {
     }
 
     // unwrap currentResources
-    currentResourcesUnwrapped = currentResources.map(cR => cR.Properties)
+    let currentResourcesUnwrapped = currentResources.map(cR => cR.Properties)
     // make sure to sort ranges
     currentResourcesUnwrapped.sort(compareVlanRanges)
 
@@ -1412,40 +1369,6 @@ VLAN allocation strategy
 - Allocates previously freed resources
  */
 
-const rangeRegx = /\[([0-9]+)-([0-9]+)\]/
-
-const VLAN_MIN = 0
-const VLAN_MAX = 4095
-
-function parse_range(str) {
-    let res = rangeRegx.exec(str)
-    if (res == null) {
-        console.error("VLAN range cannot be parsed from pool name: " + str + ". Not matching pattern: " + rangeRegx)
-        return null
-    }
-
-    from = parseInt(res[1])
-    to = parseInt(res[2])
-    if (from < VLAN_MIN || from >= VLAN_MAX) {
-        console.error("VLAN range invalid, from end is: " + from)
-        return null
-    }
-    if (to <= VLAN_MIN || to > VLAN_MAX) {
-        console.error("VLAN range invalid, to end is: " + from)
-        return null
-    }
-
-    if (from >= to) {
-        console.error("VLAN range invalid, from end: " + from + " and to end: " + to + " do not form a range")
-        return null
-    }
-
-    return {
-        "from": from,
-        "to": to
-    }
-}
-
 function rangeCapacity(vlanRange) {
     return vlanRange.to - vlanRange.from + 1
 }
@@ -1473,16 +1396,15 @@ function logStats(newlyAllocatedVlan, parentRange, allocatedVlans = [], level = 
 }
 
 function invoke() {
-    let parentRangeStr = resourcePool.ResourcePoolName
-    let parentRange = parse_range(parentRangeStr)
+    let parentRange = resourcePoolProperties;
     if (parentRange == null) {
         console.error("Unable to allocate VLAN" +
-            ". Unable to extract parent vlan range from pool name: " + parentRangeStr)
+            ". Unable to extract parent vlan range from pool name: " + resourcePoolProperties)
         return null
     }
 
     // unwrap currentResources
-    currentResourcesUnwrapped = currentResources.map(cR => cR.Properties)
+    let currentResourcesUnwrapped = currentResources.map(cR => cR.Properties)
     let currentResourcesSet = new Set(currentResourcesUnwrapped.map(vlan => vlan.vlan))
 
     for (let i = parentRange.from; i <= parentRange.to; i++) {

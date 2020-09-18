@@ -8,6 +8,7 @@ import (
 
 	"github.com/facebook/ent/dialect/sql"
 	"github.com/net-auto/resourceManager/ent/allocationstrategy"
+	"github.com/net-auto/resourceManager/ent/poolproperties"
 	"github.com/net-auto/resourceManager/ent/resource"
 	"github.com/net-auto/resourceManager/ent/resourcepool"
 	"github.com/net-auto/resourceManager/ent/resourcetype"
@@ -42,13 +43,15 @@ type ResourcePoolEdges struct {
 	Tags []*Tag
 	// Claims holds the value of the claims edge.
 	Claims []*Resource
+	// PoolProperties holds the value of the poolProperties edge.
+	PoolProperties *PoolProperties
 	// AllocationStrategy holds the value of the allocation_strategy edge.
 	AllocationStrategy *AllocationStrategy
 	// ParentResource holds the value of the parent_resource edge.
 	ParentResource *Resource
 	// loadedTypes holds the information for reporting if a
 	// type was loaded (or requested) in eager-loading or not.
-	loadedTypes [5]bool
+	loadedTypes [6]bool
 }
 
 // ResourceTypeOrErr returns the ResourceType value or an error if the edge
@@ -83,10 +86,24 @@ func (e ResourcePoolEdges) ClaimsOrErr() ([]*Resource, error) {
 	return nil, &NotLoadedError{edge: "claims"}
 }
 
+// PoolPropertiesOrErr returns the PoolProperties value or an error if the edge
+// was not loaded in eager-loading, or loaded but was not found.
+func (e ResourcePoolEdges) PoolPropertiesOrErr() (*PoolProperties, error) {
+	if e.loadedTypes[3] {
+		if e.PoolProperties == nil {
+			// The edge poolProperties was loaded in eager-loading,
+			// but was not found.
+			return nil, &NotFoundError{label: poolproperties.Label}
+		}
+		return e.PoolProperties, nil
+	}
+	return nil, &NotLoadedError{edge: "poolProperties"}
+}
+
 // AllocationStrategyOrErr returns the AllocationStrategy value or an error if the edge
 // was not loaded in eager-loading, or loaded but was not found.
 func (e ResourcePoolEdges) AllocationStrategyOrErr() (*AllocationStrategy, error) {
-	if e.loadedTypes[3] {
+	if e.loadedTypes[4] {
 		if e.AllocationStrategy == nil {
 			// The edge allocation_strategy was loaded in eager-loading,
 			// but was not found.
@@ -100,7 +117,7 @@ func (e ResourcePoolEdges) AllocationStrategyOrErr() (*AllocationStrategy, error
 // ParentResourceOrErr returns the ParentResource value or an error if the edge
 // was not loaded in eager-loading, or loaded but was not found.
 func (e ResourcePoolEdges) ParentResourceOrErr() (*Resource, error) {
-	if e.loadedTypes[4] {
+	if e.loadedTypes[5] {
 		if e.ParentResource == nil {
 			// The edge parent_resource was loaded in eager-loading,
 			// but was not found.
@@ -201,6 +218,11 @@ func (rp *ResourcePool) QueryTags() *TagQuery {
 // QueryClaims queries the claims edge of the ResourcePool.
 func (rp *ResourcePool) QueryClaims() *ResourceQuery {
 	return (&ResourcePoolClient{config: rp.config}).QueryClaims(rp)
+}
+
+// QueryPoolProperties queries the poolProperties edge of the ResourcePool.
+func (rp *ResourcePool) QueryPoolProperties() *PoolPropertiesQuery {
+	return (&ResourcePoolClient{config: rp.config}).QueryPoolProperties(rp)
 }
 
 // QueryAllocationStrategy queries the allocation_strategy edge of the ResourcePool.

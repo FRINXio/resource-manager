@@ -53,6 +53,7 @@ var Columns = []string{
 
 // ForeignKeys holds the SQL foreign-keys that are owned by the Property type.
 var ForeignKeys = []string{
+	"pool_properties_properties",
 	"property_type",
 	"resource_properties",
 }

@@ -1,6 +1,6 @@
 // framework managed constants
 var currentResources = []
-var resourcePool = {}
+var resourcePoolProperties = {}
 var userInput = {}
 // framework managed constants
 
@@ -134,11 +134,9 @@ function prefixToStr(prefix) {
 
 // main
 function invoke() {
-    let rootPrefix = resourcePool.ResourcePoolName
-
-    let rootPrefixParsed = parsePrefix(rootPrefix)
+    let rootPrefixParsed = resourcePoolProperties
     if (rootPrefixParsed == null) {
-        console.error("Unable to extract root prefix from pool name: " + rootPrefix)
+        console.error("Unable to extract root prefix from pool name: " + resourcePoolProperties)
         return null
     }
     let rootAddressStr = rootPrefixParsed.address
@@ -148,7 +146,7 @@ function invoke() {
     let rootAddressNum = inet_aton(rootAddressStr)
 
     // unwrap and sort currentResources
-    currentResourcesUnwrapped = currentResources.map(cR => cR.Properties)
+    let currentResourcesUnwrapped = currentResources.map(cR => cR.Properties)
     let currentResourcesSet = new Set(currentResourcesUnwrapped.map(ip => ip.address))
 
     let firstPossibleAddr = 0
@@ -184,10 +182,11 @@ function invoke() {
 // For testing purposes
 function invokeWithParams(currentResourcesArg, resourcePoolArg, userInputArg) {
     currentResources = currentResourcesArg
-    resourcePool = resourcePoolArg
+    resourcePoolProperties = resourcePoolArg
     userInput = userInputArg
     return invoke()
 }
+
 exports.invoke = invoke
 exports.invokeWithParams = invokeWithParams
 exports.parsePrefix = parsePrefix

@@ -14,6 +14,7 @@ import (
 	"github.com/facebook/ent/dialect/sql/schema"
 	"github.com/hashicorp/go-multierror"
 	"github.com/net-auto/resourceManager/ent/allocationstrategy"
+	"github.com/net-auto/resourceManager/ent/poolproperties"
 	"github.com/net-auto/resourceManager/ent/property"
 	"github.com/net-auto/resourceManager/ent/propertytype"
 	"github.com/net-auto/resourceManager/ent/resource"
@@ -108,6 +109,52 @@ func (as *AllocationStrategy) Node(ctx context.Context) (node *Node, err error) 
 }
 
 func (AllocationStrategy) IsNode() {}
+
+func (pp *PoolProperties) Node(ctx context.Context) (node *Node, err error) {
+	node = &Node{
+		ID:     pp.ID,
+		Type:   "PoolProperties",
+		Fields: make([]*Field, 0),
+		Edges:  make([]*Edge, 3),
+	}
+	var ids []int
+	ids, err = pp.QueryPool().
+		Select(resourcepool.FieldID).
+		Ints(ctx)
+	if err != nil {
+		return nil, err
+	}
+	node.Edges[0] = &Edge{
+		IDs:  ids,
+		Type: "ResourcePool",
+		Name: "pool",
+	}
+	ids, err = pp.QueryResourceType().
+		Select(resourcetype.FieldID).
+		Ints(ctx)
+	if err != nil {
+		return nil, err
+	}
+	node.Edges[1] = &Edge{
+		IDs:  ids,
+		Type: "ResourceType",
+		Name: "resourceType",
+	}
+	ids, err = pp.QueryProperties().
+		Select(property.FieldID).
+		Ints(ctx)
+	if err != nil {
+		return nil, err
+	}
+	node.Edges[2] = &Edge{
+		IDs:  ids,
+		Type: "Property",
+		Name: "properties",
+	}
+	return node, nil
+}
+
+func (PoolProperties) IsNode() {}
 
 func (pr *Property) Node(ctx context.Context) (node *Node, err error) {
 	node = &Node{
@@ -446,7 +493,7 @@ func (rp *ResourcePool) Node(ctx context.Context) (node *Node, err error) {
 		ID:     rp.ID,
 		Type:   "ResourcePool",
 		Fields: make([]*Field, 4),
-		Edges:  make([]*Edge, 5),
+		Edges:  make([]*Edge, 6),
 	}
 	var buf []byte
 	if buf, err = json.Marshal(rp.Name); err != nil {
@@ -515,13 +562,24 @@ func (rp *ResourcePool) Node(ctx context.Context) (node *Node, err error) {
 		Type: "Resource",
 		Name: "claims",
 	}
+	ids, err = rp.QueryPoolProperties().
+		Select(poolproperties.FieldID).
+		Ints(ctx)
+	if err != nil {
+		return nil, err
+	}
+	node.Edges[3] = &Edge{
+		IDs:  ids,
+		Type: "PoolProperties",
+		Name: "poolProperties",
+	}
 	ids, err = rp.QueryAllocationStrategy().
 		Select(allocationstrategy.FieldID).
 		Ints(ctx)
 	if err != nil {
 		return nil, err
 	}
-	node.Edges[3] = &Edge{
+	node.Edges[4] = &Edge{
 		IDs:  ids,
 		Type: "AllocationStrategy",
 		Name: "allocation_strategy",
@@ -532,7 +590,7 @@ func (rp *ResourcePool) Node(ctx context.Context) (node *Node, err error) {
 	if err != nil {
 		return nil, err
 	}
-	node.Edges[4] = &Edge{
+	node.Edges[5] = &Edge{
 		IDs:  ids,
 		Type: "Resource",
 		Name: "parent_resource",
@@ -658,6 +716,15 @@ func (c *Client) noder(ctx context.Context, tbl string, id int) (Noder, error) {
 		n, err := c.AllocationStrategy.Query().
 			Where(allocationstrategy.ID(id)).
 			CollectFields(ctx, "AllocationStrategy").
+			Only(ctx)
+		if err != nil {
+			return nil, err
+		}
+		return n, nil
+	case poolproperties.Table:
+		n, err := c.PoolProperties.Query().
+			Where(poolproperties.ID(id)).
+			CollectFields(ctx, "PoolProperties").
 			Only(ctx)
 		if err != nil {
 			return nil, err

@@ -21,6 +21,30 @@ func (as *AllocationStrategyQuery) collectField(ctx *graphql.OperationContext, f
 }
 
 // CollectFields tells the query-builder to eagerly load connected nodes by resolver context.
+func (pp *PoolPropertiesQuery) CollectFields(ctx context.Context, satisfies ...string) *PoolPropertiesQuery {
+	if fc := graphql.GetFieldContext(ctx); fc != nil {
+		pp = pp.collectField(graphql.GetOperationContext(ctx), fc.Field, satisfies...)
+	}
+	return pp
+}
+
+func (pp *PoolPropertiesQuery) collectField(ctx *graphql.OperationContext, field graphql.CollectedField, satisfies ...string) *PoolPropertiesQuery {
+	for _, field := range graphql.CollectFields(ctx, field.Selections, satisfies) {
+		switch field.Name {
+		case "properties":
+			pp = pp.WithProperties(func(query *PropertyQuery) {
+				query.collectField(ctx, field)
+			})
+		case "resourceType":
+			pp = pp.WithResourceType(func(query *ResourceTypeQuery) {
+				query.collectField(ctx, field)
+			})
+		}
+	}
+	return pp
+}
+
+// CollectFields tells the query-builder to eagerly load connected nodes by resolver context.
 func (pr *PropertyQuery) CollectFields(ctx context.Context, satisfies ...string) *PropertyQuery {
 	if fc := graphql.GetFieldContext(ctx); fc != nil {
 		pr = pr.collectField(graphql.GetOperationContext(ctx), fc.Field, satisfies...)
@@ -93,6 +117,10 @@ func (rp *ResourcePoolQuery) collectField(ctx *graphql.OperationContext, field g
 			})
 		case "claims":
 			rp = rp.WithClaims(func(query *ResourceQuery) {
+				query.collectField(ctx, field)
+			})
+		case "poolProperties":
+			rp = rp.WithPoolProperties(func(query *PoolPropertiesQuery) {
 				query.collectField(ctx, field)
 			})
 		}

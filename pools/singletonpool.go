@@ -49,6 +49,11 @@ func (pool SingletonPool) FreeResource(raw RawResourceProps) error {
 	return nil
 }
 
+// TODO add capacity implementation
+func (pool SingletonPool) Capacity() (int, error) {
+	return 1, nil
+}
+
 // QueryResource returns always the same resource
 func (pool SingletonPool) QueryResource(raw RawResourceProps) (*ent.Resource, error) {
 	return pool.QueryResource(raw)

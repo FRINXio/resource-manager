@@ -54,7 +54,7 @@ function logStats(newlyAllocatedRd, allocatedRds = [], level = "log") {
 }
 
 function invoke() {
-    currentResourcesUnwrapped = currentResources.map(cR => cR.Properties)
+    let currentResourcesUnwrapped = currentResources.map(cR => cR.Properties)
     let currentResourcesSet = new Set(currentResourcesUnwrapped.map(ip => ip.rd))
 
     let is2ByteAssignedNumber = false

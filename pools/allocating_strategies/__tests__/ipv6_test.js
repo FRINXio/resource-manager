@@ -4,7 +4,7 @@ test("allocate all addresses /120 ipv6", () => {
     addresses = []
     for (let i = 1; i < 255; i++) {
         let address = strat.invokeWithParams(addresses,
-            {'ResourcePoolName': "dddd::/120"},
+            { 'prefix': 120, 'address': "dddd::"},
             {"subnet": true})
         addresses.push(addr(address.address))
         expect(address).toStrictEqual(addr("dddd::" + i.toString(16)).Properties)
@@ -12,25 +12,25 @@ test("allocate all addresses /120 ipv6", () => {
 
     // If treated as subnet, prefix is exhausted
     expect(strat.invokeWithParams(addresses,
-        {'ResourcePoolName': "dddd::/120"},
+        { 'prefix': 120, 'address': "dddd::"},
         {"subnet": true})
     ).toStrictEqual(null)
 
     // If treated as a pool, there are still 2 more addresses left
     expect(strat.invokeWithParams(addresses,
-        {'ResourcePoolName': "dddd::/120"},
+        { 'prefix': 120, 'address': "dddd::"},
         {})
     ).toStrictEqual(addr("dddd::").Properties)
     addresses.push(addr("dddd::"))
 
     expect(strat.invokeWithParams(addresses,
-        {'ResourcePoolName': "dddd::/120"},
+        { 'prefix': 120, 'address': "dddd::"},
         {})
     ).toStrictEqual(addr("dddd::ff").Properties)
     addresses.push(addr("dddd::ff"))
 
     expect(strat.invokeWithParams(addresses,
-        {'ResourcePoolName': "dddd::/120"},
+        { 'prefix': 120, 'address': "dddd::"},
         {})
     ).toStrictEqual(null)
 })
@@ -48,7 +48,7 @@ test("allocate all addresses /117 ipv6", () => {
                 continue
             }
             let address = strat.invokeWithParams(addresses,
-                {'ResourcePoolName': "dddd::/115"},
+                { 'prefix': 115, 'address': "dddd::"},
                 {"subnet": true})
             addresses.push(addr(address.address))
 
@@ -70,25 +70,25 @@ test("allocate all addresses /117 ipv6", () => {
 
     // If treated as subnet, prefix is exhausted
     expect(strat.invokeWithParams(addresses,
-        {'ResourcePoolName': "dddd::/117"},
+        { 'prefix': 117, 'address': "dddd::"},
         {"subnet": true})
     ).toStrictEqual(null)
 
     // If treated as a pool, there are still 2 more addresses left
     expect(strat.invokeWithParams(addresses,
-        {'ResourcePoolName': "dddd::/117"},
+        { 'prefix': 117, 'address': "dddd::"},
         {})
     ).toStrictEqual(addr("dddd::").Properties)
     addresses.push(addr("dddd::"))
 
     expect(strat.invokeWithParams(addresses,
-        {'ResourcePoolName': "dddd::/117"},
+        { 'prefix': 117, 'address': "dddd::"},
         {})
     ).toStrictEqual(addr("dddd::7ff").Properties)
     addresses.push(addr("dddd::7ff"))
 
     expect(strat.invokeWithParams(addresses,
-        {'ResourcePoolName': "dddd::/117"},
+        { 'prefix': 117, 'address': "dddd::"},
         {})
     ).toStrictEqual(null)
 })
@@ -96,7 +96,7 @@ test("allocate all addresses /117 ipv6", () => {
 test("allocate ipv6 at start with existing resources", () => {
     let subnet = strat.invokeWithParams(
         [addr("dead::2")],
-        {'ResourcePoolName': "dead::/24"},
+        { 'prefix': 24, 'address': "dead::"},
         {"subnet": true});
     expect(subnet)
         .toStrictEqual(addr("dead::1").Properties)

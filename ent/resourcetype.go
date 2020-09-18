@@ -19,7 +19,8 @@ type ResourceType struct {
 	Name string `json:"name,omitempty"`
 	// Edges holds the relations/edges for other nodes in the graph.
 	// The values are being populated by the ResourceTypeQuery when eager-loading is set.
-	Edges ResourceTypeEdges `json:"edges"`
+	Edges                         ResourceTypeEdges `json:"edges"`
+	pool_properties_resource_type *int
 }
 
 // ResourceTypeEdges holds the relations/edges for other nodes in the graph.
@@ -59,6 +60,13 @@ func (*ResourceType) scanValues() []interface{} {
 	}
 }
 
+// fkValues returns the types for scanning foreign-keys values from sql.Rows.
+func (*ResourceType) fkValues() []interface{} {
+	return []interface{}{
+		&sql.NullInt64{}, // pool_properties_resource_type
+	}
+}
+
 // assignValues assigns the values that were returned from sql.Rows (after scanning)
 // to the ResourceType fields.
 func (rt *ResourceType) assignValues(values ...interface{}) error {
@@ -75,6 +83,15 @@ func (rt *ResourceType) assignValues(values ...interface{}) error {
 		return fmt.Errorf("unexpected type %T for field name", values[0])
 	} else if value.Valid {
 		rt.Name = value.String
+	}
+	values = values[1:]
+	if len(values) == len(resourcetype.ForeignKeys) {
+		if value, ok := values[0].(*sql.NullInt64); !ok {
+			return fmt.Errorf("unexpected type %T for edge-field pool_properties_resource_type", value)
+		} else if value.Valid {
+			rt.pool_properties_resource_type = new(int)
+			*rt.pool_properties_resource_type = int(value.Int64)
+		}
 	}
 	return nil
 }

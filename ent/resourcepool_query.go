@@ -13,6 +13,7 @@ import (
 	"github.com/facebook/ent/dialect/sql/sqlgraph"
 	"github.com/facebook/ent/schema/field"
 	"github.com/net-auto/resourceManager/ent/allocationstrategy"
+	"github.com/net-auto/resourceManager/ent/poolproperties"
 	"github.com/net-auto/resourceManager/ent/predicate"
 	"github.com/net-auto/resourceManager/ent/resource"
 	"github.com/net-auto/resourceManager/ent/resourcepool"
@@ -32,6 +33,7 @@ type ResourcePoolQuery struct {
 	withResourceType       *ResourceTypeQuery
 	withTags               *TagQuery
 	withClaims             *ResourceQuery
+	withPoolProperties     *PoolPropertiesQuery
 	withAllocationStrategy *AllocationStrategyQuery
 	withParentResource     *ResourceQuery
 	withFKs                bool
@@ -111,6 +113,24 @@ func (rpq *ResourcePoolQuery) QueryClaims() *ResourceQuery {
 			sqlgraph.From(resourcepool.Table, resourcepool.FieldID, rpq.sqlQuery()),
 			sqlgraph.To(resource.Table, resource.FieldID),
 			sqlgraph.Edge(sqlgraph.O2M, false, resourcepool.ClaimsTable, resourcepool.ClaimsColumn),
+		)
+		fromU = sqlgraph.SetNeighbors(rpq.driver.Dialect(), step)
+		return fromU, nil
+	}
+	return query
+}
+
+// QueryPoolProperties chains the current query on the poolProperties edge.
+func (rpq *ResourcePoolQuery) QueryPoolProperties() *PoolPropertiesQuery {
+	query := &PoolPropertiesQuery{config: rpq.config}
+	query.path = func(ctx context.Context) (fromU *sql.Selector, err error) {
+		if err := rpq.prepareQuery(ctx); err != nil {
+			return nil, err
+		}
+		step := sqlgraph.NewStep(
+			sqlgraph.From(resourcepool.Table, resourcepool.FieldID, rpq.sqlQuery()),
+			sqlgraph.To(poolproperties.Table, poolproperties.FieldID),
+			sqlgraph.Edge(sqlgraph.O2O, false, resourcepool.PoolPropertiesTable, resourcepool.PoolPropertiesColumn),
 		)
 		fromU = sqlgraph.SetNeighbors(rpq.driver.Dialect(), step)
 		return fromU, nil
@@ -366,6 +386,17 @@ func (rpq *ResourcePoolQuery) WithClaims(opts ...func(*ResourceQuery)) *Resource
 	return rpq
 }
 
+//  WithPoolProperties tells the query-builder to eager-loads the nodes that are connected to
+// the "poolProperties" edge. The optional arguments used to configure the query builder of the edge.
+func (rpq *ResourcePoolQuery) WithPoolProperties(opts ...func(*PoolPropertiesQuery)) *ResourcePoolQuery {
+	query := &PoolPropertiesQuery{config: rpq.config}
+	for _, opt := range opts {
+		opt(query)
+	}
+	rpq.withPoolProperties = query
+	return rpq
+}
+
 //  WithAllocationStrategy tells the query-builder to eager-loads the nodes that are connected to
 // the "allocation_strategy" edge. The optional arguments used to configure the query builder of the edge.
 func (rpq *ResourcePoolQuery) WithAllocationStrategy(opts ...func(*AllocationStrategyQuery)) *ResourcePoolQuery {
@@ -455,10 +486,11 @@ func (rpq *ResourcePoolQuery) sqlAll(ctx context.Context) ([]*ResourcePool, erro
 		nodes       = []*ResourcePool{}
 		withFKs     = rpq.withFKs
 		_spec       = rpq.querySpec()
-		loadedTypes = [5]bool{
+		loadedTypes = [6]bool{
 			rpq.withResourceType != nil,
 			rpq.withTags != nil,
 			rpq.withClaims != nil,
+			rpq.withPoolProperties != nil,
 			rpq.withAllocationStrategy != nil,
 			rpq.withParentResource != nil,
 		}
@@ -606,6 +638,34 @@ func (rpq *ResourcePoolQuery) sqlAll(ctx context.Context) ([]*ResourcePool, erro
 				return nil, fmt.Errorf(`unexpected foreign-key "resource_pool_claims" returned %v for node %v`, *fk, n.ID)
 			}
 			node.Edges.Claims = append(node.Edges.Claims, n)
+		}
+	}
+
+	if query := rpq.withPoolProperties; query != nil {
+		fks := make([]driver.Value, 0, len(nodes))
+		nodeids := make(map[int]*ResourcePool)
+		for i := range nodes {
+			fks = append(fks, nodes[i].ID)
+			nodeids[nodes[i].ID] = nodes[i]
+		}
+		query.withFKs = true
+		query.Where(predicate.PoolProperties(func(s *sql.Selector) {
+			s.Where(sql.InValues(resourcepool.PoolPropertiesColumn, fks...))
+		}))
+		neighbors, err := query.All(ctx)
+		if err != nil {
+			return nil, err
+		}
+		for _, n := range neighbors {
+			fk := n.resource_pool_pool_properties
+			if fk == nil {
+				return nil, fmt.Errorf(`foreign-key "resource_pool_pool_properties" is nil for node %v`, n.ID)
+			}
+			node, ok := nodeids[*fk]
+			if !ok {
+				return nil, fmt.Errorf(`unexpected foreign-key "resource_pool_pool_properties" returned %v for node %v`, *fk, n.ID)
+			}
+			node.Edges.PoolProperties = n
 		}
 	}
 

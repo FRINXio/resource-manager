@@ -44,6 +44,28 @@ query queryResourceTypes {
     }
 }
 
+# Root pool
+mutation CreateRootPool_allocating {
+    CreateAllocatingPool(input: {
+        resourceTypeId: 25769803779,
+        poolName: "vlantest",
+        allocationStrategyId: 1,
+        poolDealocationSafetyPeriod: 0,
+        poolPropertyTypes: {
+            aa: "int",
+            bb: "string"
+        },
+        poolProperties: [{aa: 13, bb: "test123bb"},]
+    }
+    ){
+        pool {
+            id
+        }
+    }
+}
+
+
+
 mutation deleteResourceTypes {
     DeleteResourceType (input: {resourceTypeId: 21474836481}) {
         resourceTypeId

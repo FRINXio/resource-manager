@@ -29,6 +29,7 @@ type ResourceTypeQuery struct {
 	// eager-loading edges.
 	withPropertyTypes *PropertyTypeQuery
 	withPools         *ResourcePoolQuery
+	withFKs           bool
 	// intermediate query (i.e. traversal path).
 	sql  *sql.Selector
 	path func(context.Context) (*sql.Selector, error)
@@ -360,16 +361,23 @@ func (rtq *ResourceTypeQuery) prepareQuery(ctx context.Context) error {
 func (rtq *ResourceTypeQuery) sqlAll(ctx context.Context) ([]*ResourceType, error) {
 	var (
 		nodes       = []*ResourceType{}
+		withFKs     = rtq.withFKs
 		_spec       = rtq.querySpec()
 		loadedTypes = [2]bool{
 			rtq.withPropertyTypes != nil,
 			rtq.withPools != nil,
 		}
 	)
+	if withFKs {
+		_spec.Node.Columns = append(_spec.Node.Columns, resourcetype.ForeignKeys...)
+	}
 	_spec.ScanValues = func() []interface{} {
 		node := &ResourceType{config: rtq.config}
 		nodes = append(nodes, node)
 		values := node.scanValues()
+		if withFKs {
+			values = append(values, node.fkValues()...)
+		}
 		return values
 	}
 	_spec.Assign = func(values ...interface{}) error {

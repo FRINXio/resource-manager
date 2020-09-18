@@ -26,8 +26,7 @@ type ResourceType struct {
 func (ResourceType) Fields() []ent.Field {
 	return []ent.Field{
 		field.String("name").
-			NotEmpty().
-			Unique(),
+			NotEmpty(),
 	}
 }
 
@@ -135,6 +134,9 @@ func (ResourcePool) Edges() []ent.Edge {
 			Ref("pools"),
 		edge.To("claims", Resource.Type).
 			Annotations(entgql.Bind()),
+		edge.To("poolProperties", PoolProperties.Type).
+			Unique().
+			Annotations(entgql.Bind()),
 		edge.To("allocation_strategy", AllocationStrategy.Type).
 			Unique().
 			Annotations(entgql.Bind()),
@@ -172,6 +174,24 @@ func (Resource) Edges() []ent.Edge {
 		edge.To("nested_pool", ResourcePool.Type).
 			Comment("pool hierarchies can use this link between resoruce and pool").
 			Unique().
+			Annotations(entgql.Bind()),
+	}
+}
+
+// PoolProperties hold information on the current pool
+type PoolProperties struct {
+	ent.Schema
+}
+
+// Edges of PoolProperties
+func (PoolProperties) Edges() []ent.Edge {
+	return []ent.Edge{
+		edge.From("pool", ResourcePool.Type).
+			Ref("poolProperties").
+			Unique(),
+		edge.To("resourceType", ResourceType.Type).
+			Annotations(entgql.Bind()),
+		edge.To("properties", Property.Type).
 			Annotations(entgql.Bind()),
 	}
 }

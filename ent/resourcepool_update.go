@@ -10,6 +10,7 @@ import (
 	"github.com/facebook/ent/dialect/sql/sqlgraph"
 	"github.com/facebook/ent/schema/field"
 	"github.com/net-auto/resourceManager/ent/allocationstrategy"
+	"github.com/net-auto/resourceManager/ent/poolproperties"
 	"github.com/net-auto/resourceManager/ent/predicate"
 	"github.com/net-auto/resourceManager/ent/resource"
 	"github.com/net-auto/resourceManager/ent/resourcepool"
@@ -133,6 +134,25 @@ func (rpu *ResourcePoolUpdate) AddClaims(r ...*Resource) *ResourcePoolUpdate {
 	return rpu.AddClaimIDs(ids...)
 }
 
+// SetPoolPropertiesID sets the poolProperties edge to PoolProperties by id.
+func (rpu *ResourcePoolUpdate) SetPoolPropertiesID(id int) *ResourcePoolUpdate {
+	rpu.mutation.SetPoolPropertiesID(id)
+	return rpu
+}
+
+// SetNillablePoolPropertiesID sets the poolProperties edge to PoolProperties by id if the given value is not nil.
+func (rpu *ResourcePoolUpdate) SetNillablePoolPropertiesID(id *int) *ResourcePoolUpdate {
+	if id != nil {
+		rpu = rpu.SetPoolPropertiesID(*id)
+	}
+	return rpu
+}
+
+// SetPoolProperties sets the poolProperties edge to PoolProperties.
+func (rpu *ResourcePoolUpdate) SetPoolProperties(p *PoolProperties) *ResourcePoolUpdate {
+	return rpu.SetPoolPropertiesID(p.ID)
+}
+
 // SetAllocationStrategyID sets the allocation_strategy edge to AllocationStrategy by id.
 func (rpu *ResourcePoolUpdate) SetAllocationStrategyID(id int) *ResourcePoolUpdate {
 	rpu.mutation.SetAllocationStrategyID(id)
@@ -222,6 +242,12 @@ func (rpu *ResourcePoolUpdate) RemoveClaims(r ...*Resource) *ResourcePoolUpdate 
 		ids[i] = r[i].ID
 	}
 	return rpu.RemoveClaimIDs(ids...)
+}
+
+// ClearPoolProperties clears the "poolProperties" edge to type PoolProperties.
+func (rpu *ResourcePoolUpdate) ClearPoolProperties() *ResourcePoolUpdate {
+	rpu.mutation.ClearPoolProperties()
+	return rpu
 }
 
 // ClearAllocationStrategy clears the "allocation_strategy" edge to type AllocationStrategy.
@@ -500,6 +526,41 @@ func (rpu *ResourcePoolUpdate) sqlSave(ctx context.Context) (n int, err error) {
 		}
 		_spec.Edges.Add = append(_spec.Edges.Add, edge)
 	}
+	if rpu.mutation.PoolPropertiesCleared() {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2O,
+			Inverse: false,
+			Table:   resourcepool.PoolPropertiesTable,
+			Columns: []string{resourcepool.PoolPropertiesColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: &sqlgraph.FieldSpec{
+					Type:   field.TypeInt,
+					Column: poolproperties.FieldID,
+				},
+			},
+		}
+		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
+	}
+	if nodes := rpu.mutation.PoolPropertiesIDs(); len(nodes) > 0 {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2O,
+			Inverse: false,
+			Table:   resourcepool.PoolPropertiesTable,
+			Columns: []string{resourcepool.PoolPropertiesColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: &sqlgraph.FieldSpec{
+					Type:   field.TypeInt,
+					Column: poolproperties.FieldID,
+				},
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges.Add = append(_spec.Edges.Add, edge)
+	}
 	if rpu.mutation.AllocationStrategyCleared() {
 		edge := &sqlgraph.EdgeSpec{
 			Rel:     sqlgraph.M2O,
@@ -690,6 +751,25 @@ func (rpuo *ResourcePoolUpdateOne) AddClaims(r ...*Resource) *ResourcePoolUpdate
 	return rpuo.AddClaimIDs(ids...)
 }
 
+// SetPoolPropertiesID sets the poolProperties edge to PoolProperties by id.
+func (rpuo *ResourcePoolUpdateOne) SetPoolPropertiesID(id int) *ResourcePoolUpdateOne {
+	rpuo.mutation.SetPoolPropertiesID(id)
+	return rpuo
+}
+
+// SetNillablePoolPropertiesID sets the poolProperties edge to PoolProperties by id if the given value is not nil.
+func (rpuo *ResourcePoolUpdateOne) SetNillablePoolPropertiesID(id *int) *ResourcePoolUpdateOne {
+	if id != nil {
+		rpuo = rpuo.SetPoolPropertiesID(*id)
+	}
+	return rpuo
+}
+
+// SetPoolProperties sets the poolProperties edge to PoolProperties.
+func (rpuo *ResourcePoolUpdateOne) SetPoolProperties(p *PoolProperties) *ResourcePoolUpdateOne {
+	return rpuo.SetPoolPropertiesID(p.ID)
+}
+
 // SetAllocationStrategyID sets the allocation_strategy edge to AllocationStrategy by id.
 func (rpuo *ResourcePoolUpdateOne) SetAllocationStrategyID(id int) *ResourcePoolUpdateOne {
 	rpuo.mutation.SetAllocationStrategyID(id)
@@ -779,6 +859,12 @@ func (rpuo *ResourcePoolUpdateOne) RemoveClaims(r ...*Resource) *ResourcePoolUpd
 		ids[i] = r[i].ID
 	}
 	return rpuo.RemoveClaimIDs(ids...)
+}
+
+// ClearPoolProperties clears the "poolProperties" edge to type PoolProperties.
+func (rpuo *ResourcePoolUpdateOne) ClearPoolProperties() *ResourcePoolUpdateOne {
+	rpuo.mutation.ClearPoolProperties()
+	return rpuo
 }
 
 // ClearAllocationStrategy clears the "allocation_strategy" edge to type AllocationStrategy.
@@ -1047,6 +1133,41 @@ func (rpuo *ResourcePoolUpdateOne) sqlSave(ctx context.Context) (rp *ResourcePoo
 				IDSpec: &sqlgraph.FieldSpec{
 					Type:   field.TypeInt,
 					Column: resource.FieldID,
+				},
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges.Add = append(_spec.Edges.Add, edge)
+	}
+	if rpuo.mutation.PoolPropertiesCleared() {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2O,
+			Inverse: false,
+			Table:   resourcepool.PoolPropertiesTable,
+			Columns: []string{resourcepool.PoolPropertiesColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: &sqlgraph.FieldSpec{
+					Type:   field.TypeInt,
+					Column: poolproperties.FieldID,
+				},
+			},
+		}
+		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
+	}
+	if nodes := rpuo.mutation.PoolPropertiesIDs(); len(nodes) > 0 {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2O,
+			Inverse: false,
+			Table:   resourcepool.PoolPropertiesTable,
+			Columns: []string{resourcepool.PoolPropertiesColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: &sqlgraph.FieldSpec{
+					Type:   field.TypeInt,
+					Column: poolproperties.FieldID,
 				},
 			},
 		}

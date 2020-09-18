@@ -112,6 +112,7 @@ input TagOr {
 }
 
 input ResourcePoolInput {
+    poolProperties: Map!
     ResourcePoolName: String!
 }
 
@@ -185,6 +186,8 @@ input CreateAllocatingPoolInput {
     description: String
     allocationStrategyId: ID!
     poolDealocationSafetyPeriod: Int!
+    poolProperties: Map!
+    poolPropertyTypes: Map!
 }
 
 type CreateAllocatingPoolPayload {

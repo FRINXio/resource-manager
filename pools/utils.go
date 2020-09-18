@@ -50,7 +50,6 @@ func PreCreateResources(ctx context.Context,
 		var err error = nil
 		var props ent.Properties
 		if props, err = ParseProps(ctx, client, resourceType, rawResourceProps); err != nil {
-			//TODO logging
 			return nil, errors.Wrapf(err, "Error parsing properties")
 		}
 

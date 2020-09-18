@@ -27,6 +27,7 @@ func (m mockInvoker) invokeJs(
 	userInput map[string]interface{},
 	resourcePool model.ResourcePoolInput,
 	currentResources []*model.ResourceInput,
+	poolPropertiesMaps map[string]interface{},
 ) (map[string]interface{}, string, error) {
 	if m.toBeReturnedError != nil {
 		return nil, "", m.toBeReturnedError
@@ -78,7 +79,7 @@ func CreateTestSetup(t *testing.T, mockInvoker mockInvoker, poolDealocationSafet
 
 	pool, _, err := newAllocatingPoolWithMetaInternal(
 		ctx, client, resType, strat, "testAllocatingPool", nil,
-		mockInvoker, poolDealocationSafetyPeriod)
+		mockInvoker, poolDealocationSafetyPeriod, nil)
 
 	if err != nil {
 		t.Fatalf("Unable to create pool %s", err)

@@ -9,6 +9,7 @@ import (
 	"time"
 
 	"github.com/net-auto/resourceManager/ent/allocationstrategy"
+	"github.com/net-auto/resourceManager/ent/poolproperties"
 	"github.com/net-auto/resourceManager/ent/property"
 	"github.com/net-auto/resourceManager/ent/propertytype"
 	"github.com/net-auto/resourceManager/ent/resource"
@@ -29,6 +30,7 @@ const (
 
 	// Node types.
 	TypeAllocationStrategy = "AllocationStrategy"
+	TypePoolProperties     = "PoolProperties"
 	TypeProperty           = "Property"
 	TypePropertyType       = "PropertyType"
 	TypeResource           = "Resource"
@@ -607,6 +609,469 @@ func (m *AllocationStrategyMutation) ResetEdge(name string) error {
 		return nil
 	}
 	return fmt.Errorf("unknown AllocationStrategy edge %s", name)
+}
+
+// PoolPropertiesMutation represents an operation that mutate the PoolPropertiesSlice
+// nodes in the graph.
+type PoolPropertiesMutation struct {
+	config
+	op                  Op
+	typ                 string
+	id                  *int
+	clearedFields       map[string]struct{}
+	pool                *int
+	clearedpool         bool
+	resourceType        map[int]struct{}
+	removedresourceType map[int]struct{}
+	clearedresourceType bool
+	properties          map[int]struct{}
+	removedproperties   map[int]struct{}
+	clearedproperties   bool
+	done                bool
+	oldValue            func(context.Context) (*PoolProperties, error)
+}
+
+var _ ent.Mutation = (*PoolPropertiesMutation)(nil)
+
+// poolpropertiesOption allows to manage the mutation configuration using functional options.
+type poolpropertiesOption func(*PoolPropertiesMutation)
+
+// newPoolPropertiesMutation creates new mutation for $n.Name.
+func newPoolPropertiesMutation(c config, op Op, opts ...poolpropertiesOption) *PoolPropertiesMutation {
+	m := &PoolPropertiesMutation{
+		config:        c,
+		op:            op,
+		typ:           TypePoolProperties,
+		clearedFields: make(map[string]struct{}),
+	}
+	for _, opt := range opts {
+		opt(m)
+	}
+	return m
+}
+
+// withPoolPropertiesID sets the id field of the mutation.
+func withPoolPropertiesID(id int) poolpropertiesOption {
+	return func(m *PoolPropertiesMutation) {
+		var (
+			err   error
+			once  sync.Once
+			value *PoolProperties
+		)
+		m.oldValue = func(ctx context.Context) (*PoolProperties, error) {
+			once.Do(func() {
+				if m.done {
+					err = fmt.Errorf("querying old values post mutation is not allowed")
+				} else {
+					value, err = m.Client().PoolProperties.Get(ctx, id)
+				}
+			})
+			return value, err
+		}
+		m.id = &id
+	}
+}
+
+// withPoolProperties sets the old PoolProperties of the mutation.
+func withPoolProperties(node *PoolProperties) poolpropertiesOption {
+	return func(m *PoolPropertiesMutation) {
+		m.oldValue = func(context.Context) (*PoolProperties, error) {
+			return node, nil
+		}
+		m.id = &node.ID
+	}
+}
+
+// Client returns a new `ent.Client` from the mutation. If the mutation was
+// executed in a transaction (ent.Tx), a transactional client is returned.
+func (m PoolPropertiesMutation) Client() *Client {
+	client := &Client{config: m.config}
+	client.init()
+	return client
+}
+
+// Tx returns an `ent.Tx` for mutations that were executed in transactions;
+// it returns an error otherwise.
+func (m PoolPropertiesMutation) Tx() (*Tx, error) {
+	if _, ok := m.driver.(*txDriver); !ok {
+		return nil, fmt.Errorf("ent: mutation is not running in a transaction")
+	}
+	tx := &Tx{config: m.config}
+	tx.init()
+	return tx, nil
+}
+
+// ID returns the id value in the mutation. Note that, the id
+// is available only if it was provided to the builder.
+func (m *PoolPropertiesMutation) ID() (id int, exists bool) {
+	if m.id == nil {
+		return
+	}
+	return *m.id, true
+}
+
+// SetPoolID sets the pool edge to ResourcePool by id.
+func (m *PoolPropertiesMutation) SetPoolID(id int) {
+	m.pool = &id
+}
+
+// ClearPool clears the pool edge to ResourcePool.
+func (m *PoolPropertiesMutation) ClearPool() {
+	m.clearedpool = true
+}
+
+// PoolCleared returns if the edge pool was cleared.
+func (m *PoolPropertiesMutation) PoolCleared() bool {
+	return m.clearedpool
+}
+
+// PoolID returns the pool id in the mutation.
+func (m *PoolPropertiesMutation) PoolID() (id int, exists bool) {
+	if m.pool != nil {
+		return *m.pool, true
+	}
+	return
+}
+
+// PoolIDs returns the pool ids in the mutation.
+// Note that ids always returns len(ids) <= 1 for unique edges, and you should use
+// PoolID instead. It exists only for internal usage by the builders.
+func (m *PoolPropertiesMutation) PoolIDs() (ids []int) {
+	if id := m.pool; id != nil {
+		ids = append(ids, *id)
+	}
+	return
+}
+
+// ResetPool reset all changes of the "pool" edge.
+func (m *PoolPropertiesMutation) ResetPool() {
+	m.pool = nil
+	m.clearedpool = false
+}
+
+// AddResourceTypeIDs adds the resourceType edge to ResourceType by ids.
+func (m *PoolPropertiesMutation) AddResourceTypeIDs(ids ...int) {
+	if m.resourceType == nil {
+		m.resourceType = make(map[int]struct{})
+	}
+	for i := range ids {
+		m.resourceType[ids[i]] = struct{}{}
+	}
+}
+
+// ClearResourceType clears the resourceType edge to ResourceType.
+func (m *PoolPropertiesMutation) ClearResourceType() {
+	m.clearedresourceType = true
+}
+
+// ResourceTypeCleared returns if the edge resourceType was cleared.
+func (m *PoolPropertiesMutation) ResourceTypeCleared() bool {
+	return m.clearedresourceType
+}
+
+// RemoveResourceTypeIDs removes the resourceType edge to ResourceType by ids.
+func (m *PoolPropertiesMutation) RemoveResourceTypeIDs(ids ...int) {
+	if m.removedresourceType == nil {
+		m.removedresourceType = make(map[int]struct{})
+	}
+	for i := range ids {
+		m.removedresourceType[ids[i]] = struct{}{}
+	}
+}
+
+// RemovedResourceType returns the removed ids of resourceType.
+func (m *PoolPropertiesMutation) RemovedResourceTypeIDs() (ids []int) {
+	for id := range m.removedresourceType {
+		ids = append(ids, id)
+	}
+	return
+}
+
+// ResourceTypeIDs returns the resourceType ids in the mutation.
+func (m *PoolPropertiesMutation) ResourceTypeIDs() (ids []int) {
+	for id := range m.resourceType {
+		ids = append(ids, id)
+	}
+	return
+}
+
+// ResetResourceType reset all changes of the "resourceType" edge.
+func (m *PoolPropertiesMutation) ResetResourceType() {
+	m.resourceType = nil
+	m.clearedresourceType = false
+	m.removedresourceType = nil
+}
+
+// AddPropertyIDs adds the properties edge to Property by ids.
+func (m *PoolPropertiesMutation) AddPropertyIDs(ids ...int) {
+	if m.properties == nil {
+		m.properties = make(map[int]struct{})
+	}
+	for i := range ids {
+		m.properties[ids[i]] = struct{}{}
+	}
+}
+
+// ClearProperties clears the properties edge to Property.
+func (m *PoolPropertiesMutation) ClearProperties() {
+	m.clearedproperties = true
+}
+
+// PropertiesCleared returns if the edge properties was cleared.
+func (m *PoolPropertiesMutation) PropertiesCleared() bool {
+	return m.clearedproperties
+}
+
+// RemovePropertyIDs removes the properties edge to Property by ids.
+func (m *PoolPropertiesMutation) RemovePropertyIDs(ids ...int) {
+	if m.removedproperties == nil {
+		m.removedproperties = make(map[int]struct{})
+	}
+	for i := range ids {
+		m.removedproperties[ids[i]] = struct{}{}
+	}
+}
+
+// RemovedProperties returns the removed ids of properties.
+func (m *PoolPropertiesMutation) RemovedPropertiesIDs() (ids []int) {
+	for id := range m.removedproperties {
+		ids = append(ids, id)
+	}
+	return
+}
+
+// PropertiesIDs returns the properties ids in the mutation.
+func (m *PoolPropertiesMutation) PropertiesIDs() (ids []int) {
+	for id := range m.properties {
+		ids = append(ids, id)
+	}
+	return
+}
+
+// ResetProperties reset all changes of the "properties" edge.
+func (m *PoolPropertiesMutation) ResetProperties() {
+	m.properties = nil
+	m.clearedproperties = false
+	m.removedproperties = nil
+}
+
+// Op returns the operation name.
+func (m *PoolPropertiesMutation) Op() Op {
+	return m.op
+}
+
+// Type returns the node type of this mutation (PoolProperties).
+func (m *PoolPropertiesMutation) Type() string {
+	return m.typ
+}
+
+// Fields returns all fields that were changed during
+// this mutation. Note that, in order to get all numeric
+// fields that were in/decremented, call AddedFields().
+func (m *PoolPropertiesMutation) Fields() []string {
+	fields := make([]string, 0, 0)
+	return fields
+}
+
+// Field returns the value of a field with the given name.
+// The second boolean value indicates that this field was
+// not set, or was not define in the schema.
+func (m *PoolPropertiesMutation) Field(name string) (ent.Value, bool) {
+	return nil, false
+}
+
+// OldField returns the old value of the field from the database.
+// An error is returned if the mutation operation is not UpdateOne,
+// or the query to the database was failed.
+func (m *PoolPropertiesMutation) OldField(ctx context.Context, name string) (ent.Value, error) {
+	return nil, fmt.Errorf("unknown PoolProperties field %s", name)
+}
+
+// SetField sets the value for the given name. It returns an
+// error if the field is not defined in the schema, or if the
+// type mismatch the field type.
+func (m *PoolPropertiesMutation) SetField(name string, value ent.Value) error {
+	switch name {
+	}
+	return fmt.Errorf("unknown PoolProperties field %s", name)
+}
+
+// AddedFields returns all numeric fields that were incremented
+// or decremented during this mutation.
+func (m *PoolPropertiesMutation) AddedFields() []string {
+	return nil
+}
+
+// AddedField returns the numeric value that was in/decremented
+// from a field with the given name. The second value indicates
+// that this field was not set, or was not define in the schema.
+func (m *PoolPropertiesMutation) AddedField(name string) (ent.Value, bool) {
+	return nil, false
+}
+
+// AddField adds the value for the given name. It returns an
+// error if the field is not defined in the schema, or if the
+// type mismatch the field type.
+func (m *PoolPropertiesMutation) AddField(name string, value ent.Value) error {
+	return fmt.Errorf("unknown PoolProperties numeric field %s", name)
+}
+
+// ClearedFields returns all nullable fields that were cleared
+// during this mutation.
+func (m *PoolPropertiesMutation) ClearedFields() []string {
+	return nil
+}
+
+// FieldCleared returns a boolean indicates if this field was
+// cleared in this mutation.
+func (m *PoolPropertiesMutation) FieldCleared(name string) bool {
+	_, ok := m.clearedFields[name]
+	return ok
+}
+
+// ClearField clears the value for the given name. It returns an
+// error if the field is not defined in the schema.
+func (m *PoolPropertiesMutation) ClearField(name string) error {
+	return fmt.Errorf("unknown PoolProperties nullable field %s", name)
+}
+
+// ResetField resets all changes in the mutation regarding the
+// given field name. It returns an error if the field is not
+// defined in the schema.
+func (m *PoolPropertiesMutation) ResetField(name string) error {
+	return fmt.Errorf("unknown PoolProperties field %s", name)
+}
+
+// AddedEdges returns all edge names that were set/added in this
+// mutation.
+func (m *PoolPropertiesMutation) AddedEdges() []string {
+	edges := make([]string, 0, 3)
+	if m.pool != nil {
+		edges = append(edges, poolproperties.EdgePool)
+	}
+	if m.resourceType != nil {
+		edges = append(edges, poolproperties.EdgeResourceType)
+	}
+	if m.properties != nil {
+		edges = append(edges, poolproperties.EdgeProperties)
+	}
+	return edges
+}
+
+// AddedIDs returns all ids (to other nodes) that were added for
+// the given edge name.
+func (m *PoolPropertiesMutation) AddedIDs(name string) []ent.Value {
+	switch name {
+	case poolproperties.EdgePool:
+		if id := m.pool; id != nil {
+			return []ent.Value{*id}
+		}
+	case poolproperties.EdgeResourceType:
+		ids := make([]ent.Value, 0, len(m.resourceType))
+		for id := range m.resourceType {
+			ids = append(ids, id)
+		}
+		return ids
+	case poolproperties.EdgeProperties:
+		ids := make([]ent.Value, 0, len(m.properties))
+		for id := range m.properties {
+			ids = append(ids, id)
+		}
+		return ids
+	}
+	return nil
+}
+
+// RemovedEdges returns all edge names that were removed in this
+// mutation.
+func (m *PoolPropertiesMutation) RemovedEdges() []string {
+	edges := make([]string, 0, 3)
+	if m.removedresourceType != nil {
+		edges = append(edges, poolproperties.EdgeResourceType)
+	}
+	if m.removedproperties != nil {
+		edges = append(edges, poolproperties.EdgeProperties)
+	}
+	return edges
+}
+
+// RemovedIDs returns all ids (to other nodes) that were removed for
+// the given edge name.
+func (m *PoolPropertiesMutation) RemovedIDs(name string) []ent.Value {
+	switch name {
+	case poolproperties.EdgeResourceType:
+		ids := make([]ent.Value, 0, len(m.removedresourceType))
+		for id := range m.removedresourceType {
+			ids = append(ids, id)
+		}
+		return ids
+	case poolproperties.EdgeProperties:
+		ids := make([]ent.Value, 0, len(m.removedproperties))
+		for id := range m.removedproperties {
+			ids = append(ids, id)
+		}
+		return ids
+	}
+	return nil
+}
+
+// ClearedEdges returns all edge names that were cleared in this
+// mutation.
+func (m *PoolPropertiesMutation) ClearedEdges() []string {
+	edges := make([]string, 0, 3)
+	if m.clearedpool {
+		edges = append(edges, poolproperties.EdgePool)
+	}
+	if m.clearedresourceType {
+		edges = append(edges, poolproperties.EdgeResourceType)
+	}
+	if m.clearedproperties {
+		edges = append(edges, poolproperties.EdgeProperties)
+	}
+	return edges
+}
+
+// EdgeCleared returns a boolean indicates if this edge was
+// cleared in this mutation.
+func (m *PoolPropertiesMutation) EdgeCleared(name string) bool {
+	switch name {
+	case poolproperties.EdgePool:
+		return m.clearedpool
+	case poolproperties.EdgeResourceType:
+		return m.clearedresourceType
+	case poolproperties.EdgeProperties:
+		return m.clearedproperties
+	}
+	return false
+}
+
+// ClearEdge clears the value for the given name. It returns an
+// error if the edge name is not defined in the schema.
+func (m *PoolPropertiesMutation) ClearEdge(name string) error {
+	switch name {
+	case poolproperties.EdgePool:
+		m.ClearPool()
+		return nil
+	}
+	return fmt.Errorf("unknown PoolProperties unique edge %s", name)
+}
+
+// ResetEdge resets all changes in the mutation regarding the
+// given edge name. It returns an error if the edge is not
+// defined in the schema.
+func (m *PoolPropertiesMutation) ResetEdge(name string) error {
+	switch name {
+	case poolproperties.EdgePool:
+		m.ResetPool()
+		return nil
+	case poolproperties.EdgeResourceType:
+		m.ResetResourceType()
+		return nil
+	case poolproperties.EdgeProperties:
+		m.ResetProperties()
+		return nil
+	}
+	return fmt.Errorf("unknown PoolProperties edge %s", name)
 }
 
 // PropertyMutation represents an operation that mutate the Properties
@@ -4148,6 +4613,8 @@ type ResourcePoolMutation struct {
 	claims                       map[int]struct{}
 	removedclaims                map[int]struct{}
 	clearedclaims                bool
+	poolProperties               *int
+	clearedpoolProperties        bool
 	allocation_strategy          *int
 	clearedallocation_strategy   bool
 	parent_resource              *int
@@ -4561,6 +5028,45 @@ func (m *ResourcePoolMutation) ResetClaims() {
 	m.removedclaims = nil
 }
 
+// SetPoolPropertiesID sets the poolProperties edge to PoolProperties by id.
+func (m *ResourcePoolMutation) SetPoolPropertiesID(id int) {
+	m.poolProperties = &id
+}
+
+// ClearPoolProperties clears the poolProperties edge to PoolProperties.
+func (m *ResourcePoolMutation) ClearPoolProperties() {
+	m.clearedpoolProperties = true
+}
+
+// PoolPropertiesCleared returns if the edge poolProperties was cleared.
+func (m *ResourcePoolMutation) PoolPropertiesCleared() bool {
+	return m.clearedpoolProperties
+}
+
+// PoolPropertiesID returns the poolProperties id in the mutation.
+func (m *ResourcePoolMutation) PoolPropertiesID() (id int, exists bool) {
+	if m.poolProperties != nil {
+		return *m.poolProperties, true
+	}
+	return
+}
+
+// PoolPropertiesIDs returns the poolProperties ids in the mutation.
+// Note that ids always returns len(ids) <= 1 for unique edges, and you should use
+// PoolPropertiesID instead. It exists only for internal usage by the builders.
+func (m *ResourcePoolMutation) PoolPropertiesIDs() (ids []int) {
+	if id := m.poolProperties; id != nil {
+		ids = append(ids, *id)
+	}
+	return
+}
+
+// ResetPoolProperties reset all changes of the "poolProperties" edge.
+func (m *ResourcePoolMutation) ResetPoolProperties() {
+	m.poolProperties = nil
+	m.clearedpoolProperties = false
+}
+
 // SetAllocationStrategyID sets the allocation_strategy edge to AllocationStrategy by id.
 func (m *ResourcePoolMutation) SetAllocationStrategyID(id int) {
 	m.allocation_strategy = &id
@@ -4829,7 +5335,7 @@ func (m *ResourcePoolMutation) ResetField(name string) error {
 // AddedEdges returns all edge names that were set/added in this
 // mutation.
 func (m *ResourcePoolMutation) AddedEdges() []string {
-	edges := make([]string, 0, 5)
+	edges := make([]string, 0, 6)
 	if m.resource_type != nil {
 		edges = append(edges, resourcepool.EdgeResourceType)
 	}
@@ -4838,6 +5344,9 @@ func (m *ResourcePoolMutation) AddedEdges() []string {
 	}
 	if m.claims != nil {
 		edges = append(edges, resourcepool.EdgeClaims)
+	}
+	if m.poolProperties != nil {
+		edges = append(edges, resourcepool.EdgePoolProperties)
 	}
 	if m.allocation_strategy != nil {
 		edges = append(edges, resourcepool.EdgeAllocationStrategy)
@@ -4868,6 +5377,10 @@ func (m *ResourcePoolMutation) AddedIDs(name string) []ent.Value {
 			ids = append(ids, id)
 		}
 		return ids
+	case resourcepool.EdgePoolProperties:
+		if id := m.poolProperties; id != nil {
+			return []ent.Value{*id}
+		}
 	case resourcepool.EdgeAllocationStrategy:
 		if id := m.allocation_strategy; id != nil {
 			return []ent.Value{*id}
@@ -4883,7 +5396,7 @@ func (m *ResourcePoolMutation) AddedIDs(name string) []ent.Value {
 // RemovedEdges returns all edge names that were removed in this
 // mutation.
 func (m *ResourcePoolMutation) RemovedEdges() []string {
-	edges := make([]string, 0, 5)
+	edges := make([]string, 0, 6)
 	if m.removedtags != nil {
 		edges = append(edges, resourcepool.EdgeTags)
 	}
@@ -4916,7 +5429,7 @@ func (m *ResourcePoolMutation) RemovedIDs(name string) []ent.Value {
 // ClearedEdges returns all edge names that were cleared in this
 // mutation.
 func (m *ResourcePoolMutation) ClearedEdges() []string {
-	edges := make([]string, 0, 5)
+	edges := make([]string, 0, 6)
 	if m.clearedresource_type {
 		edges = append(edges, resourcepool.EdgeResourceType)
 	}
@@ -4925,6 +5438,9 @@ func (m *ResourcePoolMutation) ClearedEdges() []string {
 	}
 	if m.clearedclaims {
 		edges = append(edges, resourcepool.EdgeClaims)
+	}
+	if m.clearedpoolProperties {
+		edges = append(edges, resourcepool.EdgePoolProperties)
 	}
 	if m.clearedallocation_strategy {
 		edges = append(edges, resourcepool.EdgeAllocationStrategy)
@@ -4945,6 +5461,8 @@ func (m *ResourcePoolMutation) EdgeCleared(name string) bool {
 		return m.clearedtags
 	case resourcepool.EdgeClaims:
 		return m.clearedclaims
+	case resourcepool.EdgePoolProperties:
+		return m.clearedpoolProperties
 	case resourcepool.EdgeAllocationStrategy:
 		return m.clearedallocation_strategy
 	case resourcepool.EdgeParentResource:
@@ -4959,6 +5477,9 @@ func (m *ResourcePoolMutation) ClearEdge(name string) error {
 	switch name {
 	case resourcepool.EdgeResourceType:
 		m.ClearResourceType()
+		return nil
+	case resourcepool.EdgePoolProperties:
+		m.ClearPoolProperties()
 		return nil
 	case resourcepool.EdgeAllocationStrategy:
 		m.ClearAllocationStrategy()
@@ -4983,6 +5504,9 @@ func (m *ResourcePoolMutation) ResetEdge(name string) error {
 		return nil
 	case resourcepool.EdgeClaims:
 		m.ResetClaims()
+		return nil
+	case resourcepool.EdgePoolProperties:
+		m.ResetPoolProperties()
 		return nil
 	case resourcepool.EdgeAllocationStrategy:
 		m.ResetAllocationStrategy()

@@ -39,6 +39,11 @@ var Columns = []string{
 	FieldName,
 }
 
+// ForeignKeys holds the SQL foreign-keys that are owned by the ResourceType type.
+var ForeignKeys = []string{
+	"pool_properties_resource_type",
+}
+
 var (
 	// NameValidator is a validator for the "name" field. It is called by the builders before save.
 	NameValidator func(string) error

@@ -23,6 +23,26 @@ var (
 		PrimaryKey:  []*schema.Column{AllocationStrategiesColumns[0]},
 		ForeignKeys: []*schema.ForeignKey{},
 	}
+	// PoolPropertiesColumns holds the columns for the "pool_properties" table.
+	PoolPropertiesColumns = []*schema.Column{
+		{Name: "id", Type: field.TypeInt, Increment: true},
+		{Name: "resource_pool_pool_properties", Type: field.TypeInt, Unique: true, Nullable: true},
+	}
+	// PoolPropertiesTable holds the schema information for the "pool_properties" table.
+	PoolPropertiesTable = &schema.Table{
+		Name:       "pool_properties",
+		Columns:    PoolPropertiesColumns,
+		PrimaryKey: []*schema.Column{PoolPropertiesColumns[0]},
+		ForeignKeys: []*schema.ForeignKey{
+			{
+				Symbol:  "pool_properties_resource_pools_poolProperties",
+				Columns: []*schema.Column{PoolPropertiesColumns[1]},
+
+				RefColumns: []*schema.Column{ResourcePoolsColumns[0]},
+				OnDelete:   schema.SetNull,
+			},
+		},
+	}
 	// PropertiesColumns holds the columns for the "properties" table.
 	PropertiesColumns = []*schema.Column{
 		{Name: "id", Type: field.TypeInt, Increment: true},
@@ -34,6 +54,7 @@ var (
 		{Name: "range_from_val", Type: field.TypeFloat64, Nullable: true},
 		{Name: "range_to_val", Type: field.TypeFloat64, Nullable: true},
 		{Name: "string_val", Type: field.TypeString, Nullable: true},
+		{Name: "pool_properties_properties", Type: field.TypeInt, Nullable: true},
 		{Name: "property_type", Type: field.TypeInt, Nullable: true},
 		{Name: "resource_properties", Type: field.TypeInt, Nullable: true},
 	}
@@ -44,15 +65,22 @@ var (
 		PrimaryKey: []*schema.Column{PropertiesColumns[0]},
 		ForeignKeys: []*schema.ForeignKey{
 			{
-				Symbol:  "properties_property_types_type",
+				Symbol:  "properties_pool_properties_properties",
 				Columns: []*schema.Column{PropertiesColumns[9]},
+
+				RefColumns: []*schema.Column{PoolPropertiesColumns[0]},
+				OnDelete:   schema.SetNull,
+			},
+			{
+				Symbol:  "properties_property_types_type",
+				Columns: []*schema.Column{PropertiesColumns[10]},
 
 				RefColumns: []*schema.Column{PropertyTypesColumns[0]},
 				OnDelete:   schema.SetNull,
 			},
 			{
 				Symbol:  "properties_resources_properties",
-				Columns: []*schema.Column{PropertiesColumns[10]},
+				Columns: []*schema.Column{PropertiesColumns[11]},
 
 				RefColumns: []*schema.Column{ResourcesColumns[0]},
 				OnDelete:   schema.SetNull,
@@ -162,14 +190,23 @@ var (
 	// ResourceTypesColumns holds the columns for the "resource_types" table.
 	ResourceTypesColumns = []*schema.Column{
 		{Name: "id", Type: field.TypeInt, Increment: true},
-		{Name: "name", Type: field.TypeString, Unique: true},
+		{Name: "name", Type: field.TypeString},
+		{Name: "pool_properties_resource_type", Type: field.TypeInt, Nullable: true},
 	}
 	// ResourceTypesTable holds the schema information for the "resource_types" table.
 	ResourceTypesTable = &schema.Table{
-		Name:        "resource_types",
-		Columns:     ResourceTypesColumns,
-		PrimaryKey:  []*schema.Column{ResourceTypesColumns[0]},
-		ForeignKeys: []*schema.ForeignKey{},
+		Name:       "resource_types",
+		Columns:    ResourceTypesColumns,
+		PrimaryKey: []*schema.Column{ResourceTypesColumns[0]},
+		ForeignKeys: []*schema.ForeignKey{
+			{
+				Symbol:  "resource_types_pool_properties_resourceType",
+				Columns: []*schema.Column{ResourceTypesColumns[2]},
+
+				RefColumns: []*schema.Column{PoolPropertiesColumns[0]},
+				OnDelete:   schema.SetNull,
+			},
+		},
 	}
 	// TagsColumns holds the columns for the "tags" table.
 	TagsColumns = []*schema.Column{
@@ -213,6 +250,7 @@ var (
 	// Tables holds all the tables in the schema.
 	Tables = []*schema.Table{
 		AllocationStrategiesTable,
+		PoolPropertiesTable,
 		PropertiesTable,
 		PropertyTypesTable,
 		ResourcesTable,
@@ -224,13 +262,16 @@ var (
 )
 
 func init() {
-	PropertiesTable.ForeignKeys[0].RefTable = PropertyTypesTable
-	PropertiesTable.ForeignKeys[1].RefTable = ResourcesTable
+	PoolPropertiesTable.ForeignKeys[0].RefTable = ResourcePoolsTable
+	PropertiesTable.ForeignKeys[0].RefTable = PoolPropertiesTable
+	PropertiesTable.ForeignKeys[1].RefTable = PropertyTypesTable
+	PropertiesTable.ForeignKeys[2].RefTable = ResourcesTable
 	PropertyTypesTable.ForeignKeys[0].RefTable = ResourceTypesTable
 	ResourcesTable.ForeignKeys[0].RefTable = ResourcePoolsTable
 	ResourcePoolsTable.ForeignKeys[0].RefTable = ResourcesTable
 	ResourcePoolsTable.ForeignKeys[1].RefTable = AllocationStrategiesTable
 	ResourcePoolsTable.ForeignKeys[2].RefTable = ResourceTypesTable
+	ResourceTypesTable.ForeignKeys[0].RefTable = PoolPropertiesTable
 	TagPoolsTable.ForeignKeys[0].RefTable = TagsTable
 	TagPoolsTable.ForeignKeys[1].RefTable = ResourcePoolsTable
 }

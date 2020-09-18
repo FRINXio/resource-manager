@@ -234,6 +234,30 @@ func (f AllocationStrategyMutationRuleFunc) EvalMutation(ctx context.Context, m 
 	return Denyf("ent/privacy: unexpected mutation type %T, expect *ent.AllocationStrategyMutation", m)
 }
 
+// The PoolPropertiesQueryRuleFunc type is an adapter to allow the use of ordinary
+// functions as a query rule.
+type PoolPropertiesQueryRuleFunc func(context.Context, *ent.PoolPropertiesQuery) error
+
+// EvalQuery return f(ctx, q).
+func (f PoolPropertiesQueryRuleFunc) EvalQuery(ctx context.Context, q ent.Query) error {
+	if q, ok := q.(*ent.PoolPropertiesQuery); ok {
+		return f(ctx, q)
+	}
+	return Denyf("ent/privacy: unexpected query type %T, expect *ent.PoolPropertiesQuery", q)
+}
+
+// The PoolPropertiesMutationRuleFunc type is an adapter to allow the use of ordinary
+// functions as a mutation rule.
+type PoolPropertiesMutationRuleFunc func(context.Context, *ent.PoolPropertiesMutation) error
+
+// EvalMutation calls f(ctx, m).
+func (f PoolPropertiesMutationRuleFunc) EvalMutation(ctx context.Context, m ent.Mutation) error {
+	if m, ok := m.(*ent.PoolPropertiesMutation); ok {
+		return f(ctx, m)
+	}
+	return Denyf("ent/privacy: unexpected mutation type %T, expect *ent.PoolPropertiesMutation", m)
+}
+
 // The PropertyQueryRuleFunc type is an adapter to allow the use of ordinary
 // functions as a query rule.
 type PropertyQueryRuleFunc func(context.Context, *ent.PropertyQuery) error

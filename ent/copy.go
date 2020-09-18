@@ -19,6 +19,27 @@ func (c *AllocationStrategyClient) CreateFrom(as *AllocationStrategy) *Allocatio
 	return createBuilder
 }
 
+// Copy existing PoolProperties entity with all its fields and (eagerly loaded) edges ! into a new PoolPropertiesCreate builder.
+func (c *PoolPropertiesClient) CreateFrom(pp *PoolProperties) *PoolPropertiesCreate {
+	mutation := newPoolPropertiesMutation(c.config, OpCreate, withPoolProperties(pp))
+
+	createBuilder := &PoolPropertiesCreate{config: c.config, hooks: c.Hooks(), mutation: mutation}
+
+	if pp.Edges.Pool != nil {
+		createBuilder.SetPool(pp.Edges.Pool)
+	}
+
+	if pp.Edges.ResourceType != nil {
+		createBuilder.AddResourceType(pp.Edges.ResourceType...)
+	}
+
+	if pp.Edges.Properties != nil {
+		createBuilder.AddProperties(pp.Edges.Properties...)
+	}
+
+	return createBuilder
+}
+
 // Copy existing Property entity with all its fields and (eagerly loaded) edges ! into a new PropertyCreate builder.
 func (c *PropertyClient) CreateFrom(pr *Property) *PropertyCreate {
 	mutation := newPropertyMutation(c.config, OpCreate, withProperty(pr))
@@ -118,6 +139,10 @@ func (c *ResourcePoolClient) CreateFrom(rp *ResourcePool) *ResourcePoolCreate {
 
 	if rp.Edges.Claims != nil {
 		createBuilder.AddClaims(rp.Edges.Claims...)
+	}
+
+	if rp.Edges.PoolProperties != nil {
+		createBuilder.SetPoolProperties(rp.Edges.PoolProperties)
 	}
 
 	if rp.Edges.AllocationStrategy != nil {

@@ -1229,6 +1229,7 @@ input TagOr {
 }
 
 input ResourcePoolInput {
+    poolProperties: Map!
     ResourcePoolName: String!
 }
 
@@ -1302,6 +1303,8 @@ input CreateAllocatingPoolInput {
     description: String
     allocationStrategyId: ID!
     poolDealocationSafetyPeriod: Int!
+    poolProperties: Map!
+    poolPropertyTypes: Map!
 }
 
 type CreateAllocatingPoolPayload {
@@ -6316,6 +6319,22 @@ func (ec *executionContext) unmarshalInputCreateAllocatingPoolInput(ctx context.
 			if err != nil {
 				return it, err
 			}
+		case "poolProperties":
+			var err error
+
+			ctx := graphql.WithFieldInputContext(ctx, graphql.NewFieldInputWithField("poolProperties"))
+			it.PoolProperties, err = ec.unmarshalNMap2map(ctx, v)
+			if err != nil {
+				return it, err
+			}
+		case "poolPropertyTypes":
+			var err error
+
+			ctx := graphql.WithFieldInputContext(ctx, graphql.NewFieldInputWithField("poolPropertyTypes"))
+			it.PoolPropertyTypes, err = ec.unmarshalNMap2map(ctx, v)
+			if err != nil {
+				return it, err
+			}
 		}
 	}
 
@@ -6804,6 +6823,14 @@ func (ec *executionContext) unmarshalInputResourcePoolInput(ctx context.Context,
 
 	for k, v := range asMap {
 		switch k {
+		case "poolProperties":
+			var err error
+
+			ctx := graphql.WithFieldInputContext(ctx, graphql.NewFieldInputWithField("poolProperties"))
+			it.PoolProperties, err = ec.unmarshalNMap2map(ctx, v)
+			if err != nil {
+				return it, err
+			}
 		case "ResourcePoolName":
 			var err error
 

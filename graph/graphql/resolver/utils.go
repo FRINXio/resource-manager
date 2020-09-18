@@ -3,6 +3,7 @@ package resolver
 import (
 	"context"
 	"github.com/net-auto/resourceManager/ent"
+	"github.com/net-auto/resourceManager/ent/resourcepool"
 	"github.com/net-auto/resourceManager/graph/graphql/model"
 	"github.com/vektah/gqlparser/v2/gqlerror"
 	"sort"
@@ -21,6 +22,28 @@ func createNestedPool(ctx context.Context,
 	pool, errCreatePool := nestedPoolFactory()
 	if errCreatePool != nil {
 		return nil, errCreatePool
+	}
+
+	//create pool properties from parent resource type
+	if pool.PoolType == resourcepool.PoolTypeAllocating {
+
+		properties, err := parentResource.QueryProperties().All(ctx)
+
+		if err != nil {
+			return nil, gqlerror.Errorf("Cannot retrieve properties, error: %v", err)
+		}
+
+		poolProperties, err := client.PoolProperties.Create().AddProperties(properties...).Save(ctx)
+
+		if err != nil {
+				return nil, gqlerror.Errorf("Cannot create pool properties, error: %v", err)
+		}
+
+		_, err = pool.Update().SetPoolProperties(poolProperties).Save(ctx)
+
+		if err != nil {
+			return nil, gqlerror.Errorf("Unable to set pool properties on the given pool, error: %v", err)
+		}
 	}
 
 	pool, errSetParentResource := pool.Update().SetParentResource(parentResource).Save(ctx)

@@ -10,6 +10,7 @@ import (
 	"github.com/net-auto/resourceManager/ent/migrate"
 
 	"github.com/net-auto/resourceManager/ent/allocationstrategy"
+	"github.com/net-auto/resourceManager/ent/poolproperties"
 	"github.com/net-auto/resourceManager/ent/property"
 	"github.com/net-auto/resourceManager/ent/propertytype"
 	"github.com/net-auto/resourceManager/ent/resource"
@@ -29,6 +30,8 @@ type Client struct {
 	Schema *migrate.Schema
 	// AllocationStrategy is the client for interacting with the AllocationStrategy builders.
 	AllocationStrategy *AllocationStrategyClient
+	// PoolProperties is the client for interacting with the PoolProperties builders.
+	PoolProperties *PoolPropertiesClient
 	// Property is the client for interacting with the Property builders.
 	Property *PropertyClient
 	// PropertyType is the client for interacting with the PropertyType builders.
@@ -58,6 +61,7 @@ func NewClient(opts ...Option) *Client {
 func (c *Client) init() {
 	c.Schema = migrate.NewSchema(c.driver)
 	c.AllocationStrategy = NewAllocationStrategyClient(c.config)
+	c.PoolProperties = NewPoolPropertiesClient(c.config)
 	c.Property = NewPropertyClient(c.config)
 	c.PropertyType = NewPropertyTypeClient(c.config)
 	c.Resource = NewResourceClient(c.config)
@@ -97,6 +101,7 @@ func (c *Client) Tx(ctx context.Context) (*Tx, error) {
 		ctx:                ctx,
 		config:             cfg,
 		AllocationStrategy: NewAllocationStrategyClient(cfg),
+		PoolProperties:     NewPoolPropertiesClient(cfg),
 		Property:           NewPropertyClient(cfg),
 		PropertyType:       NewPropertyTypeClient(cfg),
 		Resource:           NewResourceClient(cfg),
@@ -119,6 +124,7 @@ func (c *Client) BeginTx(ctx context.Context, opts *sql.TxOptions) (*Tx, error) 
 	return &Tx{
 		config:             cfg,
 		AllocationStrategy: NewAllocationStrategyClient(cfg),
+		PoolProperties:     NewPoolPropertiesClient(cfg),
 		Property:           NewPropertyClient(cfg),
 		PropertyType:       NewPropertyTypeClient(cfg),
 		Resource:           NewResourceClient(cfg),
@@ -154,6 +160,7 @@ func (c *Client) Close() error {
 // In order to add hooks to a specific client, call: `client.Node.Use(...)`.
 func (c *Client) Use(hooks ...Hook) {
 	c.AllocationStrategy.Use(hooks...)
+	c.PoolProperties.Use(hooks...)
 	c.Property.Use(hooks...)
 	c.PropertyType.Use(hooks...)
 	c.Resource.Use(hooks...)
@@ -264,6 +271,142 @@ func (c *AllocationStrategyClient) QueryPools(as *AllocationStrategy) *ResourceP
 // Hooks returns the client hooks.
 func (c *AllocationStrategyClient) Hooks() []Hook {
 	return c.hooks.AllocationStrategy
+}
+
+// PoolPropertiesClient is a client for the PoolProperties schema.
+type PoolPropertiesClient struct {
+	config
+}
+
+// NewPoolPropertiesClient returns a client for the PoolProperties from the given config.
+func NewPoolPropertiesClient(c config) *PoolPropertiesClient {
+	return &PoolPropertiesClient{config: c}
+}
+
+// Use adds a list of mutation hooks to the hooks stack.
+// A call to `Use(f, g, h)` equals to `poolproperties.Hooks(f(g(h())))`.
+func (c *PoolPropertiesClient) Use(hooks ...Hook) {
+	c.hooks.PoolProperties = append(c.hooks.PoolProperties, hooks...)
+}
+
+// Create returns a create builder for PoolProperties.
+func (c *PoolPropertiesClient) Create() *PoolPropertiesCreate {
+	mutation := newPoolPropertiesMutation(c.config, OpCreate)
+	return &PoolPropertiesCreate{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// BulkCreate returns a builder for creating a bulk of PoolProperties entities.
+func (c *PoolPropertiesClient) CreateBulk(builders ...*PoolPropertiesCreate) *PoolPropertiesCreateBulk {
+	return &PoolPropertiesCreateBulk{config: c.config, builders: builders}
+}
+
+// Update returns an update builder for PoolProperties.
+func (c *PoolPropertiesClient) Update() *PoolPropertiesUpdate {
+	mutation := newPoolPropertiesMutation(c.config, OpUpdate)
+	return &PoolPropertiesUpdate{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// UpdateOne returns an update builder for the given entity.
+func (c *PoolPropertiesClient) UpdateOne(pp *PoolProperties) *PoolPropertiesUpdateOne {
+	mutation := newPoolPropertiesMutation(c.config, OpUpdateOne, withPoolProperties(pp))
+	return &PoolPropertiesUpdateOne{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// UpdateOneID returns an update builder for the given id.
+func (c *PoolPropertiesClient) UpdateOneID(id int) *PoolPropertiesUpdateOne {
+	mutation := newPoolPropertiesMutation(c.config, OpUpdateOne, withPoolPropertiesID(id))
+	return &PoolPropertiesUpdateOne{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// Delete returns a delete builder for PoolProperties.
+func (c *PoolPropertiesClient) Delete() *PoolPropertiesDelete {
+	mutation := newPoolPropertiesMutation(c.config, OpDelete)
+	return &PoolPropertiesDelete{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// DeleteOne returns a delete builder for the given entity.
+func (c *PoolPropertiesClient) DeleteOne(pp *PoolProperties) *PoolPropertiesDeleteOne {
+	return c.DeleteOneID(pp.ID)
+}
+
+// DeleteOneID returns a delete builder for the given id.
+func (c *PoolPropertiesClient) DeleteOneID(id int) *PoolPropertiesDeleteOne {
+	builder := c.Delete().Where(poolproperties.ID(id))
+	builder.mutation.id = &id
+	builder.mutation.op = OpDeleteOne
+	return &PoolPropertiesDeleteOne{builder}
+}
+
+// Query returns a query builder for PoolProperties.
+func (c *PoolPropertiesClient) Query() *PoolPropertiesQuery {
+	return &PoolPropertiesQuery{config: c.config}
+}
+
+// Get returns a PoolProperties entity by its id.
+func (c *PoolPropertiesClient) Get(ctx context.Context, id int) (*PoolProperties, error) {
+	return c.Query().Where(poolproperties.ID(id)).Only(ctx)
+}
+
+// GetX is like Get, but panics if an error occurs.
+func (c *PoolPropertiesClient) GetX(ctx context.Context, id int) *PoolProperties {
+	pp, err := c.Get(ctx, id)
+	if err != nil {
+		panic(err)
+	}
+	return pp
+}
+
+// QueryPool queries the pool edge of a PoolProperties.
+func (c *PoolPropertiesClient) QueryPool(pp *PoolProperties) *ResourcePoolQuery {
+	query := &ResourcePoolQuery{config: c.config}
+	query.path = func(ctx context.Context) (fromV *sql.Selector, _ error) {
+		id := pp.ID
+		step := sqlgraph.NewStep(
+			sqlgraph.From(poolproperties.Table, poolproperties.FieldID, id),
+			sqlgraph.To(resourcepool.Table, resourcepool.FieldID),
+			sqlgraph.Edge(sqlgraph.O2O, true, poolproperties.PoolTable, poolproperties.PoolColumn),
+		)
+		fromV = sqlgraph.Neighbors(pp.driver.Dialect(), step)
+		return fromV, nil
+	}
+	return query
+}
+
+// QueryResourceType queries the resourceType edge of a PoolProperties.
+func (c *PoolPropertiesClient) QueryResourceType(pp *PoolProperties) *ResourceTypeQuery {
+	query := &ResourceTypeQuery{config: c.config}
+	query.path = func(ctx context.Context) (fromV *sql.Selector, _ error) {
+		id := pp.ID
+		step := sqlgraph.NewStep(
+			sqlgraph.From(poolproperties.Table, poolproperties.FieldID, id),
+			sqlgraph.To(resourcetype.Table, resourcetype.FieldID),
+			sqlgraph.Edge(sqlgraph.O2M, false, poolproperties.ResourceTypeTable, poolproperties.ResourceTypeColumn),
+		)
+		fromV = sqlgraph.Neighbors(pp.driver.Dialect(), step)
+		return fromV, nil
+	}
+	return query
+}
+
+// QueryProperties queries the properties edge of a PoolProperties.
+func (c *PoolPropertiesClient) QueryProperties(pp *PoolProperties) *PropertyQuery {
+	query := &PropertyQuery{config: c.config}
+	query.path = func(ctx context.Context) (fromV *sql.Selector, _ error) {
+		id := pp.ID
+		step := sqlgraph.NewStep(
+			sqlgraph.From(poolproperties.Table, poolproperties.FieldID, id),
+			sqlgraph.To(property.Table, property.FieldID),
+			sqlgraph.Edge(sqlgraph.O2M, false, poolproperties.PropertiesTable, poolproperties.PropertiesColumn),
+		)
+		fromV = sqlgraph.Neighbors(pp.driver.Dialect(), step)
+		return fromV, nil
+	}
+	return query
+}
+
+// Hooks returns the client hooks.
+func (c *PoolPropertiesClient) Hooks() []Hook {
+	return c.hooks.PoolProperties
 }
 
 // PropertyClient is a client for the Property schema.
@@ -750,6 +893,22 @@ func (c *ResourcePoolClient) QueryClaims(rp *ResourcePool) *ResourceQuery {
 			sqlgraph.From(resourcepool.Table, resourcepool.FieldID, id),
 			sqlgraph.To(resource.Table, resource.FieldID),
 			sqlgraph.Edge(sqlgraph.O2M, false, resourcepool.ClaimsTable, resourcepool.ClaimsColumn),
+		)
+		fromV = sqlgraph.Neighbors(rp.driver.Dialect(), step)
+		return fromV, nil
+	}
+	return query
+}
+
+// QueryPoolProperties queries the poolProperties edge of a ResourcePool.
+func (c *ResourcePoolClient) QueryPoolProperties(rp *ResourcePool) *PoolPropertiesQuery {
+	query := &PoolPropertiesQuery{config: c.config}
+	query.path = func(ctx context.Context) (fromV *sql.Selector, _ error) {
+		id := rp.ID
+		step := sqlgraph.NewStep(
+			sqlgraph.From(resourcepool.Table, resourcepool.FieldID, id),
+			sqlgraph.To(poolproperties.Table, poolproperties.FieldID),
+			sqlgraph.Edge(sqlgraph.O2O, false, resourcepool.PoolPropertiesTable, resourcepool.PoolPropertiesColumn),
 		)
 		fromV = sqlgraph.Neighbors(rp.driver.Dialect(), step)
 		return fromV, nil

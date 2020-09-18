@@ -4,7 +4,7 @@ test("allocate all addresses 24", () => {
     addresses = []
     for (let i = 1; i < 255; i++) {
         let address = strat.invokeWithParams(addresses,
-            {'ResourcePoolName': "192.168.1.0/24"},
+            { 'prefix': 24, 'address': "192.168.1.0"},
             {"subnet": true})
         addresses.push(addr(address.address))
         expect(address).toStrictEqual(addr("192.168.1." + i).Properties)
@@ -12,25 +12,25 @@ test("allocate all addresses 24", () => {
 
     // If treated as subnet, prefix is exhausted
     expect(strat.invokeWithParams(addresses,
-        {'ResourcePoolName': "192.168.1.0/24"},
+        { 'prefix': 24, 'address': "192.168.1.0"},
         {"subnet": true})
     ).toStrictEqual(null)
 
     // If treated as a pool, there are still 2 more addresses left
     expect(strat.invokeWithParams(addresses,
-        {'ResourcePoolName': "192.168.1.0/24"},
+        { 'prefix': 24, 'address': "192.168.1.0"},
         {})
     ).toStrictEqual(addr("192.168.1.0").Properties)
     addresses.push(addr("192.168.1.0"))
 
     expect(strat.invokeWithParams(addresses,
-        {'ResourcePoolName': "192.168.1.0/24"},
+        { 'prefix': 24, 'address': "192.168.1.0"},
         {})
     ).toStrictEqual(addr("192.168.1.255").Properties)
     addresses.push(addr("192.168.1.255"))
 
     expect(strat.invokeWithParams(addresses,
-        {'ResourcePoolName': "192.168.1.0/24"},
+        { 'prefix': 24, 'address': "192.168.1.0"},
         {})
     ).toStrictEqual(null)
 })
@@ -49,7 +49,7 @@ test("allocate all addresses 19", () => {
                 continue
             }
             let address = strat.invokeWithParams(addresses,
-                {'ResourcePoolName': "192.168.0.0/19"},
+                { 'prefix': 19, 'address': "192.168.0.0"},
                 {"subnet": true})
             addresses.push(addr(address.address))
             expect(address).toStrictEqual(addr("192.168." + i + "." + j).Properties)
@@ -58,25 +58,25 @@ test("allocate all addresses 19", () => {
 
     // If treated as subnet, prefix is exhausted
     expect(strat.invokeWithParams(addresses,
-        {'ResourcePoolName': "192.168.0.0/19"},
+        { 'prefix': 19, 'address': "192.168.0.0"},
         {"subnet": true})
     ).toStrictEqual(null)
 
     // If treated as a pool, there are still 2 more addresses left
     expect(strat.invokeWithParams(addresses,
-        {'ResourcePoolName': "192.168.0.0/19"},
+        { 'prefix': 19, 'address': "192.168.0.0"},
         {})
     ).toStrictEqual(addr("192.168.0.0").Properties)
     addresses.push(addr("192.168.0.0"))
 
     expect(strat.invokeWithParams(addresses,
-        {'ResourcePoolName': "192.168.0.0/19"},
+        { 'prefix': 19, 'address': "192.168.0.0"},
         {})
     ).toStrictEqual(addr("192.168.31.255").Properties)
     addresses.push(addr("192.168.31.255"))
 
     expect(strat.invokeWithParams(addresses,
-        {'ResourcePoolName': "192.168.0.0/19"},
+        { 'prefix': 19, 'address': "192.168.0.0"},
         {})
     ).toStrictEqual(null)
 })
@@ -84,7 +84,7 @@ test("allocate all addresses 19", () => {
 test("allocate ipv4 at start with existing resources", () => {
     let subnet = strat.invokeWithParams(
         [addr("192.168.1.2")],
-        {'ResourcePoolName': "192.168.1.0/24"},
+        { 'prefix': 24, 'address': "192.168.1.0"},
         {"subnet": true});
     expect(subnet)
         .toStrictEqual(addr("192.168.1.1").Properties)

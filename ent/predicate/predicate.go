@@ -9,6 +9,9 @@ import (
 // AllocationStrategy is the predicate function for allocationstrategy builders.
 type AllocationStrategy func(*sql.Selector)
 
+// PoolProperties is the predicate function for poolproperties builders.
+type PoolProperties func(*sql.Selector)
+
 // Property is the predicate function for property builders.
 type Property func(*sql.Selector)
 

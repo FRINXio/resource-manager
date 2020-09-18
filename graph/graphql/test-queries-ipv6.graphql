@@ -26,7 +26,7 @@ query QueryStrats {
 mutation TestAllocationStrat_ipv6prefix {
     TestAllocationStrategy(
         allocationStrategyId: 5,
-        resourcePool: { ResourcePoolName: "dead::/120"},
+        resourcePool: { ResourcePoolName: "dead::/120", poolValues: { prefix: 120, address: "dead::"} },
         currentResources: [],
         userInput: {desiredSize: 101})
 }
@@ -34,7 +34,7 @@ mutation TestAllocationStrat_ipv6prefix {
 mutation TestAllocationStrat_ipv6 {
     TestAllocationStrategy(
         allocationStrategyId: 6,
-        resourcePool: { ResourcePoolName: "dead::/120"},
+        resourcePool: { ResourcePoolName: "dead::/120", poolValues: { prefix: 120, address: "dead::"}},
         currentResources: [],
         userInput: {subnet:true})
 }
@@ -42,10 +42,15 @@ mutation TestAllocationStrat_ipv6 {
 # Root pool
 mutation CreateRootPool_allocating {
     CreateAllocatingPool(input: {
-        resourceTypeId: 21474836484,
-        poolName: "dead::/120",
+        resourceTypeId: 25769803780,
+        poolName: "rootpooldead::/120",
         allocationStrategyId: 5,
-        poolDealocationSafetyPeriod: 0}
+        poolDealocationSafetyPeriod: 0,
+        poolPropertyTypes: {
+            address: "string",
+            prefix: "int"
+        },
+        poolProperties: {address: "dead::", prefix: 120},}
     ){
         pool {
             id
@@ -55,7 +60,7 @@ mutation CreateRootPool_allocating {
 
 # Pool dead::/121 on level #2
 mutation ClaimResourceFromRoot {
-    ClaimResource(poolId:17179869184, userInput: {desiredSize: 128}) {
+    ClaimResource(poolId:21474836480, userInput: {desiredSize: 128}) {
         id
         Properties
     }
@@ -63,11 +68,11 @@ mutation ClaimResourceFromRoot {
 
 mutation CreateLevel2Pool1_allocating {
     CreateNestedAllocatingPool(input: {
-        resourceTypeId: 21474836485,
-        poolName: "dead::/121",
+        resourceTypeId: 25769803781,
+        poolName: "level2pool1dead::/121",
         allocationStrategyId: 6,
         poolDealocationSafetyPeriod: 0,
-        parentResourceId: 12884901888
+        parentResourceId: 17179869184
     }
     ){
         pool {
@@ -78,7 +83,7 @@ mutation CreateLevel2Pool1_allocating {
 
 # Pool dead::80/121 on level #2
 mutation ClaimResourceFromRoot {
-    ClaimResource(poolId:17179869184, userInput: {desiredSize:128}) {
+    ClaimResource(poolId:21474836480, userInput: {desiredSize:128}) {
         id
         Properties
     }
@@ -86,11 +91,11 @@ mutation ClaimResourceFromRoot {
 
 mutation CreateLevel2Pool2_allocating {
     CreateNestedAllocatingPool(input: {
-        resourceTypeId: 21474836485,
+        resourceTypeId: 25769803781,
         poolName: "dead::80/121",
         allocationStrategyId: 6,
         poolDealocationSafetyPeriod: 0,
-        parentResourceId: 12884901889
+        parentResourceId: 17179869185
     }
     ){
         pool {
@@ -101,7 +106,7 @@ mutation CreateLevel2Pool2_allocating {
 
 # Get ips from pool dead::/121 on level #2
 mutation ClaimResourceFromLevel2Pool1 {
-    ClaimResource(poolId:17179869185, userInput: {}) {
+    ClaimResource(poolId:21474836481, userInput: {}) {
         id
         Properties
     }
@@ -109,7 +114,7 @@ mutation ClaimResourceFromLevel2Pool1 {
 
 # Get ips from pool dead::80/121 on level #2
 mutation ClaimResourceFromLevel2Pool2 {
-    ClaimResource(poolId:17179869186, userInput: {}) {
+    ClaimResource(poolId:21474836482, userInput: {}) {
         id
         Properties
     }

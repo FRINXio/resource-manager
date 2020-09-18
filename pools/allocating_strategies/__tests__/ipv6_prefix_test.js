@@ -58,7 +58,7 @@ test("single allocation pool ipv6", () => {
     for (let i = 1; i <= 128-8; i++) {
         let desiredSize = BigInt(2) ** BigInt(i)
         let subnet = strat.invokeWithParams([],
-            {'ResourcePoolName': "bb00::/8"},
+            { 'prefix': 8, 'address': "bb00::"},
             {"desiredSize": desiredSize});
         expect(subnet)
             .toStrictEqual(prefix("bb00::", 128 - i).Properties)
@@ -69,7 +69,7 @@ test("single allocation pool ipv6 subnet", () => {
     for (let i = 1; i <= 128-8-1; i++) {
         let desiredSize = BigInt(2) ** BigInt(i)
         let subnet = strat.invokeWithParams([],
-            {'ResourcePoolName': "bb00::/8"},
+            { 'prefix': 8, 'address': "bb00::"},
             {"desiredSize": desiredSize, "subnet": true});
         expect(subnet)
             .toStrictEqual(prefix("bb00::", 128 - i - 1).Properties)
@@ -79,7 +79,7 @@ test("single allocation pool ipv6 subnet", () => {
 test("allocate range at start with existing resources ipv6", () => {
     let subnet = strat.invokeWithParams(
         [prefix("dead::be02", 127)],
-            {'ResourcePoolName': "dead::be00/120"},
+        { 'prefix': 120, 'address': "dead::be00"},
         {"desiredSize": 2});
     expect(subnet)
         .toStrictEqual(prefix("dead::be00", 127).Properties)
@@ -87,20 +87,20 @@ test("allocate range at start with existing resources ipv6", () => {
 
 test("desired size > than root ipv6", () => {
     expect(strat.invokeWithParams([],
-        {'ResourcePoolName': "dead::be00/120"},
+        { 'prefix': 120, 'address': "dead::be00"},
         {"desiredSize": 300}))
         .toStrictEqual(null)
 })
 
 test("desired size === root ipv6", () => {
     expect(strat.invokeWithParams([],
-        {'ResourcePoolName': "dead::/104"},
+        { 'prefix': 104, 'address': "dead::"},
         {"desiredSize": 16777216}))
         .toStrictEqual(prefix("dead::", 104).Properties)
 })
 
 test("ipv6 prefix allocation /104", () => {
-    let resourcePoolArg = {'ResourcePoolName': "abcd:ef01:2345:6789::/104"};
+    let resourcePoolArg = { 'prefix': 104, 'address': "abcd:ef01:2345:6789::"};
     let subnets = []
     let expectedSubnets = [
         prefix("abcd:ef01:2345:6789::", 108),

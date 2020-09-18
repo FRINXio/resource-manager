@@ -1,7 +1,7 @@
 // framework managed constants
 var currentResources = []
-var resourcePool = {}
-var userInput = {}
+var resourcePoolProperties = {}
+
 // framework managed constants
 
 // STRATEGY_START
@@ -15,40 +15,6 @@ VLAN allocation strategy
 - 0 and 4095 are not reserved !
 - Allocates previously freed resources
  */
-
-const rangeRegx = /\[([0-9]+)-([0-9]+)\]/
-
-const VLAN_MIN = 0
-const VLAN_MAX = 4095
-
-function parse_range(str) {
-    let res = rangeRegx.exec(str)
-    if (res == null) {
-        console.error("VLAN range cannot be parsed from pool name: " + str + ". Not matching pattern: " + rangeRegx)
-        return null
-    }
-
-    from = parseInt(res[1])
-    to = parseInt(res[2])
-    if (from < VLAN_MIN || from >= VLAN_MAX) {
-        console.error("VLAN range invalid, from end is: " + from)
-        return null
-    }
-    if (to <= VLAN_MIN || to > VLAN_MAX) {
-        console.error("VLAN range invalid, to end is: " + from)
-        return null
-    }
-
-    if (from >= to) {
-        console.error("VLAN range invalid, from end: " + from + " and to end: " + to + " do not form a range")
-        return null
-    }
-
-    return {
-        "from": from,
-        "to": to
-    }
-}
 
 function rangeCapacity(vlanRange) {
     return vlanRange.to - vlanRange.from + 1
@@ -77,16 +43,15 @@ function logStats(newlyAllocatedVlan, parentRange, allocatedVlans = [], level = 
 }
 
 function invoke() {
-    let parentRangeStr = resourcePool.ResourcePoolName
-    let parentRange = parse_range(parentRangeStr)
+    let parentRange = resourcePoolProperties;
     if (parentRange == null) {
         console.error("Unable to allocate VLAN" +
-            ". Unable to extract parent vlan range from pool name: " + parentRangeStr)
+            ". Unable to extract parent vlan range from pool name: " + resourcePoolProperties)
         return null
     }
 
     // unwrap currentResources
-    currentResourcesUnwrapped = currentResources.map(cR => cR.Properties)
+    let currentResourcesUnwrapped = currentResources.map(cR => cR.Properties)
     let currentResourcesSet = new Set(currentResourcesUnwrapped.map(vlan => vlan.vlan))
 
     for (let i = parentRange.from; i <= parentRange.to; i++) {
@@ -115,7 +80,7 @@ function rangeToStr(range) {
 // For testing purposes
 function invokeWithParams(currentResourcesArg, resourcePoolArg) {
     currentResources = currentResourcesArg
-    resourcePool = resourcePoolArg
+    resourcePoolProperties = resourcePoolArg
     return invoke()
 }
 

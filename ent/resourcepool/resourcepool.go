@@ -28,6 +28,8 @@ const (
 	EdgeTags = "tags"
 	// EdgeClaims holds the string denoting the claims edge name in mutations.
 	EdgeClaims = "claims"
+	// EdgePoolProperties holds the string denoting the poolproperties edge name in mutations.
+	EdgePoolProperties = "poolProperties"
 	// EdgeAllocationStrategy holds the string denoting the allocation_strategy edge name in mutations.
 	EdgeAllocationStrategy = "allocation_strategy"
 	// EdgeParentResource holds the string denoting the parent_resource edge name in mutations.
@@ -54,6 +56,13 @@ const (
 	ClaimsInverseTable = "resources"
 	// ClaimsColumn is the table column denoting the claims relation/edge.
 	ClaimsColumn = "resource_pool_claims"
+	// PoolPropertiesTable is the table the holds the poolProperties relation/edge.
+	PoolPropertiesTable = "pool_properties"
+	// PoolPropertiesInverseTable is the table name for the PoolProperties entity.
+	// It exists in this package in order to avoid circular dependency with the "poolproperties" package.
+	PoolPropertiesInverseTable = "pool_properties"
+	// PoolPropertiesColumn is the table column denoting the poolProperties relation/edge.
+	PoolPropertiesColumn = "resource_pool_pool_properties"
 	// AllocationStrategyTable is the table the holds the allocation_strategy relation/edge.
 	AllocationStrategyTable = "resource_pools"
 	// AllocationStrategyInverseTable is the table name for the AllocationStrategy entity.

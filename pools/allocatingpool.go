@@ -2,6 +2,9 @@ package pools
 
 import (
 	"context"
+	"github.com/net-auto/resourceManager/ent/poolproperties"
+	"github.com/net-auto/resourceManager/ent/predicate"
+	"github.com/net-auto/resourceManager/ent/property"
 	"time"
 
 	"github.com/net-auto/resourceManager/ent"
@@ -11,6 +14,58 @@ import (
 	"github.com/pkg/errors"
 )
 
+func DeletePoolProperties(ctx context.Context, client *ent.Client, poolId int) error {
+	poolProperties, err1 := client.PoolProperties.Query().Where(poolproperties.HasPoolWith(resourcePool.ID(poolId))).WithProperties().Only(ctx)
+
+	if err1 != nil && !ent.IsNotFound(err1) {
+		return err1
+	}
+
+	//pool properties does not exist for this pool (it is nested)
+	if ent.IsNotFound(err1) {
+		return nil
+	}
+
+	rp, err := client.ResourcePool.Query().Where(resourcePool.ID(poolId)).WithParentResource().Only(ctx)
+	if err != nil {
+		return err
+	}
+
+	//if we are deleting root pool we need to delete the individual properties as well
+	if rp.Edges.ParentResource == nil {
+		propertyIdsToDelete := make([]predicate.Property, len(poolProperties.Edges.Properties))
+		for i, prop := range poolProperties.Edges.Properties {
+			propertyIdsToDelete[i] = property.ID(prop.ID)
+		}
+
+		_, err := client.Property.Delete().Where(property.Or(propertyIdsToDelete...)).Exec(ctx)
+		if err != nil {
+			return err
+		}
+	}
+
+	if err := client.PoolProperties.DeleteOne(poolProperties).Exec(ctx); err != nil {
+		return err
+	}
+
+	return nil
+}
+
+func CreatePoolProperties(ctx context.Context, client *ent.Client, pp []map[string]interface{},resPropertyType *ent.ResourceType ) (*ent.PoolProperties, error) {
+	var propTypes = ToRawTypes(pp)
+
+	//this loops only once
+	for _, propType := range propTypes {
+		properties, err := ParseProps(ctx, client, resPropertyType, propType)
+		if err != nil {
+			return nil, err
+		}
+		return client.PoolProperties.Create().AddProperties(properties...).AddResourceType(resPropertyType).Save(ctx)
+	}
+
+	return nil, errors.New("Unable to create pool properties")
+}
+
 // NewAllocatingPool creates a brand new pool allocating DB entities in the process
 func NewAllocatingPool(
 	ctx context.Context,
@@ -19,7 +74,7 @@ func NewAllocatingPool(
 	allocationStrategy *ent.AllocationStrategy,
 	poolName string,
 	poolDealocationSafetyPeriod int) (Pool, error) {
-	pool, _, err := NewAllocatingPoolWithMeta(ctx, client, resourceType, allocationStrategy, poolName, nil, poolDealocationSafetyPeriod)
+	pool, _, err := NewAllocatingPoolWithMeta(ctx, client, resourceType, allocationStrategy, poolName, nil, poolDealocationSafetyPeriod, nil)
 	return pool, err
 }
 
@@ -30,7 +85,8 @@ func NewAllocatingPoolWithMeta(ctx context.Context,
 	allocationStrategy *ent.AllocationStrategy,
 	poolName string,
 	description *string,
-	poolDealocationSafetyPeriod int) (Pool, *ent.ResourcePool, error) {
+	poolDealocationSafetyPeriod int,
+	poolProperties *ent.PoolProperties) (Pool, *ent.ResourcePool, error) {
 
 	// TODO keep just single instance
 	wasmer, err := NewWasmerUsingEnvVars()
@@ -38,7 +94,7 @@ func NewAllocatingPoolWithMeta(ctx context.Context,
 		return nil, nil, errors.Wrap(err, "Cannot create resource pool")
 	}
 	return newAllocatingPoolWithMetaInternal(
-		ctx, client, resourceType, allocationStrategy, poolName, description, wasmer, poolDealocationSafetyPeriod)
+		ctx, client, resourceType, allocationStrategy, poolName, description, wasmer, poolDealocationSafetyPeriod, poolProperties)
 }
 
 func newAllocatingPoolWithMetaInternal(
@@ -49,7 +105,8 @@ func newAllocatingPoolWithMetaInternal(
 	poolName string,
 	description *string,
 	invoker ScriptInvoker,
-	poolDealocationSafetyPeriod int) (Pool, *ent.ResourcePool, error) {
+	poolDealocationSafetyPeriod int,
+	poolProperties *ent.PoolProperties) (Pool, *ent.ResourcePool, error) {
 
 	pool, err := client.ResourcePool.Create().
 		SetName(poolName).
@@ -59,6 +116,14 @@ func newAllocatingPoolWithMetaInternal(
 		SetAllocationStrategy(allocationStrategy).
 		SetDealocationSafetyPeriod(poolDealocationSafetyPeriod).
 		Save(ctx)
+
+	if err != nil {
+		return nil, nil, errors.Wrap(err, "Cannot create resource pool")
+	}
+
+	if poolProperties != nil {
+		_, err = pool.Update().SetPoolProperties(poolProperties).Save(ctx)
+	}
 
 	if err != nil {
 		return nil, nil, errors.Wrap(err, "Cannot create resource pool")
@@ -96,6 +161,15 @@ func (pool AllocatingPool) AllocationStrategy() (*ent.AllocationStrategy, error)
 	return pool.ResourcePool.QueryAllocationStrategy().Only(pool.ctx)
 }
 
+func (pool AllocatingPool) PoolProperties() ([]*ent.Property, error) {
+	return pool.QueryPoolProperties().QueryProperties().WithType().All(pool.ctx)
+}
+
+// TODO add capacity implementation
+func (pool AllocatingPool) Capacity() (int, error) {
+	return 1, nil
+}
+
 // ClaimResource allocates the next available resource
 func (pool AllocatingPool) ClaimResource(userInput map[string]interface{}) (*ent.Resource, error) {
 
@@ -104,6 +178,20 @@ func (pool AllocatingPool) ClaimResource(userInput map[string]interface{}) (*ent
 		return nil, errors.Wrapf(err,
 			"Unable to claim resource from pool #%d, allocation strategy loading error ", pool.ID)
 	}
+
+	ps, err := pool.PoolProperties()
+
+	if err != nil {
+		return nil, errors.Wrapf(err,
+			"Unable to claim resource from pool #%d, resource type loading error ", pool.ID)
+	}
+
+	propMap, propErr := convertProperties(ps)
+
+	if propErr != nil {
+		return nil, errors.Wrapf(propErr, "Unable to convert value from property")
+	}
+
 	resourceType, err := pool.ResourceType()
 	if err != nil {
 		return nil, errors.Wrapf(err,
@@ -120,7 +208,7 @@ func (pool AllocatingPool) ClaimResource(userInput map[string]interface{}) (*ent
 	}
 
 	resourceProperties, _ /*TODO do something with logs */, err := InvokeAllocationStrategy(
-		pool.invoker, strat, userInput, resourcePool, currentResources)
+		pool.invoker, strat, userInput, resourcePool, currentResources, propMap)
 	if err != nil {
 		return nil, errors.Wrapf(err,
 			"Unable to claim resource from pool #%d, allocation strategy \"%s\" failed", pool.ID, strat.Name)
@@ -170,6 +258,21 @@ func (pool AllocatingPool) ClaimResource(userInput map[string]interface{}) (*ent
 		return nil, errors.Wrapf(err, "Cannot update resource #%d", res.ID)
 	}
 	return res, nil
+}
+
+func convertProperties(ps []*ent.Property) (map[string]interface{}, error) {
+	result := make(map[string]interface{})
+
+	for _, p := range ps {
+		value, err := GetValue(p)
+		if err != nil {
+			return nil, err
+		}
+
+		result[p.Edges.Type.Name] = value
+	}
+
+	return result, nil
 }
 
 func  (pool AllocatingPool) loadClaimedResources() ([]*model.ResourceInput, error) {

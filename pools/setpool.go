@@ -110,6 +110,11 @@ func (pool SetPool) ClaimResource(userInput map[string]interface{}) (*ent.Resour
 	return unclaimedRes, err
 }
 
+// TODO add capacity implementation
+func (pool SetPool) Capacity() (int, error) {
+	return 1, nil
+}
+
 // FreeResource deallocates the resource identified by its properties
 func (pool SetPool) FreeResource(raw RawResourceProps) error {
 	return pool.freeResourceInner(raw, pool.retireResource, pool.freeResourceImmediately, pool.benchResource)

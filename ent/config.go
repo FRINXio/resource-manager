@@ -25,6 +25,7 @@ type config struct {
 // hooks per client, for fast access.
 type hooks struct {
 	AllocationStrategy []ent.Hook
+	PoolProperties     []ent.Hook
 	Property           []ent.Hook
 	PropertyType       []ent.Hook
 	Resource           []ent.Hook

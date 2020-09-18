@@ -8,11 +8,13 @@ import (
 )
 
 type CreateAllocatingPoolInput struct {
-	ResourceTypeID              int     `json:"resourceTypeId"`
-	PoolName                    string  `json:"poolName"`
-	Description                 *string `json:"description"`
-	AllocationStrategyID        int     `json:"allocationStrategyId"`
-	PoolDealocationSafetyPeriod int     `json:"poolDealocationSafetyPeriod"`
+	ResourceTypeID              int                    `json:"resourceTypeId"`
+	PoolName                    string                 `json:"poolName"`
+	Description                 *string                `json:"description"`
+	AllocationStrategyID        int                    `json:"allocationStrategyId"`
+	PoolDealocationSafetyPeriod int                    `json:"poolDealocationSafetyPeriod"`
+	PoolProperties              map[string]interface{} `json:"poolProperties"`
+	PoolPropertyTypes           map[string]interface{} `json:"poolPropertyTypes"`
 }
 
 type CreateAllocatingPoolPayload struct {
@@ -164,7 +166,8 @@ type ResourceInput struct {
 }
 
 type ResourcePoolInput struct {
-	ResourcePoolName string `json:"ResourcePoolName"`
+	PoolProperties   map[string]interface{} `json:"poolProperties"`
+	ResourcePoolName string                 `json:"ResourcePoolName"`
 }
 
 type TagAnd struct {

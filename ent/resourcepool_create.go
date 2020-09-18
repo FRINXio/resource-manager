@@ -10,6 +10,7 @@ import (
 	"github.com/facebook/ent/dialect/sql/sqlgraph"
 	"github.com/facebook/ent/schema/field"
 	"github.com/net-auto/resourceManager/ent/allocationstrategy"
+	"github.com/net-auto/resourceManager/ent/poolproperties"
 	"github.com/net-auto/resourceManager/ent/resource"
 	"github.com/net-auto/resourceManager/ent/resourcepool"
 	"github.com/net-auto/resourceManager/ent/resourcetype"
@@ -110,6 +111,25 @@ func (rpc *ResourcePoolCreate) AddClaims(r ...*Resource) *ResourcePoolCreate {
 		ids[i] = r[i].ID
 	}
 	return rpc.AddClaimIDs(ids...)
+}
+
+// SetPoolPropertiesID sets the poolProperties edge to PoolProperties by id.
+func (rpc *ResourcePoolCreate) SetPoolPropertiesID(id int) *ResourcePoolCreate {
+	rpc.mutation.SetPoolPropertiesID(id)
+	return rpc
+}
+
+// SetNillablePoolPropertiesID sets the poolProperties edge to PoolProperties by id if the given value is not nil.
+func (rpc *ResourcePoolCreate) SetNillablePoolPropertiesID(id *int) *ResourcePoolCreate {
+	if id != nil {
+		rpc = rpc.SetPoolPropertiesID(*id)
+	}
+	return rpc
+}
+
+// SetPoolProperties sets the poolProperties edge to PoolProperties.
+func (rpc *ResourcePoolCreate) SetPoolProperties(p *PoolProperties) *ResourcePoolCreate {
+	return rpc.SetPoolPropertiesID(p.ID)
 }
 
 // SetAllocationStrategyID sets the allocation_strategy edge to AllocationStrategy by id.
@@ -325,6 +345,25 @@ func (rpc *ResourcePoolCreate) createSpec() (*ResourcePool, *sqlgraph.CreateSpec
 				IDSpec: &sqlgraph.FieldSpec{
 					Type:   field.TypeInt,
 					Column: resource.FieldID,
+				},
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges = append(_spec.Edges, edge)
+	}
+	if nodes := rpc.mutation.PoolPropertiesIDs(); len(nodes) > 0 {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2O,
+			Inverse: false,
+			Table:   resourcepool.PoolPropertiesTable,
+			Columns: []string{resourcepool.PoolPropertiesColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: &sqlgraph.FieldSpec{
+					Type:   field.TypeInt,
+					Column: poolproperties.FieldID,
 				},
 			},
 		}

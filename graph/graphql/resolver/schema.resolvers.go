@@ -120,7 +120,13 @@ func (r *mutationResolver) TestAllocationStrategy(ctx context.Context, allocatio
 		return nil, gqlerror.Errorf("Unable to create scripting engine: %v", err)
 	}
 
-	parsedOutputFromStrat, stdErr, err := p.InvokeAllocationStrategy(wasmer, strat, userInput, resourcePool, currentResources)
+	poolPropertiesMaps := make(map[string]interface{})
+
+	for key, element := range resourcePool.PoolProperties {
+		poolPropertiesMaps[key] = element
+	}
+
+	parsedOutputFromStrat, stdErr, err := p.InvokeAllocationStrategy(wasmer, strat, userInput, resourcePool, currentResources, poolPropertiesMaps)
 	if err != nil {
 		return nil, gqlerror.Errorf("Error while running the script: %v", err)
 	}
@@ -235,9 +241,36 @@ func (r *mutationResolver) CreateNestedSingletonPool(ctx context.Context, input 
 
 func (r *mutationResolver) CreateAllocatingPool(ctx context.Context, input *model.CreateAllocatingPoolInput) (*model.CreateAllocatingPoolPayload, error) {
 	var client = r.ClientFrom(ctx)
+	emptyRetVal := model.CreateAllocatingPoolPayload{Pool: nil}
+
+	var resPropertyType *ent.ResourceType = nil
+	//create additional resource type IFF we are not a nested type
+	//only root pool
+	if input.PoolPropertyTypes != nil {
+		rp, err2 := r.CreateResourceType(ctx, model.CreateResourceTypeInput{
+			ResourceName:       input.PoolName + "-ResourceType",
+			ResourceProperties: input.PoolPropertyTypes,
+		})
+
+		if err2 != nil || rp == nil || rp.ResourceType == nil {
+			return &emptyRetVal, gqlerror.Errorf("Unable to create pool: %v", err2)
+		}
+
+		resPropertyType = rp.ResourceType
+	}
+
+	var poolProperties *ent.PoolProperties = nil
+
+	// only root pool
+	if resPropertyType != nil {
+		pp, err := p.CreatePoolProperties(ctx, client, []map[string]interface{}{input.PoolProperties}, resPropertyType)
+		if err != nil {
+			return &emptyRetVal, gqlerror.Errorf("Unable to create pool properties: %v", err)
+		}
+		poolProperties = pp
+	}
 
 	resType, errRes := client.ResourceType.Get(ctx, input.ResourceTypeID)
-	emptyRetVal := model.CreateAllocatingPoolPayload{Pool: nil}
 	if errRes != nil {
 		return &emptyRetVal, gqlerror.Errorf("Unable to create pool: %v", errRes)
 	}
@@ -247,7 +280,7 @@ func (r *mutationResolver) CreateAllocatingPool(ctx context.Context, input *mode
 	}
 
 	_, rp, err := p.NewAllocatingPoolWithMeta(ctx, client, resType, allocationStrat,
-		input.PoolName, input.Description, input.PoolDealocationSafetyPeriod)
+		input.PoolName, input.Description, input.PoolDealocationSafetyPeriod, poolProperties)
 	if err != nil {
 		return &emptyRetVal, gqlerror.Errorf("Unable to create pool: %v", err)
 	}
@@ -289,6 +322,11 @@ func (r *mutationResolver) DeleteResourcePool(ctx context.Context, input model.D
 	allocatedResources, err2 := pool.QueryResources()
 	if len(allocatedResources) > 0 || err2 != nil {
 		return &retVal, gqlerror.Errorf("Unable to delete pool, pool has allocated resources, deallocate those first")
+	}
+
+	errP := p.DeletePoolProperties(ctx, client, input.ResourcePoolID)
+	if errP != nil {
+		return &retVal, gqlerror.Errorf("Unable to delete root pool properties: %v", errP)
 	}
 
 	if err := client.ResourcePool.DeleteOneID(input.ResourcePoolID).Exec(ctx); err != nil {

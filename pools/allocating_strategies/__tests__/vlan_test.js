@@ -6,18 +6,18 @@ test("missing parent range", () => {
 })
 
 test("allocate vlan", () => {
-    expect(strat.invokeWithParams([], {'ResourcePoolName': "[0-4095]"}))
+    expect(strat.invokeWithParams([], {'from': 0, 'to':4095}))
         .toStrictEqual(vlan(0).Properties)
-    expect(strat.invokeWithParams([vlan(1)], {'ResourcePoolName': "[0-4095]"}))
+    expect(strat.invokeWithParams([vlan(1)], {'from': 0, 'to':4095}))
         .toStrictEqual(vlan(0).Properties)
-    expect(strat.invokeWithParams([vlan(278)], {'ResourcePoolName': "[278-333]"}))
+    expect(strat.invokeWithParams([vlan(278)], {'from': 278, 'to':333}))
         .toStrictEqual(vlan(279).Properties)
-    expect(strat.invokeWithParams(vlans(0, 4094), {'ResourcePoolName': "[0-4095]"}))
+    expect(strat.invokeWithParams(vlans(0, 4094), {'from': 0, 'to':4095}))
         .toStrictEqual(vlan(4095).Properties)
 })
 
 test("allocate vlan full", () => {
-    expect(strat.invokeWithParams(vlans(0, 4095), {'ResourcePoolName': "[0-4095]"}))
+    expect(strat.invokeWithParams(vlans(0, 4095), {'from': 0, 'to':4095}))
         .toStrictEqual(null)
 })
 

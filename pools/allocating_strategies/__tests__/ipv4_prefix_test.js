@@ -4,7 +4,7 @@ test("single allocation pool", () => {
     for (let i = 1; i <= 8; i++) {
         let desiredSize = Math.pow(2, i)
         let subnet = strat.invokeWithParams([],
-            {'ResourcePoolName': "192.168.1.0/24"},
+            { 'prefix': 24, 'address': "192.168.1.0"},
             {"desiredSize": desiredSize});
         expect(subnet)
             .toStrictEqual(prefix("192.168.1.0", 32 - i).Properties)
@@ -15,7 +15,7 @@ test("single allocation subnet", () => {
     for (let i = 1; i <= 7; i++) {
         let desiredSize = Math.pow(2, i)
         let subnet = strat.invokeWithParams([],
-            {'ResourcePoolName': "192.168.1.0/24"},
+            { 'prefix': 24, 'address': "192.168.1.0"},
             {"desiredSize": desiredSize, "subnet": true});
         expect(subnet)
             .toStrictEqual(prefix("192.168.1.0", 32 - i - 1).Properties)
@@ -25,7 +25,7 @@ test("single allocation subnet", () => {
 test("allocate range at start with existing resources", () => {
     let subnet = strat.invokeWithParams(
         [prefix("192.168.1.16", 28)],
-        {'ResourcePoolName': "192.168.1.0/24"},
+        { 'prefix': 24, 'address': "192.168.1.0"},
         {"desiredSize": 10});
     expect(subnet)
         .toStrictEqual(prefix("192.168.1.0", 28).Properties)
@@ -33,29 +33,29 @@ test("allocate range at start with existing resources", () => {
 
 test("ipv4 prefix allocation subnet vs. pool", () => {
     expect(strat.invokeWithParams([],
-        {'ResourcePoolName': "192.168.1.0/24"},
+        { 'prefix': 24, 'address': "192.168.1.0"},
         {"desiredSize": 2, "subnet": true}))
         .toStrictEqual(prefix("192.168.1.0", 30).Properties)
 
     expect(strat.invokeWithParams([],
-        {'ResourcePoolName': "192.168.1.0/24"},
+        { 'prefix': 24, 'address': "192.168.1.0"},
         {"desiredSize": 2, "subnet": false}))
         .toStrictEqual(prefix("192.168.1.0", 31).Properties)
 
     expect(strat.invokeWithParams([],
-        {'ResourcePoolName': "192.168.1.0/24"},
+        { 'prefix': 24, 'address': "192.168.1.0"},
         {"desiredSize": 256, "subnet": false}))
         .toStrictEqual(prefix("192.168.1.0", 24).Properties)
 
     // 256 desired size for a subnet does not fit into 192.168.1.0/24
     expect(strat.invokeWithParams([],
-        {'ResourcePoolName': "192.168.1.0/24"},
+        { 'prefix': 24, 'address': "192.168.1.0"},
         {"desiredSize": 256, "subnet": true}))
         .toStrictEqual(null)
 })
 
 test("ipv4 prefix allocation 24", () => {
-    let resourcePoolArg = {'ResourcePoolName': "192.168.1.0/24"};
+    let resourcePoolArg = { 'prefix': 24, 'address': "192.168.1.0"};
     let subnets = []
     let expectedSubnets = [
         prefix("192.168.1.0", 28),      // 10 ->   0 -  15
@@ -115,7 +115,7 @@ test("ipv4 prefix allocation 24", () => {
 
 // This test is the same as "ipv4 prefix allocation 24" everything is just multiplied by 256*256 to simplify the assertions
 test("ipv4 prefix allocation 8", () => {
-    let resourcePoolArg = {'ResourcePoolName': "10.0.0.0/8"};
+    let resourcePoolArg = { 'prefix': 8, 'address': "10.0.0.0"};
     let subnets = []
     let expectedSubnets = [
         prefix("10.0.0.0", 12),
@@ -171,14 +171,14 @@ test("ipv4 prefix allocation 8", () => {
 
 test("desired size > than root", () => {
     expect(strat.invokeWithParams([],
-        {'ResourcePoolName': "192.168.1.0/24"},
+        { 'prefix': 24, 'address': "192.168.1.0"},
         {"desiredSize": 300}))
         .toStrictEqual(null)
 })
 
 test("desired size === than root", () => {
     expect(strat.invokeWithParams([],
-        {'ResourcePoolName': "192.168.1.0/24"},
+        { 'prefix': 24, 'address': "192.168.1.0"},
         {"desiredSize": 256}))
         .toStrictEqual(prefix("192.168.1.0", 24).Properties)
 })
