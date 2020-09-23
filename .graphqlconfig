@@ -7,7 +7,7 @@
         "url": "http://localhost:8884/query",
         "headers": {
           "x-tenant-id": "fb",
-          "x-auth-user-role": "OWNER",
+          "x-auth-user-roles": "OWNER",
           "from": "fb-user@frinx.io"
         },
         "introspect": false

@@ -24,6 +24,7 @@ const (
 	// TenantHeader is the http tenant header.
 	TenantHeader = "x-tenant-id"
 	UserHeader = "from"
+	RoleHeader = "x-auth-user-roles"
 )
 
 // TenancyHandler adds viewer / tenancy into incoming requests.
@@ -38,17 +39,17 @@ func TenancyHandler(h http.Handler, tenancy Tenancy, logger log.Logger) http.Han
 		}
 		logger = logger.With(zap.String("tenant", tenant))
 
-		role := user.Role(r.Header.Get(fb_viewer.RoleHeader))
-		if err := user.RoleValidator(role); err != nil {
-			logger.Warn("request contains invalid role",
-				zap.Stringer("role", role),
-				zap.Error(err),
-			)
-			// NH-261 TODO use role in RBAC
-			role = "OWNER"
-			// http.Error(w, err.Error(), http.StatusBadRequest)
-			// return
-		}
+		// NH-261 TODO use role in RBAC
+		role := user.Role("OWNER")
+		//role := user.Role(r.Header.Get(RoleHeader))
+		//if err := user.RoleValidator(role); err != nil {
+		//	logger.Warn("request contains invalid role",
+		//		zap.Stringer("role", role),
+		//		zap.Error(err),
+		//	)
+		//	// http.Error(w, err.Error(), http.StatusBadRequest)
+		//	// return
+		//}
 
 		client, err := tenancy.ClientFor(r.Context(), tenant)
 		if err != nil {
