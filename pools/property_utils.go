@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"strconv"
+	"encoding/json"
 
 	"github.com/net-auto/resourceManager/ent"
 	"github.com/net-auto/resourceManager/ent/predicate"
@@ -90,6 +91,12 @@ func CompareProps(
 				intVal = int(t)
 			case float64:
 				intVal = int(t)
+			case json.Number:
+				intVal64, err := pV.(json.Number).Int64()
+				if err != nil {
+					return nil, errors.Errorf("Unable to convert a json number, error: %v", err)
+				}
+				intVal = int(intVal64)
 			default:
 				return nil, errors.Errorf("Unsupported int conversion from %T", t)
 			}
