@@ -64,6 +64,21 @@ Lots of components and parts of the DB schema are reused from the inventory proj
 ### Model driven DB
 Database schema is derived/generated from ent.go schema definition. Ent.go hides/handles all DB interactions. Ent schema can be found at ent/schema
 
+**IMPORTANT** the underlying database needs to be set to the serializable isolation level. In the current database - MySQL - this is
+done by adding the `--transaction-isolation=SERIALIZABLE ` starting parameter setting the isolation level on all sessions
+ from clients. The reason for this is the currently implemented resource claiming algorithm running in a transaction.
+ The algorithm has these steps:
+ 
+ 1. Prepare all necessary data (pool, strategy etc.) and prerequisite checks to claim a particular resource 
+ 2. Call a JS or Python script to generate a new resource
+ 3. Update the database with this particular resource
+ 
+ The problem is if multiple clients claim the resource at the same time. This causes the same resources to be computed
+ in step 2 and both clients update the database with the same resource (e.g. the same IP address). We need to isolate 
+ transactions from each other (i.e. run them serially not in parallel because we might get the same resources otherwise) 
+ thus increasing the isolation level.  
+
+
 ### Model driven graphql server
 GraphQL server is derived/generated from graphql.schema. Code which ties graphql and ent together is written manually.
 Schema needs to be kept in sync with ent.go DB schema, they are not connected in any automated way.
