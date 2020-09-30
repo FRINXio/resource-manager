@@ -2,6 +2,7 @@ package pools
 
 import (
 	"context"
+	"github.com/net-auto/resourceManager/ent/schema"
 	"log"
 	"reflect"
 	"testing"
@@ -15,10 +16,16 @@ import (
 )
 
 func getContext() context.Context {
+	schema.InitializeAdminRoles("OWNER")
 	ctx := context.Background()
-	ctx = authz.NewContext(ctx, &models.PermissionSettings{
-		CanWrite:        true,
-		WorkforcePolicy: authz.NewWorkforcePolicy(true, true)})
+	ctx = schema.WithIdentity(ctx, "fb", "fb-user", "ROLE1, OWNER, ABCD", "network-admin")
+	return ctx
+}
+
+func getContextWithFailingRbac() context.Context {
+	schema.InitializeAdminRoles("ROLE NOT MATCHING")
+	ctx := context.Background()
+	ctx = schema.WithIdentity(ctx, "fb", "fb-user", "ROLE1, OWNER, ABCD", "network-admin")
 	return ctx
 }
 
@@ -44,7 +51,7 @@ func getResourceType(ctx context.Context, client *ent.Client) (*ent.ResourceType
 		Save(ctx)
 
 	if err != nil {
-		log.Fatalf("Failed to create property type: %v", err)
+		log.Printf("Failed to create property type: %v", err)
 		return nil, err
 	}
 	resType, err := client.ResourceType.Create().
@@ -52,7 +59,7 @@ func getResourceType(ctx context.Context, client *ent.Client) (*ent.ResourceType
 		AddPropertyTypes(propType).
 		Save(ctx)
 	if err != nil {
-		log.Fatalf("Failed to create resource type: %v", err)
+		log.Printf("Failed to create resource type: %v", err)
 		return nil, err
 	}
 

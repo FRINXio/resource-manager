@@ -6,6 +6,7 @@ import (
 	"github.com/net-auto/resourceManager/ent/allocationstrategy"
 	"github.com/net-auto/resourceManager/ent/propertytype"
 	"github.com/net-auto/resourceManager/ent/resourcetype"
+	"github.com/net-auto/resourceManager/ent/schema"
 	"github.com/pkg/errors"
 )
 
@@ -383,6 +384,8 @@ func loadInner(ctx context.Context, client *ent.Tx) error {
 // LoadBuiltinTypes loads IP, VLAN etc. resource types and allocation strategies into DB
 //  does not overwrite existing resources and strategies
 func LoadBuiltinTypes(ctx context.Context, client *ent.Client) error {
+	ctx = schema.WithFullAccessIdentity(ctx)
+
 	tx, err := client.Tx(ctx)
 	if err != nil {
 		return err

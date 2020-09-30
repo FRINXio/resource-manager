@@ -362,6 +362,9 @@ func (ppq *PoolPropertiesQuery) prepareQuery(ctx context.Context) error {
 		}
 		ppq.sql = prev
 	}
+	if err := poolproperties.Policy.EvalQuery(ctx, ppq); err != nil {
+		return err
+	}
 	return nil
 }
 

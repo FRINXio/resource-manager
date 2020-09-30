@@ -2,6 +2,10 @@
 
 package poolproperties
 
+import (
+	"github.com/facebook/ent"
+)
+
 const (
 	// Label holds the string label denoting the poolproperties type in the database.
 	Label = "pool_properties"
@@ -49,3 +53,14 @@ var Columns = []string{
 var ForeignKeys = []string{
 	"resource_pool_pool_properties",
 }
+
+// Note that the variables below are initialized by the runtime
+// package on the initialization of the application. Therefore,
+// it should be imported in the main as follows:
+//
+//	import _ "github.com/net-auto/resourceManager/ent/runtime"
+//
+var (
+	Hooks  [1]ent.Hook
+	Policy ent.Policy
+)

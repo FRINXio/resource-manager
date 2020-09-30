@@ -7,6 +7,7 @@ package main
 import (
 	"context"
 	"github.com/alecthomas/kong"
+	"github.com/net-auto/resourceManager/ent/schema"
 	stdlog "log"
 	"os"
 	"syscall"
@@ -24,11 +25,12 @@ import (
 )
 
 type cliFlags struct {
-	HTTPAddr           string           `name:"web.listen-address" default:":http" help:"Web address to listen on."`
-	MySQLConfig        mysql.Config     `name:"mysql.dsn" env:"MYSQL_DSN" required:"" placeholder:"STRING" help:"MySQL data source name."`
-	LogConfig          log.Config       `embed:""`
-	TelemetryConfig    telemetry.Config `embed:""`
-	TenancyConfig      viewer.Config    `embed:""`
+	HTTPAddr           string            `name:"web.listen-address" default:":http" help:"Web address to listen on."`
+	MySQLConfig        mysql.Config      `name:"mysql.dsn" env:"MYSQL_DSN" required:"" placeholder:"STRING" help:"MySQL data source name."`
+	LogConfig          log.Config        `embed:""`
+	TelemetryConfig    telemetry.Config  `embed:""`
+	TenancyConfig      viewer.Config     `embed:""`
+	RbacConfig         schema.RbacConfig `embed:""`
 }
 
 func main() {
@@ -40,15 +42,26 @@ func main() {
 		os.Interrupt,
 		syscall.SIGTERM,
 	)
+
+
 	app, cleanup, err := newApplication(ctx, &cf)
 	if err != nil {
 		stdlog.Fatal(err)
 	}
 	defer cleanup()
 
+	app.Info("initializing RBAC with", zap.Reflect("rbacConfig", cf.RbacConfig))
+	initializeRbacSettings(cf)
+
 	app.Info("starting application", zap.String("httpEndpoint", cf.HTTPAddr))
 	err = app.run(ctx)
 	app.Info("terminating application", zap.Error(err))
+}
+
+// initializeRbacSettings configures which roles and groups grant users admin access ... globally
+func initializeRbacSettings(cf cliFlags) {
+	schema.InitializeAdminRolesFromSlice(cf.RbacConfig.AdminRoles)
+	schema.InitializeAdminGroupsFromSlice(cf.RbacConfig.AdminGroups)
 }
 
 type application struct {

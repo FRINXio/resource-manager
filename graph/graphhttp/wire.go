@@ -9,7 +9,6 @@ package graphhttp
 import (
 	"net/http"
 
-	"github.com/facebookincubator/symphony/pkg/actions/executor"
 	"github.com/facebookincubator/symphony/pkg/log"
 	"github.com/facebookincubator/symphony/pkg/mysql"
 	"github.com/facebookincubator/symphony/pkg/server"
@@ -45,10 +44,8 @@ func NewServer(cfg Config) (*server.Server, func(), error) {
 }
 
 func newRouterConfig(config Config) (cfg routerConfig, err error) {
-	registry := executor.NewRegistry()
 	cfg = routerConfig{logger: config.Logger}
 	cfg.viewer.tenancy = config.Tenancy
-	cfg.actions.registry = registry
 	return cfg, nil
 }
 

@@ -6,6 +6,8 @@ import (
 	"fmt"
 	"io"
 	"strconv"
+
+	"github.com/facebook/ent"
 )
 
 const (
@@ -101,7 +103,15 @@ var ForeignKeys = []string{
 	"resource_type_property_types",
 }
 
+// Note that the variables below are initialized by the runtime
+// package on the initialization of the application. Therefore,
+// it should be imported in the main as follows:
+//
+//	import _ "github.com/net-auto/resourceManager/ent/runtime"
+//
 var (
+	Hooks  [1]ent.Hook
+	Policy ent.Policy
 	// DefaultIsInstanceProperty holds the default value on creation for the is_instance_property field.
 	DefaultIsInstanceProperty bool
 	// DefaultEditable holds the default value on creation for the editable field.

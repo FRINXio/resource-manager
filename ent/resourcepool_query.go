@@ -478,6 +478,9 @@ func (rpq *ResourcePoolQuery) prepareQuery(ctx context.Context) error {
 		}
 		rpq.sql = prev
 	}
+	if err := resourcepool.Policy.EvalQuery(ctx, rpq); err != nil {
+		return err
+	}
 	return nil
 }
 

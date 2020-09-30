@@ -40,15 +40,8 @@ func (ResourceType) Edges() []ent.Edge {
 	}
 }
 
-// Policy returns resource type policy.
 func (ResourceType) Policy() ent.Policy {
-	// TODO setup RBAC policies for entities (RBAC based on user's role) such as:
-	// return authz.NewPolicy(
-	// 	authz.WithMutationRules(
-	// 		authz.ResourceTypeWritePolicyRule(),
-	// 	),
-	// )
-	return nil
+	return RBAC;
 }
 
 type Tag struct {
@@ -98,6 +91,9 @@ func (AllocationStrategy) Edges() []ent.Edge {
 	}
 }
 
+func (AllocationStrategy) Policy() ent.Policy {
+	return RBAC;
+}
 // ResourcePool holds the schema definition for the Resource pool entity.
 type ResourcePool struct {
 	ent.Schema
@@ -147,6 +143,10 @@ func (ResourcePool) Edges() []ent.Edge {
 	}
 }
 
+func (ResourcePool) Policy() ent.Policy {
+	return RBAC;
+}
+
 // Resource holds the schema definition for the Resource entity.
 type Resource struct {
 	ent.Schema
@@ -178,6 +178,10 @@ func (Resource) Edges() []ent.Edge {
 	}
 }
 
+func (Resource) Policy() ent.Policy {
+	return ALWAYS_ALLOWED;
+}
+
 // PoolProperties hold information on the current pool
 type PoolProperties struct {
 	ent.Schema
@@ -195,3 +199,8 @@ func (PoolProperties) Edges() []ent.Edge {
 			Annotations(entgql.Bind()),
 	}
 }
+
+func (PoolProperties) Policy() ent.Policy {
+	return RBAC;
+}
+

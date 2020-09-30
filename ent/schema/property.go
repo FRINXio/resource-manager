@@ -101,6 +101,11 @@ func (PropertyType) Edges() []ent.Edge {
 	}
 }
 
+func (PropertyType) Policy() ent.Policy {
+	return RBAC;
+}
+
+
 // Property defines the property schema.
 type Property struct {
 	ent.Schema
@@ -153,4 +158,8 @@ func (Property) Edges() []ent.Edge {
 			Annotations(entgql.Bind()).
 			StructTag(`gqlgen:"propertyType"`),
 	}
+}
+
+func (Property) Policy() ent.Policy {
+	return ALWAYS_ALLOWED;
 }

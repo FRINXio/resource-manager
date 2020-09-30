@@ -323,6 +323,9 @@ func (asq *AllocationStrategyQuery) prepareQuery(ctx context.Context) error {
 		}
 		asq.sql = prev
 	}
+	if err := allocationstrategy.Policy.EvalQuery(ctx, asq); err != nil {
+		return err
+	}
 	return nil
 }
 

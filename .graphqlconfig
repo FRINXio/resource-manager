@@ -8,6 +8,7 @@
         "headers": {
           "x-tenant-id": "fb",
           "x-auth-user-roles": "OWNER",
+          "x-auth-user-groups": "NETWORK-ADMIN",
           "from": "fb-user@frinx.io"
         },
         "introspect": false

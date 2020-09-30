@@ -2,7 +2,149 @@
 
 package runtime
 
-// The schema-stitching logic is generated in github.com/net-auto/resourceManager/ent/runtime.go
+import (
+	"context"
+	"time"
+
+	"github.com/net-auto/resourceManager/ent/allocationstrategy"
+	"github.com/net-auto/resourceManager/ent/poolproperties"
+	"github.com/net-auto/resourceManager/ent/property"
+	"github.com/net-auto/resourceManager/ent/propertytype"
+	"github.com/net-auto/resourceManager/ent/resource"
+	"github.com/net-auto/resourceManager/ent/resourcepool"
+	"github.com/net-auto/resourceManager/ent/resourcetype"
+	"github.com/net-auto/resourceManager/ent/schema"
+	"github.com/net-auto/resourceManager/ent/tag"
+
+	"github.com/facebook/ent"
+)
+
+// The init function reads all schema descriptors with runtime
+// code (default values, validators or hooks) and stitches it
+// to their package variables.
+func init() {
+	allocationstrategy.Policy = schema.AllocationStrategy{}.Policy()
+	allocationstrategy.Hooks[0] = func(next ent.Mutator) ent.Mutator {
+		return ent.MutateFunc(func(ctx context.Context, m ent.Mutation) (ent.Value, error) {
+			if err := allocationstrategy.Policy.EvalMutation(ctx, m); err != nil {
+				return nil, err
+			}
+			return next.Mutate(ctx, m)
+		})
+	}
+	allocationstrategyFields := schema.AllocationStrategy{}.Fields()
+	_ = allocationstrategyFields
+	// allocationstrategyDescName is the schema descriptor for name field.
+	allocationstrategyDescName := allocationstrategyFields[0].Descriptor()
+	// allocationstrategy.NameValidator is a validator for the "name" field. It is called by the builders before save.
+	allocationstrategy.NameValidator = allocationstrategyDescName.Validators[0].(func(string) error)
+	// allocationstrategyDescScript is the schema descriptor for script field.
+	allocationstrategyDescScript := allocationstrategyFields[3].Descriptor()
+	// allocationstrategy.ScriptValidator is a validator for the "script" field. It is called by the builders before save.
+	allocationstrategy.ScriptValidator = allocationstrategyDescScript.Validators[0].(func(string) error)
+	poolproperties.Policy = schema.PoolProperties{}.Policy()
+	poolproperties.Hooks[0] = func(next ent.Mutator) ent.Mutator {
+		return ent.MutateFunc(func(ctx context.Context, m ent.Mutation) (ent.Value, error) {
+			if err := poolproperties.Policy.EvalMutation(ctx, m); err != nil {
+				return nil, err
+			}
+			return next.Mutate(ctx, m)
+		})
+	}
+	property.Policy = schema.Property{}.Policy()
+	property.Hooks[0] = func(next ent.Mutator) ent.Mutator {
+		return ent.MutateFunc(func(ctx context.Context, m ent.Mutation) (ent.Value, error) {
+			if err := property.Policy.EvalMutation(ctx, m); err != nil {
+				return nil, err
+			}
+			return next.Mutate(ctx, m)
+		})
+	}
+	propertytype.Policy = schema.PropertyType{}.Policy()
+	propertytype.Hooks[0] = func(next ent.Mutator) ent.Mutator {
+		return ent.MutateFunc(func(ctx context.Context, m ent.Mutation) (ent.Value, error) {
+			if err := propertytype.Policy.EvalMutation(ctx, m); err != nil {
+				return nil, err
+			}
+			return next.Mutate(ctx, m)
+		})
+	}
+	propertytypeFields := schema.PropertyType{}.Fields()
+	_ = propertytypeFields
+	// propertytypeDescIsInstanceProperty is the schema descriptor for is_instance_property field.
+	propertytypeDescIsInstanceProperty := propertytypeFields[13].Descriptor()
+	// propertytype.DefaultIsInstanceProperty holds the default value on creation for the is_instance_property field.
+	propertytype.DefaultIsInstanceProperty = propertytypeDescIsInstanceProperty.Default.(bool)
+	// propertytypeDescEditable is the schema descriptor for editable field.
+	propertytypeDescEditable := propertytypeFields[14].Descriptor()
+	// propertytype.DefaultEditable holds the default value on creation for the editable field.
+	propertytype.DefaultEditable = propertytypeDescEditable.Default.(bool)
+	// propertytypeDescMandatory is the schema descriptor for mandatory field.
+	propertytypeDescMandatory := propertytypeFields[15].Descriptor()
+	// propertytype.DefaultMandatory holds the default value on creation for the mandatory field.
+	propertytype.DefaultMandatory = propertytypeDescMandatory.Default.(bool)
+	// propertytypeDescDeleted is the schema descriptor for deleted field.
+	propertytypeDescDeleted := propertytypeFields[16].Descriptor()
+	// propertytype.DefaultDeleted holds the default value on creation for the deleted field.
+	propertytype.DefaultDeleted = propertytypeDescDeleted.Default.(bool)
+	resource.Policy = schema.Resource{}.Policy()
+	resource.Hooks[0] = func(next ent.Mutator) ent.Mutator {
+		return ent.MutateFunc(func(ctx context.Context, m ent.Mutation) (ent.Value, error) {
+			if err := resource.Policy.EvalMutation(ctx, m); err != nil {
+				return nil, err
+			}
+			return next.Mutate(ctx, m)
+		})
+	}
+	resourceFields := schema.Resource{}.Fields()
+	_ = resourceFields
+	// resourceDescUpdatedAt is the schema descriptor for updated_at field.
+	resourceDescUpdatedAt := resourceFields[1].Descriptor()
+	// resource.DefaultUpdatedAt holds the default value on creation for the updated_at field.
+	resource.DefaultUpdatedAt = resourceDescUpdatedAt.Default.(func() time.Time)
+	// resource.UpdateDefaultUpdatedAt holds the default value on update for the updated_at field.
+	resource.UpdateDefaultUpdatedAt = resourceDescUpdatedAt.UpdateDefault.(func() time.Time)
+	resourcepool.Policy = schema.ResourcePool{}.Policy()
+	resourcepool.Hooks[0] = func(next ent.Mutator) ent.Mutator {
+		return ent.MutateFunc(func(ctx context.Context, m ent.Mutation) (ent.Value, error) {
+			if err := resourcepool.Policy.EvalMutation(ctx, m); err != nil {
+				return nil, err
+			}
+			return next.Mutate(ctx, m)
+		})
+	}
+	resourcepoolFields := schema.ResourcePool{}.Fields()
+	_ = resourcepoolFields
+	// resourcepoolDescName is the schema descriptor for name field.
+	resourcepoolDescName := resourcepoolFields[0].Descriptor()
+	// resourcepool.NameValidator is a validator for the "name" field. It is called by the builders before save.
+	resourcepool.NameValidator = resourcepoolDescName.Validators[0].(func(string) error)
+	// resourcepoolDescDealocationSafetyPeriod is the schema descriptor for dealocation_safety_period field.
+	resourcepoolDescDealocationSafetyPeriod := resourcepoolFields[3].Descriptor()
+	// resourcepool.DefaultDealocationSafetyPeriod holds the default value on creation for the dealocation_safety_period field.
+	resourcepool.DefaultDealocationSafetyPeriod = resourcepoolDescDealocationSafetyPeriod.Default.(int)
+	resourcetype.Policy = schema.ResourceType{}.Policy()
+	resourcetype.Hooks[0] = func(next ent.Mutator) ent.Mutator {
+		return ent.MutateFunc(func(ctx context.Context, m ent.Mutation) (ent.Value, error) {
+			if err := resourcetype.Policy.EvalMutation(ctx, m); err != nil {
+				return nil, err
+			}
+			return next.Mutate(ctx, m)
+		})
+	}
+	resourcetypeFields := schema.ResourceType{}.Fields()
+	_ = resourcetypeFields
+	// resourcetypeDescName is the schema descriptor for name field.
+	resourcetypeDescName := resourcetypeFields[0].Descriptor()
+	// resourcetype.NameValidator is a validator for the "name" field. It is called by the builders before save.
+	resourcetype.NameValidator = resourcetypeDescName.Validators[0].(func(string) error)
+	tagFields := schema.Tag{}.Fields()
+	_ = tagFields
+	// tagDescTag is the schema descriptor for tag field.
+	tagDescTag := tagFields[0].Descriptor()
+	// tag.TagValidator is a validator for the "tag" field. It is called by the builders before save.
+	tag.TagValidator = tagDescTag.Validators[0].(func(string) error)
+}
 
 const (
 	Version = "v0.4.3-0.20200907090222-545048151374"            // Version of ent codegen.

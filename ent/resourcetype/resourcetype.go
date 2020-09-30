@@ -2,6 +2,10 @@
 
 package resourcetype
 
+import (
+	"github.com/facebook/ent"
+)
+
 const (
 	// Label holds the string label denoting the resourcetype type in the database.
 	Label = "resource_type"
@@ -44,7 +48,15 @@ var ForeignKeys = []string{
 	"pool_properties_resource_type",
 }
 
+// Note that the variables below are initialized by the runtime
+// package on the initialization of the application. Therefore,
+// it should be imported in the main as follows:
+//
+//	import _ "github.com/net-auto/resourceManager/ent/runtime"
+//
 var (
+	Hooks  [1]ent.Hook
+	Policy ent.Policy
 	// NameValidator is a validator for the "name" field. It is called by the builders before save.
 	NameValidator func(string) error
 )

@@ -385,6 +385,9 @@ func (rq *ResourceQuery) prepareQuery(ctx context.Context) error {
 		}
 		rq.sql = prev
 	}
+	if err := resource.Policy.EvalQuery(ctx, rq); err != nil {
+		return err
+	}
 	return nil
 }
 

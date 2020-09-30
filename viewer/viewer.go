@@ -12,6 +12,7 @@ import (
 	"github.com/facebookincubator/symphony/pkg/log"
 	fb_viewer "github.com/facebookincubator/symphony/pkg/viewer"
 	"github.com/net-auto/resourceManager/ent"
+	"github.com/net-auto/resourceManager/ent/schema"
 	"net/http"
 	"strings"
 
@@ -25,31 +26,32 @@ const (
 	TenantHeader = "x-tenant-id"
 	UserHeader = "from"
 	RoleHeader = "x-auth-user-roles"
+	GroupHeader = "x-auth-user-groups"
 )
 
 // TenancyHandler adds viewer / tenancy into incoming requests.
 func TenancyHandler(h http.Handler, tenancy Tenancy, logger log.Logger) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		logger := logger.For(r.Context())
+
 		tenant := r.Header.Get(TenantHeader)
 		if tenant == "" {
 			logger.Warn("request missing tenant header")
 			http.Error(w, "missing tenant header", http.StatusBadRequest)
 			return
 		}
-		logger = logger.With(zap.String("tenant", tenant))
 
-		// NH-261 TODO use role in RBAC
-		role := user.Role("OWNER")
-		//role := user.Role(r.Header.Get(RoleHeader))
-		//if err := user.RoleValidator(role); err != nil {
-		//	logger.Warn("request contains invalid role",
-		//		zap.Stringer("role", role),
-		//		zap.Error(err),
-		//	)
-		//	// http.Error(w, err.Error(), http.StatusBadRequest)
-		//	// return
-		//}
+		user := r.Header.Get(UserHeader)
+		if user == "" {
+			logger.Warn("request missing user header")
+			http.Error(w, "missing user header", http.StatusBadRequest)
+			return
+		}
+
+		roles := r.Header.Get(RoleHeader)
+		groups := r.Header.Get(GroupHeader)
+
+		logger.Info("getting tenancy client for %s", zap.String("tenant", tenant));
 
 		client, err := tenancy.ClientFor(r.Context(), tenant)
 		if err != nil {
@@ -64,18 +66,17 @@ func TenancyHandler(h http.Handler, tenancy Tenancy, logger log.Logger) http.Han
 			opts = make([]fb_viewer.Option, 0, 1)
 			v    fb_viewer.Viewer
 		)
-		if features := r.Header.Get(fb_viewer.FeaturesHeader); features != "" {
-			opts = append(opts, fb_viewer.WithFeatures(strings.Split(features, ",")...))
-		}
+
 		if username := r.Header.Get(UserHeader); username != "" {
 			u, err := GetOrCreateUser(
 				username,
-				role)
+				"OWNER")
 			if err != nil {
 				logger.Warn("cannot get user ent", zap.Error(err))
 				http.Error(w, "getting user entity", http.StatusServiceUnavailable)
 				return
 			}
+			ctx = schema.WithIdentity(ctx, tenant, username, roles, groups)
 			v = fb_viewer.NewUser(tenant, u, opts...)
 		} else {
 			logger.Warn("request missing identity header")

@@ -270,7 +270,8 @@ func (c *AllocationStrategyClient) QueryPools(as *AllocationStrategy) *ResourceP
 
 // Hooks returns the client hooks.
 func (c *AllocationStrategyClient) Hooks() []Hook {
-	return c.hooks.AllocationStrategy
+	hooks := c.hooks.AllocationStrategy
+	return append(hooks[:len(hooks):len(hooks)], allocationstrategy.Hooks[:]...)
 }
 
 // PoolPropertiesClient is a client for the PoolProperties schema.
@@ -406,7 +407,8 @@ func (c *PoolPropertiesClient) QueryProperties(pp *PoolProperties) *PropertyQuer
 
 // Hooks returns the client hooks.
 func (c *PoolPropertiesClient) Hooks() []Hook {
-	return c.hooks.PoolProperties
+	hooks := c.hooks.PoolProperties
+	return append(hooks[:len(hooks):len(hooks)], poolproperties.Hooks[:]...)
 }
 
 // PropertyClient is a client for the Property schema.
@@ -510,7 +512,8 @@ func (c *PropertyClient) QueryType(pr *Property) *PropertyTypeQuery {
 
 // Hooks returns the client hooks.
 func (c *PropertyClient) Hooks() []Hook {
-	return c.hooks.Property
+	hooks := c.hooks.Property
+	return append(hooks[:len(hooks):len(hooks)], property.Hooks[:]...)
 }
 
 // PropertyTypeClient is a client for the PropertyType schema.
@@ -630,7 +633,8 @@ func (c *PropertyTypeClient) QueryResourceType(pt *PropertyType) *ResourceTypeQu
 
 // Hooks returns the client hooks.
 func (c *PropertyTypeClient) Hooks() []Hook {
-	return c.hooks.PropertyType
+	hooks := c.hooks.PropertyType
+	return append(hooks[:len(hooks):len(hooks)], propertytype.Hooks[:]...)
 }
 
 // ResourceClient is a client for the Resource schema.
@@ -766,7 +770,8 @@ func (c *ResourceClient) QueryNestedPool(r *Resource) *ResourcePoolQuery {
 
 // Hooks returns the client hooks.
 func (c *ResourceClient) Hooks() []Hook {
-	return c.hooks.Resource
+	hooks := c.hooks.Resource
+	return append(hooks[:len(hooks):len(hooks)], resource.Hooks[:]...)
 }
 
 // ResourcePoolClient is a client for the ResourcePool schema.
@@ -950,7 +955,8 @@ func (c *ResourcePoolClient) QueryParentResource(rp *ResourcePool) *ResourceQuer
 
 // Hooks returns the client hooks.
 func (c *ResourcePoolClient) Hooks() []Hook {
-	return c.hooks.ResourcePool
+	hooks := c.hooks.ResourcePool
+	return append(hooks[:len(hooks):len(hooks)], resourcepool.Hooks[:]...)
 }
 
 // ResourceTypeClient is a client for the ResourceType schema.
@@ -1070,7 +1076,8 @@ func (c *ResourceTypeClient) QueryPools(rt *ResourceType) *ResourcePoolQuery {
 
 // Hooks returns the client hooks.
 func (c *ResourceTypeClient) Hooks() []Hook {
-	return c.hooks.ResourceType
+	hooks := c.hooks.ResourceType
+	return append(hooks[:len(hooks):len(hooks)], resourcetype.Hooks[:]...)
 }
 
 // TagClient is a client for the Tag schema.
