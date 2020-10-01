@@ -1,6 +1,6 @@
 // framework managed constants
 var currentResources = []
-var resourcePool = {}
+var resourcePoolProperties = {}
 var userInput = {}
 // framework managed constants
 
@@ -14,42 +14,6 @@ signed int32 random allocation strategy
 - MIN value is  -2147483648, MAX value is 2147483647
 - Allocates previously freed resources
  */
-
-const rangeRegx = /\[(-?[0-9]+)-([0-9]+)\]/
-
-const INT_MIN = -2147483648
-const INT_MAX = 2147483647
-
-// TODO this parse_range function is pretty common, how to share common code ? this is different to 3rd party libs
-
-function parse_range(str) {
-    let res = rangeRegx.exec(str)
-    if (res == null) {
-        console.error("Int range cannot be parsed from pool name: " + str + ". Not matching pattern: " + rangeRegx)
-        return null
-    }
-
-    from = parseInt(res[1])
-    to = parseInt(res[2])
-    if (from < INT_MIN || from >= INT_MAX) {
-        console.error("Int range invalid, from end is: " + from)
-        return null
-    }
-    if (to <= INT_MIN || to > INT_MAX) {
-        console.error("Int range invalid, to end is: " + from)
-        return null
-    }
-
-    if (from >= to) {
-        console.error("Int range invalid, from end: " + from + " and to end: " + to + " do not form a range")
-        return null
-    }
-
-    return {
-        "from": from,
-        "to": to
-    }
-}
 
 function rangeCapacity(s_int32Range) {
     return s_int32Range.to - s_int32Range.from + 1
@@ -78,11 +42,10 @@ function logStats(newlyAllocatedS_int32, parentRange, allocatedS_int32s = [], le
 }
 
 function invoke() {
-    let parentRangeStr = resourcePool.ResourcePoolName
-    let parentRange = parse_range(parentRangeStr)
+    let parentRange = resourcePoolProperties
     if (parentRange == null) {
         console.error("Unable to allocate random s_int32" +
-            ". Unable to extract parent int range from pool name: " + parentRangeStr)
+            ". Unable to extract parent int range from pool name: " + resourcePoolProperties)
         return null
     }
 
@@ -122,7 +85,7 @@ function rangeToStr(range) {
 // For testing purposes
 function invokeWithParams(currentResourcesArg, resourcePoolArg) {
     currentResources = currentResourcesArg
-    resourcePool = resourcePoolArg
+    resourcePoolProperties = resourcePoolArg
     return invoke()
 }
 

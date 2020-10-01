@@ -2,6 +2,7 @@ package pools
 
 import (
 	"context"
+	"github.com/net-auto/resourceManager/ent/resource"
 
 	"github.com/net-auto/resourceManager/ent"
 	resourcePool "github.com/net-auto/resourceManager/ent/resourcepool"
@@ -56,10 +57,16 @@ func (pool SingletonPool) Capacity() (int, error) {
 
 // QueryResource returns always the same resource
 func (pool SingletonPool) QueryResource(raw RawResourceProps) (*ent.Resource, error) {
-	return pool.QueryResource(raw)
+	resources, err := pool.QueryResources()
+
+	if err != nil {
+		return nil, err
+	}
+
+	return resources[0], nil
 }
 
 // QueryResource returns always the same resource
 func (pool SingletonPool) QueryResources() (ent.Resources, error) {
-	return pool.QueryResources()
+	return pool.client.Resource.Query().Where(resource.HasPoolWith(resourcePool.ID(pool.ID))).All(pool.ctx)
 }
