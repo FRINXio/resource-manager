@@ -203,4 +203,3 @@ func (PoolProperties) Edges() []ent.Edge {
 func (PoolProperties) Policy() ent.Policy {
 	return RBAC;
 }
-

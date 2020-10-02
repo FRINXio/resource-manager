@@ -7,8 +7,7 @@
 package viewer
 
 import (
-	fb_ent "github.com/facebookincubator/symphony/pkg/ent"
-	"github.com/facebookincubator/symphony/pkg/ent/user"
+	"encoding/json"
 	"github.com/facebookincubator/symphony/pkg/log"
 	fb_viewer "github.com/facebookincubator/symphony/pkg/viewer"
 	"github.com/net-auto/resourceManager/ent"
@@ -48,8 +47,8 @@ func TenancyHandler(h http.Handler, tenancy Tenancy, logger log.Logger) http.Han
 			return
 		}
 
-		roles := r.Header.Get(RoleHeader)
-		groups := r.Header.Get(GroupHeader)
+		roles := r.Header.Values(RoleHeader)
+		groups := r.Header.Values(GroupHeader)
 
 		logger.Info("getting tenancy client for %s", zap.String("tenant", tenant));
 
@@ -61,60 +60,47 @@ func TenancyHandler(h http.Handler, tenancy Tenancy, logger log.Logger) http.Han
 			return
 		}
 
-		var (
-			ctx  = ent.NewContext(r.Context(), client)
-			opts = make([]fb_viewer.Option, 0, 1)
-			v    fb_viewer.Viewer
-		)
+		var ctx  = ent.NewContext(r.Context(), client)
 
-		if username := r.Header.Get(UserHeader); username != "" {
-			u, err := GetOrCreateUser(
-				username,
-				"OWNER")
-			if err != nil {
-				logger.Warn("cannot get user ent", zap.Error(err))
-				http.Error(w, "getting user entity", http.StatusServiceUnavailable)
-				return
-			}
-			ctx = schema.WithIdentity(ctx, tenant, username, roles, groups)
-			v = fb_viewer.NewUser(tenant, u, opts...)
-		} else {
-			logger.Warn("request missing identity header")
-			http.Error(w, "missing identity header", http.StatusBadRequest)
+		ctx = schema.WithIdentityParsed(ctx, tenant, user, roles, groups)
+		identity, _ := schema.GetIdentity(ctx)
+		marshal, err := json.Marshal(identity)
+		if err != nil {
+			logger.Warn("cannot marshall identity", zap.Error(err))
+			http.Error(w, "marshalling identity", http.StatusServiceUnavailable)
 			return
 		}
-
-		ctx = log.NewFieldsContext(ctx, zap.Object("viewer", v))
-		trace.FromContext(ctx).AddAttributes(traceAttrs(v)...)
-		ctx, _ = tag.New(ctx, tags(r, v)...)
-		ctx = fb_viewer.NewContext(ctx, v)
+		ctx = log.NewFieldsContext(ctx, zap.String("identity", string(marshal)))
+		trace.FromContext(ctx).AddAttributes(traceAttrs(identity)...)
+		ctx, _ = tag.New(ctx, tags(r, identity)...)
 		h.ServeHTTP(w, r.WithContext(ctx))
 	})
 }
 
-// GetOrCreateUser creates or returns existing user with given authID and role.
-// we do not manage users locally, so just return the inputs
-func GetOrCreateUser(authID string, role user.Role) (*fb_ent.User, error) {
-	return &fb_ent.User{AuthID: authID, Role: role}, nil
-}
+var (
+	GroupAttribute = "viewer.group"
+	KeyGroup    = tag.MustNewKey(GroupAttribute)
+)
 
-func traceAttrs(v fb_viewer.Viewer) []trace.Attribute {
+func traceAttrs(v *schema.Identity) []trace.Attribute {
 	return []trace.Attribute{
-		trace.StringAttribute(fb_viewer.TenantAttribute, v.Tenant()),
-		trace.StringAttribute(fb_viewer.UserAttribute, v.Name()),
-		trace.StringAttribute(fb_viewer.RoleAttribute, v.Role().String()),
+		trace.StringAttribute(fb_viewer.TenantAttribute, v.Tenant),
+		trace.StringAttribute(fb_viewer.UserAttribute, v.User),
+		trace.StringAttribute(fb_viewer.RoleAttribute, strings.Join(v.Roles, ",")),
+		trace.StringAttribute(GroupAttribute, strings.Join(v.Groups, ",")),
 	}
 }
 
-func tags(r *http.Request, v fb_viewer.Viewer) []tag.Mutator {
+func tags(r *http.Request, v *schema.Identity) []tag.Mutator {
 	var userAgent string
 	if parts := strings.SplitN(r.UserAgent(), " ", 2); len(parts) > 0 {
 		userAgent = parts[0]
 	}
 	return []tag.Mutator{
-		tag.Upsert(fb_viewer.KeyTenant, v.Tenant()),
-		tag.Upsert(fb_viewer.KeyUser, v.Name()),
-		tag.Upsert(fb_viewer.KeyRole, v.Role().String()),
+		tag.Upsert(fb_viewer.KeyTenant, v.Tenant),
+		tag.Upsert(fb_viewer.KeyUser, v.User),
+		tag.Upsert(fb_viewer.KeyRole, strings.Join(v.Roles, ",")),
+		tag.Upsert(KeyGroup, strings.Join(v.Groups, ",")),
 		tag.Upsert(fb_viewer.KeyUserAgent, userAgent),
 	}
 }

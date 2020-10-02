@@ -38,7 +38,12 @@ var ALWAYS_ALLOWED = generalRBACPolicy{true}
 
 // WithIdentity pushes user identity into context
 func WithIdentity(ctx context.Context, tenant string, user string, roles string, groups string) context.Context {
-	identity := &Identity{tenant, user, splitRoles(roles), splitRoles(groups)}
+	return WithIdentityParsed(ctx, tenant, user, splitRoles(roles), splitRoles(groups))
+}
+
+// WithIdentity pushes user identity into context
+func WithIdentityParsed(ctx context.Context, tenant string, user string, roles []string, groups []string) context.Context {
+	identity := &Identity{tenant, user, roles, groups}
 	return context.WithValue(ctx, identityKey, identity)
 }
 
@@ -94,7 +99,7 @@ func (generalRBACPolicy) EvalQuery(ctx context.Context, m ent.Query) error {
 	return nil
 }
 
-// EvalMutation grans access to user possessing admin roles or groups
+// EvalMutation grants access to user possessing admin roles or groups
 func (generalRBACPolicy) EvalMutation(ctx context.Context, m ent.Mutation) error {
 	// Mutations allowed only for admins
 	identity, err := GetIdentity(ctx)
@@ -104,8 +109,8 @@ func (generalRBACPolicy) EvalMutation(ctx context.Context, m ent.Mutation) error
 	if isAllowed(identity) {
 		return nil
 	} else {
-		return fmt.Errorf("User unauthorized to mutate: %q. Must be role: %s or group: %s",
-			m.Type(), adminRoles, adminGroups)
+		return fmt.Errorf("User: %q unauthorized to mutate: %q. Must be role: %s or group: %s",
+			identity, m.Type(), adminRoles, adminGroups)
 	}
 }
 
