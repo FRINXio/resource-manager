@@ -40,13 +40,24 @@ func NewSingletonPoolWithMeta(
 	return &SingletonPool{SetPool{poolBase{pool, ctx, client}}}, pool, nil
 }
 
-// ClaimResource returns always the same resource
 func (pool SingletonPool) ClaimResource(userInput map[string]interface{}) (*ent.Resource, error) {
-	return pool.queryUnclaimedResourceEager()
+	_, err := pool.client.Resource.Update().
+		SetStatus(resource.StatusClaimed).
+		Where(resource.HasPoolWith(resourcePool.ID(pool.ID))).
+		Save(pool.ctx)
+
+	if err != nil {
+		return nil, err
+	}
+
+	return pool.client.Resource.Query().Where(resource.HasPoolWith(resourcePool.ID(pool.ID))).Only(pool.ctx)
 }
 
-// FreeResource does nothing
 func (pool SingletonPool) FreeResource(raw RawResourceProps) error {
+	pool.client.Resource.Update().
+		SetStatus(resource.StatusFree).
+		Where(resource.HasPoolWith(resourcePool.ID(pool.ID))).
+		Save(pool.ctx)
 	return nil
 }
 
@@ -66,7 +77,25 @@ func (pool SingletonPool) QueryResource(raw RawResourceProps) (*ent.Resource, er
 	return resources[0], nil
 }
 
-// QueryResource returns always the same resource
 func (pool SingletonPool) QueryResources() (ent.Resources, error) {
-	return pool.client.Resource.Query().Where(resource.HasPoolWith(resourcePool.ID(pool.ID))).All(pool.ctx)
+	return pool.client.Resource.Query().Where(
+		resource.And(
+			resource.HasPoolWith(resourcePool.ID(pool.ID)),
+			resource.StatusIn(resource.StatusBench, resource.StatusClaimed))).All(pool.ctx)
+}
+
+func (pool SingletonPool) Destroy() error {
+	_, err := pool.client.Resource.Delete().Where(resource.HasPoolWith(resourcePool.ID(pool.ID))).Exec(pool.ctx)
+
+	if err != nil {
+		return err
+	}
+
+	err = pool.client.ResourcePool.DeleteOneID(pool.ID).Exec(pool.ctx)
+
+	if err != nil {
+		return err
+	}
+
+	return nil
 }

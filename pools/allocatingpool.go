@@ -148,6 +148,12 @@ func (pool AllocatingPool) Destroy() error {
 			pool.ID)
 	}
 
+	err = DeletePoolProperties(pool.ctx, pool.client, pool.ID)
+
+	if err != nil {
+		return err
+	}
+
 	// Delete pool itself
 	err = pool.client.ResourcePool.DeleteOne(pool.ResourcePool).Exec(pool.ctx)
 	if err != nil {

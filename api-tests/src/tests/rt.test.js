@@ -1,4 +1,4 @@
-import { deleteResourceType, deleteResourcePool, getResourcesForPool, freeResource, findResourceTypeId, createSingletonPool, createResourceType, createSetPool, claimResource } from '../graphql-queries';
+import { deleteResourceType, findResourceTypeId, createResourceType, createSetPool, claimResource } from '../graphql-queries';
 import {getUniqueName} from '../test-helpers';
 
 test('create resource type, set pool and claim a resource', async () => {
@@ -24,24 +24,4 @@ test('create delete resourceType', async () => {
 });
 
 
-//TODO this test fails because deleting singleton pools does not work yet
-test.skip('singleton pool API test', async () => {
-    let rtId = await findResourceTypeId('ipv4');
-    const ipAddress = '192.168.1.1';
-    let poolId = await createSingletonPool(
-        getUniqueName('singleton'),
-        rtId,
-        [{address: ipAddress}]
-    );
-    await claimResource(poolId, {});
-    let resource = await claimResource(poolId, {});
-    await freeResource(poolId, resource.Properties);
-    let rs = await getResourcesForPool(poolId);
-    expect(rs).toHaveLength(1)
-    expect(rs[0].Properties.address).toBe(ipAddress)
-    await freeResource(poolId, resource.Properties);
-    await deleteResourcePool(poolId);
-    rs = await getResourcesForPool(poolId);
-    expect(rs).toHaveLength(0)
-});
 

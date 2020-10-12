@@ -10,6 +10,32 @@ import (
 	"github.com/pkg/errors"
 )
 
+func HasAllocatedResources(ctx context.Context, client *ent.Client, poolId int) (bool, error) {
+	pool, errRp := client.ResourcePool.Get(ctx, poolId)
+
+	if errRp != nil {
+		return false, errRp
+	}
+
+	if pool == nil {
+		return false, errors.New("Unable to find pool")
+	}
+
+	resources, err := GetResourceFromPool(ctx, pool)
+
+	if err != nil {
+		return false, err
+	}
+
+	for _, r := range resources {
+		if r.Status == resource.StatusClaimed || r.Status == resource.StatusBench {
+			return true, nil
+		}
+	}
+
+	return false, nil
+}
+
 func GetResourceFromPool (
 	ctx context.Context, obj *ent.ResourcePool) ([]*ent.Resource, error) {
 	if es, err := obj.Edges.ClaimsOrErr(); !ent.IsNotLoaded(err) {

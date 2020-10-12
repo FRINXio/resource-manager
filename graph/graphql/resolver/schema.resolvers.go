@@ -312,28 +312,31 @@ func (r *mutationResolver) CreateNestedAllocatingPool(ctx context.Context, input
 
 func (r *mutationResolver) DeleteResourcePool(ctx context.Context, input model.DeleteResourcePoolInput) (*model.DeleteResourcePoolPayload, error) {
 	client := r.ClientFrom(ctx)
-	pool, err := p.ExistingPoolFromId(ctx, client, input.ResourcePoolID)
 	retVal := model.DeleteResourcePoolPayload{ResourcePoolID: input.ResourcePoolID}
-	if err != nil {
-		return &retVal, gqlerror.Errorf("Unable to delete pool: %v", err)
-	}
 
 	// Do not allow removing pools with allocated resources
-	allocatedResources, err2 := pool.QueryResources()
-	if len(allocatedResources) > 0 || err2 != nil {
+	hasAllocatedResources, err2 := p.HasAllocatedResources(ctx, client, input.ResourcePoolID)
+	if hasAllocatedResources {
 		return &retVal, gqlerror.Errorf("Unable to delete pool, pool has allocated resources, deallocate those first")
 	}
 
-	errP := p.DeletePoolProperties(ctx, client, input.ResourcePoolID)
-	if errP != nil {
-		return &retVal, gqlerror.Errorf("Unable to delete root pool properties: %v", errP)
+	if err2 != nil {
+		return &retVal, gqlerror.Errorf("Unable to determine if pool has allocated resources (%v), pool is NOT going to be deleted", err2)
 	}
 
-	if err := client.ResourcePool.DeleteOneID(input.ResourcePoolID).Exec(ctx); err != nil {
-		return &retVal, gqlerror.Errorf("Unable to delete pool: %v", err)
-	} else {
-		return &retVal, nil
+	pool, errPool := p.ExistingPoolFromId(ctx, client, input.ResourcePoolID)
+
+	if errPool != nil {
+		return &retVal, gqlerror.Errorf("Unable to retrieve pool: %v", errPool)
 	}
+
+	errDp := pool.Destroy()
+
+	if errDp != nil {
+		return &retVal, gqlerror.Errorf("Unable to delete pool: %v", errDp)
+	}
+
+    return &retVal, nil
 }
 
 func (r *mutationResolver) CreateResourceType(ctx context.Context, input model.CreateResourceTypeInput) (*model.CreateResourceTypePayload, error) {
