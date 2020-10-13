@@ -38,7 +38,7 @@ function invoke() {
 	now := time.Now()
 	currentResources := createCurrentResources(now)
 
-	actual, logString, err := wasmer.invokeJs(script, userInput, resourcePool, currentResources, nil)
+	actual, logString, err := wasmer.invokeJs(script, userInput, resourcePool, currentResources, nil, "script_fun()")
 	if err != nil {
 		t.Fatalf("Unable run - %s", err)
 	}
@@ -64,7 +64,7 @@ return {"vlan": userInput["desiredVlan"]}
 	now := time.Now()
 	currentResources := createCurrentResources(now)
 
-	actual, logString, err := wasmer.invokePy(script, userInput, resourcePool, currentResources)
+	actual, logString, err := wasmer.invokePy(script, userInput, resourcePool, currentResources, nil, "script_fun()")
 	if err != nil {
 		t.Fatalf("Unable run - %s", err)
 	}

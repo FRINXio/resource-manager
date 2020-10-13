@@ -2,6 +2,7 @@ package pools
 
 import (
 	"context"
+	"github.com/net-auto/resourceManager/ent/allocationstrategy"
 	"github.com/net-auto/resourceManager/ent/poolproperties"
 	"github.com/net-auto/resourceManager/ent/predicate"
 	"github.com/net-auto/resourceManager/ent/property"
@@ -172,8 +173,46 @@ func (pool AllocatingPool) PoolProperties() ([]*ent.Property, error) {
 }
 
 // TODO add capacity implementation
-func (pool AllocatingPool) Capacity() (int, error) {
-	return 1, nil
+func (pool AllocatingPool) Capacity() (float64, float64, error) {
+
+	strat, err := pool.AllocationStrategy()
+	if err != nil {
+		return 0, 0, errors.Wrapf(err,
+			"Unable to claim resource from pool #%d, allocation strategy loading error ", pool.ID)
+	}
+
+	currentResources, err1 := pool.loadClaimedResources()
+
+	if err1 != nil {
+		return 0,0, errors.Wrapf(err1,
+			"Unable to load resources for pool #%d, resource loading error ", pool.ID)
+	}
+
+	ps, err := pool.PoolProperties()
+
+	if err != nil {
+		return 0,0, errors.Wrapf(err,
+			"Unable to get properties from pool #%d, resource type loading error ", pool.ID)
+	}
+
+	propMap, propErr := convertProperties(ps)
+
+	if propErr != nil {
+		return 0,0, errors.Wrapf(propErr, "Unable to convert value from property")
+	}
+
+	var emptyMap = map[string]interface{}{}
+	result, _ , err := InvokeAllocationStrategy(
+		pool.invoker, strat, emptyMap, model.ResourcePoolInput{
+			PoolProperties:   emptyMap,
+			ResourcePoolName: pool.Name,
+		}, currentResources, propMap, "capacity()")
+	if err != nil || result == nil {
+		return 0,0, errors.Wrapf(err,
+			"Unable to compute capacity pool #%d, allocation strategy \"%s\" failed", pool.ID, strat.Name)
+	}
+
+	return result["freeCapacity"].(float64), result["utilizedCapacity"].(float64), nil
 }
 
 // ClaimResource allocates the next available resource
@@ -213,8 +252,16 @@ func (pool AllocatingPool) ClaimResource(userInput map[string]interface{}) (*ent
 			"Unable to claim resource from pool #%d, resource loading error ", pool.ID)
 	}
 
+	var functionName string
+
+	if strat.Lang == allocationstrategy.LangPy {
+		functionName = "script_fun()"
+	} else {
+		functionName = "invoke()"
+	}
+
 	resourceProperties, _ /*TODO do something with logs */, err := InvokeAllocationStrategy(
-		pool.invoker, strat, userInput, resourcePool, currentResources, propMap)
+		pool.invoker, strat, userInput, resourcePool, currentResources, propMap, functionName)
 	if err != nil {
 		return nil, errors.Wrapf(err,
 			"Unable to claim resource from pool #%d, allocation strategy \"%s\" failed", pool.ID, strat.Name)

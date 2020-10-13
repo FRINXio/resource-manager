@@ -149,6 +149,11 @@ type PageInfo struct {
 	EndCursor       int  `json:"endCursor"`
 }
 
+type PoolCapacityPayload struct {
+	FreeCapacity     float64 `json:"freeCapacity"`
+	UtilizedCapacity float64 `json:"utilizedCapacity"`
+}
+
 type ResourceConnection struct {
 	PageInfo *PageInfo       `json:"pageInfo"`
 	Edges    []*ResourceEdge `json:"edges"`

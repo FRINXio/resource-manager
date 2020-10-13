@@ -40,6 +40,12 @@ test("allocate range 784", () => {
         .toStrictEqual(range(0, 783).Properties);
 })
 
+test("vlan range capacity measure", () => {
+    const capacity = strat.invokeWithParamsCapacity([range(0, 2000), range(2001, 4090)], {'from': 0, 'to':4095}, {"desiredSize": 100});
+    expect(capacity)
+        .toStrictEqual({freeCapacity: 5, utilizedCapacity: 4091})
+})
+
 function range(from, to) {
     return {"Properties": {"from": from, "to": to}}
 }

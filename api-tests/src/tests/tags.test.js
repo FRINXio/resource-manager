@@ -1,5 +1,5 @@
 import {deleteTag, untagPool, tagPool, createTag, searchPoolsByTags} from '../graphql-queries';
-import {getTag, createVlanRootPool, getUniqueName} from '../test-helpers';
+import {getTag, createVlanRangeRootPool, getUniqueName} from '../test-helpers';
 
 
 test('create and delete tag', async () => {
@@ -14,7 +14,7 @@ test('create and delete tag', async () => {
 test('tagging and untagging pool', async () => {
     let tagName = getUniqueName('test tag');
     let tagId = await createTag(tagName);
-    let poolId = await createVlanRootPool();
+    let poolId = await createVlanRangeRootPool();
 
     await tagPool(tagId, poolId);
     let tag = await getTag(tagName);
@@ -30,7 +30,7 @@ test('searching pools via tags', async () => {
     const tagName2 = getUniqueName('test tag');
     const tag1Id = await createTag(tagName1);
     const tag2Id = await createTag(tagName2);
-    const poolId = await createVlanRootPool();
+    const poolId = await createVlanRangeRootPool();
 
     await tagPool(tag1Id, poolId);
     await tagPool(tag2Id, poolId);

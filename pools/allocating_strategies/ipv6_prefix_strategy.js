@@ -144,7 +144,38 @@ function utilizedCapacity(allocatedRanges, newlyAllocatedRangeCapacity) {
 
 // calculate free capacity based on previously allocated prefixes
 function freeCapacity(parentPrefix, utilisedCapacity) {
-    return subnetAddresses(parentPrefix.prefix) - utilisedCapacity
+    return subnetAddresses(parentPrefix.prefix) - utilisedCapacity;
+}
+
+// number of assignable addresses based on address and mask
+function hostsInMask(addressStr, mask) {
+    if (mask == 128) {
+        return 1;
+    }
+    if (mask == 127) {
+        return 2;
+    }
+
+    let address = inet_aton(addressStr);
+
+    return subnetLastAddress(address, mask) - BigInt(address) + BigInt(1);
+}
+
+function subnetLastAddress(subnet, mask) {
+    return BigInt(subnet) + subnetAddresses(mask) - BigInt(1);
+}
+
+function capacity() {
+    let totalCapacity = hostsInMask(resourcePoolProperties.address, resourcePoolProperties.prefix);
+    let allocatedCapacity = BigInt(0);
+    let resource;
+    let subnetItself = userInput.subnet ? BigInt(1) : BigInt(0);
+
+    for (resource of currentResources) {
+        allocatedCapacity += hostsInMask(resource.Properties.address, resource.Properties.prefix);
+    }
+
+    return { freeCapacity: Number(totalCapacity - allocatedCapacity + subnetItself), utilizedCapacity: Number(allocatedCapacity) };
 }
 
 // log utilisation stats
@@ -309,8 +340,17 @@ function invokeWithParams(currentResourcesArg, resourcePoolArg, userInputArg) {
     return invoke()
 }
 
+// For testing purposes
+function invokeWithParamsCapacity(currentResourcesArg, resourcePoolArg, userInputArg) {
+    currentResources = currentResourcesArg
+    resourcePoolProperties = resourcePoolArg
+    userInput = userInputArg
+    return capacity()
+}
+
 exports.invoke = invoke
 exports.invokeWithParams = invokeWithParams
+exports.invokeWithParamsCapacity = invokeWithParamsCapacity
 exports.utilizedCapacity = utilizedCapacity
 exports.freeCapacity = freeCapacity
 exports.parsePrefix = parsePrefix

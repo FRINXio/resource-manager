@@ -1,8 +1,8 @@
 import { claimResource} from '../graphql-queries';
-import {createVlanRootPool, createVlanNestedPool, get2ChildrenIds} from '../test-helpers';
+import {createVlanRangeRootPool, createVlanNestedPool, get2ChildrenIds} from '../test-helpers';
 
 test('create vlan root pool', async () => {
-    expect(await createVlanRootPool()).toBeTruthy();
+    expect(await createVlanRangeRootPool()).toBeTruthy();
 });
 
 //             vlan hierarchy
@@ -12,7 +12,7 @@ test('create vlan root pool', async () => {
 //          [0-2000]   [2001-4095]
 
 test('create vlan hierarchy', async () => {
-    let rootPoolId = await createVlanRootPool();
+    let rootPoolId = await createVlanRangeRootPool();
     let firstParentResourceId = (await claimResource(rootPoolId, {desiredSize: 2001})).id;
     let secondParentResourceId = (await claimResource(rootPoolId, {desiredSize: 2095})).id;
     let nestedPool1Id = await createVlanNestedPool(firstParentResourceId);

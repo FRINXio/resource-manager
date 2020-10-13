@@ -34,5 +34,5 @@ func TestNewSingletonPool(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	assertDb(ctx, client, t, 1, 1, 0, 0, 0)
+	assertDb(ctx, client, t, 1, 1, 0, 1, 0)
 }

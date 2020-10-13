@@ -75,6 +75,10 @@ function rangeToStr(range) {
     return `[${range.from}-${range.to}]`
 }
 
+function capacity() {
+    return { freeCapacity: freeCapacity(resourcePoolProperties, currentResources.length), utilizedCapacity: currentResources.length };
+}
+
 // STRATEGY_END
 
 // For testing purposes
@@ -84,8 +88,15 @@ function invokeWithParams(currentResourcesArg, resourcePoolArg) {
     return invoke()
 }
 
+function invokeWithParamsCapacity(currentResourcesArg, resourcePoolArg) {
+    currentResources = currentResourcesArg
+    resourcePoolProperties = resourcePoolArg
+    return capacity()
+}
+
 exports.invoke = invoke
 exports.invokeWithParams = invokeWithParams
+exports.invokeWithParamsCapacity = invokeWithParamsCapacity
 exports.utilizedCapacity = utilizedCapacity
 exports.freeCapacity = freeCapacity
 // For testing purposes

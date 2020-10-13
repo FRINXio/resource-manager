@@ -84,10 +84,13 @@ type ScriptInvoker interface {
 		resourcePool model.ResourcePoolInput,
 		currentResources []*model.ResourceInput,
 		poolPropertiesMaps map[string]interface{},
+		functionName string,
 	) (map[string]interface{}, string, error)
 	invokePy(strategyScript string, userInput map[string]interface{},
 		resourcePool model.ResourcePoolInput,
 		currentResources []*model.ResourceInput,
+		poolPropertiesMaps map[string]interface{},
+		functionName string,
 	) (map[string]interface{}, string, error)
 }
 
@@ -98,13 +101,14 @@ func InvokeAllocationStrategy(
 	resourcePool model.ResourcePoolInput,
 	currentResources []*model.ResourceInput,
 	poolPropertiesMaps map[string]interface{},
+	functionName string,
 ) (map[string]interface{}, string, error) {
 
 	switch strat.Lang {
 	case allocationstrategy.LangJs:
-		return invoker.invokeJs(strat.Script, userInput, resourcePool, currentResources, poolPropertiesMaps)
+		return invoker.invokeJs(strat.Script, userInput, resourcePool, currentResources, poolPropertiesMaps, functionName)
 	case allocationstrategy.LangPy:
-		return invoker.invokePy(strat.Script, userInput, resourcePool, currentResources)
+		return invoker.invokePy(strat.Script, userInput, resourcePool, currentResources, poolPropertiesMaps, functionName)
 	default:
 		return nil, "", errors.Errorf("Unknown language \"%s\" for strategy \"%s\"", strat.Lang, strat.Name)
 	}
@@ -124,6 +128,7 @@ func (wasmer Wasmer) invokeJs(
 	resourcePool model.ResourcePoolInput,
 	currentResources []*model.ResourceInput,
 	poolPropertiesMaps map[string]interface{},
+	functionName string,
 ) (map[string]interface{}, string, error) {
 
 	// Append script to invoke the function, parse inputs and serialize outputs
@@ -167,7 +172,7 @@ const log = console.error;
 	header += addition
 
 	footer := `
-let result = invoke()
+let result = ` + functionName + `
 if (result != null) {
 	if (typeof result === 'object') {
 		result = JSON.stringify(result);
@@ -240,6 +245,8 @@ func (wasmer Wasmer) invokePy(
 	userInput map[string]interface{},
 	resourcePool model.ResourcePoolInput,
 	currentResources []*model.ResourceInput,
+	poolPropertiesMaps map[string]interface{},
+	functionName string,
 ) (map[string]interface{}, string, error) {
 	header := `
 import sys,json
@@ -262,6 +269,12 @@ def log(*args, **kwargs):
 	}
 	header += addition
 
+	addition, err = serializePythonVariable("resourcePoolProperties", poolPropertiesMaps)
+	if err != nil {
+		return nil, "", err
+	}
+	header += addition
+
 	if currentResources == nil {
 		// default in case of nil
 		currentResources = []*model.ResourceInput{}
@@ -273,10 +286,10 @@ def log(*args, **kwargs):
 	header += addition
 
 	header += `
-def script_fun():
+def ` + functionName + `:
 `
 	footer := `
-result = script_fun()
+result = ` + functionName + `
 if not result is None:
   if isinstance(result, str):
     sys.stdout.write(result)

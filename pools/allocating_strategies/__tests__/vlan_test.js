@@ -21,6 +21,11 @@ test("allocate vlan full", () => {
         .toStrictEqual(null)
 })
 
+test("vlan capacity measure full", () => {
+    const capacity = strat.invokeWithParamsCapacity(vlans(0, 4095), {'from': 0, 'to':4095});
+    expect(capacity).toStrictEqual({freeCapacity: 0, utilizedCapacity: 4096})
+})
+
 test("free capacity", () => {
     expect(strat.freeCapacity(range(100, 900).Properties, 100)).toStrictEqual(701)
 })

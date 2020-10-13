@@ -207,7 +207,13 @@ type CreateNestedAllocatingPoolPayload {
     pool: ResourcePool
 }
 
+type PoolCapacityPayload {
+    freeCapacity: Float!
+    utilizedCapacity: Float!
+}
+
 type Query {
+    QueryPoolCapacity(poolId: ID!): PoolCapacityPayload!
     QueryPoolTypes: [PoolType!]!
     QueryResource(input: Map!, poolId: ID!): Resource!
     QueryResources(poolId: ID!): [Resource!]!

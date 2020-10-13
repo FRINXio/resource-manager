@@ -142,6 +142,11 @@ type ComplexityRoot struct {
 		StartCursor     func(childComplexity int) int
 	}
 
+	PoolCapacityPayload struct {
+		FreeCapacity     func(childComplexity int) int
+		UtilizedCapacity func(childComplexity int) int
+	}
+
 	PropertyType struct {
 		FloatVal  func(childComplexity int) int
 		ID        func(childComplexity int) int
@@ -157,6 +162,7 @@ type ComplexityRoot struct {
 		QueryAllocationStrategies func(childComplexity int) int
 		QueryAllocationStrategy   func(childComplexity int, allocationStrategyID int) int
 		QueryLeafResourcePools    func(childComplexity int, resourceTypeID *int) int
+		QueryPoolCapacity         func(childComplexity int, poolID int) int
 		QueryPoolTypes            func(childComplexity int) int
 		QueryResource             func(childComplexity int, input map[string]interface{}, poolID int) int
 		QueryResourcePools        func(childComplexity int, resourceTypeID *int) int
@@ -250,6 +256,7 @@ type PropertyTypeResolver interface {
 	Type(ctx context.Context, obj *ent.PropertyType) (string, error)
 }
 type QueryResolver interface {
+	QueryPoolCapacity(ctx context.Context, poolID int) (*model.PoolCapacityPayload, error)
 	QueryPoolTypes(ctx context.Context) ([]resourcepool.PoolType, error)
 	QueryResource(ctx context.Context, input map[string]interface{}, poolID int) (*ent.Resource, error)
 	QueryResources(ctx context.Context, poolID int) ([]*ent.Resource, error)
@@ -691,6 +698,20 @@ func (e *executableSchema) Complexity(typeName, field string, childComplexity in
 
 		return e.complexity.PageInfo.StartCursor(childComplexity), true
 
+	case "PoolCapacityPayload.freeCapacity":
+		if e.complexity.PoolCapacityPayload.FreeCapacity == nil {
+			break
+		}
+
+		return e.complexity.PoolCapacityPayload.FreeCapacity(childComplexity), true
+
+	case "PoolCapacityPayload.utilizedCapacity":
+		if e.complexity.PoolCapacityPayload.UtilizedCapacity == nil {
+			break
+		}
+
+		return e.complexity.PoolCapacityPayload.UtilizedCapacity(childComplexity), true
+
 	case "PropertyType.FloatVal":
 		if e.complexity.PropertyType.FloatVal == nil {
 			break
@@ -782,6 +803,18 @@ func (e *executableSchema) Complexity(typeName, field string, childComplexity in
 		}
 
 		return e.complexity.Query.QueryLeafResourcePools(childComplexity, args["resourceTypeId"].(*int)), true
+
+	case "Query.QueryPoolCapacity":
+		if e.complexity.Query.QueryPoolCapacity == nil {
+			break
+		}
+
+		args, err := ec.field_Query_QueryPoolCapacity_args(context.TODO(), rawArgs)
+		if err != nil {
+			return 0, false
+		}
+
+		return e.complexity.Query.QueryPoolCapacity(childComplexity, args["poolId"].(int)), true
 
 	case "Query.QueryPoolTypes":
 		if e.complexity.Query.QueryPoolTypes == nil {
@@ -1324,7 +1357,13 @@ type CreateNestedAllocatingPoolPayload {
     pool: ResourcePool
 }
 
+type PoolCapacityPayload {
+    freeCapacity: Float!
+    utilizedCapacity: Float!
+}
+
 type Query {
+    QueryPoolCapacity(poolId: ID!): PoolCapacityPayload!
     QueryPoolTypes: [PoolType!]!
     QueryResource(input: Map!, poolId: ID!): Resource!
     QueryResources(poolId: ID!): [Resource!]!
@@ -1845,6 +1884,21 @@ func (ec *executionContext) field_Query_QueryLeafResourcePools_args(ctx context.
 		}
 	}
 	args["resourceTypeId"] = arg0
+	return args, nil
+}
+
+func (ec *executionContext) field_Query_QueryPoolCapacity_args(ctx context.Context, rawArgs map[string]interface{}) (map[string]interface{}, error) {
+	var err error
+	args := map[string]interface{}{}
+	var arg0 int
+	if tmp, ok := rawArgs["poolId"]; ok {
+		ctx := graphql.WithFieldInputContext(ctx, graphql.NewFieldInputWithField("poolId"))
+		arg0, err = ec.unmarshalNID2int(ctx, tmp)
+		if err != nil {
+			return nil, err
+		}
+	}
+	args["poolId"] = arg0
 	return args, nil
 }
 
@@ -3580,6 +3634,74 @@ func (ec *executionContext) _PageInfo_endCursor(ctx context.Context, field graph
 	return ec.marshalNID2int(ctx, field.Selections, res)
 }
 
+func (ec *executionContext) _PoolCapacityPayload_freeCapacity(ctx context.Context, field graphql.CollectedField, obj *model.PoolCapacityPayload) (ret graphql.Marshaler) {
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	fc := &graphql.FieldContext{
+		Object:   "PoolCapacityPayload",
+		Field:    field,
+		Args:     nil,
+		IsMethod: false,
+	}
+
+	ctx = graphql.WithFieldContext(ctx, fc)
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.FreeCapacity, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(float64)
+	fc.Result = res
+	return ec.marshalNFloat2float64(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) _PoolCapacityPayload_utilizedCapacity(ctx context.Context, field graphql.CollectedField, obj *model.PoolCapacityPayload) (ret graphql.Marshaler) {
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	fc := &graphql.FieldContext{
+		Object:   "PoolCapacityPayload",
+		Field:    field,
+		Args:     nil,
+		IsMethod: false,
+	}
+
+	ctx = graphql.WithFieldContext(ctx, fc)
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.UtilizedCapacity, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(float64)
+	fc.Result = res
+	return ec.marshalNFloat2float64(ctx, field.Selections, res)
+}
+
 func (ec *executionContext) _PropertyType_id(ctx context.Context, field graphql.CollectedField, obj *ent.PropertyType) (ret graphql.Marshaler) {
 	defer func() {
 		if r := recover(); r != nil {
@@ -3816,6 +3938,47 @@ func (ec *executionContext) _PropertyType_Mandatory(ctx context.Context, field g
 	res := resTmp.(bool)
 	fc.Result = res
 	return ec.marshalNBoolean2bool(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) _Query_QueryPoolCapacity(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	fc := &graphql.FieldContext{
+		Object:   "Query",
+		Field:    field,
+		Args:     nil,
+		IsMethod: true,
+	}
+
+	ctx = graphql.WithFieldContext(ctx, fc)
+	rawArgs := field.ArgumentMap(ec.Variables)
+	args, err := ec.field_Query_QueryPoolCapacity_args(ctx, rawArgs)
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	fc.Args = args
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return ec.resolvers.Query().QueryPoolCapacity(rctx, args["poolId"].(int))
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(*model.PoolCapacityPayload)
+	fc.Result = res
+	return ec.marshalNPoolCapacityPayload2ᚖgithubᚗcomᚋnetᚑautoᚋresourceManagerᚋgraphᚋgraphqlᚋmodelᚐPoolCapacityPayload(ctx, field.Selections, res)
 }
 
 func (ec *executionContext) _Query_QueryPoolTypes(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
@@ -7580,6 +7743,38 @@ func (ec *executionContext) _PageInfo(ctx context.Context, sel ast.SelectionSet,
 	return out
 }
 
+var poolCapacityPayloadImplementors = []string{"PoolCapacityPayload"}
+
+func (ec *executionContext) _PoolCapacityPayload(ctx context.Context, sel ast.SelectionSet, obj *model.PoolCapacityPayload) graphql.Marshaler {
+	fields := graphql.CollectFields(ec.OperationContext, sel, poolCapacityPayloadImplementors)
+
+	out := graphql.NewFieldSet(fields)
+	var invalids uint32
+	for i, field := range fields {
+		switch field.Name {
+		case "__typename":
+			out.Values[i] = graphql.MarshalString("PoolCapacityPayload")
+		case "freeCapacity":
+			out.Values[i] = ec._PoolCapacityPayload_freeCapacity(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				invalids++
+			}
+		case "utilizedCapacity":
+			out.Values[i] = ec._PoolCapacityPayload_utilizedCapacity(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				invalids++
+			}
+		default:
+			panic("unknown field " + strconv.Quote(field.Name))
+		}
+	}
+	out.Dispatch()
+	if invalids > 0 {
+		return graphql.Null
+	}
+	return out
+}
+
 var propertyTypeImplementors = []string{"PropertyType", "Node"}
 
 func (ec *executionContext) _PropertyType(ctx context.Context, sel ast.SelectionSet, obj *ent.PropertyType) graphql.Marshaler {
@@ -7661,6 +7856,20 @@ func (ec *executionContext) _Query(ctx context.Context, sel ast.SelectionSet) gr
 		switch field.Name {
 		case "__typename":
 			out.Values[i] = graphql.MarshalString("Query")
+		case "QueryPoolCapacity":
+			field := field
+			out.Concurrently(i, func() (res graphql.Marshaler) {
+				defer func() {
+					if r := recover(); r != nil {
+						ec.Error(ctx, ec.Recover(ctx, r))
+					}
+				}()
+				res = ec._Query_QueryPoolCapacity(ctx, field)
+				if res == graphql.Null {
+					atomic.AddUint32(&invalids, 1)
+				}
+				return res
+			})
 		case "QueryPoolTypes":
 			field := field
 			out.Concurrently(i, func() (res graphql.Marshaler) {
@@ -8808,6 +9017,21 @@ func (ec *executionContext) marshalNDeleteTagPayload2ᚖgithubᚗcomᚋnetᚑaut
 	return ec._DeleteTagPayload(ctx, sel, v)
 }
 
+func (ec *executionContext) unmarshalNFloat2float64(ctx context.Context, v interface{}) (float64, error) {
+	res, err := graphql.UnmarshalFloat(v)
+	return res, graphql.WrapErrorWithInputPath(ctx, err)
+}
+
+func (ec *executionContext) marshalNFloat2float64(ctx context.Context, sel ast.SelectionSet, v float64) graphql.Marshaler {
+	res := graphql.MarshalFloat(v)
+	if res == graphql.Null {
+		if !graphql.HasFieldError(ctx, graphql.GetFieldContext(ctx)) {
+			ec.Errorf(ctx, "must not be null")
+		}
+	}
+	return res
+}
+
 func (ec *executionContext) unmarshalNFloat2ᚖfloat64(ctx context.Context, v interface{}) (*float64, error) {
 	res, err := graphql.UnmarshalFloat(v)
 	return &res, graphql.WrapErrorWithInputPath(ctx, err)
@@ -8969,6 +9193,20 @@ func (ec *executionContext) marshalNPageInfo2ᚖgithubᚗcomᚋnetᚑautoᚋreso
 		return graphql.Null
 	}
 	return ec._PageInfo(ctx, sel, v)
+}
+
+func (ec *executionContext) marshalNPoolCapacityPayload2githubᚗcomᚋnetᚑautoᚋresourceManagerᚋgraphᚋgraphqlᚋmodelᚐPoolCapacityPayload(ctx context.Context, sel ast.SelectionSet, v model.PoolCapacityPayload) graphql.Marshaler {
+	return ec._PoolCapacityPayload(ctx, sel, &v)
+}
+
+func (ec *executionContext) marshalNPoolCapacityPayload2ᚖgithubᚗcomᚋnetᚑautoᚋresourceManagerᚋgraphᚋgraphqlᚋmodelᚐPoolCapacityPayload(ctx context.Context, sel ast.SelectionSet, v *model.PoolCapacityPayload) graphql.Marshaler {
+	if v == nil {
+		if !graphql.HasFieldError(ctx, graphql.GetFieldContext(ctx)) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	return ec._PoolCapacityPayload(ctx, sel, v)
 }
 
 func (ec *executionContext) unmarshalNPoolType2githubᚗcomᚋnetᚑautoᚋresourceManagerᚋentᚋresourcepoolᚐPoolType(ctx context.Context, v interface{}) (resourcepool.PoolType, error) {

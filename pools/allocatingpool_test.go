@@ -28,6 +28,7 @@ func (m mockInvoker) invokeJs(
 	resourcePool model.ResourcePoolInput,
 	currentResources []*model.ResourceInput,
 	poolPropertiesMaps map[string]interface{},
+	functionName string,
 ) (map[string]interface{}, string, error) {
 	if m.toBeReturnedError != nil {
 		return nil, "", m.toBeReturnedError
@@ -41,6 +42,8 @@ func (m mockInvoker) invokePy(
 	userInput map[string]interface{},
 	resourcePool model.ResourcePoolInput,
 	currentResources []*model.ResourceInput,
+	poolPropertiesMaps map[string]interface{},
+	functionName string,
 ) (map[string]interface{}, string, error) {
 	if m.toBeReturnedError != nil {
 		return nil, "", m.toBeReturnedError

@@ -50,7 +50,22 @@ function subnetAddresses(mask) {
     return 1<<(32-mask)
 }
 
-// TODO code reuse between strategies
+// number of assignable addresses based on address and mask
+function hostsInMask(addressStr, mask) {
+    if (mask == 32) {
+        return 1;
+    }
+    if (mask == 31) {
+        return 2;
+    }
+    let address = inet_aton(addressStr);
+
+    return subnetLastAddress(address, mask) - (address + 1);
+}
+
+function subnetLastAddress(subnet, mask) {
+    return subnet + subnetAddresses(mask) - 1;
+}
 
 const prefixRegex = /([0-9.]+)\/([0-9]{1,2})/
 
@@ -110,6 +125,19 @@ function utilizedCapacity(allocatedRanges, newlyAllocatedRangeCapacity) {
 // calculate free capacity based on previously allocated prefixes
 function freeCapacity(parentPrefix, utilisedCapacity) {
     return subnetAddresses(parentPrefix.prefix) - utilisedCapacity
+}
+
+function capacity() {
+    let totalCapacity = hostsInMask(resourcePoolProperties.address, resourcePoolProperties.prefix);
+    let allocatedCapacity = 0;
+    let resource;
+    let subnetItself = userInput.subnet ? 1 : 0;
+
+    for (resource of currentResources) {
+        allocatedCapacity += hostsInMask(resource.Properties.address, resource.Properties.prefix);
+    }
+
+    return { freeCapacity: totalCapacity - allocatedCapacity + subnetItself, utilizedCapacity: allocatedCapacity };
 }
 
 // log utilisation stats
@@ -301,6 +329,23 @@ function subnetAddresses(mask) {
     return 1<<(32-mask)
 }
 
+// number of assignable addresses based on address and mask
+function hostsInMask(addressStr, mask) {
+    if (mask == 32) {
+        return 1;
+    }
+    if (mask == 31) {
+        return 2;
+    }
+    let address = inet_aton(addressStr);
+
+    return subnetLastAddress(address, mask) - (address + 1);
+}
+
+function subnetLastAddress(subnet, mask) {
+    return subnet + subnetAddresses(mask) - 1;
+}
+
 const prefixRegex = /([0-9.]+)\/([0-9]{1,2})/
 
 // parse prefix from a string e.g. 1.2.3.4/18 into an object
@@ -341,8 +386,13 @@ function utilizedCapacity(allocatedAddresses, newlyAllocatedRangeCapacity) {
 }
 
 // calculate free capacity based on previously allocated prefixes
-function freeCapacity(parentPrefix, utilisedCapacity) {
-    return subnetAddresses(parentPrefix.prefix) - utilisedCapacity
+function freeCapacity(address, mask, utilisedCapacity) {
+    let subnetItself = userInput.subnet ? 1 : 0;
+    return hostsInMask(address, mask) - utilisedCapacity + subnetItself;
+}
+
+function capacity() {
+    return { freeCapacity: freeCapacity(resourcePoolProperties.address, resourcePoolProperties.prefix, currentResources.length), utilizedCapacity: currentResources.length };
 }
 
 // log utilisation stats
@@ -571,7 +621,38 @@ function utilizedCapacity(allocatedRanges, newlyAllocatedRangeCapacity) {
 
 // calculate free capacity based on previously allocated prefixes
 function freeCapacity(parentPrefix, utilisedCapacity) {
-    return subnetAddresses(parentPrefix.prefix) - utilisedCapacity
+    return subnetAddresses(parentPrefix.prefix) - utilisedCapacity;
+}
+
+// number of assignable addresses based on address and mask
+function hostsInMask(addressStr, mask) {
+    if (mask == 128) {
+        return 1;
+    }
+    if (mask == 127) {
+        return 2;
+    }
+
+    let address = inet_aton(addressStr);
+
+    return subnetLastAddress(address, mask) - BigInt(address) + BigInt(1);
+}
+
+function subnetLastAddress(subnet, mask) {
+    return BigInt(subnet) + subnetAddresses(mask) - BigInt(1);
+}
+
+function capacity() {
+    let totalCapacity = hostsInMask(resourcePoolProperties.address, resourcePoolProperties.prefix);
+    let allocatedCapacity = BigInt(0);
+    let resource;
+    let subnetItself = userInput.subnet ? BigInt(1) : BigInt(0);
+
+    for (resource of currentResources) {
+        allocatedCapacity += hostsInMask(resource.Properties.address, resource.Properties.prefix);
+    }
+
+    return { freeCapacity: Number(totalCapacity - allocatedCapacity + subnetItself), utilizedCapacity: Number(allocatedCapacity) };
 }
 
 // log utilisation stats
@@ -855,9 +936,33 @@ function utilizedCapacity(allocatedAddresses, newlyAllocatedRangeCapacity) {
     return BigInt(allocatedAddresses.length) + BigInt(newlyAllocatedRangeCapacity)
 }
 
+// number of assignable addresses based on address and mask
+function hostsInMask(addressStr, mask) {
+    if (mask == 128) {
+        return 1;
+    }
+    if (mask == 127) {
+        return 2;
+    }
+
+    let address = inet_aton(addressStr);
+
+    return subnetLastAddress(address, mask) - BigInt(address) + BigInt(1);
+}
+
+function subnetLastAddress(subnet, mask) {
+    return BigInt(subnet) + subnetAddresses(mask) - BigInt(1);
+}
+
 // calculate free capacity based on previously allocated prefixes
 function freeCapacity(parentPrefix, utilisedCapacity) {
     return subnetAddresses(parentPrefix.prefix) - BigInt(utilisedCapacity)
+}
+
+function capacity() {
+    let subnetItself = userInput.subnet ? BigInt(1) : BigInt(0);
+    let freeInTotal = hostsInMask(resourcePoolProperties.address, resourcePoolProperties.prefix) + subnetItself;
+    return { freeCapacity: Number(freeInTotal - BigInt(currentResources.length)), utilizedCapacity: currentResources.length };
 }
 
 // log utilisation stats
@@ -1009,6 +1114,10 @@ function getRandomInt(min, max) {
 
 function rangeToStr(range) {
     return ` + "`" + `[${range.from}-${range.to}]` + "`" + `
+}
+
+function capacity() {
+    return { freeCapacity: freeCapacity(resourcePoolProperties, currentResources.length), utilizedCapacity: currentResources.length };
 }
 
 
@@ -1178,6 +1287,11 @@ function invoke() {
     return null
 }
 
+function capacity() {
+    return { freeCapacity: Number(rangeCapacity()), utilizedCapacity: currentResources.length };
+}
+
+
 
 `
 
@@ -1317,6 +1431,15 @@ function rangeToStr(range) {
     return ` + "`" + `[${range.from}-${range.to}]` + "`" + `
 }
 
+function capacity() {
+    let allocatedCapacity = 0;
+    let resource;
+    for (resource of currentResources) {
+        allocatedCapacity += rangeCapacity(resource.Properties);
+    }
+    return { freeCapacity: freeCapacity(resourcePoolProperties, allocatedCapacity), utilizedCapacity: allocatedCapacity };
+}
+
 
 `
 
@@ -1389,6 +1512,10 @@ function invoke() {
 
 function rangeToStr(range) {
     return ` + "`" + `[${range.from}-${range.to}]` + "`" + `
+}
+
+function capacity() {
+    return { freeCapacity: freeCapacity(resourcePoolProperties, currentResources.length), utilizedCapacity: currentResources.length };
 }
 
 

@@ -23,7 +23,7 @@ export async function createRandomIntRootPool() {
         {from: '1', to: 999},)
 }
 
-export async function createIpv4RootPool() {
+export async function createIpv4RootPool(address, prefix) {
     let resourceTypeId = await findResourceTypeId('ipv4');
     let strategyId = await findAllocationStrategyId('ipv4');
     let poolName = getUniqueName('root-ipv4');
@@ -32,7 +32,7 @@ export async function createIpv4RootPool() {
         resourceTypeId,
         strategyId,
         { address: "string", prefix: "int"},
-        {address: '192.168.1.0', prefix: 24},)
+        {address: address, prefix: prefix},)
 }
 
 export async function createRdRootPool(){
@@ -47,6 +47,18 @@ export async function createRdRootPool(){
         {rd: 0},)
 }
 
+
+export async function createIpv6RootPool(){
+    let resourceTypeId = await findResourceTypeId('ipv6');
+    let strategyId = await findAllocationStrategyId('ipv6');
+    let poolName = getUniqueName('root-ipv6-range');
+    return await createAllocationPool(
+        poolName,
+        resourceTypeId,
+        strategyId,
+        { address: "string", prefix: "int"},
+        {address: "dead::", prefix: 16},)
+}
 
 export async function createIpv6PrefixRootPool(){
     let resourceTypeId = await findResourceTypeId('ipv6_prefix');
@@ -116,11 +128,22 @@ export async function createSingletonIpv4PrefixNestedPool(parentResourceId){
         parentResourceId);
 }
 
-export async function createVlanRootPool(){
+export async function createVlanRangeRootPool(){
     let resourceTypeId = await findResourceTypeId('vlan_range');
     let strategyId = await findAllocationStrategyId('vlan_range');
     return await createAllocationPool(
-        getUniqueName('root'),
+        getUniqueName('root-vlan-range'),
+        resourceTypeId,
+        strategyId,
+        { from: "int", to: "int"},
+        {from: 0, to: 4095},)
+}
+
+export async function createVlanRootPool(){
+    let resourceTypeId = await findResourceTypeId('vlan');
+    let strategyId = await findAllocationStrategyId('vlan');
+    return await createAllocationPool(
+        getUniqueName('root-vlan'),
         resourceTypeId,
         strategyId,
         { from: "int", to: "int"},

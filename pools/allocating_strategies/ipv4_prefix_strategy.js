@@ -53,7 +53,22 @@ function subnetAddresses(mask) {
     return 1<<(32-mask)
 }
 
-// TODO code reuse between strategies
+// number of assignable addresses based on address and mask
+function hostsInMask(addressStr, mask) {
+    if (mask == 32) {
+        return 1;
+    }
+    if (mask == 31) {
+        return 2;
+    }
+    let address = inet_aton(addressStr);
+
+    return subnetLastAddress(address, mask) - (address + 1);
+}
+
+function subnetLastAddress(subnet, mask) {
+    return subnet + subnetAddresses(mask) - 1;
+}
 
 const prefixRegex = /([0-9.]+)\/([0-9]{1,2})/
 
@@ -113,6 +128,19 @@ function utilizedCapacity(allocatedRanges, newlyAllocatedRangeCapacity) {
 // calculate free capacity based on previously allocated prefixes
 function freeCapacity(parentPrefix, utilisedCapacity) {
     return subnetAddresses(parentPrefix.prefix) - utilisedCapacity
+}
+
+function capacity() {
+    let totalCapacity = hostsInMask(resourcePoolProperties.address, resourcePoolProperties.prefix);
+    let allocatedCapacity = 0;
+    let resource;
+    let subnetItself = userInput.subnet ? 1 : 0;
+
+    for (resource of currentResources) {
+        allocatedCapacity += hostsInMask(resource.Properties.address, resource.Properties.prefix);
+    }
+
+    return { freeCapacity: totalCapacity - allocatedCapacity + subnetItself, utilizedCapacity: allocatedCapacity };
 }
 
 // log utilisation stats
@@ -264,8 +292,17 @@ function invokeWithParams(currentResourcesArg, resourcePoolArg, userInputArg) {
     userInput = userInputArg
     return invoke()
 }
+
+// For testing purposes
+function invokeWithParamsCapacity(currentResourcesArg, resourcePoolArg, userInputArg) {
+    currentResources = currentResourcesArg
+    resourcePoolProperties = resourcePoolArg
+    userInput = userInputArg
+    return capacity()
+}
 exports.invoke = invoke
 exports.invokeWithParams = invokeWithParams
+exports.invokeWithParamsCapacity = invokeWithParamsCapacity
 exports.utilizedCapacity = utilizedCapacity
 exports.freeCapacity = freeCapacity
 exports.parsePrefix = parsePrefix

@@ -126,7 +126,14 @@ func (r *mutationResolver) TestAllocationStrategy(ctx context.Context, allocatio
 		poolPropertiesMaps[key] = element
 	}
 
-	parsedOutputFromStrat, stdErr, err := p.InvokeAllocationStrategy(wasmer, strat, userInput, resourcePool, currentResources, poolPropertiesMaps)
+	var functionName string
+	if strat.Lang == allocationstrategy.LangPy {
+		functionName = "script_fun()"
+	} else {
+		functionName = "invoke()"
+	}
+
+	parsedOutputFromStrat, stdErr, err := p.InvokeAllocationStrategy(wasmer, strat, userInput, resourcePool, currentResources, poolPropertiesMaps, functionName)
 	if err != nil {
 		return nil, gqlerror.Errorf("Error while running the script: %v", err)
 	}
@@ -314,16 +321,6 @@ func (r *mutationResolver) DeleteResourcePool(ctx context.Context, input model.D
 	client := r.ClientFrom(ctx)
 	retVal := model.DeleteResourcePoolPayload{ResourcePoolID: input.ResourcePoolID}
 
-	// Do not allow removing pools with allocated resources
-	hasAllocatedResources, err2 := p.HasAllocatedResources(ctx, client, input.ResourcePoolID)
-	if hasAllocatedResources {
-		return &retVal, gqlerror.Errorf("Unable to delete pool, pool has allocated resources, deallocate those first")
-	}
-
-	if err2 != nil {
-		return &retVal, gqlerror.Errorf("Unable to determine if pool has allocated resources (%v), pool is NOT going to be deleted", err2)
-	}
-
 	pool, errPool := p.ExistingPoolFromId(ctx, client, input.ResourcePoolID)
 
 	if errPool != nil {
@@ -336,7 +333,7 @@ func (r *mutationResolver) DeleteResourcePool(ctx context.Context, input model.D
 		return &retVal, gqlerror.Errorf("Unable to delete pool: %v", errDp)
 	}
 
-    return &retVal, nil
+	return &retVal, nil
 }
 
 func (r *mutationResolver) CreateResourceType(ctx context.Context, input model.CreateResourceTypeInput) (*model.CreateResourceTypePayload, error) {
@@ -407,6 +404,25 @@ func (r *mutationResolver) UpdateResourceTypeName(ctx context.Context, input mod
 func (r *propertyTypeResolver) Type(ctx context.Context, obj *ent.PropertyType) (string, error) {
 	// Just converts enum to string
 	return obj.Type.String(), nil
+}
+
+func (r *queryResolver) QueryPoolCapacity(ctx context.Context, poolID int) (*model.PoolCapacityPayload, error) {
+	pool, err := p.ExistingPoolFromId(ctx, r.ClientFrom(ctx), poolID)
+
+	if err != nil {
+		return nil, gqlerror.Errorf("Unable to find pool: %v", err)
+	}
+
+	freeCapacity, utilizedCapacity, err2 := pool.Capacity()
+
+	if err2 != nil {
+		return nil, gqlerror.Errorf("Unable to compute capacity: %v", err2)
+	}
+
+	return &model.PoolCapacityPayload{
+		FreeCapacity:     freeCapacity,
+		UtilizedCapacity: utilizedCapacity,
+	}, nil
 }
 
 func (r *queryResolver) QueryPoolTypes(ctx context.Context) ([]resourcePool.PoolType, error) {

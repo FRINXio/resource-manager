@@ -3,6 +3,7 @@ package pools
 import (
 	"context"
 	"github.com/net-auto/resourceManager/ent/resource"
+	"github.com/pkg/errors"
 
 	"github.com/net-auto/resourceManager/ent"
 	resourcePool "github.com/net-auto/resourceManager/ent/resourcepool"
@@ -61,9 +62,14 @@ func (pool SingletonPool) FreeResource(raw RawResourceProps) error {
 	return nil
 }
 
-// TODO add capacity implementation
-func (pool SingletonPool) Capacity() (int, error) {
-	return 1, nil
+func (pool SingletonPool) Capacity() (float64, float64, error) {
+	claimedResources, err := pool.QueryResources()
+
+	if err != nil {
+		return 0, 0, err
+	}
+
+	return float64(1 - len(claimedResources)), float64(len(claimedResources)), nil
 }
 
 // QueryResource returns always the same resource
@@ -85,6 +91,17 @@ func (pool SingletonPool) QueryResources() (ent.Resources, error) {
 }
 
 func (pool SingletonPool) Destroy() error {
+	claims, errQr := pool.QueryResources()
+
+	if errQr != nil {
+		return errQr
+	}
+
+	if len(claims) > 0 {
+		return errors.Errorf("Unable to destroy pool \"%s\", there are claimed resources",
+			pool.Name)
+	}
+
 	_, err := pool.client.Resource.Delete().Where(resource.HasPoolWith(resourcePool.ID(pool.ID))).Exec(pool.ctx)
 
 	if err != nil {

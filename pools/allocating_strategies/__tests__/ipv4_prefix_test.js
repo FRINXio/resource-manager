@@ -31,6 +31,16 @@ test("allocate range at start with existing resources", () => {
         .toStrictEqual(prefix("192.168.1.0", 28).Properties)
 })
 
+test("ipv6-prefix capacity 24 mask", () => {
+    let capacity = strat.invokeWithParamsCapacity(
+        [prefix("192.168.1.16", 28)],
+        { 'prefix': 24, 'address': "192.168.1.0"},
+        {});
+
+    expect(capacity)
+        .toStrictEqual({freeCapacity: 240, utilizedCapacity: 14})
+})
+
 test("ipv4 prefix allocation subnet vs. pool", () => {
     expect(strat.invokeWithParams([],
         { 'prefix': 24, 'address': "192.168.1.0"},

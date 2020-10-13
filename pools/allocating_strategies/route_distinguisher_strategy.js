@@ -168,6 +168,10 @@ function invoke() {
     return null
 }
 
+function capacity() {
+    return { freeCapacity: Number(rangeCapacity()), utilizedCapacity: currentResources.length };
+}
+
 // STRATEGY_END
 
 // For testing purposes

@@ -110,9 +110,20 @@ func (pool SetPool) ClaimResource(userInput map[string]interface{}) (*ent.Resour
 	return unclaimedRes, err
 }
 
-// TODO add capacity implementation
-func (pool SetPool) Capacity() (int, error) {
-	return 1, nil
+func (pool SetPool) Capacity() (float64, float64, error) {
+	claimedResources, err := pool.QueryResources()
+
+	if err != nil {
+		return 0, 0, err
+	}
+
+	resources, err := pool.client.Resource.Query().Where(resource.HasPoolWith(resourcePool.ID(pool.ID))).All(pool.ctx)
+
+	if err != nil {
+		return 0, 0, err
+	}
+
+	return float64(len(resources) - len(claimedResources)), float64(len(claimedResources)), nil
 }
 
 // FreeResource deallocates the resource identified by its properties

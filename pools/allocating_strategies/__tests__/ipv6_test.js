@@ -102,6 +102,15 @@ test("allocate ipv6 at start with existing resources", () => {
         .toStrictEqual(addr("dead::1").Properties)
 })
 
+test("ipv6 capacity 24 mask", () => {
+    let capacity = strat.invokeWithParamsCapacity(
+        [addr("dead::2")],
+        { 'prefix': 110, 'address': "dead::"},
+        {"subnet": true});
+    expect(capacity)
+        .toStrictEqual({freeCapacity: 262144, utilizedCapacity: 1})
+})
+
 function addr(ip) {
     return {"Properties": {"address": ip}}
 }

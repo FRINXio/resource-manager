@@ -80,6 +80,10 @@ function rangeToStr(range) {
     return `[${range.from}-${range.to}]`
 }
 
+function capacity() {
+    return { freeCapacity: freeCapacity(resourcePoolProperties, currentResources.length), utilizedCapacity: currentResources.length };
+}
+
 // STRATEGY_END
 
 // For testing purposes

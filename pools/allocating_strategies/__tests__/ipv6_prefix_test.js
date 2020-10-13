@@ -99,6 +99,15 @@ test("desired size === root ipv6", () => {
         .toStrictEqual(prefix("dead::", 104).Properties)
 })
 
+test("capacity test", () => {
+    let capacity = strat.invokeWithParamsCapacity([],
+        { 'prefix': 120, 'address': "dead::"},
+        {});
+    expect(capacity)
+        .toStrictEqual({freeCapacity: 256, utilizedCapacity: 0})
+})
+
+
 test("ipv6 prefix allocation /104", () => {
     let resourcePoolArg = { 'prefix': 104, 'address': "abcd:ef01:2345:6789::"};
     let subnets = []

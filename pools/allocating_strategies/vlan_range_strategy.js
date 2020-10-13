@@ -140,6 +140,15 @@ function rangeToStr(range) {
     return `[${range.from}-${range.to}]`
 }
 
+function capacity() {
+    let allocatedCapacity = 0;
+    let resource;
+    for (resource of currentResources) {
+        allocatedCapacity += rangeCapacity(resource.Properties);
+    }
+    return { freeCapacity: freeCapacity(resourcePoolProperties, allocatedCapacity), utilizedCapacity: allocatedCapacity };
+}
+
 // STRATEGY_END
 
 // For testing purposes
@@ -150,8 +159,16 @@ function invokeWithParams(currentResourcesArg, resourcePoolArg, userInputArg) {
     return invoke()
 }
 
+function invokeWithParamsCapacity(currentResourcesArg, resourcePoolArg, userInputArg) {
+    currentResources = currentResourcesArg
+    resourcePoolProperties = resourcePoolArg
+    userInput = userInputArg
+    return capacity()
+}
+
 exports.invoke = invoke
 exports.invokeWithParams = invokeWithParams
+exports.invokeWithParamsCapacity = invokeWithParamsCapacity
 exports.compareVlanRanges = compareVlanRanges
 exports.utilizedCapacity = utilizedCapacity
 exports.freeCapacity = freeCapacity
