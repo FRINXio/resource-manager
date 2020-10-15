@@ -47,8 +47,8 @@ func TenancyHandler(h http.Handler, tenancy Tenancy, logger log.Logger) http.Han
 			return
 		}
 
-		roles := r.Header.Values(RoleHeader)
-		groups := r.Header.Values(GroupHeader)
+		roles := r.Header.Get(RoleHeader)
+		groups := r.Header.Get(GroupHeader)
 
 		logger.Info("getting tenancy client for %s", zap.String("tenant", tenant));
 
@@ -62,7 +62,7 @@ func TenancyHandler(h http.Handler, tenancy Tenancy, logger log.Logger) http.Han
 
 		var ctx  = ent.NewContext(r.Context(), client)
 
-		ctx = schema.WithIdentityParsed(ctx, tenant, user, roles, groups)
+		ctx = schema.WithIdentity(ctx, tenant, user, roles, groups)
 		identity, _ := schema.GetIdentity(ctx)
 		marshal, err := json.Marshal(identity)
 		if err != nil {
