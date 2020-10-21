@@ -1,3 +1,5 @@
+import {rangeCapacity, rangeToStr, freeCapacity} from "./vlanutils";
+
 // framework managed constants
 var currentResources = []
 var resourcePoolProperties = {}
@@ -15,14 +17,6 @@ VLAN allocation strategy
 - 0 and 4095 are not reserved !
 - Allocates previously freed resources
  */
-
-function rangeCapacity(vlanRange) {
-    return vlanRange.to - vlanRange.from + 1
-}
-
-function freeCapacity(parentRange, utilisedCapacity) {
-    return rangeCapacity(parentRange) - utilisedCapacity
-}
 
 function utilizedCapacity(allocatedRanges, newlyAllocatedVlan) {
     return allocatedRanges.length + (newlyAllocatedVlan != null)
@@ -71,10 +65,6 @@ function invoke() {
     return null
 }
 
-function rangeToStr(range) {
-    return `[${range.from}-${range.to}]`
-}
-
 function capacity() {
     return { freeCapacity: freeCapacity(resourcePoolProperties, currentResources.length), utilizedCapacity: currentResources.length };
 }
@@ -95,8 +85,8 @@ function invokeWithParamsCapacity(currentResourcesArg, resourcePoolArg) {
 }
 
 exports.invoke = invoke
+exports.capacity = capacity
 exports.invokeWithParams = invokeWithParams
 exports.invokeWithParamsCapacity = invokeWithParamsCapacity
 exports.utilizedCapacity = utilizedCapacity
-exports.freeCapacity = freeCapacity
 // For testing purposes

@@ -1,7 +1,6 @@
 // framework managed constants
 var currentResources = []
 var resourcePoolProperties = {}
-var userInput = {}
 // framework managed constants
 
 // STRATEGY_START
@@ -94,6 +93,7 @@ function invokeWithParams(currentResourcesArg, resourcePoolArg) {
 }
 
 exports.invoke = invoke
+exports.capacity = capacity
 exports.invokeWithParams = invokeWithParams
 exports.utilizedCapacity = utilizedCapacity
 exports.freeCapacity = freeCapacity

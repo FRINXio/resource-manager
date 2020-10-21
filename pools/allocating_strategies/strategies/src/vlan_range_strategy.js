@@ -1,3 +1,5 @@
+import {rangeCapacity, rangeToStr, freeCapacity} from "./vlanutils";
+
 // framework managed constants
 var currentResources = []
 var resourcePoolProperties = {}
@@ -19,10 +21,6 @@ VLAN range allocation strategy
 - Allocates previously freed resources
  */
 
-function rangeCapacity(vlanRange) {
-    return vlanRange.to - vlanRange.from + 1
-}
-
 function rangesToStr(currentResources) {
     let subRangesToString = ""
     for (let allocatedRange of currentResources) {
@@ -37,10 +35,6 @@ function rangesCapacity(currentResources) {
         width += rangeCapacity(allocatedRange)
     }
     return width
-}
-
-function freeCapacity(parentRange, utilisedCapacity) {
-    return rangeCapacity(parentRange) - utilisedCapacity
 }
 
 function utilizedCapacity(allocatedRanges, newlyAllocatedRangeCapacity) {
@@ -136,10 +130,6 @@ function compareVlanRanges(range1, range2) {
     return range1.to - range2.to
 }
 
-function rangeToStr(range) {
-    return `[${range.from}-${range.to}]`
-}
-
 function capacity() {
     let allocatedCapacity = 0;
     let resource;
@@ -167,9 +157,9 @@ function invokeWithParamsCapacity(currentResourcesArg, resourcePoolArg, userInpu
 }
 
 exports.invoke = invoke
+exports.capacity = capacity
 exports.invokeWithParams = invokeWithParams
 exports.invokeWithParamsCapacity = invokeWithParamsCapacity
 exports.compareVlanRanges = compareVlanRanges
 exports.utilizedCapacity = utilizedCapacity
-exports.freeCapacity = freeCapacity
 // For testing purposes

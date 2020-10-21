@@ -8,15 +8,15 @@ import (
 	"strings"
 )
 
-const START_TAG = "// STRATEGY_START\n"
 const END_TAG = "// STRATEGY_END\n"
 const FILENAME = "./builtin_strategies.go"
 const JS_SUFFIX = "_strategy.js"
+const STRATEGY_DIR = "./strategies/generated/"
 
 func main() {
 	var files []string
 
-	files, err := filepath.Glob("*" + JS_SUFFIX)
+	files, err := filepath.Glob(STRATEGY_DIR + "*" + JS_SUFFIX)
 	if err != nil {
 		panic(err)
 	}
@@ -27,25 +27,20 @@ package pools
 
 `
 	for _, file := range files {
-		strategyB, err := ioutil.ReadFile("./" + file)
+		strategyB, err := ioutil.ReadFile(file)
 		if err != nil {
 			panic(err)
 		}
 
 		content += "const "
-		content += strings.ToUpper(strings.TrimSuffix(file, JS_SUFFIX))
+		content += strings.ToUpper(strings.TrimSuffix(filepath.Base(file), JS_SUFFIX))
 		content += " = `\n"
 
 		strategy := string(strategyB)
 
-		// remove any leading / trailing test code
+		// remove trailing test code
 		var startPos = 0
 		var endPos = 0
-		if (strings.Contains(strategy, START_TAG)) {
-			startPos = strings.LastIndex(strategy, START_TAG) + len(START_TAG)
-		} else {
-			startPos = 0
-		}
 		if (strings.Contains(strategy, END_TAG)) {
 			endPos = strings.Index(strategy, END_TAG)
 		} else {

@@ -1,4 +1,5 @@
 const strat = require('../vlan_strategy')
+import {freeCapacity} from "../vlanutils";
 
 test("missing parent range", () => {
     expect(strat.invokeWithParams([], {}))
@@ -27,7 +28,7 @@ test("vlan capacity measure full", () => {
 })
 
 test("free capacity", () => {
-    expect(strat.freeCapacity(range(100, 900).Properties, 100)).toStrictEqual(701)
+    expect(freeCapacity(range(100, 900).Properties, 100)).toStrictEqual(701)
 })
 
 test("utilisation", () => {

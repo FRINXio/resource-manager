@@ -2,7 +2,7 @@ const strat = require('../random_s_int32_strategy')
 
 test("allocate randomInt", () => {
     for (let i = 0; i < 10000; i++) {
-        let rand = strat.invokeWithParams([], {'ResourcePoolName': "[-10-10]"}).int
+        let rand = strat.invokeWithParams([], { from: -10, to: 10}).int
         expect(rand)
             .toBeLessThanOrEqual(10)
         expect(rand)

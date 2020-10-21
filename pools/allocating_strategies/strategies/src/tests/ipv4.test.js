@@ -1,7 +1,7 @@
 const strat = require('../ipv4_strategy')
 
 test("allocate all addresses 24", () => {
-    addresses = []
+    let addresses = []
     for (let i = 1; i < 255; i++) {
         let address = strat.invokeWithParams(addresses,
             { 'prefix': 24, 'address': "192.168.1.0"},
@@ -36,7 +36,7 @@ test("allocate all addresses 24", () => {
 })
 
 test("allocate all addresses 19", () => {
-    addresses = []
+    let addresses = []
     for (let i = 0; i < 32; i++) {
         for (let j = 0; j < 256; j++) {
             if (i === 0 && j === 0) {
@@ -111,10 +111,6 @@ test("ipv4 capacity 16 mask", () => {
 function addr(ip) {
     return {"Properties": {"address": ip}}
 }
-
-test("free ipv4 capacity", () => {
-    expect(strat.freeCapacity({"prefix": 24}, 100)).toStrictEqual(156)
-})
 
 test("ipv4 utilisation", () => {
     expect(strat.utilizedCapacity(

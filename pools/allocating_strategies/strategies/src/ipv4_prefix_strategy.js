@@ -1,7 +1,14 @@
+import {
+    hostsInMask,
+    inet_aton,
+    inet_ntoa,
+    prefixToStr,
+    subnetAddresses
+} from "./ipv4utils";
+
 // framework managed constants
 var currentResources = []
 var resourcePoolProperties = {}
-var resourcePool = {}
 var userInput = {}
 // framework managed constants
 
@@ -19,90 +26,6 @@ IPv4 prefix allocation strategy
 - Allocates previously freed prefixes
 - All addresses from parent prefix are used, including the first and last one
  */
-
-// ipv4 int to str
-function inet_ntoa(addrint) {
-    return ((addrint >> 24) & 0xff) + "." +
-        ((addrint >> 16) & 0xff) + "." +
-        ((addrint >> 8) & 0xff) + "." +
-        (addrint & 0xff)
-}
-
-// ipv4 str to int
-function inet_aton(addrstr) {
-    var re = /^([0-9]{1,3})\.([0-9]{1,3})\.([0-9]{1,3})\.([0-9]{1,3})$/
-    var res = re.exec(addrstr)
-
-    if (res === null) {
-        console.error("Address is invalid, doesn't match regex: " + re)
-        return null
-    }
-
-    for (var i = 1; i <= 4; i++) {
-        if (res[i] < 0 || res[i] > 255) {
-            console.error("Address is invalid, outside of ipv4 range: " + addrstr)
-            return null
-        }
-    }
-
-    return (res[1] << 24) | (res[2] << 16) | (res[3] << 8) | res[4]
-}
-
-// number of addresses in a subnet based on its mask
-function subnetAddresses(mask) {
-    return 1<<(32-mask)
-}
-
-// number of assignable addresses based on address and mask
-function hostsInMask(addressStr, mask) {
-    if (mask == 32) {
-        return 1;
-    }
-    if (mask == 31) {
-        return 2;
-    }
-    let address = inet_aton(addressStr);
-
-    return subnetLastAddress(address, mask) - (address + 1);
-}
-
-function subnetLastAddress(subnet, mask) {
-    return subnet + subnetAddresses(mask) - 1;
-}
-
-const prefixRegex = /([0-9.]+)\/([0-9]{1,2})/
-
-// parse prefix from a string e.g. 1.2.3.4/18 into an object
-function parsePrefix(str) {
-    let res = prefixRegex.exec(str)
-    if (res == null) {
-        console.error("Prefix is invalid, doesn't match regex: " + prefixRegex)
-        return null
-    }
-
-    let addrNum = inet_aton(res[1])
-    if (addrNum == null) {
-        return null
-    }
-
-    let mask = parseInt(res[2], 10)
-    if (mask < 0 || mask > 32) {
-        console.error("Mask is invalid outside of ipv4 range: " + mask)
-        return null
-    }
-
-    if (mask === 0) {
-        addrNum = 0
-    } else {
-        // making sure to nullify any bits set to 1 in subnet addr outside of mask
-        addrNum = (addrNum >>> (32-mask)) << (32-mask)
-    }
-
-    return {
-        "address": inet_ntoa(addrNum),
-        "prefix": mask
-    }
-}
 
 // compare prefixes based on their broadcast address
 function comparePrefix(prefix1, prefix2) {
@@ -175,10 +98,6 @@ function prefixesToString(currentResourcesUnwrapped) {
     return prefixesToStr
 }
 
-function prefixToStr(prefix) {
-    return `${prefix.address}/${prefix.prefix}`
-}
-
 function prefixToRangeStr(prefix) {
     return `[${prefix.address}-${inet_ntoa(inet_aton(prefix.address) + subnetAddresses(prefix.prefix) - 1)}]`
 }
@@ -239,7 +158,7 @@ function invoke() {
     let {newSubnetMask, newSubnetCapacity} = calculateDesiredSubnetMask();
 
     // unwrap and sort currentResources
-    currentResourcesUnwrapped = currentResources.map(cR => cR.Properties)
+    let currentResourcesUnwrapped = currentResources.map(cR => cR.Properties)
     currentResourcesUnwrapped.sort(comparePrefix)
 
     let possibleSubnetNum = rootAddressNum
@@ -301,9 +220,9 @@ function invokeWithParamsCapacity(currentResourcesArg, resourcePoolArg, userInpu
     return capacity()
 }
 exports.invoke = invoke
+exports.capacity = capacity
 exports.invokeWithParams = invokeWithParams
 exports.invokeWithParamsCapacity = invokeWithParamsCapacity
 exports.utilizedCapacity = utilizedCapacity
 exports.freeCapacity = freeCapacity
-exports.parsePrefix = parsePrefix
 // For testing purposes

@@ -1,7 +1,7 @@
 const strat = require('../ipv6_strategy')
 
 test("allocate all addresses /120 ipv6", () => {
-    addresses = []
+    let addresses = []
     for (let i = 1; i < 255; i++) {
         let address = strat.invokeWithParams(addresses,
             { 'prefix': 120, 'address': "dddd::"},
@@ -36,7 +36,7 @@ test("allocate all addresses /120 ipv6", () => {
 })
 
 test("allocate all addresses /117 ipv6", () => {
-    addresses = []
+    let addresses = []
     for (let i = 0; i < 8; i++) {
         for (let j = 0; j < 256; j++) {
             if (i === 0 && j === 0) {

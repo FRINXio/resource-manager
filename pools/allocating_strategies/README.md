@@ -1,13 +1,9 @@
 # Built-in allocation strategies
 
-Contains built-in allocation strategies and any boilerplate code required to invoke them.
+Contains scripts to load build-in strategies into the database.
 
-## Test
+To update the strategies in resource-manager follow these steps:
 
-```shell script
-npm install jest --global
-```
-
-```shell script
-jest ./* --notify
-```
+1. delete the strategies in the DB (or wipe the whole DB)
+2. in the **backend** folder run the following command `go generate ./pools/...`
+3. start resource-manager 

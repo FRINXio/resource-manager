@@ -1,4 +1,5 @@
 const strat = require('../ipv4_prefix_strategy')
+import {parsePrefix} from "../ipv4utils";
 
 test("single allocation pool", () => {
     for (let i = 1; i <= 8; i++) {
@@ -194,34 +195,34 @@ test("desired size === than root", () => {
 })
 
 test("parse prefix invalid", () => {
-    expect(strat.parsePrefix("255.255.255.256/32")).toStrictEqual(null)
-    expect(strat.parsePrefix("1.2.3.4/36")).toStrictEqual(null)
-    expect(strat.parsePrefix("abcd")).toStrictEqual(null)
+    expect(parsePrefix("255.255.255.256/32")).toStrictEqual(null)
+    expect(parsePrefix("1.2.3.4/36")).toStrictEqual(null)
+    expect(parsePrefix("abcd")).toStrictEqual(null)
 })
 
 test("parse prefix", () => {
-    expect(strat.parsePrefix("192.168.1.0/16"))
+    expect(parsePrefix("192.168.1.0/16"))
         .toStrictEqual(prefix("192.168.0.0", 16).Properties)
 
-    expect(strat.parsePrefix("192.168.1.0/8"))
+    expect(parsePrefix("192.168.1.0/8"))
         .toStrictEqual(prefix("192.0.0.0", 8).Properties)
 
-    expect(strat.parsePrefix("255.168.1.0/1"))
+    expect(parsePrefix("255.168.1.0/1"))
         .toStrictEqual(prefix("128.0.0.0", 1).Properties)
 
-    expect(strat.parsePrefix("255.168.1.0/2"))
+    expect(parsePrefix("255.168.1.0/2"))
         .toStrictEqual(prefix("192.0.0.0", 2).Properties)
 
-    expect(strat.parsePrefix("192.168.1.8/32"))
+    expect(parsePrefix("192.168.1.8/32"))
         .toStrictEqual(prefix("192.168.1.8", 32).Properties)
 
-    expect(strat.parsePrefix("192.168.1.0/0"))
+    expect(parsePrefix("192.168.1.0/0"))
         .toStrictEqual(prefix("0.0.0.0", 0).Properties)
 
-    expect(strat.parsePrefix("0.0.0.0/0"))
+    expect(parsePrefix("0.0.0.0/0"))
         .toStrictEqual(prefix("0.0.0.0", 0).Properties)
 
-    expect(strat.parsePrefix("255.255.255.255/32"))
+    expect(parsePrefix("255.255.255.255/32"))
         .toStrictEqual(prefix("255.255.255.255", 32).Properties)
 })
 
