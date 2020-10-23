@@ -51,11 +51,11 @@ function invoke() {
     }
 
     // unwrap currentResources
-    currentResourcesUnwrapped = currentResources.map(cR => cR.Properties);
+    let currentResourcesUnwrapped = currentResources.map(cR => cR.Properties);
     let currentResourcesSet = new Set(currentResourcesUnwrapped.map(s_int32 => s_int32.int));
 
     for (let i = parentRange.from; i <= parentRange.to; i++) {
-        newInt = getRandomInt(parentRange.from, parentRange.to);
+        let newInt = getRandomInt(parentRange.from, parentRange.to);
         if (!currentResourcesSet.has(newInt)) {
             // FIXME How to pass these stats ?
             // logStats(i, parentRange, currentResourcesUnwrapped)
