@@ -3,7 +3,7 @@ import {
     createSingletonPool, createTag, deleteResourcePool,
     findResourceTypeId, createSetPool,
     freeResource,
-    getResourcesForPool, searchPoolsByTags, tagPool, getCapacityForPool
+    getResourcesForPool, searchPoolsByTags, tagPool, getCapacityForPool, getResourcePool
 } from "../graphql-queries";
 import {
     createIpv4PrefixRootPool,
@@ -220,4 +220,44 @@ test('capacity for singleton pool', async () => {
     const capacity = await getCapacityForPool(poolId);
     expect(capacity.utilizedCapacity).toBe(1);
     expect(capacity.freeCapacity).toBe(0);
+});
+
+test('pagination of allocated resources in vlan-pool', async () => {
+    const poolId = await createVlanRootPool();
+
+    let resourceIds = [];
+
+    for (let i = 0; i < 20; i++) {
+        resourceIds.push((await claimResource(poolId, {})).id);
+    }
+
+    //get 3 first resources
+    let pool = await getResourcePool(poolId, null, null, 3, null);
+    expect(pool.allocatedResources.edges).toHaveLength(3);
+    let thirdResource = pool.allocatedResources.pageInfo.endCursor;
+
+    //get 3 resources after the 3rd resource
+    pool = await getResourcePool(poolId, null,  thirdResource, 3, null);
+    expect(resourceIds[3]).toBe(pool.allocatedResources.edges[0].node.id);
+    expect(resourceIds[4]).toBe(pool.allocatedResources.edges[1].node.id);
+    expect(resourceIds[5]).toBe(pool.allocatedResources.edges[2].node.id);
+    expect(pool.allocatedResources.pageInfo.hasNextPage).toBe(true);
+
+    //get all resources after the 3rd resource
+    pool = await getResourcePool(poolId, null, thirdResource, 1000, null);
+    expect(pool.allocatedResources.edges).toHaveLength(17);
+    expect(pool.allocatedResources.pageInfo.hasNextPage).toBe(false);
+
+    //get 1 resource before the 3rd resource
+    pool = await getResourcePool(poolId, thirdResource,  null, null, 1);
+    expect(pool.allocatedResources.edges).toHaveLength(1);
+    expect(resourceIds[1]).toBe(pool.allocatedResources.edges[0].node.id);
+    expect(pool.allocatedResources.pageInfo.hasPreviousPage).toBe(true);
+    let secondResource = pool.allocatedResources.pageInfo.startCursor;
+
+    //get all resources before the 2nd resource
+    pool = await getResourcePool(poolId, secondResource,  null, null, 1000);
+    expect(pool.allocatedResources.edges).toHaveLength(1);
+    expect(resourceIds[0]).toBe(pool.allocatedResources.edges[0].node.id);
+    expect(pool.allocatedResources.pageInfo.hasPreviousPage).toBe(false);
 });

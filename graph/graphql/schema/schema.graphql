@@ -29,21 +29,31 @@ type PropertyType implements Node
     Mandatory: Boolean!
 }
 
-type PageInfo {
-    hasPreviousEdge: Boolean!
-    hasNextEdge: Boolean!
-    startCursor: ID!
-    endCursor: ID!
+
+type OutputCursor
+@goModel(model: "github.com/net-auto/resourceManager/ent.Cursor"){
+    ID: String!
 }
 
-type ResourceEdge {
+type PageInfo
+@goModel(model: "github.com/net-auto/resourceManager/ent.PageInfo"){
+    hasNextPage: Boolean!
+    hasPreviousPage: Boolean!
+    startCursor: OutputCursor!
+    endCursor: OutputCursor!
+}
+
+type ResourceEdge
+@goModel(model: "github.com/net-auto/resourceManager/ent.ResourceEdge"){
     node: Resource!
-    cursor: ID!
+    cursor: OutputCursor!
 }
 
-type ResourceConnection {
-    pageInfo: PageInfo!
+type ResourceConnection
+@goModel(model: "github.com/net-auto/resourceManager/ent.ResourceConnection"){
+    pageInfo:   PageInfo!
     edges: [ResourceEdge]!
+    totalCount: Int!
 }
 
 type ResourcePool implements Node
@@ -53,7 +63,7 @@ type ResourcePool implements Node
     PoolType: PoolType!
     ResourceType: ResourceType!
     Resources: [Resource!]!
-    allocatedResources(first: Int, last: Int, before: ID, after: ID): ResourceConnection
+    allocatedResources(first: Int, last: Int, before: String, after: String): ResourceConnection
     Tags: [Tag!]!
     AllocationStrategy: AllocationStrategy
 }
@@ -220,6 +230,8 @@ type Query {
     QueryAllocationStrategy(allocationStrategyId: ID!): AllocationStrategy!
     QueryAllocationStrategies: [AllocationStrategy!]!
     QueryResourceTypes: [ResourceType!]!
+
+    QueryResourcePool(poolId: ID!): ResourcePool!
 
     QueryResourcePools(resourceTypeId: ID): [ResourcePool!]!
     QueryRootResourcePools(resourceTypeId: ID): [ResourcePool!]!

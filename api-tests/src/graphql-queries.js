@@ -82,6 +82,56 @@ export async function getCapacityForPool(poolId){
     .catch(error => console.log(error));
 }
 
+export async function getResourcePool(poolId, before, after, first, last) {
+    if (!before && !after && !first && !last) {
+        first = 10;
+    }
+    return client.query({
+        query: gql`
+            query getResourcePool($poolId: ID!, $before: String, $after: String, $first: Int, $last: Int) {
+                QueryResourcePool(poolId: $poolId) {
+                   AllocationStrategy {
+                       id
+                       Name
+                   }
+                   Name
+                   PoolType
+                   allocatedResources(first: $first, last: $last, before: $before, after: $after) {
+                       edges {
+                           cursor {
+                               ID
+                           }
+                           node {
+                               Properties
+                               id
+                           }
+                       }
+                       pageInfo {
+                           endCursor {
+                               ID
+                           }
+                           startCursor {
+                               ID
+                           }
+                           hasNextPage
+                           hasPreviousPage
+                       }
+                   }
+                }
+            }
+        `,
+        variables: {
+            poolId: poolId,
+            before: before,
+            after: after,
+            first: first,
+            last: last,
+        }
+    })
+    .then(result => result.data.QueryResourcePool)
+    .catch(error => console.log(error));
+}
+
 export async function getResourcesForPool(poolId){
     return client.query({
         query: gql`

@@ -5,8 +5,6 @@ package resolver
 
 import (
 	"context"
-	"fmt"
-
 	"github.com/net-auto/resourceManager/ent"
 	"github.com/net-auto/resourceManager/ent/allocationstrategy"
 	"github.com/net-auto/resourceManager/ent/predicate"
@@ -401,6 +399,11 @@ func (r *mutationResolver) UpdateResourceTypeName(ctx context.Context, input mod
 	}
 }
 
+func (r *outputCursorResolver) ID(ctx context.Context, obj *ent.Cursor) (string, error) {
+	//this will never be called because ent.Cursor will use its msgpack annotation
+	return "", nil
+}
+
 func (r *propertyTypeResolver) Type(ctx context.Context, obj *ent.PropertyType) (string, error) {
 	// Just converts enum to string
 	return obj.Type.String(), nil
@@ -474,6 +477,10 @@ func (r *queryResolver) QueryResourceTypes(ctx context.Context) ([]*ent.Resource
 	} else {
 		return resourceTypes, nil
 	}
+}
+
+func (r *queryResolver) QueryResourcePool(ctx context.Context, poolID int) (*ent.ResourcePool, error) {
+	return r.ClientFrom(ctx).ResourcePool.Get(ctx, poolID)
 }
 
 func (r *queryResolver) QueryResourcePools(ctx context.Context, resourceTypeID *int) ([]*ent.ResourcePool, error) {
@@ -606,48 +613,25 @@ func (r *resourcePoolResolver) Resources(ctx context.Context, obj *ent.ResourceP
 	return p.GetResourceFromPool(ctx, obj)
 }
 
-func (r *resourcePoolResolver) AllocatedResources(ctx context.Context, obj *ent.ResourcePool, first *int, last *int, before *int, after *int) (*model.ResourceConnection, error) {
+func (r *resourcePoolResolver) AllocatedResources(ctx context.Context, obj *ent.ResourcePool, first *int, last *int, before *string, after *string) (*ent.ResourceConnection, error) {
 	//pagination https://relay.dev/graphql/connections.htm
 
-	resources, err := p.GetResourceFromPool(ctx, obj) //TODO optimize
-
-	if err != nil {
-		return nil, gqlerror.Errorf("Unable to get resources")
+	//we query resources only for a specific pool
+	onlyForPool := func(rq *ent.ResourceQuery) (*ent.ResourceQuery, error) {
+		return rq.Where(resource.HasPoolWith(resourcePool.ID(obj.ID))), nil
 	}
 
-	if before != nil && after != nil {
-		return nil, gqlerror.Errorf("Cannot specify before and after at the same time")
+	afterCursor, errA := decodeCursor(after)
+	if errA != nil {
+		return nil, errA
 	}
 
-	if before == nil && after == nil && first == nil {
-		return nil, gqlerror.Errorf("must specify either after/first OR before/last OR first")
+	beforeCursor, errB := decodeCursor(before)
+	if errB != nil {
+		return nil, errB
 	}
 
-	if first != nil { //first specified
-		if after == nil { //no after value specified
-			res := sortResources(resources)[0:*first]
-			connection := populateResourceConnection(res, len(resources) > *first, false)
-			return connection, nil
-		} else { //after value specified
-			if *first <= 0 {
-				return nil, gqlerror.Errorf("first must be a positive number")
-			}
-			afterResources, hasNext, hasPrevious := getAfterResources(resources, *after, *first)
-			connection := populateResourceConnection(afterResources, hasNext, hasPrevious)
-			return connection, nil
-		}
-	}
-
-	if last != nil && before != nil { //last/before specified
-		if *last <= 0 {
-			return nil, gqlerror.Errorf("last must be a positive number")
-		}
-		afterResources, hasNext, hasPrevious := getBeforeResources(resources, *before, *last)
-		connection := populateResourceConnection(afterResources, hasNext, hasPrevious)
-		return connection, nil
-	}
-
-	panic(fmt.Errorf("not implemented"))
+	return r.ClientFrom(ctx).Resource.Query().Paginate(ctx, afterCursor, first, beforeCursor, last, ent.WithResourceFilter(onlyForPool))
 }
 
 func (r *resourcePoolResolver) Tags(ctx context.Context, obj *ent.ResourcePool) ([]*ent.Tag, error) {
@@ -691,6 +675,9 @@ func (r *tagResolver) Pools(ctx context.Context, obj *ent.Tag) ([]*ent.ResourceP
 // Mutation returns generated.MutationResolver implementation.
 //  Mutation() function removed in favour of resolver.go.Mutation()
 
+// OutputCursor returns generated.OutputCursorResolver implementation.
+func (r *Resolver) OutputCursor() generated.OutputCursorResolver { return &outputCursorResolver{r} }
+
 // PropertyType returns generated.PropertyTypeResolver implementation.
 func (r *Resolver) PropertyType() generated.PropertyTypeResolver { return &propertyTypeResolver{r} }
 
@@ -710,6 +697,7 @@ func (r *Resolver) ResourceType() generated.ResourceTypeResolver { return &resou
 func (r *Resolver) Tag() generated.TagResolver { return &tagResolver{r} }
 
 type mutationResolver struct{ *Resolver }
+type outputCursorResolver struct{ *Resolver }
 type propertyTypeResolver struct{ *Resolver }
 type queryResolver struct{ *Resolver }
 type resourceResolver struct{ *Resolver }

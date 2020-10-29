@@ -40,6 +40,7 @@ type Config struct {
 
 type ResolverRoot interface {
 	Mutation() MutationResolver
+	OutputCursor() OutputCursorResolver
 	PropertyType() PropertyTypeResolver
 	Query() QueryResolver
 	Resource() ResourceResolver
@@ -135,10 +136,14 @@ type ComplexityRoot struct {
 		UpdateTag                  func(childComplexity int, input model.UpdateTagInput) int
 	}
 
+	OutputCursor struct {
+		ID func(childComplexity int) int
+	}
+
 	PageInfo struct {
 		EndCursor       func(childComplexity int) int
-		HasNextEdge     func(childComplexity int) int
-		HasPreviousEdge func(childComplexity int) int
+		HasNextPage     func(childComplexity int) int
+		HasPreviousPage func(childComplexity int) int
 		StartCursor     func(childComplexity int) int
 	}
 
@@ -165,6 +170,7 @@ type ComplexityRoot struct {
 		QueryPoolCapacity         func(childComplexity int, poolID int) int
 		QueryPoolTypes            func(childComplexity int) int
 		QueryResource             func(childComplexity int, input map[string]interface{}, poolID int) int
+		QueryResourcePool         func(childComplexity int, poolID int) int
 		QueryResourcePools        func(childComplexity int, resourceTypeID *int) int
 		QueryResourceTypes        func(childComplexity int) int
 		QueryResources            func(childComplexity int, poolID int) int
@@ -180,8 +186,9 @@ type ComplexityRoot struct {
 	}
 
 	ResourceConnection struct {
-		Edges    func(childComplexity int) int
-		PageInfo func(childComplexity int) int
+		Edges      func(childComplexity int) int
+		PageInfo   func(childComplexity int) int
+		TotalCount func(childComplexity int) int
 	}
 
 	ResourceEdge struct {
@@ -190,7 +197,7 @@ type ComplexityRoot struct {
 	}
 
 	ResourcePool struct {
-		AllocatedResources func(childComplexity int, first *int, last *int, before *int, after *int) int
+		AllocatedResources func(childComplexity int, first *int, last *int, before *string, after *string) int
 		AllocationStrategy func(childComplexity int) int
 		ID                 func(childComplexity int) int
 		Name               func(childComplexity int) int
@@ -252,6 +259,9 @@ type MutationResolver interface {
 	DeleteResourceType(ctx context.Context, input model.DeleteResourceTypeInput) (*model.DeleteResourceTypePayload, error)
 	UpdateResourceTypeName(ctx context.Context, input model.UpdateResourceTypeNameInput) (*model.UpdateResourceTypeNamePayload, error)
 }
+type OutputCursorResolver interface {
+	ID(ctx context.Context, obj *ent.Cursor) (string, error)
+}
 type PropertyTypeResolver interface {
 	Type(ctx context.Context, obj *ent.PropertyType) (string, error)
 }
@@ -263,6 +273,7 @@ type QueryResolver interface {
 	QueryAllocationStrategy(ctx context.Context, allocationStrategyID int) (*ent.AllocationStrategy, error)
 	QueryAllocationStrategies(ctx context.Context) ([]*ent.AllocationStrategy, error)
 	QueryResourceTypes(ctx context.Context) ([]*ent.ResourceType, error)
+	QueryResourcePool(ctx context.Context, poolID int) (*ent.ResourcePool, error)
 	QueryResourcePools(ctx context.Context, resourceTypeID *int) ([]*ent.ResourcePool, error)
 	QueryRootResourcePools(ctx context.Context, resourceTypeID *int) ([]*ent.ResourcePool, error)
 	QueryLeafResourcePools(ctx context.Context, resourceTypeID *int) ([]*ent.ResourcePool, error)
@@ -277,7 +288,7 @@ type ResourceResolver interface {
 type ResourcePoolResolver interface {
 	ResourceType(ctx context.Context, obj *ent.ResourcePool) (*ent.ResourceType, error)
 	Resources(ctx context.Context, obj *ent.ResourcePool) ([]*ent.Resource, error)
-	AllocatedResources(ctx context.Context, obj *ent.ResourcePool, first *int, last *int, before *int, after *int) (*model.ResourceConnection, error)
+	AllocatedResources(ctx context.Context, obj *ent.ResourcePool, first *int, last *int, before *string, after *string) (*ent.ResourceConnection, error)
 	Tags(ctx context.Context, obj *ent.ResourcePool) ([]*ent.Tag, error)
 	AllocationStrategy(ctx context.Context, obj *ent.ResourcePool) (*ent.AllocationStrategy, error)
 }
@@ -670,6 +681,13 @@ func (e *executableSchema) Complexity(typeName, field string, childComplexity in
 
 		return e.complexity.Mutation.UpdateTag(childComplexity, args["input"].(model.UpdateTagInput)), true
 
+	case "OutputCursor.ID":
+		if e.complexity.OutputCursor.ID == nil {
+			break
+		}
+
+		return e.complexity.OutputCursor.ID(childComplexity), true
+
 	case "PageInfo.endCursor":
 		if e.complexity.PageInfo.EndCursor == nil {
 			break
@@ -677,19 +695,19 @@ func (e *executableSchema) Complexity(typeName, field string, childComplexity in
 
 		return e.complexity.PageInfo.EndCursor(childComplexity), true
 
-	case "PageInfo.hasNextEdge":
-		if e.complexity.PageInfo.HasNextEdge == nil {
+	case "PageInfo.hasNextPage":
+		if e.complexity.PageInfo.HasNextPage == nil {
 			break
 		}
 
-		return e.complexity.PageInfo.HasNextEdge(childComplexity), true
+		return e.complexity.PageInfo.HasNextPage(childComplexity), true
 
-	case "PageInfo.hasPreviousEdge":
-		if e.complexity.PageInfo.HasPreviousEdge == nil {
+	case "PageInfo.hasPreviousPage":
+		if e.complexity.PageInfo.HasPreviousPage == nil {
 			break
 		}
 
-		return e.complexity.PageInfo.HasPreviousEdge(childComplexity), true
+		return e.complexity.PageInfo.HasPreviousPage(childComplexity), true
 
 	case "PageInfo.startCursor":
 		if e.complexity.PageInfo.StartCursor == nil {
@@ -835,6 +853,18 @@ func (e *executableSchema) Complexity(typeName, field string, childComplexity in
 
 		return e.complexity.Query.QueryResource(childComplexity, args["input"].(map[string]interface{}), args["poolId"].(int)), true
 
+	case "Query.QueryResourcePool":
+		if e.complexity.Query.QueryResourcePool == nil {
+			break
+		}
+
+		args, err := ec.field_Query_QueryResourcePool_args(context.TODO(), rawArgs)
+		if err != nil {
+			return 0, false
+		}
+
+		return e.complexity.Query.QueryResourcePool(childComplexity, args["poolId"].(int)), true
+
 	case "Query.QueryResourcePools":
 		if e.complexity.Query.QueryResourcePools == nil {
 			break
@@ -932,6 +962,13 @@ func (e *executableSchema) Complexity(typeName, field string, childComplexity in
 
 		return e.complexity.ResourceConnection.PageInfo(childComplexity), true
 
+	case "ResourceConnection.totalCount":
+		if e.complexity.ResourceConnection.TotalCount == nil {
+			break
+		}
+
+		return e.complexity.ResourceConnection.TotalCount(childComplexity), true
+
 	case "ResourceEdge.cursor":
 		if e.complexity.ResourceEdge.Cursor == nil {
 			break
@@ -956,7 +993,7 @@ func (e *executableSchema) Complexity(typeName, field string, childComplexity in
 			return 0, false
 		}
 
-		return e.complexity.ResourcePool.AllocatedResources(childComplexity, args["first"].(*int), args["last"].(*int), args["before"].(*int), args["after"].(*int)), true
+		return e.complexity.ResourcePool.AllocatedResources(childComplexity, args["first"].(*int), args["last"].(*int), args["before"].(*string), args["after"].(*string)), true
 
 	case "ResourcePool.AllocationStrategy":
 		if e.complexity.ResourcePool.AllocationStrategy == nil {
@@ -1179,21 +1216,31 @@ type PropertyType implements Node
     Mandatory: Boolean!
 }
 
-type PageInfo {
-    hasPreviousEdge: Boolean!
-    hasNextEdge: Boolean!
-    startCursor: ID!
-    endCursor: ID!
+
+type OutputCursor
+@goModel(model: "github.com/net-auto/resourceManager/ent.Cursor"){
+    ID: String!
 }
 
-type ResourceEdge {
+type PageInfo
+@goModel(model: "github.com/net-auto/resourceManager/ent.PageInfo"){
+    hasNextPage: Boolean!
+    hasPreviousPage: Boolean!
+    startCursor: OutputCursor!
+    endCursor: OutputCursor!
+}
+
+type ResourceEdge
+@goModel(model: "github.com/net-auto/resourceManager/ent.ResourceEdge"){
     node: Resource!
-    cursor: ID!
+    cursor: OutputCursor!
 }
 
-type ResourceConnection {
-    pageInfo: PageInfo!
+type ResourceConnection
+@goModel(model: "github.com/net-auto/resourceManager/ent.ResourceConnection"){
+    pageInfo:   PageInfo!
     edges: [ResourceEdge]!
+    totalCount: Int!
 }
 
 type ResourcePool implements Node
@@ -1203,7 +1250,7 @@ type ResourcePool implements Node
     PoolType: PoolType!
     ResourceType: ResourceType!
     Resources: [Resource!]!
-    allocatedResources(first: Int, last: Int, before: ID, after: ID): ResourceConnection
+    allocatedResources(first: Int, last: Int, before: String, after: String): ResourceConnection
     Tags: [Tag!]!
     AllocationStrategy: AllocationStrategy
 }
@@ -1370,6 +1417,8 @@ type Query {
     QueryAllocationStrategy(allocationStrategyId: ID!): AllocationStrategy!
     QueryAllocationStrategies: [AllocationStrategy!]!
     QueryResourceTypes: [ResourceType!]!
+
+    QueryResourcePool(poolId: ID!): ResourcePool!
 
     QueryResourcePools(resourceTypeId: ID): [ResourcePool!]!
     QueryRootResourcePools(resourceTypeId: ID): [ResourcePool!]!
@@ -1902,6 +1951,21 @@ func (ec *executionContext) field_Query_QueryPoolCapacity_args(ctx context.Conte
 	return args, nil
 }
 
+func (ec *executionContext) field_Query_QueryResourcePool_args(ctx context.Context, rawArgs map[string]interface{}) (map[string]interface{}, error) {
+	var err error
+	args := map[string]interface{}{}
+	var arg0 int
+	if tmp, ok := rawArgs["poolId"]; ok {
+		ctx := graphql.WithFieldInputContext(ctx, graphql.NewFieldInputWithField("poolId"))
+		arg0, err = ec.unmarshalNID2int(ctx, tmp)
+		if err != nil {
+			return nil, err
+		}
+	}
+	args["poolId"] = arg0
+	return args, nil
+}
+
 func (ec *executionContext) field_Query_QueryResourcePools_args(ctx context.Context, rawArgs map[string]interface{}) (map[string]interface{}, error) {
 	var err error
 	args := map[string]interface{}{}
@@ -2037,19 +2101,19 @@ func (ec *executionContext) field_ResourcePool_allocatedResources_args(ctx conte
 		}
 	}
 	args["last"] = arg1
-	var arg2 *int
+	var arg2 *string
 	if tmp, ok := rawArgs["before"]; ok {
 		ctx := graphql.WithFieldInputContext(ctx, graphql.NewFieldInputWithField("before"))
-		arg2, err = ec.unmarshalOID2ᚖint(ctx, tmp)
+		arg2, err = ec.unmarshalOString2ᚖstring(ctx, tmp)
 		if err != nil {
 			return nil, err
 		}
 	}
 	args["before"] = arg2
-	var arg3 *int
+	var arg3 *string
 	if tmp, ok := rawArgs["after"]; ok {
 		ctx := graphql.WithFieldInputContext(ctx, graphql.NewFieldInputWithField("after"))
-		arg3, err = ec.unmarshalOID2ᚖint(ctx, tmp)
+		arg3, err = ec.unmarshalOString2ᚖstring(ctx, tmp)
 		if err != nil {
 			return nil, err
 		}
@@ -3498,7 +3562,41 @@ func (ec *executionContext) _Mutation_UpdateResourceTypeName(ctx context.Context
 	return ec.marshalNUpdateResourceTypeNamePayload2ᚖgithubᚗcomᚋnetᚑautoᚋresourceManagerᚋgraphᚋgraphqlᚋmodelᚐUpdateResourceTypeNamePayload(ctx, field.Selections, res)
 }
 
-func (ec *executionContext) _PageInfo_hasPreviousEdge(ctx context.Context, field graphql.CollectedField, obj *model.PageInfo) (ret graphql.Marshaler) {
+func (ec *executionContext) _OutputCursor_ID(ctx context.Context, field graphql.CollectedField, obj *ent.Cursor) (ret graphql.Marshaler) {
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	fc := &graphql.FieldContext{
+		Object:   "OutputCursor",
+		Field:    field,
+		Args:     nil,
+		IsMethod: true,
+	}
+
+	ctx = graphql.WithFieldContext(ctx, fc)
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return ec.resolvers.OutputCursor().ID(rctx, obj)
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(string)
+	fc.Result = res
+	return ec.marshalNString2string(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) _PageInfo_hasNextPage(ctx context.Context, field graphql.CollectedField, obj *ent.PageInfo) (ret graphql.Marshaler) {
 	defer func() {
 		if r := recover(); r != nil {
 			ec.Error(ctx, ec.Recover(ctx, r))
@@ -3515,7 +3613,7 @@ func (ec *executionContext) _PageInfo_hasPreviousEdge(ctx context.Context, field
 	ctx = graphql.WithFieldContext(ctx, fc)
 	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
 		ctx = rctx // use context from middleware stack in children
-		return obj.HasPreviousEdge, nil
+		return obj.HasNextPage, nil
 	})
 	if err != nil {
 		ec.Error(ctx, err)
@@ -3532,7 +3630,7 @@ func (ec *executionContext) _PageInfo_hasPreviousEdge(ctx context.Context, field
 	return ec.marshalNBoolean2bool(ctx, field.Selections, res)
 }
 
-func (ec *executionContext) _PageInfo_hasNextEdge(ctx context.Context, field graphql.CollectedField, obj *model.PageInfo) (ret graphql.Marshaler) {
+func (ec *executionContext) _PageInfo_hasPreviousPage(ctx context.Context, field graphql.CollectedField, obj *ent.PageInfo) (ret graphql.Marshaler) {
 	defer func() {
 		if r := recover(); r != nil {
 			ec.Error(ctx, ec.Recover(ctx, r))
@@ -3549,7 +3647,7 @@ func (ec *executionContext) _PageInfo_hasNextEdge(ctx context.Context, field gra
 	ctx = graphql.WithFieldContext(ctx, fc)
 	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
 		ctx = rctx // use context from middleware stack in children
-		return obj.HasNextEdge, nil
+		return obj.HasPreviousPage, nil
 	})
 	if err != nil {
 		ec.Error(ctx, err)
@@ -3566,7 +3664,7 @@ func (ec *executionContext) _PageInfo_hasNextEdge(ctx context.Context, field gra
 	return ec.marshalNBoolean2bool(ctx, field.Selections, res)
 }
 
-func (ec *executionContext) _PageInfo_startCursor(ctx context.Context, field graphql.CollectedField, obj *model.PageInfo) (ret graphql.Marshaler) {
+func (ec *executionContext) _PageInfo_startCursor(ctx context.Context, field graphql.CollectedField, obj *ent.PageInfo) (ret graphql.Marshaler) {
 	defer func() {
 		if r := recover(); r != nil {
 			ec.Error(ctx, ec.Recover(ctx, r))
@@ -3595,12 +3693,12 @@ func (ec *executionContext) _PageInfo_startCursor(ctx context.Context, field gra
 		}
 		return graphql.Null
 	}
-	res := resTmp.(int)
+	res := resTmp.(*ent.Cursor)
 	fc.Result = res
-	return ec.marshalNID2int(ctx, field.Selections, res)
+	return ec.marshalNOutputCursor2ᚖgithubᚗcomᚋnetᚑautoᚋresourceManagerᚋentᚐCursor(ctx, field.Selections, res)
 }
 
-func (ec *executionContext) _PageInfo_endCursor(ctx context.Context, field graphql.CollectedField, obj *model.PageInfo) (ret graphql.Marshaler) {
+func (ec *executionContext) _PageInfo_endCursor(ctx context.Context, field graphql.CollectedField, obj *ent.PageInfo) (ret graphql.Marshaler) {
 	defer func() {
 		if r := recover(); r != nil {
 			ec.Error(ctx, ec.Recover(ctx, r))
@@ -3629,9 +3727,9 @@ func (ec *executionContext) _PageInfo_endCursor(ctx context.Context, field graph
 		}
 		return graphql.Null
 	}
-	res := resTmp.(int)
+	res := resTmp.(*ent.Cursor)
 	fc.Result = res
-	return ec.marshalNID2int(ctx, field.Selections, res)
+	return ec.marshalNOutputCursor2ᚖgithubᚗcomᚋnetᚑautoᚋresourceManagerᚋentᚐCursor(ctx, field.Selections, res)
 }
 
 func (ec *executionContext) _PoolCapacityPayload_freeCapacity(ctx context.Context, field graphql.CollectedField, obj *model.PoolCapacityPayload) (ret graphql.Marshaler) {
@@ -4206,6 +4304,47 @@ func (ec *executionContext) _Query_QueryResourceTypes(ctx context.Context, field
 	return ec.marshalNResourceType2ᚕᚖgithubᚗcomᚋnetᚑautoᚋresourceManagerᚋentᚐResourceTypeᚄ(ctx, field.Selections, res)
 }
 
+func (ec *executionContext) _Query_QueryResourcePool(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	fc := &graphql.FieldContext{
+		Object:   "Query",
+		Field:    field,
+		Args:     nil,
+		IsMethod: true,
+	}
+
+	ctx = graphql.WithFieldContext(ctx, fc)
+	rawArgs := field.ArgumentMap(ec.Variables)
+	args, err := ec.field_Query_QueryResourcePool_args(ctx, rawArgs)
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	fc.Args = args
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return ec.resolvers.Query().QueryResourcePool(rctx, args["poolId"].(int))
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(*ent.ResourcePool)
+	fc.Result = res
+	return ec.marshalNResourcePool2ᚖgithubᚗcomᚋnetᚑautoᚋresourceManagerᚋentᚐResourcePool(ctx, field.Selections, res)
+}
+
 func (ec *executionContext) _Query_QueryResourcePools(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
 	defer func() {
 		if r := recover(); r != nil {
@@ -4610,7 +4749,7 @@ func (ec *executionContext) _Resource_NestedPool(ctx context.Context, field grap
 	return ec.marshalOResourcePool2ᚖgithubᚗcomᚋnetᚑautoᚋresourceManagerᚋentᚐResourcePool(ctx, field.Selections, res)
 }
 
-func (ec *executionContext) _ResourceConnection_pageInfo(ctx context.Context, field graphql.CollectedField, obj *model.ResourceConnection) (ret graphql.Marshaler) {
+func (ec *executionContext) _ResourceConnection_pageInfo(ctx context.Context, field graphql.CollectedField, obj *ent.ResourceConnection) (ret graphql.Marshaler) {
 	defer func() {
 		if r := recover(); r != nil {
 			ec.Error(ctx, ec.Recover(ctx, r))
@@ -4639,12 +4778,12 @@ func (ec *executionContext) _ResourceConnection_pageInfo(ctx context.Context, fi
 		}
 		return graphql.Null
 	}
-	res := resTmp.(*model.PageInfo)
+	res := resTmp.(ent.PageInfo)
 	fc.Result = res
-	return ec.marshalNPageInfo2ᚖgithubᚗcomᚋnetᚑautoᚋresourceManagerᚋgraphᚋgraphqlᚋmodelᚐPageInfo(ctx, field.Selections, res)
+	return ec.marshalNPageInfo2githubᚗcomᚋnetᚑautoᚋresourceManagerᚋentᚐPageInfo(ctx, field.Selections, res)
 }
 
-func (ec *executionContext) _ResourceConnection_edges(ctx context.Context, field graphql.CollectedField, obj *model.ResourceConnection) (ret graphql.Marshaler) {
+func (ec *executionContext) _ResourceConnection_edges(ctx context.Context, field graphql.CollectedField, obj *ent.ResourceConnection) (ret graphql.Marshaler) {
 	defer func() {
 		if r := recover(); r != nil {
 			ec.Error(ctx, ec.Recover(ctx, r))
@@ -4673,12 +4812,46 @@ func (ec *executionContext) _ResourceConnection_edges(ctx context.Context, field
 		}
 		return graphql.Null
 	}
-	res := resTmp.([]*model.ResourceEdge)
+	res := resTmp.([]*ent.ResourceEdge)
 	fc.Result = res
-	return ec.marshalNResourceEdge2ᚕᚖgithubᚗcomᚋnetᚑautoᚋresourceManagerᚋgraphᚋgraphqlᚋmodelᚐResourceEdge(ctx, field.Selections, res)
+	return ec.marshalNResourceEdge2ᚕᚖgithubᚗcomᚋnetᚑautoᚋresourceManagerᚋentᚐResourceEdge(ctx, field.Selections, res)
 }
 
-func (ec *executionContext) _ResourceEdge_node(ctx context.Context, field graphql.CollectedField, obj *model.ResourceEdge) (ret graphql.Marshaler) {
+func (ec *executionContext) _ResourceConnection_totalCount(ctx context.Context, field graphql.CollectedField, obj *ent.ResourceConnection) (ret graphql.Marshaler) {
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	fc := &graphql.FieldContext{
+		Object:   "ResourceConnection",
+		Field:    field,
+		Args:     nil,
+		IsMethod: false,
+	}
+
+	ctx = graphql.WithFieldContext(ctx, fc)
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.TotalCount, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(int)
+	fc.Result = res
+	return ec.marshalNInt2int(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) _ResourceEdge_node(ctx context.Context, field graphql.CollectedField, obj *ent.ResourceEdge) (ret graphql.Marshaler) {
 	defer func() {
 		if r := recover(); r != nil {
 			ec.Error(ctx, ec.Recover(ctx, r))
@@ -4712,7 +4885,7 @@ func (ec *executionContext) _ResourceEdge_node(ctx context.Context, field graphq
 	return ec.marshalNResource2ᚖgithubᚗcomᚋnetᚑautoᚋresourceManagerᚋentᚐResource(ctx, field.Selections, res)
 }
 
-func (ec *executionContext) _ResourceEdge_cursor(ctx context.Context, field graphql.CollectedField, obj *model.ResourceEdge) (ret graphql.Marshaler) {
+func (ec *executionContext) _ResourceEdge_cursor(ctx context.Context, field graphql.CollectedField, obj *ent.ResourceEdge) (ret graphql.Marshaler) {
 	defer func() {
 		if r := recover(); r != nil {
 			ec.Error(ctx, ec.Recover(ctx, r))
@@ -4741,9 +4914,9 @@ func (ec *executionContext) _ResourceEdge_cursor(ctx context.Context, field grap
 		}
 		return graphql.Null
 	}
-	res := resTmp.(int)
+	res := resTmp.(ent.Cursor)
 	fc.Result = res
-	return ec.marshalNID2int(ctx, field.Selections, res)
+	return ec.marshalNOutputCursor2githubᚗcomᚋnetᚑautoᚋresourceManagerᚋentᚐCursor(ctx, field.Selections, res)
 }
 
 func (ec *executionContext) _ResourcePool_id(ctx context.Context, field graphql.CollectedField, obj *ent.ResourcePool) (ret graphql.Marshaler) {
@@ -4940,7 +5113,7 @@ func (ec *executionContext) _ResourcePool_allocatedResources(ctx context.Context
 	fc.Args = args
 	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
 		ctx = rctx // use context from middleware stack in children
-		return ec.resolvers.ResourcePool().AllocatedResources(rctx, obj, args["first"].(*int), args["last"].(*int), args["before"].(*int), args["after"].(*int))
+		return ec.resolvers.ResourcePool().AllocatedResources(rctx, obj, args["first"].(*int), args["last"].(*int), args["before"].(*string), args["after"].(*string))
 	})
 	if err != nil {
 		ec.Error(ctx, err)
@@ -4949,9 +5122,9 @@ func (ec *executionContext) _ResourcePool_allocatedResources(ctx context.Context
 	if resTmp == nil {
 		return graphql.Null
 	}
-	res := resTmp.(*model.ResourceConnection)
+	res := resTmp.(*ent.ResourceConnection)
 	fc.Result = res
-	return ec.marshalOResourceConnection2ᚖgithubᚗcomᚋnetᚑautoᚋresourceManagerᚋgraphᚋgraphqlᚋmodelᚐResourceConnection(ctx, field.Selections, res)
+	return ec.marshalOResourceConnection2ᚖgithubᚗcomᚋnetᚑautoᚋresourceManagerᚋentᚐResourceConnection(ctx, field.Selections, res)
 }
 
 func (ec *executionContext) _ResourcePool_Tags(ctx context.Context, field graphql.CollectedField, obj *ent.ResourcePool) (ret graphql.Marshaler) {
@@ -7701,9 +7874,45 @@ func (ec *executionContext) _Mutation(ctx context.Context, sel ast.SelectionSet)
 	return out
 }
 
+var outputCursorImplementors = []string{"OutputCursor"}
+
+func (ec *executionContext) _OutputCursor(ctx context.Context, sel ast.SelectionSet, obj *ent.Cursor) graphql.Marshaler {
+	fields := graphql.CollectFields(ec.OperationContext, sel, outputCursorImplementors)
+
+	out := graphql.NewFieldSet(fields)
+	var invalids uint32
+	for i, field := range fields {
+		switch field.Name {
+		case "__typename":
+			out.Values[i] = graphql.MarshalString("OutputCursor")
+		case "ID":
+			field := field
+			out.Concurrently(i, func() (res graphql.Marshaler) {
+				defer func() {
+					if r := recover(); r != nil {
+						ec.Error(ctx, ec.Recover(ctx, r))
+					}
+				}()
+				res = ec._OutputCursor_ID(ctx, field, obj)
+				if res == graphql.Null {
+					atomic.AddUint32(&invalids, 1)
+				}
+				return res
+			})
+		default:
+			panic("unknown field " + strconv.Quote(field.Name))
+		}
+	}
+	out.Dispatch()
+	if invalids > 0 {
+		return graphql.Null
+	}
+	return out
+}
+
 var pageInfoImplementors = []string{"PageInfo"}
 
-func (ec *executionContext) _PageInfo(ctx context.Context, sel ast.SelectionSet, obj *model.PageInfo) graphql.Marshaler {
+func (ec *executionContext) _PageInfo(ctx context.Context, sel ast.SelectionSet, obj *ent.PageInfo) graphql.Marshaler {
 	fields := graphql.CollectFields(ec.OperationContext, sel, pageInfoImplementors)
 
 	out := graphql.NewFieldSet(fields)
@@ -7712,13 +7921,13 @@ func (ec *executionContext) _PageInfo(ctx context.Context, sel ast.SelectionSet,
 		switch field.Name {
 		case "__typename":
 			out.Values[i] = graphql.MarshalString("PageInfo")
-		case "hasPreviousEdge":
-			out.Values[i] = ec._PageInfo_hasPreviousEdge(ctx, field, obj)
+		case "hasNextPage":
+			out.Values[i] = ec._PageInfo_hasNextPage(ctx, field, obj)
 			if out.Values[i] == graphql.Null {
 				invalids++
 			}
-		case "hasNextEdge":
-			out.Values[i] = ec._PageInfo_hasNextEdge(ctx, field, obj)
+		case "hasPreviousPage":
+			out.Values[i] = ec._PageInfo_hasPreviousPage(ctx, field, obj)
 			if out.Values[i] == graphql.Null {
 				invalids++
 			}
@@ -7954,6 +8163,20 @@ func (ec *executionContext) _Query(ctx context.Context, sel ast.SelectionSet) gr
 				}
 				return res
 			})
+		case "QueryResourcePool":
+			field := field
+			out.Concurrently(i, func() (res graphql.Marshaler) {
+				defer func() {
+					if r := recover(); r != nil {
+						ec.Error(ctx, ec.Recover(ctx, r))
+					}
+				}()
+				res = ec._Query_QueryResourcePool(ctx, field)
+				if res == graphql.Null {
+					atomic.AddUint32(&invalids, 1)
+				}
+				return res
+			})
 		case "QueryResourcePools":
 			field := field
 			out.Concurrently(i, func() (res graphql.Marshaler) {
@@ -8104,7 +8327,7 @@ func (ec *executionContext) _Resource(ctx context.Context, sel ast.SelectionSet,
 
 var resourceConnectionImplementors = []string{"ResourceConnection"}
 
-func (ec *executionContext) _ResourceConnection(ctx context.Context, sel ast.SelectionSet, obj *model.ResourceConnection) graphql.Marshaler {
+func (ec *executionContext) _ResourceConnection(ctx context.Context, sel ast.SelectionSet, obj *ent.ResourceConnection) graphql.Marshaler {
 	fields := graphql.CollectFields(ec.OperationContext, sel, resourceConnectionImplementors)
 
 	out := graphql.NewFieldSet(fields)
@@ -8123,6 +8346,11 @@ func (ec *executionContext) _ResourceConnection(ctx context.Context, sel ast.Sel
 			if out.Values[i] == graphql.Null {
 				invalids++
 			}
+		case "totalCount":
+			out.Values[i] = ec._ResourceConnection_totalCount(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				invalids++
+			}
 		default:
 			panic("unknown field " + strconv.Quote(field.Name))
 		}
@@ -8136,7 +8364,7 @@ func (ec *executionContext) _ResourceConnection(ctx context.Context, sel ast.Sel
 
 var resourceEdgeImplementors = []string{"ResourceEdge"}
 
-func (ec *executionContext) _ResourceEdge(ctx context.Context, sel ast.SelectionSet, obj *model.ResourceEdge) graphql.Marshaler {
+func (ec *executionContext) _ResourceEdge(ctx context.Context, sel ast.SelectionSet, obj *ent.ResourceEdge) graphql.Marshaler {
 	fields := graphql.CollectFields(ec.OperationContext, sel, resourceEdgeImplementors)
 
 	out := graphql.NewFieldSet(fields)
@@ -9185,14 +9413,22 @@ func (ec *executionContext) marshalNMap2ᚕmapᚄ(ctx context.Context, sel ast.S
 	return ret
 }
 
-func (ec *executionContext) marshalNPageInfo2ᚖgithubᚗcomᚋnetᚑautoᚋresourceManagerᚋgraphᚋgraphqlᚋmodelᚐPageInfo(ctx context.Context, sel ast.SelectionSet, v *model.PageInfo) graphql.Marshaler {
+func (ec *executionContext) marshalNOutputCursor2githubᚗcomᚋnetᚑautoᚋresourceManagerᚋentᚐCursor(ctx context.Context, sel ast.SelectionSet, v ent.Cursor) graphql.Marshaler {
+	return v
+}
+
+func (ec *executionContext) marshalNOutputCursor2ᚖgithubᚗcomᚋnetᚑautoᚋresourceManagerᚋentᚐCursor(ctx context.Context, sel ast.SelectionSet, v *ent.Cursor) graphql.Marshaler {
 	if v == nil {
 		if !graphql.HasFieldError(ctx, graphql.GetFieldContext(ctx)) {
 			ec.Errorf(ctx, "must not be null")
 		}
 		return graphql.Null
 	}
-	return ec._PageInfo(ctx, sel, v)
+	return v
+}
+
+func (ec *executionContext) marshalNPageInfo2githubᚗcomᚋnetᚑautoᚋresourceManagerᚋentᚐPageInfo(ctx context.Context, sel ast.SelectionSet, v ent.PageInfo) graphql.Marshaler {
+	return ec._PageInfo(ctx, sel, &v)
 }
 
 func (ec *executionContext) marshalNPoolCapacityPayload2githubᚗcomᚋnetᚑautoᚋresourceManagerᚋgraphᚋgraphqlᚋmodelᚐPoolCapacityPayload(ctx context.Context, sel ast.SelectionSet, v model.PoolCapacityPayload) graphql.Marshaler {
@@ -9375,7 +9611,7 @@ func (ec *executionContext) marshalNResource2ᚖgithubᚗcomᚋnetᚑautoᚋreso
 	return ec._Resource(ctx, sel, v)
 }
 
-func (ec *executionContext) marshalNResourceEdge2ᚕᚖgithubᚗcomᚋnetᚑautoᚋresourceManagerᚋgraphᚋgraphqlᚋmodelᚐResourceEdge(ctx context.Context, sel ast.SelectionSet, v []*model.ResourceEdge) graphql.Marshaler {
+func (ec *executionContext) marshalNResourceEdge2ᚕᚖgithubᚗcomᚋnetᚑautoᚋresourceManagerᚋentᚐResourceEdge(ctx context.Context, sel ast.SelectionSet, v []*ent.ResourceEdge) graphql.Marshaler {
 	ret := make(graphql.Array, len(v))
 	var wg sync.WaitGroup
 	isLen1 := len(v) == 1
@@ -9399,7 +9635,7 @@ func (ec *executionContext) marshalNResourceEdge2ᚕᚖgithubᚗcomᚋnetᚑauto
 			if !isLen1 {
 				defer wg.Done()
 			}
-			ret[i] = ec.marshalOResourceEdge2ᚖgithubᚗcomᚋnetᚑautoᚋresourceManagerᚋgraphᚋgraphqlᚋmodelᚐResourceEdge(ctx, sel, v[i])
+			ret[i] = ec.marshalOResourceEdge2ᚖgithubᚗcomᚋnetᚑautoᚋresourceManagerᚋentᚐResourceEdge(ctx, sel, v[i])
 		}
 		if isLen1 {
 			f(i)
@@ -9436,6 +9672,10 @@ func (ec *executionContext) unmarshalNResourceInput2ᚕᚖgithubᚗcomᚋnetᚑa
 func (ec *executionContext) unmarshalNResourceInput2ᚖgithubᚗcomᚋnetᚑautoᚋresourceManagerᚋgraphᚋgraphqlᚋmodelᚐResourceInput(ctx context.Context, v interface{}) (*model.ResourceInput, error) {
 	res, err := ec.unmarshalInputResourceInput(ctx, v)
 	return &res, graphql.WrapErrorWithInputPath(ctx, err)
+}
+
+func (ec *executionContext) marshalNResourcePool2githubᚗcomᚋnetᚑautoᚋresourceManagerᚋentᚐResourcePool(ctx context.Context, sel ast.SelectionSet, v ent.ResourcePool) graphql.Marshaler {
+	return ec._ResourcePool(ctx, sel, &v)
 }
 
 func (ec *executionContext) marshalNResourcePool2ᚕᚖgithubᚗcomᚋnetᚑautoᚋresourceManagerᚋentᚐResourcePoolᚄ(ctx context.Context, sel ast.SelectionSet, v []*ent.ResourcePool) graphql.Marshaler {
@@ -10100,14 +10340,14 @@ func (ec *executionContext) marshalONode2githubᚗcomᚋnetᚑautoᚋresourceMan
 	return ec._Node(ctx, sel, v)
 }
 
-func (ec *executionContext) marshalOResourceConnection2ᚖgithubᚗcomᚋnetᚑautoᚋresourceManagerᚋgraphᚋgraphqlᚋmodelᚐResourceConnection(ctx context.Context, sel ast.SelectionSet, v *model.ResourceConnection) graphql.Marshaler {
+func (ec *executionContext) marshalOResourceConnection2ᚖgithubᚗcomᚋnetᚑautoᚋresourceManagerᚋentᚐResourceConnection(ctx context.Context, sel ast.SelectionSet, v *ent.ResourceConnection) graphql.Marshaler {
 	if v == nil {
 		return graphql.Null
 	}
 	return ec._ResourceConnection(ctx, sel, v)
 }
 
-func (ec *executionContext) marshalOResourceEdge2ᚖgithubᚗcomᚋnetᚑautoᚋresourceManagerᚋgraphᚋgraphqlᚋmodelᚐResourceEdge(ctx context.Context, sel ast.SelectionSet, v *model.ResourceEdge) graphql.Marshaler {
+func (ec *executionContext) marshalOResourceEdge2ᚖgithubᚗcomᚋnetᚑautoᚋresourceManagerᚋentᚐResourceEdge(ctx context.Context, sel ast.SelectionSet, v *ent.ResourceEdge) graphql.Marshaler {
 	if v == nil {
 		return graphql.Null
 	}

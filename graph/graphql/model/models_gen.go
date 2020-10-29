@@ -142,26 +142,9 @@ type DeleteTagPayload struct {
 	TagID int `json:"tagId"`
 }
 
-type PageInfo struct {
-	HasPreviousEdge bool `json:"hasPreviousEdge"`
-	HasNextEdge     bool `json:"hasNextEdge"`
-	StartCursor     int  `json:"startCursor"`
-	EndCursor       int  `json:"endCursor"`
-}
-
 type PoolCapacityPayload struct {
 	FreeCapacity     float64 `json:"freeCapacity"`
 	UtilizedCapacity float64 `json:"utilizedCapacity"`
-}
-
-type ResourceConnection struct {
-	PageInfo *PageInfo       `json:"pageInfo"`
-	Edges    []*ResourceEdge `json:"edges"`
-}
-
-type ResourceEdge struct {
-	Node   *ent.Resource `json:"node"`
-	Cursor int           `json:"cursor"`
 }
 
 type ResourceInput struct {
