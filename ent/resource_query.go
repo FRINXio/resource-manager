@@ -67,8 +67,12 @@ func (rq *ResourceQuery) QueryPool() *ResourcePoolQuery {
 		if err := rq.prepareQuery(ctx); err != nil {
 			return nil, err
 		}
+		selector := rq.sqlQuery()
+		if err := selector.Err(); err != nil {
+			return nil, err
+		}
 		step := sqlgraph.NewStep(
-			sqlgraph.From(resource.Table, resource.FieldID, rq.sqlQuery()),
+			sqlgraph.From(resource.Table, resource.FieldID, selector),
 			sqlgraph.To(resourcepool.Table, resourcepool.FieldID),
 			sqlgraph.Edge(sqlgraph.M2O, true, resource.PoolTable, resource.PoolColumn),
 		)
@@ -85,8 +89,12 @@ func (rq *ResourceQuery) QueryProperties() *PropertyQuery {
 		if err := rq.prepareQuery(ctx); err != nil {
 			return nil, err
 		}
+		selector := rq.sqlQuery()
+		if err := selector.Err(); err != nil {
+			return nil, err
+		}
 		step := sqlgraph.NewStep(
-			sqlgraph.From(resource.Table, resource.FieldID, rq.sqlQuery()),
+			sqlgraph.From(resource.Table, resource.FieldID, selector),
 			sqlgraph.To(property.Table, property.FieldID),
 			sqlgraph.Edge(sqlgraph.O2M, false, resource.PropertiesTable, resource.PropertiesColumn),
 		)
@@ -103,8 +111,12 @@ func (rq *ResourceQuery) QueryNestedPool() *ResourcePoolQuery {
 		if err := rq.prepareQuery(ctx); err != nil {
 			return nil, err
 		}
+		selector := rq.sqlQuery()
+		if err := selector.Err(); err != nil {
+			return nil, err
+		}
 		step := sqlgraph.NewStep(
-			sqlgraph.From(resource.Table, resource.FieldID, rq.sqlQuery()),
+			sqlgraph.From(resource.Table, resource.FieldID, selector),
 			sqlgraph.To(resourcepool.Table, resourcepool.FieldID),
 			sqlgraph.Edge(sqlgraph.O2O, false, resource.NestedPoolTable, resource.NestedPoolColumn),
 		)
@@ -116,23 +128,23 @@ func (rq *ResourceQuery) QueryNestedPool() *ResourcePoolQuery {
 
 // First returns the first Resource entity in the query. Returns *NotFoundError when no resource was found.
 func (rq *ResourceQuery) First(ctx context.Context) (*Resource, error) {
-	rs, err := rq.Limit(1).All(ctx)
+	nodes, err := rq.Limit(1).All(ctx)
 	if err != nil {
 		return nil, err
 	}
-	if len(rs) == 0 {
+	if len(nodes) == 0 {
 		return nil, &NotFoundError{resource.Label}
 	}
-	return rs[0], nil
+	return nodes[0], nil
 }
 
 // FirstX is like First, but panics if an error occurs.
 func (rq *ResourceQuery) FirstX(ctx context.Context) *Resource {
-	r, err := rq.First(ctx)
+	node, err := rq.First(ctx)
 	if err != nil && !IsNotFound(err) {
 		panic(err)
 	}
-	return r
+	return node
 }
 
 // FirstID returns the first Resource id in the query. Returns *NotFoundError when no id was found.
@@ -148,8 +160,8 @@ func (rq *ResourceQuery) FirstID(ctx context.Context) (id int, err error) {
 	return ids[0], nil
 }
 
-// FirstXID is like FirstID, but panics if an error occurs.
-func (rq *ResourceQuery) FirstXID(ctx context.Context) int {
+// FirstIDX is like FirstID, but panics if an error occurs.
+func (rq *ResourceQuery) FirstIDX(ctx context.Context) int {
 	id, err := rq.FirstID(ctx)
 	if err != nil && !IsNotFound(err) {
 		panic(err)
@@ -159,13 +171,13 @@ func (rq *ResourceQuery) FirstXID(ctx context.Context) int {
 
 // Only returns the only Resource entity in the query, returns an error if not exactly one entity was returned.
 func (rq *ResourceQuery) Only(ctx context.Context) (*Resource, error) {
-	rs, err := rq.Limit(2).All(ctx)
+	nodes, err := rq.Limit(2).All(ctx)
 	if err != nil {
 		return nil, err
 	}
-	switch len(rs) {
+	switch len(nodes) {
 	case 1:
-		return rs[0], nil
+		return nodes[0], nil
 	case 0:
 		return nil, &NotFoundError{resource.Label}
 	default:
@@ -175,11 +187,11 @@ func (rq *ResourceQuery) Only(ctx context.Context) (*Resource, error) {
 
 // OnlyX is like Only, but panics if an error occurs.
 func (rq *ResourceQuery) OnlyX(ctx context.Context) *Resource {
-	r, err := rq.Only(ctx)
+	node, err := rq.Only(ctx)
 	if err != nil {
 		panic(err)
 	}
-	return r
+	return node
 }
 
 // OnlyID returns the only Resource id in the query, returns an error if not exactly one id was returned.
@@ -218,11 +230,11 @@ func (rq *ResourceQuery) All(ctx context.Context) ([]*Resource, error) {
 
 // AllX is like All, but panics if an error occurs.
 func (rq *ResourceQuery) AllX(ctx context.Context) []*Resource {
-	rs, err := rq.All(ctx)
+	nodes, err := rq.All(ctx)
 	if err != nil {
 		panic(err)
 	}
-	return rs
+	return nodes
 }
 
 // IDs executes the query and returns a list of Resource ids.
@@ -463,6 +475,7 @@ func (rq *ResourceQuery) sqlAll(ctx context.Context) ([]*Resource, error) {
 		for i := range nodes {
 			fks = append(fks, nodes[i].ID)
 			nodeids[nodes[i].ID] = nodes[i]
+			nodes[i].Edges.Properties = []*Property{}
 		}
 		query.withFKs = true
 		query.Where(predicate.Property(func(s *sql.Selector) {
@@ -558,7 +571,7 @@ func (rq *ResourceQuery) querySpec() *sqlgraph.QuerySpec {
 	if ps := rq.order; len(ps) > 0 {
 		_spec.Order = func(selector *sql.Selector) {
 			for i := range ps {
-				ps[i](selector)
+				ps[i](selector, resource.ValidColumn)
 			}
 		}
 	}
@@ -577,7 +590,7 @@ func (rq *ResourceQuery) sqlQuery() *sql.Selector {
 		p(selector)
 	}
 	for _, p := range rq.order {
-		p(selector)
+		p(selector, resource.ValidColumn)
 	}
 	if offset := rq.offset; offset != nil {
 		// limit is mandatory for offset clause. We start
@@ -812,8 +825,17 @@ func (rgb *ResourceGroupBy) BoolX(ctx context.Context) bool {
 }
 
 func (rgb *ResourceGroupBy) sqlScan(ctx context.Context, v interface{}) error {
+	for _, f := range rgb.fields {
+		if !resource.ValidColumn(f) {
+			return &ValidationError{Name: f, err: fmt.Errorf("invalid field %q for group-by", f)}
+		}
+	}
+	selector := rgb.sqlQuery()
+	if err := selector.Err(); err != nil {
+		return err
+	}
 	rows := &sql.Rows{}
-	query, args := rgb.sqlQuery().Query()
+	query, args := selector.Query()
 	if err := rgb.driver.Query(ctx, query, args, rows); err != nil {
 		return err
 	}
@@ -826,7 +848,7 @@ func (rgb *ResourceGroupBy) sqlQuery() *sql.Selector {
 	columns := make([]string, 0, len(rgb.fields)+len(rgb.fns))
 	columns = append(columns, rgb.fields...)
 	for _, fn := range rgb.fns {
-		columns = append(columns, fn(selector))
+		columns = append(columns, fn(selector, resource.ValidColumn))
 	}
 	return selector.Select(columns...).GroupBy(rgb.fields...)
 }
@@ -1046,6 +1068,11 @@ func (rs *ResourceSelect) BoolX(ctx context.Context) bool {
 }
 
 func (rs *ResourceSelect) sqlScan(ctx context.Context, v interface{}) error {
+	for _, f := range rs.fields {
+		if !resource.ValidColumn(f) {
+			return &ValidationError{Name: f, err: fmt.Errorf("invalid field %q for selection", f)}
+		}
+	}
 	rows := &sql.Rows{}
 	query, args := rs.sqlQuery().Query()
 	if err := rs.driver.Query(ctx, query, args, rows); err != nil {

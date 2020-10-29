@@ -1566,7 +1566,7 @@ func (ec *executionContext) field_Mutation_ClaimResource_args(ctx context.Contex
 	args := map[string]interface{}{}
 	var arg0 int
 	if tmp, ok := rawArgs["poolId"]; ok {
-		ctx := graphql.WithFieldInputContext(ctx, graphql.NewFieldInputWithField("poolId"))
+		ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("poolId"))
 		arg0, err = ec.unmarshalNID2int(ctx, tmp)
 		if err != nil {
 			return nil, err
@@ -1575,7 +1575,7 @@ func (ec *executionContext) field_Mutation_ClaimResource_args(ctx context.Contex
 	args["poolId"] = arg0
 	var arg1 map[string]interface{}
 	if tmp, ok := rawArgs["userInput"]; ok {
-		ctx := graphql.WithFieldInputContext(ctx, graphql.NewFieldInputWithField("userInput"))
+		ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("userInput"))
 		arg1, err = ec.unmarshalNMap2map(ctx, tmp)
 		if err != nil {
 			return nil, err
@@ -1590,7 +1590,7 @@ func (ec *executionContext) field_Mutation_CreateAllocatingPool_args(ctx context
 	args := map[string]interface{}{}
 	var arg0 *model.CreateAllocatingPoolInput
 	if tmp, ok := rawArgs["input"]; ok {
-		ctx := graphql.WithFieldInputContext(ctx, graphql.NewFieldInputWithField("input"))
+		ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("input"))
 		arg0, err = ec.unmarshalOCreateAllocatingPoolInput2ᚖgithubᚗcomᚋnetᚑautoᚋresourceManagerᚋgraphᚋgraphqlᚋmodelᚐCreateAllocatingPoolInput(ctx, tmp)
 		if err != nil {
 			return nil, err
@@ -1605,7 +1605,7 @@ func (ec *executionContext) field_Mutation_CreateAllocationStrategy_args(ctx con
 	args := map[string]interface{}{}
 	var arg0 *model.CreateAllocationStrategyInput
 	if tmp, ok := rawArgs["input"]; ok {
-		ctx := graphql.WithFieldInputContext(ctx, graphql.NewFieldInputWithField("input"))
+		ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("input"))
 		arg0, err = ec.unmarshalOCreateAllocationStrategyInput2ᚖgithubᚗcomᚋnetᚑautoᚋresourceManagerᚋgraphᚋgraphqlᚋmodelᚐCreateAllocationStrategyInput(ctx, tmp)
 		if err != nil {
 			return nil, err
@@ -1620,7 +1620,7 @@ func (ec *executionContext) field_Mutation_CreateNestedAllocatingPool_args(ctx c
 	args := map[string]interface{}{}
 	var arg0 model.CreateNestedAllocatingPoolInput
 	if tmp, ok := rawArgs["input"]; ok {
-		ctx := graphql.WithFieldInputContext(ctx, graphql.NewFieldInputWithField("input"))
+		ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("input"))
 		arg0, err = ec.unmarshalNCreateNestedAllocatingPoolInput2githubᚗcomᚋnetᚑautoᚋresourceManagerᚋgraphᚋgraphqlᚋmodelᚐCreateNestedAllocatingPoolInput(ctx, tmp)
 		if err != nil {
 			return nil, err
@@ -1635,7 +1635,7 @@ func (ec *executionContext) field_Mutation_CreateNestedSetPool_args(ctx context.
 	args := map[string]interface{}{}
 	var arg0 model.CreateNestedSetPoolInput
 	if tmp, ok := rawArgs["input"]; ok {
-		ctx := graphql.WithFieldInputContext(ctx, graphql.NewFieldInputWithField("input"))
+		ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("input"))
 		arg0, err = ec.unmarshalNCreateNestedSetPoolInput2githubᚗcomᚋnetᚑautoᚋresourceManagerᚋgraphᚋgraphqlᚋmodelᚐCreateNestedSetPoolInput(ctx, tmp)
 		if err != nil {
 			return nil, err
@@ -1650,7 +1650,7 @@ func (ec *executionContext) field_Mutation_CreateNestedSingletonPool_args(ctx co
 	args := map[string]interface{}{}
 	var arg0 model.CreateNestedSingletonPoolInput
 	if tmp, ok := rawArgs["input"]; ok {
-		ctx := graphql.WithFieldInputContext(ctx, graphql.NewFieldInputWithField("input"))
+		ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("input"))
 		arg0, err = ec.unmarshalNCreateNestedSingletonPoolInput2githubᚗcomᚋnetᚑautoᚋresourceManagerᚋgraphᚋgraphqlᚋmodelᚐCreateNestedSingletonPoolInput(ctx, tmp)
 		if err != nil {
 			return nil, err
@@ -1665,7 +1665,7 @@ func (ec *executionContext) field_Mutation_CreateResourceType_args(ctx context.C
 	args := map[string]interface{}{}
 	var arg0 model.CreateResourceTypeInput
 	if tmp, ok := rawArgs["input"]; ok {
-		ctx := graphql.WithFieldInputContext(ctx, graphql.NewFieldInputWithField("input"))
+		ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("input"))
 		arg0, err = ec.unmarshalNCreateResourceTypeInput2githubᚗcomᚋnetᚑautoᚋresourceManagerᚋgraphᚋgraphqlᚋmodelᚐCreateResourceTypeInput(ctx, tmp)
 		if err != nil {
 			return nil, err
@@ -1680,7 +1680,7 @@ func (ec *executionContext) field_Mutation_CreateSetPool_args(ctx context.Contex
 	args := map[string]interface{}{}
 	var arg0 model.CreateSetPoolInput
 	if tmp, ok := rawArgs["input"]; ok {
-		ctx := graphql.WithFieldInputContext(ctx, graphql.NewFieldInputWithField("input"))
+		ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("input"))
 		arg0, err = ec.unmarshalNCreateSetPoolInput2githubᚗcomᚋnetᚑautoᚋresourceManagerᚋgraphᚋgraphqlᚋmodelᚐCreateSetPoolInput(ctx, tmp)
 		if err != nil {
 			return nil, err
@@ -1695,7 +1695,7 @@ func (ec *executionContext) field_Mutation_CreateSingletonPool_args(ctx context.
 	args := map[string]interface{}{}
 	var arg0 *model.CreateSingletonPoolInput
 	if tmp, ok := rawArgs["input"]; ok {
-		ctx := graphql.WithFieldInputContext(ctx, graphql.NewFieldInputWithField("input"))
+		ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("input"))
 		arg0, err = ec.unmarshalOCreateSingletonPoolInput2ᚖgithubᚗcomᚋnetᚑautoᚋresourceManagerᚋgraphᚋgraphqlᚋmodelᚐCreateSingletonPoolInput(ctx, tmp)
 		if err != nil {
 			return nil, err
@@ -1710,7 +1710,7 @@ func (ec *executionContext) field_Mutation_CreateTag_args(ctx context.Context, r
 	args := map[string]interface{}{}
 	var arg0 model.CreateTagInput
 	if tmp, ok := rawArgs["input"]; ok {
-		ctx := graphql.WithFieldInputContext(ctx, graphql.NewFieldInputWithField("input"))
+		ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("input"))
 		arg0, err = ec.unmarshalNCreateTagInput2githubᚗcomᚋnetᚑautoᚋresourceManagerᚋgraphᚋgraphqlᚋmodelᚐCreateTagInput(ctx, tmp)
 		if err != nil {
 			return nil, err
@@ -1725,7 +1725,7 @@ func (ec *executionContext) field_Mutation_DeleteAllocationStrategy_args(ctx con
 	args := map[string]interface{}{}
 	var arg0 *model.DeleteAllocationStrategyInput
 	if tmp, ok := rawArgs["input"]; ok {
-		ctx := graphql.WithFieldInputContext(ctx, graphql.NewFieldInputWithField("input"))
+		ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("input"))
 		arg0, err = ec.unmarshalODeleteAllocationStrategyInput2ᚖgithubᚗcomᚋnetᚑautoᚋresourceManagerᚋgraphᚋgraphqlᚋmodelᚐDeleteAllocationStrategyInput(ctx, tmp)
 		if err != nil {
 			return nil, err
@@ -1740,7 +1740,7 @@ func (ec *executionContext) field_Mutation_DeleteResourcePool_args(ctx context.C
 	args := map[string]interface{}{}
 	var arg0 model.DeleteResourcePoolInput
 	if tmp, ok := rawArgs["input"]; ok {
-		ctx := graphql.WithFieldInputContext(ctx, graphql.NewFieldInputWithField("input"))
+		ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("input"))
 		arg0, err = ec.unmarshalNDeleteResourcePoolInput2githubᚗcomᚋnetᚑautoᚋresourceManagerᚋgraphᚋgraphqlᚋmodelᚐDeleteResourcePoolInput(ctx, tmp)
 		if err != nil {
 			return nil, err
@@ -1755,7 +1755,7 @@ func (ec *executionContext) field_Mutation_DeleteResourceType_args(ctx context.C
 	args := map[string]interface{}{}
 	var arg0 model.DeleteResourceTypeInput
 	if tmp, ok := rawArgs["input"]; ok {
-		ctx := graphql.WithFieldInputContext(ctx, graphql.NewFieldInputWithField("input"))
+		ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("input"))
 		arg0, err = ec.unmarshalNDeleteResourceTypeInput2githubᚗcomᚋnetᚑautoᚋresourceManagerᚋgraphᚋgraphqlᚋmodelᚐDeleteResourceTypeInput(ctx, tmp)
 		if err != nil {
 			return nil, err
@@ -1770,7 +1770,7 @@ func (ec *executionContext) field_Mutation_DeleteTag_args(ctx context.Context, r
 	args := map[string]interface{}{}
 	var arg0 model.DeleteTagInput
 	if tmp, ok := rawArgs["input"]; ok {
-		ctx := graphql.WithFieldInputContext(ctx, graphql.NewFieldInputWithField("input"))
+		ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("input"))
 		arg0, err = ec.unmarshalNDeleteTagInput2githubᚗcomᚋnetᚑautoᚋresourceManagerᚋgraphᚋgraphqlᚋmodelᚐDeleteTagInput(ctx, tmp)
 		if err != nil {
 			return nil, err
@@ -1785,7 +1785,7 @@ func (ec *executionContext) field_Mutation_FreeResource_args(ctx context.Context
 	args := map[string]interface{}{}
 	var arg0 map[string]interface{}
 	if tmp, ok := rawArgs["input"]; ok {
-		ctx := graphql.WithFieldInputContext(ctx, graphql.NewFieldInputWithField("input"))
+		ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("input"))
 		arg0, err = ec.unmarshalNMap2map(ctx, tmp)
 		if err != nil {
 			return nil, err
@@ -1794,7 +1794,7 @@ func (ec *executionContext) field_Mutation_FreeResource_args(ctx context.Context
 	args["input"] = arg0
 	var arg1 int
 	if tmp, ok := rawArgs["poolId"]; ok {
-		ctx := graphql.WithFieldInputContext(ctx, graphql.NewFieldInputWithField("poolId"))
+		ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("poolId"))
 		arg1, err = ec.unmarshalNID2int(ctx, tmp)
 		if err != nil {
 			return nil, err
@@ -1809,7 +1809,7 @@ func (ec *executionContext) field_Mutation_TagPool_args(ctx context.Context, raw
 	args := map[string]interface{}{}
 	var arg0 model.TagPoolInput
 	if tmp, ok := rawArgs["input"]; ok {
-		ctx := graphql.WithFieldInputContext(ctx, graphql.NewFieldInputWithField("input"))
+		ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("input"))
 		arg0, err = ec.unmarshalNTagPoolInput2githubᚗcomᚋnetᚑautoᚋresourceManagerᚋgraphᚋgraphqlᚋmodelᚐTagPoolInput(ctx, tmp)
 		if err != nil {
 			return nil, err
@@ -1824,7 +1824,7 @@ func (ec *executionContext) field_Mutation_TestAllocationStrategy_args(ctx conte
 	args := map[string]interface{}{}
 	var arg0 int
 	if tmp, ok := rawArgs["allocationStrategyId"]; ok {
-		ctx := graphql.WithFieldInputContext(ctx, graphql.NewFieldInputWithField("allocationStrategyId"))
+		ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("allocationStrategyId"))
 		arg0, err = ec.unmarshalNID2int(ctx, tmp)
 		if err != nil {
 			return nil, err
@@ -1833,7 +1833,7 @@ func (ec *executionContext) field_Mutation_TestAllocationStrategy_args(ctx conte
 	args["allocationStrategyId"] = arg0
 	var arg1 model.ResourcePoolInput
 	if tmp, ok := rawArgs["resourcePool"]; ok {
-		ctx := graphql.WithFieldInputContext(ctx, graphql.NewFieldInputWithField("resourcePool"))
+		ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("resourcePool"))
 		arg1, err = ec.unmarshalNResourcePoolInput2githubᚗcomᚋnetᚑautoᚋresourceManagerᚋgraphᚋgraphqlᚋmodelᚐResourcePoolInput(ctx, tmp)
 		if err != nil {
 			return nil, err
@@ -1842,7 +1842,7 @@ func (ec *executionContext) field_Mutation_TestAllocationStrategy_args(ctx conte
 	args["resourcePool"] = arg1
 	var arg2 []*model.ResourceInput
 	if tmp, ok := rawArgs["currentResources"]; ok {
-		ctx := graphql.WithFieldInputContext(ctx, graphql.NewFieldInputWithField("currentResources"))
+		ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("currentResources"))
 		arg2, err = ec.unmarshalNResourceInput2ᚕᚖgithubᚗcomᚋnetᚑautoᚋresourceManagerᚋgraphᚋgraphqlᚋmodelᚐResourceInputᚄ(ctx, tmp)
 		if err != nil {
 			return nil, err
@@ -1851,7 +1851,7 @@ func (ec *executionContext) field_Mutation_TestAllocationStrategy_args(ctx conte
 	args["currentResources"] = arg2
 	var arg3 map[string]interface{}
 	if tmp, ok := rawArgs["userInput"]; ok {
-		ctx := graphql.WithFieldInputContext(ctx, graphql.NewFieldInputWithField("userInput"))
+		ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("userInput"))
 		arg3, err = ec.unmarshalNMap2map(ctx, tmp)
 		if err != nil {
 			return nil, err
@@ -1866,7 +1866,7 @@ func (ec *executionContext) field_Mutation_UntagPool_args(ctx context.Context, r
 	args := map[string]interface{}{}
 	var arg0 model.UntagPoolInput
 	if tmp, ok := rawArgs["input"]; ok {
-		ctx := graphql.WithFieldInputContext(ctx, graphql.NewFieldInputWithField("input"))
+		ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("input"))
 		arg0, err = ec.unmarshalNUntagPoolInput2githubᚗcomᚋnetᚑautoᚋresourceManagerᚋgraphᚋgraphqlᚋmodelᚐUntagPoolInput(ctx, tmp)
 		if err != nil {
 			return nil, err
@@ -1881,7 +1881,7 @@ func (ec *executionContext) field_Mutation_UpdateResourceTypeName_args(ctx conte
 	args := map[string]interface{}{}
 	var arg0 model.UpdateResourceTypeNameInput
 	if tmp, ok := rawArgs["input"]; ok {
-		ctx := graphql.WithFieldInputContext(ctx, graphql.NewFieldInputWithField("input"))
+		ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("input"))
 		arg0, err = ec.unmarshalNUpdateResourceTypeNameInput2githubᚗcomᚋnetᚑautoᚋresourceManagerᚋgraphᚋgraphqlᚋmodelᚐUpdateResourceTypeNameInput(ctx, tmp)
 		if err != nil {
 			return nil, err
@@ -1896,7 +1896,7 @@ func (ec *executionContext) field_Mutation_UpdateTag_args(ctx context.Context, r
 	args := map[string]interface{}{}
 	var arg0 model.UpdateTagInput
 	if tmp, ok := rawArgs["input"]; ok {
-		ctx := graphql.WithFieldInputContext(ctx, graphql.NewFieldInputWithField("input"))
+		ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("input"))
 		arg0, err = ec.unmarshalNUpdateTagInput2githubᚗcomᚋnetᚑautoᚋresourceManagerᚋgraphᚋgraphqlᚋmodelᚐUpdateTagInput(ctx, tmp)
 		if err != nil {
 			return nil, err
@@ -1911,7 +1911,7 @@ func (ec *executionContext) field_Query_QueryAllocationStrategy_args(ctx context
 	args := map[string]interface{}{}
 	var arg0 int
 	if tmp, ok := rawArgs["allocationStrategyId"]; ok {
-		ctx := graphql.WithFieldInputContext(ctx, graphql.NewFieldInputWithField("allocationStrategyId"))
+		ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("allocationStrategyId"))
 		arg0, err = ec.unmarshalNID2int(ctx, tmp)
 		if err != nil {
 			return nil, err
@@ -1926,7 +1926,7 @@ func (ec *executionContext) field_Query_QueryLeafResourcePools_args(ctx context.
 	args := map[string]interface{}{}
 	var arg0 *int
 	if tmp, ok := rawArgs["resourceTypeId"]; ok {
-		ctx := graphql.WithFieldInputContext(ctx, graphql.NewFieldInputWithField("resourceTypeId"))
+		ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("resourceTypeId"))
 		arg0, err = ec.unmarshalOID2ᚖint(ctx, tmp)
 		if err != nil {
 			return nil, err
@@ -1941,7 +1941,7 @@ func (ec *executionContext) field_Query_QueryPoolCapacity_args(ctx context.Conte
 	args := map[string]interface{}{}
 	var arg0 int
 	if tmp, ok := rawArgs["poolId"]; ok {
-		ctx := graphql.WithFieldInputContext(ctx, graphql.NewFieldInputWithField("poolId"))
+		ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("poolId"))
 		arg0, err = ec.unmarshalNID2int(ctx, tmp)
 		if err != nil {
 			return nil, err
@@ -1956,7 +1956,7 @@ func (ec *executionContext) field_Query_QueryResourcePool_args(ctx context.Conte
 	args := map[string]interface{}{}
 	var arg0 int
 	if tmp, ok := rawArgs["poolId"]; ok {
-		ctx := graphql.WithFieldInputContext(ctx, graphql.NewFieldInputWithField("poolId"))
+		ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("poolId"))
 		arg0, err = ec.unmarshalNID2int(ctx, tmp)
 		if err != nil {
 			return nil, err
@@ -1971,7 +1971,7 @@ func (ec *executionContext) field_Query_QueryResourcePools_args(ctx context.Cont
 	args := map[string]interface{}{}
 	var arg0 *int
 	if tmp, ok := rawArgs["resourceTypeId"]; ok {
-		ctx := graphql.WithFieldInputContext(ctx, graphql.NewFieldInputWithField("resourceTypeId"))
+		ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("resourceTypeId"))
 		arg0, err = ec.unmarshalOID2ᚖint(ctx, tmp)
 		if err != nil {
 			return nil, err
@@ -1986,7 +1986,7 @@ func (ec *executionContext) field_Query_QueryResource_args(ctx context.Context, 
 	args := map[string]interface{}{}
 	var arg0 map[string]interface{}
 	if tmp, ok := rawArgs["input"]; ok {
-		ctx := graphql.WithFieldInputContext(ctx, graphql.NewFieldInputWithField("input"))
+		ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("input"))
 		arg0, err = ec.unmarshalNMap2map(ctx, tmp)
 		if err != nil {
 			return nil, err
@@ -1995,7 +1995,7 @@ func (ec *executionContext) field_Query_QueryResource_args(ctx context.Context, 
 	args["input"] = arg0
 	var arg1 int
 	if tmp, ok := rawArgs["poolId"]; ok {
-		ctx := graphql.WithFieldInputContext(ctx, graphql.NewFieldInputWithField("poolId"))
+		ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("poolId"))
 		arg1, err = ec.unmarshalNID2int(ctx, tmp)
 		if err != nil {
 			return nil, err
@@ -2010,7 +2010,7 @@ func (ec *executionContext) field_Query_QueryResources_args(ctx context.Context,
 	args := map[string]interface{}{}
 	var arg0 int
 	if tmp, ok := rawArgs["poolId"]; ok {
-		ctx := graphql.WithFieldInputContext(ctx, graphql.NewFieldInputWithField("poolId"))
+		ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("poolId"))
 		arg0, err = ec.unmarshalNID2int(ctx, tmp)
 		if err != nil {
 			return nil, err
@@ -2025,7 +2025,7 @@ func (ec *executionContext) field_Query_QueryRootResourcePools_args(ctx context.
 	args := map[string]interface{}{}
 	var arg0 *int
 	if tmp, ok := rawArgs["resourceTypeId"]; ok {
-		ctx := graphql.WithFieldInputContext(ctx, graphql.NewFieldInputWithField("resourceTypeId"))
+		ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("resourceTypeId"))
 		arg0, err = ec.unmarshalOID2ᚖint(ctx, tmp)
 		if err != nil {
 			return nil, err
@@ -2040,7 +2040,7 @@ func (ec *executionContext) field_Query_SearchPoolsByTags_args(ctx context.Conte
 	args := map[string]interface{}{}
 	var arg0 *model.TagOr
 	if tmp, ok := rawArgs["tags"]; ok {
-		ctx := graphql.WithFieldInputContext(ctx, graphql.NewFieldInputWithField("tags"))
+		ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("tags"))
 		arg0, err = ec.unmarshalOTagOr2ᚖgithubᚗcomᚋnetᚑautoᚋresourceManagerᚋgraphᚋgraphqlᚋmodelᚐTagOr(ctx, tmp)
 		if err != nil {
 			return nil, err
@@ -2055,7 +2055,7 @@ func (ec *executionContext) field_Query___type_args(ctx context.Context, rawArgs
 	args := map[string]interface{}{}
 	var arg0 string
 	if tmp, ok := rawArgs["name"]; ok {
-		ctx := graphql.WithFieldInputContext(ctx, graphql.NewFieldInputWithField("name"))
+		ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("name"))
 		arg0, err = ec.unmarshalNString2string(ctx, tmp)
 		if err != nil {
 			return nil, err
@@ -2070,7 +2070,7 @@ func (ec *executionContext) field_Query_node_args(ctx context.Context, rawArgs m
 	args := map[string]interface{}{}
 	var arg0 int
 	if tmp, ok := rawArgs["id"]; ok {
-		ctx := graphql.WithFieldInputContext(ctx, graphql.NewFieldInputWithField("id"))
+		ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("id"))
 		arg0, err = ec.unmarshalNID2int(ctx, tmp)
 		if err != nil {
 			return nil, err
@@ -2085,7 +2085,7 @@ func (ec *executionContext) field_ResourcePool_allocatedResources_args(ctx conte
 	args := map[string]interface{}{}
 	var arg0 *int
 	if tmp, ok := rawArgs["first"]; ok {
-		ctx := graphql.WithFieldInputContext(ctx, graphql.NewFieldInputWithField("first"))
+		ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("first"))
 		arg0, err = ec.unmarshalOInt2ᚖint(ctx, tmp)
 		if err != nil {
 			return nil, err
@@ -2094,7 +2094,7 @@ func (ec *executionContext) field_ResourcePool_allocatedResources_args(ctx conte
 	args["first"] = arg0
 	var arg1 *int
 	if tmp, ok := rawArgs["last"]; ok {
-		ctx := graphql.WithFieldInputContext(ctx, graphql.NewFieldInputWithField("last"))
+		ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("last"))
 		arg1, err = ec.unmarshalOInt2ᚖint(ctx, tmp)
 		if err != nil {
 			return nil, err
@@ -2103,7 +2103,7 @@ func (ec *executionContext) field_ResourcePool_allocatedResources_args(ctx conte
 	args["last"] = arg1
 	var arg2 *string
 	if tmp, ok := rawArgs["before"]; ok {
-		ctx := graphql.WithFieldInputContext(ctx, graphql.NewFieldInputWithField("before"))
+		ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("before"))
 		arg2, err = ec.unmarshalOString2ᚖstring(ctx, tmp)
 		if err != nil {
 			return nil, err
@@ -2112,7 +2112,7 @@ func (ec *executionContext) field_ResourcePool_allocatedResources_args(ctx conte
 	args["before"] = arg2
 	var arg3 *string
 	if tmp, ok := rawArgs["after"]; ok {
-		ctx := graphql.WithFieldInputContext(ctx, graphql.NewFieldInputWithField("after"))
+		ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("after"))
 		arg3, err = ec.unmarshalOString2ᚖstring(ctx, tmp)
 		if err != nil {
 			return nil, err
@@ -2127,7 +2127,7 @@ func (ec *executionContext) field___Type_enumValues_args(ctx context.Context, ra
 	args := map[string]interface{}{}
 	var arg0 bool
 	if tmp, ok := rawArgs["includeDeprecated"]; ok {
-		ctx := graphql.WithFieldInputContext(ctx, graphql.NewFieldInputWithField("includeDeprecated"))
+		ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("includeDeprecated"))
 		arg0, err = ec.unmarshalOBoolean2bool(ctx, tmp)
 		if err != nil {
 			return nil, err
@@ -2142,7 +2142,7 @@ func (ec *executionContext) field___Type_fields_args(ctx context.Context, rawArg
 	args := map[string]interface{}{}
 	var arg0 bool
 	if tmp, ok := rawArgs["includeDeprecated"]; ok {
-		ctx := graphql.WithFieldInputContext(ctx, graphql.NewFieldInputWithField("includeDeprecated"))
+		ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("includeDeprecated"))
 		arg0, err = ec.unmarshalOBoolean2bool(ctx, tmp)
 		if err != nil {
 			return nil, err
@@ -2168,10 +2168,11 @@ func (ec *executionContext) _AllocationStrategy_id(ctx context.Context, field gr
 		}
 	}()
 	fc := &graphql.FieldContext{
-		Object:   "AllocationStrategy",
-		Field:    field,
-		Args:     nil,
-		IsMethod: false,
+		Object:     "AllocationStrategy",
+		Field:      field,
+		Args:       nil,
+		IsMethod:   false,
+		IsResolver: false,
 	}
 
 	ctx = graphql.WithFieldContext(ctx, fc)
@@ -2202,10 +2203,11 @@ func (ec *executionContext) _AllocationStrategy_Name(ctx context.Context, field 
 		}
 	}()
 	fc := &graphql.FieldContext{
-		Object:   "AllocationStrategy",
-		Field:    field,
-		Args:     nil,
-		IsMethod: false,
+		Object:     "AllocationStrategy",
+		Field:      field,
+		Args:       nil,
+		IsMethod:   false,
+		IsResolver: false,
 	}
 
 	ctx = graphql.WithFieldContext(ctx, fc)
@@ -2236,10 +2238,11 @@ func (ec *executionContext) _AllocationStrategy_Description(ctx context.Context,
 		}
 	}()
 	fc := &graphql.FieldContext{
-		Object:   "AllocationStrategy",
-		Field:    field,
-		Args:     nil,
-		IsMethod: false,
+		Object:     "AllocationStrategy",
+		Field:      field,
+		Args:       nil,
+		IsMethod:   false,
+		IsResolver: false,
 	}
 
 	ctx = graphql.WithFieldContext(ctx, fc)
@@ -2267,10 +2270,11 @@ func (ec *executionContext) _AllocationStrategy_Lang(ctx context.Context, field 
 		}
 	}()
 	fc := &graphql.FieldContext{
-		Object:   "AllocationStrategy",
-		Field:    field,
-		Args:     nil,
-		IsMethod: false,
+		Object:     "AllocationStrategy",
+		Field:      field,
+		Args:       nil,
+		IsMethod:   false,
+		IsResolver: false,
 	}
 
 	ctx = graphql.WithFieldContext(ctx, fc)
@@ -2301,10 +2305,11 @@ func (ec *executionContext) _AllocationStrategy_Script(ctx context.Context, fiel
 		}
 	}()
 	fc := &graphql.FieldContext{
-		Object:   "AllocationStrategy",
-		Field:    field,
-		Args:     nil,
-		IsMethod: false,
+		Object:     "AllocationStrategy",
+		Field:      field,
+		Args:       nil,
+		IsMethod:   false,
+		IsResolver: false,
 	}
 
 	ctx = graphql.WithFieldContext(ctx, fc)
@@ -2335,10 +2340,11 @@ func (ec *executionContext) _CreateAllocatingPoolPayload_pool(ctx context.Contex
 		}
 	}()
 	fc := &graphql.FieldContext{
-		Object:   "CreateAllocatingPoolPayload",
-		Field:    field,
-		Args:     nil,
-		IsMethod: false,
+		Object:     "CreateAllocatingPoolPayload",
+		Field:      field,
+		Args:       nil,
+		IsMethod:   false,
+		IsResolver: false,
 	}
 
 	ctx = graphql.WithFieldContext(ctx, fc)
@@ -2366,10 +2372,11 @@ func (ec *executionContext) _CreateAllocationStrategyPayload_strategy(ctx contex
 		}
 	}()
 	fc := &graphql.FieldContext{
-		Object:   "CreateAllocationStrategyPayload",
-		Field:    field,
-		Args:     nil,
-		IsMethod: false,
+		Object:     "CreateAllocationStrategyPayload",
+		Field:      field,
+		Args:       nil,
+		IsMethod:   false,
+		IsResolver: false,
 	}
 
 	ctx = graphql.WithFieldContext(ctx, fc)
@@ -2397,10 +2404,11 @@ func (ec *executionContext) _CreateNestedAllocatingPoolPayload_pool(ctx context.
 		}
 	}()
 	fc := &graphql.FieldContext{
-		Object:   "CreateNestedAllocatingPoolPayload",
-		Field:    field,
-		Args:     nil,
-		IsMethod: false,
+		Object:     "CreateNestedAllocatingPoolPayload",
+		Field:      field,
+		Args:       nil,
+		IsMethod:   false,
+		IsResolver: false,
 	}
 
 	ctx = graphql.WithFieldContext(ctx, fc)
@@ -2428,10 +2436,11 @@ func (ec *executionContext) _CreateNestedSetPoolPayload_pool(ctx context.Context
 		}
 	}()
 	fc := &graphql.FieldContext{
-		Object:   "CreateNestedSetPoolPayload",
-		Field:    field,
-		Args:     nil,
-		IsMethod: false,
+		Object:     "CreateNestedSetPoolPayload",
+		Field:      field,
+		Args:       nil,
+		IsMethod:   false,
+		IsResolver: false,
 	}
 
 	ctx = graphql.WithFieldContext(ctx, fc)
@@ -2459,10 +2468,11 @@ func (ec *executionContext) _CreateNestedSingletonPoolPayload_pool(ctx context.C
 		}
 	}()
 	fc := &graphql.FieldContext{
-		Object:   "CreateNestedSingletonPoolPayload",
-		Field:    field,
-		Args:     nil,
-		IsMethod: false,
+		Object:     "CreateNestedSingletonPoolPayload",
+		Field:      field,
+		Args:       nil,
+		IsMethod:   false,
+		IsResolver: false,
 	}
 
 	ctx = graphql.WithFieldContext(ctx, fc)
@@ -2490,10 +2500,11 @@ func (ec *executionContext) _CreateResourceTypePayload_resourceType(ctx context.
 		}
 	}()
 	fc := &graphql.FieldContext{
-		Object:   "CreateResourceTypePayload",
-		Field:    field,
-		Args:     nil,
-		IsMethod: false,
+		Object:     "CreateResourceTypePayload",
+		Field:      field,
+		Args:       nil,
+		IsMethod:   false,
+		IsResolver: false,
 	}
 
 	ctx = graphql.WithFieldContext(ctx, fc)
@@ -2524,10 +2535,11 @@ func (ec *executionContext) _CreateSetPoolPayload_pool(ctx context.Context, fiel
 		}
 	}()
 	fc := &graphql.FieldContext{
-		Object:   "CreateSetPoolPayload",
-		Field:    field,
-		Args:     nil,
-		IsMethod: false,
+		Object:     "CreateSetPoolPayload",
+		Field:      field,
+		Args:       nil,
+		IsMethod:   false,
+		IsResolver: false,
 	}
 
 	ctx = graphql.WithFieldContext(ctx, fc)
@@ -2555,10 +2567,11 @@ func (ec *executionContext) _CreateSingletonPoolPayload_pool(ctx context.Context
 		}
 	}()
 	fc := &graphql.FieldContext{
-		Object:   "CreateSingletonPoolPayload",
-		Field:    field,
-		Args:     nil,
-		IsMethod: false,
+		Object:     "CreateSingletonPoolPayload",
+		Field:      field,
+		Args:       nil,
+		IsMethod:   false,
+		IsResolver: false,
 	}
 
 	ctx = graphql.WithFieldContext(ctx, fc)
@@ -2586,10 +2599,11 @@ func (ec *executionContext) _CreateTagPayload_tag(ctx context.Context, field gra
 		}
 	}()
 	fc := &graphql.FieldContext{
-		Object:   "CreateTagPayload",
-		Field:    field,
-		Args:     nil,
-		IsMethod: false,
+		Object:     "CreateTagPayload",
+		Field:      field,
+		Args:       nil,
+		IsMethod:   false,
+		IsResolver: false,
 	}
 
 	ctx = graphql.WithFieldContext(ctx, fc)
@@ -2617,10 +2631,11 @@ func (ec *executionContext) _DeleteAllocationStrategyPayload_strategy(ctx contex
 		}
 	}()
 	fc := &graphql.FieldContext{
-		Object:   "DeleteAllocationStrategyPayload",
-		Field:    field,
-		Args:     nil,
-		IsMethod: false,
+		Object:     "DeleteAllocationStrategyPayload",
+		Field:      field,
+		Args:       nil,
+		IsMethod:   false,
+		IsResolver: false,
 	}
 
 	ctx = graphql.WithFieldContext(ctx, fc)
@@ -2648,10 +2663,11 @@ func (ec *executionContext) _DeleteResourcePoolPayload_resourcePoolId(ctx contex
 		}
 	}()
 	fc := &graphql.FieldContext{
-		Object:   "DeleteResourcePoolPayload",
-		Field:    field,
-		Args:     nil,
-		IsMethod: false,
+		Object:     "DeleteResourcePoolPayload",
+		Field:      field,
+		Args:       nil,
+		IsMethod:   false,
+		IsResolver: false,
 	}
 
 	ctx = graphql.WithFieldContext(ctx, fc)
@@ -2682,10 +2698,11 @@ func (ec *executionContext) _DeleteResourceTypePayload_resourceTypeId(ctx contex
 		}
 	}()
 	fc := &graphql.FieldContext{
-		Object:   "DeleteResourceTypePayload",
-		Field:    field,
-		Args:     nil,
-		IsMethod: false,
+		Object:     "DeleteResourceTypePayload",
+		Field:      field,
+		Args:       nil,
+		IsMethod:   false,
+		IsResolver: false,
 	}
 
 	ctx = graphql.WithFieldContext(ctx, fc)
@@ -2716,10 +2733,11 @@ func (ec *executionContext) _DeleteTagPayload_tagId(ctx context.Context, field g
 		}
 	}()
 	fc := &graphql.FieldContext{
-		Object:   "DeleteTagPayload",
-		Field:    field,
-		Args:     nil,
-		IsMethod: false,
+		Object:     "DeleteTagPayload",
+		Field:      field,
+		Args:       nil,
+		IsMethod:   false,
+		IsResolver: false,
 	}
 
 	ctx = graphql.WithFieldContext(ctx, fc)
@@ -2750,10 +2768,11 @@ func (ec *executionContext) _Mutation_CreateTag(ctx context.Context, field graph
 		}
 	}()
 	fc := &graphql.FieldContext{
-		Object:   "Mutation",
-		Field:    field,
-		Args:     nil,
-		IsMethod: true,
+		Object:     "Mutation",
+		Field:      field,
+		Args:       nil,
+		IsMethod:   true,
+		IsResolver: true,
 	}
 
 	ctx = graphql.WithFieldContext(ctx, fc)
@@ -2791,10 +2810,11 @@ func (ec *executionContext) _Mutation_UpdateTag(ctx context.Context, field graph
 		}
 	}()
 	fc := &graphql.FieldContext{
-		Object:   "Mutation",
-		Field:    field,
-		Args:     nil,
-		IsMethod: true,
+		Object:     "Mutation",
+		Field:      field,
+		Args:       nil,
+		IsMethod:   true,
+		IsResolver: true,
 	}
 
 	ctx = graphql.WithFieldContext(ctx, fc)
@@ -2832,10 +2852,11 @@ func (ec *executionContext) _Mutation_DeleteTag(ctx context.Context, field graph
 		}
 	}()
 	fc := &graphql.FieldContext{
-		Object:   "Mutation",
-		Field:    field,
-		Args:     nil,
-		IsMethod: true,
+		Object:     "Mutation",
+		Field:      field,
+		Args:       nil,
+		IsMethod:   true,
+		IsResolver: true,
 	}
 
 	ctx = graphql.WithFieldContext(ctx, fc)
@@ -2873,10 +2894,11 @@ func (ec *executionContext) _Mutation_TagPool(ctx context.Context, field graphql
 		}
 	}()
 	fc := &graphql.FieldContext{
-		Object:   "Mutation",
-		Field:    field,
-		Args:     nil,
-		IsMethod: true,
+		Object:     "Mutation",
+		Field:      field,
+		Args:       nil,
+		IsMethod:   true,
+		IsResolver: true,
 	}
 
 	ctx = graphql.WithFieldContext(ctx, fc)
@@ -2914,10 +2936,11 @@ func (ec *executionContext) _Mutation_UntagPool(ctx context.Context, field graph
 		}
 	}()
 	fc := &graphql.FieldContext{
-		Object:   "Mutation",
-		Field:    field,
-		Args:     nil,
-		IsMethod: true,
+		Object:     "Mutation",
+		Field:      field,
+		Args:       nil,
+		IsMethod:   true,
+		IsResolver: true,
 	}
 
 	ctx = graphql.WithFieldContext(ctx, fc)
@@ -2955,10 +2978,11 @@ func (ec *executionContext) _Mutation_CreateAllocationStrategy(ctx context.Conte
 		}
 	}()
 	fc := &graphql.FieldContext{
-		Object:   "Mutation",
-		Field:    field,
-		Args:     nil,
-		IsMethod: true,
+		Object:     "Mutation",
+		Field:      field,
+		Args:       nil,
+		IsMethod:   true,
+		IsResolver: true,
 	}
 
 	ctx = graphql.WithFieldContext(ctx, fc)
@@ -2996,10 +3020,11 @@ func (ec *executionContext) _Mutation_DeleteAllocationStrategy(ctx context.Conte
 		}
 	}()
 	fc := &graphql.FieldContext{
-		Object:   "Mutation",
-		Field:    field,
-		Args:     nil,
-		IsMethod: true,
+		Object:     "Mutation",
+		Field:      field,
+		Args:       nil,
+		IsMethod:   true,
+		IsResolver: true,
 	}
 
 	ctx = graphql.WithFieldContext(ctx, fc)
@@ -3037,10 +3062,11 @@ func (ec *executionContext) _Mutation_TestAllocationStrategy(ctx context.Context
 		}
 	}()
 	fc := &graphql.FieldContext{
-		Object:   "Mutation",
-		Field:    field,
-		Args:     nil,
-		IsMethod: true,
+		Object:     "Mutation",
+		Field:      field,
+		Args:       nil,
+		IsMethod:   true,
+		IsResolver: true,
 	}
 
 	ctx = graphql.WithFieldContext(ctx, fc)
@@ -3078,10 +3104,11 @@ func (ec *executionContext) _Mutation_ClaimResource(ctx context.Context, field g
 		}
 	}()
 	fc := &graphql.FieldContext{
-		Object:   "Mutation",
-		Field:    field,
-		Args:     nil,
-		IsMethod: true,
+		Object:     "Mutation",
+		Field:      field,
+		Args:       nil,
+		IsMethod:   true,
+		IsResolver: true,
 	}
 
 	ctx = graphql.WithFieldContext(ctx, fc)
@@ -3119,10 +3146,11 @@ func (ec *executionContext) _Mutation_FreeResource(ctx context.Context, field gr
 		}
 	}()
 	fc := &graphql.FieldContext{
-		Object:   "Mutation",
-		Field:    field,
-		Args:     nil,
-		IsMethod: true,
+		Object:     "Mutation",
+		Field:      field,
+		Args:       nil,
+		IsMethod:   true,
+		IsResolver: true,
 	}
 
 	ctx = graphql.WithFieldContext(ctx, fc)
@@ -3160,10 +3188,11 @@ func (ec *executionContext) _Mutation_CreateSetPool(ctx context.Context, field g
 		}
 	}()
 	fc := &graphql.FieldContext{
-		Object:   "Mutation",
-		Field:    field,
-		Args:     nil,
-		IsMethod: true,
+		Object:     "Mutation",
+		Field:      field,
+		Args:       nil,
+		IsMethod:   true,
+		IsResolver: true,
 	}
 
 	ctx = graphql.WithFieldContext(ctx, fc)
@@ -3201,10 +3230,11 @@ func (ec *executionContext) _Mutation_CreateNestedSetPool(ctx context.Context, f
 		}
 	}()
 	fc := &graphql.FieldContext{
-		Object:   "Mutation",
-		Field:    field,
-		Args:     nil,
-		IsMethod: true,
+		Object:     "Mutation",
+		Field:      field,
+		Args:       nil,
+		IsMethod:   true,
+		IsResolver: true,
 	}
 
 	ctx = graphql.WithFieldContext(ctx, fc)
@@ -3242,10 +3272,11 @@ func (ec *executionContext) _Mutation_CreateSingletonPool(ctx context.Context, f
 		}
 	}()
 	fc := &graphql.FieldContext{
-		Object:   "Mutation",
-		Field:    field,
-		Args:     nil,
-		IsMethod: true,
+		Object:     "Mutation",
+		Field:      field,
+		Args:       nil,
+		IsMethod:   true,
+		IsResolver: true,
 	}
 
 	ctx = graphql.WithFieldContext(ctx, fc)
@@ -3283,10 +3314,11 @@ func (ec *executionContext) _Mutation_CreateNestedSingletonPool(ctx context.Cont
 		}
 	}()
 	fc := &graphql.FieldContext{
-		Object:   "Mutation",
-		Field:    field,
-		Args:     nil,
-		IsMethod: true,
+		Object:     "Mutation",
+		Field:      field,
+		Args:       nil,
+		IsMethod:   true,
+		IsResolver: true,
 	}
 
 	ctx = graphql.WithFieldContext(ctx, fc)
@@ -3324,10 +3356,11 @@ func (ec *executionContext) _Mutation_CreateAllocatingPool(ctx context.Context, 
 		}
 	}()
 	fc := &graphql.FieldContext{
-		Object:   "Mutation",
-		Field:    field,
-		Args:     nil,
-		IsMethod: true,
+		Object:     "Mutation",
+		Field:      field,
+		Args:       nil,
+		IsMethod:   true,
+		IsResolver: true,
 	}
 
 	ctx = graphql.WithFieldContext(ctx, fc)
@@ -3365,10 +3398,11 @@ func (ec *executionContext) _Mutation_CreateNestedAllocatingPool(ctx context.Con
 		}
 	}()
 	fc := &graphql.FieldContext{
-		Object:   "Mutation",
-		Field:    field,
-		Args:     nil,
-		IsMethod: true,
+		Object:     "Mutation",
+		Field:      field,
+		Args:       nil,
+		IsMethod:   true,
+		IsResolver: true,
 	}
 
 	ctx = graphql.WithFieldContext(ctx, fc)
@@ -3406,10 +3440,11 @@ func (ec *executionContext) _Mutation_DeleteResourcePool(ctx context.Context, fi
 		}
 	}()
 	fc := &graphql.FieldContext{
-		Object:   "Mutation",
-		Field:    field,
-		Args:     nil,
-		IsMethod: true,
+		Object:     "Mutation",
+		Field:      field,
+		Args:       nil,
+		IsMethod:   true,
+		IsResolver: true,
 	}
 
 	ctx = graphql.WithFieldContext(ctx, fc)
@@ -3447,10 +3482,11 @@ func (ec *executionContext) _Mutation_CreateResourceType(ctx context.Context, fi
 		}
 	}()
 	fc := &graphql.FieldContext{
-		Object:   "Mutation",
-		Field:    field,
-		Args:     nil,
-		IsMethod: true,
+		Object:     "Mutation",
+		Field:      field,
+		Args:       nil,
+		IsMethod:   true,
+		IsResolver: true,
 	}
 
 	ctx = graphql.WithFieldContext(ctx, fc)
@@ -3488,10 +3524,11 @@ func (ec *executionContext) _Mutation_DeleteResourceType(ctx context.Context, fi
 		}
 	}()
 	fc := &graphql.FieldContext{
-		Object:   "Mutation",
-		Field:    field,
-		Args:     nil,
-		IsMethod: true,
+		Object:     "Mutation",
+		Field:      field,
+		Args:       nil,
+		IsMethod:   true,
+		IsResolver: true,
 	}
 
 	ctx = graphql.WithFieldContext(ctx, fc)
@@ -3529,10 +3566,11 @@ func (ec *executionContext) _Mutation_UpdateResourceTypeName(ctx context.Context
 		}
 	}()
 	fc := &graphql.FieldContext{
-		Object:   "Mutation",
-		Field:    field,
-		Args:     nil,
-		IsMethod: true,
+		Object:     "Mutation",
+		Field:      field,
+		Args:       nil,
+		IsMethod:   true,
+		IsResolver: true,
 	}
 
 	ctx = graphql.WithFieldContext(ctx, fc)
@@ -3570,10 +3608,11 @@ func (ec *executionContext) _OutputCursor_ID(ctx context.Context, field graphql.
 		}
 	}()
 	fc := &graphql.FieldContext{
-		Object:   "OutputCursor",
-		Field:    field,
-		Args:     nil,
-		IsMethod: true,
+		Object:     "OutputCursor",
+		Field:      field,
+		Args:       nil,
+		IsMethod:   true,
+		IsResolver: true,
 	}
 
 	ctx = graphql.WithFieldContext(ctx, fc)
@@ -3604,10 +3643,11 @@ func (ec *executionContext) _PageInfo_hasNextPage(ctx context.Context, field gra
 		}
 	}()
 	fc := &graphql.FieldContext{
-		Object:   "PageInfo",
-		Field:    field,
-		Args:     nil,
-		IsMethod: false,
+		Object:     "PageInfo",
+		Field:      field,
+		Args:       nil,
+		IsMethod:   false,
+		IsResolver: false,
 	}
 
 	ctx = graphql.WithFieldContext(ctx, fc)
@@ -3638,10 +3678,11 @@ func (ec *executionContext) _PageInfo_hasPreviousPage(ctx context.Context, field
 		}
 	}()
 	fc := &graphql.FieldContext{
-		Object:   "PageInfo",
-		Field:    field,
-		Args:     nil,
-		IsMethod: false,
+		Object:     "PageInfo",
+		Field:      field,
+		Args:       nil,
+		IsMethod:   false,
+		IsResolver: false,
 	}
 
 	ctx = graphql.WithFieldContext(ctx, fc)
@@ -3672,10 +3713,11 @@ func (ec *executionContext) _PageInfo_startCursor(ctx context.Context, field gra
 		}
 	}()
 	fc := &graphql.FieldContext{
-		Object:   "PageInfo",
-		Field:    field,
-		Args:     nil,
-		IsMethod: false,
+		Object:     "PageInfo",
+		Field:      field,
+		Args:       nil,
+		IsMethod:   false,
+		IsResolver: false,
 	}
 
 	ctx = graphql.WithFieldContext(ctx, fc)
@@ -3706,10 +3748,11 @@ func (ec *executionContext) _PageInfo_endCursor(ctx context.Context, field graph
 		}
 	}()
 	fc := &graphql.FieldContext{
-		Object:   "PageInfo",
-		Field:    field,
-		Args:     nil,
-		IsMethod: false,
+		Object:     "PageInfo",
+		Field:      field,
+		Args:       nil,
+		IsMethod:   false,
+		IsResolver: false,
 	}
 
 	ctx = graphql.WithFieldContext(ctx, fc)
@@ -3740,10 +3783,11 @@ func (ec *executionContext) _PoolCapacityPayload_freeCapacity(ctx context.Contex
 		}
 	}()
 	fc := &graphql.FieldContext{
-		Object:   "PoolCapacityPayload",
-		Field:    field,
-		Args:     nil,
-		IsMethod: false,
+		Object:     "PoolCapacityPayload",
+		Field:      field,
+		Args:       nil,
+		IsMethod:   false,
+		IsResolver: false,
 	}
 
 	ctx = graphql.WithFieldContext(ctx, fc)
@@ -3774,10 +3818,11 @@ func (ec *executionContext) _PoolCapacityPayload_utilizedCapacity(ctx context.Co
 		}
 	}()
 	fc := &graphql.FieldContext{
-		Object:   "PoolCapacityPayload",
-		Field:    field,
-		Args:     nil,
-		IsMethod: false,
+		Object:     "PoolCapacityPayload",
+		Field:      field,
+		Args:       nil,
+		IsMethod:   false,
+		IsResolver: false,
 	}
 
 	ctx = graphql.WithFieldContext(ctx, fc)
@@ -3808,10 +3853,11 @@ func (ec *executionContext) _PropertyType_id(ctx context.Context, field graphql.
 		}
 	}()
 	fc := &graphql.FieldContext{
-		Object:   "PropertyType",
-		Field:    field,
-		Args:     nil,
-		IsMethod: false,
+		Object:     "PropertyType",
+		Field:      field,
+		Args:       nil,
+		IsMethod:   false,
+		IsResolver: false,
 	}
 
 	ctx = graphql.WithFieldContext(ctx, fc)
@@ -3842,10 +3888,11 @@ func (ec *executionContext) _PropertyType_Name(ctx context.Context, field graphq
 		}
 	}()
 	fc := &graphql.FieldContext{
-		Object:   "PropertyType",
-		Field:    field,
-		Args:     nil,
-		IsMethod: false,
+		Object:     "PropertyType",
+		Field:      field,
+		Args:       nil,
+		IsMethod:   false,
+		IsResolver: false,
 	}
 
 	ctx = graphql.WithFieldContext(ctx, fc)
@@ -3876,10 +3923,11 @@ func (ec *executionContext) _PropertyType_Type(ctx context.Context, field graphq
 		}
 	}()
 	fc := &graphql.FieldContext{
-		Object:   "PropertyType",
-		Field:    field,
-		Args:     nil,
-		IsMethod: true,
+		Object:     "PropertyType",
+		Field:      field,
+		Args:       nil,
+		IsMethod:   true,
+		IsResolver: true,
 	}
 
 	ctx = graphql.WithFieldContext(ctx, fc)
@@ -3910,10 +3958,11 @@ func (ec *executionContext) _PropertyType_IntVal(ctx context.Context, field grap
 		}
 	}()
 	fc := &graphql.FieldContext{
-		Object:   "PropertyType",
-		Field:    field,
-		Args:     nil,
-		IsMethod: false,
+		Object:     "PropertyType",
+		Field:      field,
+		Args:       nil,
+		IsMethod:   false,
+		IsResolver: false,
 	}
 
 	ctx = graphql.WithFieldContext(ctx, fc)
@@ -3944,10 +3993,11 @@ func (ec *executionContext) _PropertyType_StringVal(ctx context.Context, field g
 		}
 	}()
 	fc := &graphql.FieldContext{
-		Object:   "PropertyType",
-		Field:    field,
-		Args:     nil,
-		IsMethod: false,
+		Object:     "PropertyType",
+		Field:      field,
+		Args:       nil,
+		IsMethod:   false,
+		IsResolver: false,
 	}
 
 	ctx = graphql.WithFieldContext(ctx, fc)
@@ -3978,10 +4028,11 @@ func (ec *executionContext) _PropertyType_FloatVal(ctx context.Context, field gr
 		}
 	}()
 	fc := &graphql.FieldContext{
-		Object:   "PropertyType",
-		Field:    field,
-		Args:     nil,
-		IsMethod: false,
+		Object:     "PropertyType",
+		Field:      field,
+		Args:       nil,
+		IsMethod:   false,
+		IsResolver: false,
 	}
 
 	ctx = graphql.WithFieldContext(ctx, fc)
@@ -4012,10 +4063,11 @@ func (ec *executionContext) _PropertyType_Mandatory(ctx context.Context, field g
 		}
 	}()
 	fc := &graphql.FieldContext{
-		Object:   "PropertyType",
-		Field:    field,
-		Args:     nil,
-		IsMethod: false,
+		Object:     "PropertyType",
+		Field:      field,
+		Args:       nil,
+		IsMethod:   false,
+		IsResolver: false,
 	}
 
 	ctx = graphql.WithFieldContext(ctx, fc)
@@ -4046,10 +4098,11 @@ func (ec *executionContext) _Query_QueryPoolCapacity(ctx context.Context, field 
 		}
 	}()
 	fc := &graphql.FieldContext{
-		Object:   "Query",
-		Field:    field,
-		Args:     nil,
-		IsMethod: true,
+		Object:     "Query",
+		Field:      field,
+		Args:       nil,
+		IsMethod:   true,
+		IsResolver: true,
 	}
 
 	ctx = graphql.WithFieldContext(ctx, fc)
@@ -4087,10 +4140,11 @@ func (ec *executionContext) _Query_QueryPoolTypes(ctx context.Context, field gra
 		}
 	}()
 	fc := &graphql.FieldContext{
-		Object:   "Query",
-		Field:    field,
-		Args:     nil,
-		IsMethod: true,
+		Object:     "Query",
+		Field:      field,
+		Args:       nil,
+		IsMethod:   true,
+		IsResolver: true,
 	}
 
 	ctx = graphql.WithFieldContext(ctx, fc)
@@ -4121,10 +4175,11 @@ func (ec *executionContext) _Query_QueryResource(ctx context.Context, field grap
 		}
 	}()
 	fc := &graphql.FieldContext{
-		Object:   "Query",
-		Field:    field,
-		Args:     nil,
-		IsMethod: true,
+		Object:     "Query",
+		Field:      field,
+		Args:       nil,
+		IsMethod:   true,
+		IsResolver: true,
 	}
 
 	ctx = graphql.WithFieldContext(ctx, fc)
@@ -4162,10 +4217,11 @@ func (ec *executionContext) _Query_QueryResources(ctx context.Context, field gra
 		}
 	}()
 	fc := &graphql.FieldContext{
-		Object:   "Query",
-		Field:    field,
-		Args:     nil,
-		IsMethod: true,
+		Object:     "Query",
+		Field:      field,
+		Args:       nil,
+		IsMethod:   true,
+		IsResolver: true,
 	}
 
 	ctx = graphql.WithFieldContext(ctx, fc)
@@ -4203,10 +4259,11 @@ func (ec *executionContext) _Query_QueryAllocationStrategy(ctx context.Context, 
 		}
 	}()
 	fc := &graphql.FieldContext{
-		Object:   "Query",
-		Field:    field,
-		Args:     nil,
-		IsMethod: true,
+		Object:     "Query",
+		Field:      field,
+		Args:       nil,
+		IsMethod:   true,
+		IsResolver: true,
 	}
 
 	ctx = graphql.WithFieldContext(ctx, fc)
@@ -4244,10 +4301,11 @@ func (ec *executionContext) _Query_QueryAllocationStrategies(ctx context.Context
 		}
 	}()
 	fc := &graphql.FieldContext{
-		Object:   "Query",
-		Field:    field,
-		Args:     nil,
-		IsMethod: true,
+		Object:     "Query",
+		Field:      field,
+		Args:       nil,
+		IsMethod:   true,
+		IsResolver: true,
 	}
 
 	ctx = graphql.WithFieldContext(ctx, fc)
@@ -4278,10 +4336,11 @@ func (ec *executionContext) _Query_QueryResourceTypes(ctx context.Context, field
 		}
 	}()
 	fc := &graphql.FieldContext{
-		Object:   "Query",
-		Field:    field,
-		Args:     nil,
-		IsMethod: true,
+		Object:     "Query",
+		Field:      field,
+		Args:       nil,
+		IsMethod:   true,
+		IsResolver: true,
 	}
 
 	ctx = graphql.WithFieldContext(ctx, fc)
@@ -4312,10 +4371,11 @@ func (ec *executionContext) _Query_QueryResourcePool(ctx context.Context, field 
 		}
 	}()
 	fc := &graphql.FieldContext{
-		Object:   "Query",
-		Field:    field,
-		Args:     nil,
-		IsMethod: true,
+		Object:     "Query",
+		Field:      field,
+		Args:       nil,
+		IsMethod:   true,
+		IsResolver: true,
 	}
 
 	ctx = graphql.WithFieldContext(ctx, fc)
@@ -4353,10 +4413,11 @@ func (ec *executionContext) _Query_QueryResourcePools(ctx context.Context, field
 		}
 	}()
 	fc := &graphql.FieldContext{
-		Object:   "Query",
-		Field:    field,
-		Args:     nil,
-		IsMethod: true,
+		Object:     "Query",
+		Field:      field,
+		Args:       nil,
+		IsMethod:   true,
+		IsResolver: true,
 	}
 
 	ctx = graphql.WithFieldContext(ctx, fc)
@@ -4394,10 +4455,11 @@ func (ec *executionContext) _Query_QueryRootResourcePools(ctx context.Context, f
 		}
 	}()
 	fc := &graphql.FieldContext{
-		Object:   "Query",
-		Field:    field,
-		Args:     nil,
-		IsMethod: true,
+		Object:     "Query",
+		Field:      field,
+		Args:       nil,
+		IsMethod:   true,
+		IsResolver: true,
 	}
 
 	ctx = graphql.WithFieldContext(ctx, fc)
@@ -4435,10 +4497,11 @@ func (ec *executionContext) _Query_QueryLeafResourcePools(ctx context.Context, f
 		}
 	}()
 	fc := &graphql.FieldContext{
-		Object:   "Query",
-		Field:    field,
-		Args:     nil,
-		IsMethod: true,
+		Object:     "Query",
+		Field:      field,
+		Args:       nil,
+		IsMethod:   true,
+		IsResolver: true,
 	}
 
 	ctx = graphql.WithFieldContext(ctx, fc)
@@ -4476,10 +4539,11 @@ func (ec *executionContext) _Query_SearchPoolsByTags(ctx context.Context, field 
 		}
 	}()
 	fc := &graphql.FieldContext{
-		Object:   "Query",
-		Field:    field,
-		Args:     nil,
-		IsMethod: true,
+		Object:     "Query",
+		Field:      field,
+		Args:       nil,
+		IsMethod:   true,
+		IsResolver: true,
 	}
 
 	ctx = graphql.WithFieldContext(ctx, fc)
@@ -4517,10 +4581,11 @@ func (ec *executionContext) _Query_QueryTags(ctx context.Context, field graphql.
 		}
 	}()
 	fc := &graphql.FieldContext{
-		Object:   "Query",
-		Field:    field,
-		Args:     nil,
-		IsMethod: true,
+		Object:     "Query",
+		Field:      field,
+		Args:       nil,
+		IsMethod:   true,
+		IsResolver: true,
 	}
 
 	ctx = graphql.WithFieldContext(ctx, fc)
@@ -4551,10 +4616,11 @@ func (ec *executionContext) _Query_node(ctx context.Context, field graphql.Colle
 		}
 	}()
 	fc := &graphql.FieldContext{
-		Object:   "Query",
-		Field:    field,
-		Args:     nil,
-		IsMethod: true,
+		Object:     "Query",
+		Field:      field,
+		Args:       nil,
+		IsMethod:   true,
+		IsResolver: true,
 	}
 
 	ctx = graphql.WithFieldContext(ctx, fc)
@@ -4589,10 +4655,11 @@ func (ec *executionContext) _Query___type(ctx context.Context, field graphql.Col
 		}
 	}()
 	fc := &graphql.FieldContext{
-		Object:   "Query",
-		Field:    field,
-		Args:     nil,
-		IsMethod: true,
+		Object:     "Query",
+		Field:      field,
+		Args:       nil,
+		IsMethod:   true,
+		IsResolver: false,
 	}
 
 	ctx = graphql.WithFieldContext(ctx, fc)
@@ -4627,10 +4694,11 @@ func (ec *executionContext) _Query___schema(ctx context.Context, field graphql.C
 		}
 	}()
 	fc := &graphql.FieldContext{
-		Object:   "Query",
-		Field:    field,
-		Args:     nil,
-		IsMethod: true,
+		Object:     "Query",
+		Field:      field,
+		Args:       nil,
+		IsMethod:   true,
+		IsResolver: false,
 	}
 
 	ctx = graphql.WithFieldContext(ctx, fc)
@@ -4658,10 +4726,11 @@ func (ec *executionContext) _Resource_id(ctx context.Context, field graphql.Coll
 		}
 	}()
 	fc := &graphql.FieldContext{
-		Object:   "Resource",
-		Field:    field,
-		Args:     nil,
-		IsMethod: false,
+		Object:     "Resource",
+		Field:      field,
+		Args:       nil,
+		IsMethod:   false,
+		IsResolver: false,
 	}
 
 	ctx = graphql.WithFieldContext(ctx, fc)
@@ -4692,10 +4761,11 @@ func (ec *executionContext) _Resource_Properties(ctx context.Context, field grap
 		}
 	}()
 	fc := &graphql.FieldContext{
-		Object:   "Resource",
-		Field:    field,
-		Args:     nil,
-		IsMethod: true,
+		Object:     "Resource",
+		Field:      field,
+		Args:       nil,
+		IsMethod:   true,
+		IsResolver: true,
 	}
 
 	ctx = graphql.WithFieldContext(ctx, fc)
@@ -4726,10 +4796,11 @@ func (ec *executionContext) _Resource_NestedPool(ctx context.Context, field grap
 		}
 	}()
 	fc := &graphql.FieldContext{
-		Object:   "Resource",
-		Field:    field,
-		Args:     nil,
-		IsMethod: true,
+		Object:     "Resource",
+		Field:      field,
+		Args:       nil,
+		IsMethod:   true,
+		IsResolver: true,
 	}
 
 	ctx = graphql.WithFieldContext(ctx, fc)
@@ -4757,10 +4828,11 @@ func (ec *executionContext) _ResourceConnection_pageInfo(ctx context.Context, fi
 		}
 	}()
 	fc := &graphql.FieldContext{
-		Object:   "ResourceConnection",
-		Field:    field,
-		Args:     nil,
-		IsMethod: false,
+		Object:     "ResourceConnection",
+		Field:      field,
+		Args:       nil,
+		IsMethod:   false,
+		IsResolver: false,
 	}
 
 	ctx = graphql.WithFieldContext(ctx, fc)
@@ -4791,10 +4863,11 @@ func (ec *executionContext) _ResourceConnection_edges(ctx context.Context, field
 		}
 	}()
 	fc := &graphql.FieldContext{
-		Object:   "ResourceConnection",
-		Field:    field,
-		Args:     nil,
-		IsMethod: false,
+		Object:     "ResourceConnection",
+		Field:      field,
+		Args:       nil,
+		IsMethod:   false,
+		IsResolver: false,
 	}
 
 	ctx = graphql.WithFieldContext(ctx, fc)
@@ -4825,10 +4898,11 @@ func (ec *executionContext) _ResourceConnection_totalCount(ctx context.Context, 
 		}
 	}()
 	fc := &graphql.FieldContext{
-		Object:   "ResourceConnection",
-		Field:    field,
-		Args:     nil,
-		IsMethod: false,
+		Object:     "ResourceConnection",
+		Field:      field,
+		Args:       nil,
+		IsMethod:   false,
+		IsResolver: false,
 	}
 
 	ctx = graphql.WithFieldContext(ctx, fc)
@@ -4859,10 +4933,11 @@ func (ec *executionContext) _ResourceEdge_node(ctx context.Context, field graphq
 		}
 	}()
 	fc := &graphql.FieldContext{
-		Object:   "ResourceEdge",
-		Field:    field,
-		Args:     nil,
-		IsMethod: false,
+		Object:     "ResourceEdge",
+		Field:      field,
+		Args:       nil,
+		IsMethod:   false,
+		IsResolver: false,
 	}
 
 	ctx = graphql.WithFieldContext(ctx, fc)
@@ -4893,10 +4968,11 @@ func (ec *executionContext) _ResourceEdge_cursor(ctx context.Context, field grap
 		}
 	}()
 	fc := &graphql.FieldContext{
-		Object:   "ResourceEdge",
-		Field:    field,
-		Args:     nil,
-		IsMethod: false,
+		Object:     "ResourceEdge",
+		Field:      field,
+		Args:       nil,
+		IsMethod:   false,
+		IsResolver: false,
 	}
 
 	ctx = graphql.WithFieldContext(ctx, fc)
@@ -4927,10 +5003,11 @@ func (ec *executionContext) _ResourcePool_id(ctx context.Context, field graphql.
 		}
 	}()
 	fc := &graphql.FieldContext{
-		Object:   "ResourcePool",
-		Field:    field,
-		Args:     nil,
-		IsMethod: false,
+		Object:     "ResourcePool",
+		Field:      field,
+		Args:       nil,
+		IsMethod:   false,
+		IsResolver: false,
 	}
 
 	ctx = graphql.WithFieldContext(ctx, fc)
@@ -4961,10 +5038,11 @@ func (ec *executionContext) _ResourcePool_Name(ctx context.Context, field graphq
 		}
 	}()
 	fc := &graphql.FieldContext{
-		Object:   "ResourcePool",
-		Field:    field,
-		Args:     nil,
-		IsMethod: false,
+		Object:     "ResourcePool",
+		Field:      field,
+		Args:       nil,
+		IsMethod:   false,
+		IsResolver: false,
 	}
 
 	ctx = graphql.WithFieldContext(ctx, fc)
@@ -4995,10 +5073,11 @@ func (ec *executionContext) _ResourcePool_PoolType(ctx context.Context, field gr
 		}
 	}()
 	fc := &graphql.FieldContext{
-		Object:   "ResourcePool",
-		Field:    field,
-		Args:     nil,
-		IsMethod: false,
+		Object:     "ResourcePool",
+		Field:      field,
+		Args:       nil,
+		IsMethod:   false,
+		IsResolver: false,
 	}
 
 	ctx = graphql.WithFieldContext(ctx, fc)
@@ -5029,10 +5108,11 @@ func (ec *executionContext) _ResourcePool_ResourceType(ctx context.Context, fiel
 		}
 	}()
 	fc := &graphql.FieldContext{
-		Object:   "ResourcePool",
-		Field:    field,
-		Args:     nil,
-		IsMethod: true,
+		Object:     "ResourcePool",
+		Field:      field,
+		Args:       nil,
+		IsMethod:   true,
+		IsResolver: true,
 	}
 
 	ctx = graphql.WithFieldContext(ctx, fc)
@@ -5063,10 +5143,11 @@ func (ec *executionContext) _ResourcePool_Resources(ctx context.Context, field g
 		}
 	}()
 	fc := &graphql.FieldContext{
-		Object:   "ResourcePool",
-		Field:    field,
-		Args:     nil,
-		IsMethod: true,
+		Object:     "ResourcePool",
+		Field:      field,
+		Args:       nil,
+		IsMethod:   true,
+		IsResolver: true,
 	}
 
 	ctx = graphql.WithFieldContext(ctx, fc)
@@ -5097,10 +5178,11 @@ func (ec *executionContext) _ResourcePool_allocatedResources(ctx context.Context
 		}
 	}()
 	fc := &graphql.FieldContext{
-		Object:   "ResourcePool",
-		Field:    field,
-		Args:     nil,
-		IsMethod: true,
+		Object:     "ResourcePool",
+		Field:      field,
+		Args:       nil,
+		IsMethod:   true,
+		IsResolver: true,
 	}
 
 	ctx = graphql.WithFieldContext(ctx, fc)
@@ -5135,10 +5217,11 @@ func (ec *executionContext) _ResourcePool_Tags(ctx context.Context, field graphq
 		}
 	}()
 	fc := &graphql.FieldContext{
-		Object:   "ResourcePool",
-		Field:    field,
-		Args:     nil,
-		IsMethod: true,
+		Object:     "ResourcePool",
+		Field:      field,
+		Args:       nil,
+		IsMethod:   true,
+		IsResolver: true,
 	}
 
 	ctx = graphql.WithFieldContext(ctx, fc)
@@ -5169,10 +5252,11 @@ func (ec *executionContext) _ResourcePool_AllocationStrategy(ctx context.Context
 		}
 	}()
 	fc := &graphql.FieldContext{
-		Object:   "ResourcePool",
-		Field:    field,
-		Args:     nil,
-		IsMethod: true,
+		Object:     "ResourcePool",
+		Field:      field,
+		Args:       nil,
+		IsMethod:   true,
+		IsResolver: true,
 	}
 
 	ctx = graphql.WithFieldContext(ctx, fc)
@@ -5200,10 +5284,11 @@ func (ec *executionContext) _ResourceType_id(ctx context.Context, field graphql.
 		}
 	}()
 	fc := &graphql.FieldContext{
-		Object:   "ResourceType",
-		Field:    field,
-		Args:     nil,
-		IsMethod: false,
+		Object:     "ResourceType",
+		Field:      field,
+		Args:       nil,
+		IsMethod:   false,
+		IsResolver: false,
 	}
 
 	ctx = graphql.WithFieldContext(ctx, fc)
@@ -5234,10 +5319,11 @@ func (ec *executionContext) _ResourceType_Name(ctx context.Context, field graphq
 		}
 	}()
 	fc := &graphql.FieldContext{
-		Object:   "ResourceType",
-		Field:    field,
-		Args:     nil,
-		IsMethod: false,
+		Object:     "ResourceType",
+		Field:      field,
+		Args:       nil,
+		IsMethod:   false,
+		IsResolver: false,
 	}
 
 	ctx = graphql.WithFieldContext(ctx, fc)
@@ -5268,10 +5354,11 @@ func (ec *executionContext) _ResourceType_PropertyTypes(ctx context.Context, fie
 		}
 	}()
 	fc := &graphql.FieldContext{
-		Object:   "ResourceType",
-		Field:    field,
-		Args:     nil,
-		IsMethod: true,
+		Object:     "ResourceType",
+		Field:      field,
+		Args:       nil,
+		IsMethod:   true,
+		IsResolver: true,
 	}
 
 	ctx = graphql.WithFieldContext(ctx, fc)
@@ -5302,10 +5389,11 @@ func (ec *executionContext) _ResourceType_Pools(ctx context.Context, field graph
 		}
 	}()
 	fc := &graphql.FieldContext{
-		Object:   "ResourceType",
-		Field:    field,
-		Args:     nil,
-		IsMethod: true,
+		Object:     "ResourceType",
+		Field:      field,
+		Args:       nil,
+		IsMethod:   true,
+		IsResolver: true,
 	}
 
 	ctx = graphql.WithFieldContext(ctx, fc)
@@ -5336,10 +5424,11 @@ func (ec *executionContext) _Tag_id(ctx context.Context, field graphql.Collected
 		}
 	}()
 	fc := &graphql.FieldContext{
-		Object:   "Tag",
-		Field:    field,
-		Args:     nil,
-		IsMethod: false,
+		Object:     "Tag",
+		Field:      field,
+		Args:       nil,
+		IsMethod:   false,
+		IsResolver: false,
 	}
 
 	ctx = graphql.WithFieldContext(ctx, fc)
@@ -5370,10 +5459,11 @@ func (ec *executionContext) _Tag_Tag(ctx context.Context, field graphql.Collecte
 		}
 	}()
 	fc := &graphql.FieldContext{
-		Object:   "Tag",
-		Field:    field,
-		Args:     nil,
-		IsMethod: false,
+		Object:     "Tag",
+		Field:      field,
+		Args:       nil,
+		IsMethod:   false,
+		IsResolver: false,
 	}
 
 	ctx = graphql.WithFieldContext(ctx, fc)
@@ -5404,10 +5494,11 @@ func (ec *executionContext) _Tag_Pools(ctx context.Context, field graphql.Collec
 		}
 	}()
 	fc := &graphql.FieldContext{
-		Object:   "Tag",
-		Field:    field,
-		Args:     nil,
-		IsMethod: true,
+		Object:     "Tag",
+		Field:      field,
+		Args:       nil,
+		IsMethod:   true,
+		IsResolver: true,
 	}
 
 	ctx = graphql.WithFieldContext(ctx, fc)
@@ -5435,10 +5526,11 @@ func (ec *executionContext) _TagPoolPayload_tag(ctx context.Context, field graph
 		}
 	}()
 	fc := &graphql.FieldContext{
-		Object:   "TagPoolPayload",
-		Field:    field,
-		Args:     nil,
-		IsMethod: false,
+		Object:     "TagPoolPayload",
+		Field:      field,
+		Args:       nil,
+		IsMethod:   false,
+		IsResolver: false,
 	}
 
 	ctx = graphql.WithFieldContext(ctx, fc)
@@ -5466,10 +5558,11 @@ func (ec *executionContext) _UntagPoolPayload_tag(ctx context.Context, field gra
 		}
 	}()
 	fc := &graphql.FieldContext{
-		Object:   "UntagPoolPayload",
-		Field:    field,
-		Args:     nil,
-		IsMethod: false,
+		Object:     "UntagPoolPayload",
+		Field:      field,
+		Args:       nil,
+		IsMethod:   false,
+		IsResolver: false,
 	}
 
 	ctx = graphql.WithFieldContext(ctx, fc)
@@ -5497,10 +5590,11 @@ func (ec *executionContext) _UpdateResourceTypeNamePayload_resourceTypeId(ctx co
 		}
 	}()
 	fc := &graphql.FieldContext{
-		Object:   "UpdateResourceTypeNamePayload",
-		Field:    field,
-		Args:     nil,
-		IsMethod: false,
+		Object:     "UpdateResourceTypeNamePayload",
+		Field:      field,
+		Args:       nil,
+		IsMethod:   false,
+		IsResolver: false,
 	}
 
 	ctx = graphql.WithFieldContext(ctx, fc)
@@ -5531,10 +5625,11 @@ func (ec *executionContext) _UpdateTagPayload_tag(ctx context.Context, field gra
 		}
 	}()
 	fc := &graphql.FieldContext{
-		Object:   "UpdateTagPayload",
-		Field:    field,
-		Args:     nil,
-		IsMethod: false,
+		Object:     "UpdateTagPayload",
+		Field:      field,
+		Args:       nil,
+		IsMethod:   false,
+		IsResolver: false,
 	}
 
 	ctx = graphql.WithFieldContext(ctx, fc)
@@ -5562,10 +5657,11 @@ func (ec *executionContext) ___Directive_name(ctx context.Context, field graphql
 		}
 	}()
 	fc := &graphql.FieldContext{
-		Object:   "__Directive",
-		Field:    field,
-		Args:     nil,
-		IsMethod: false,
+		Object:     "__Directive",
+		Field:      field,
+		Args:       nil,
+		IsMethod:   false,
+		IsResolver: false,
 	}
 
 	ctx = graphql.WithFieldContext(ctx, fc)
@@ -5596,10 +5692,11 @@ func (ec *executionContext) ___Directive_description(ctx context.Context, field 
 		}
 	}()
 	fc := &graphql.FieldContext{
-		Object:   "__Directive",
-		Field:    field,
-		Args:     nil,
-		IsMethod: false,
+		Object:     "__Directive",
+		Field:      field,
+		Args:       nil,
+		IsMethod:   false,
+		IsResolver: false,
 	}
 
 	ctx = graphql.WithFieldContext(ctx, fc)
@@ -5627,10 +5724,11 @@ func (ec *executionContext) ___Directive_locations(ctx context.Context, field gr
 		}
 	}()
 	fc := &graphql.FieldContext{
-		Object:   "__Directive",
-		Field:    field,
-		Args:     nil,
-		IsMethod: false,
+		Object:     "__Directive",
+		Field:      field,
+		Args:       nil,
+		IsMethod:   false,
+		IsResolver: false,
 	}
 
 	ctx = graphql.WithFieldContext(ctx, fc)
@@ -5661,10 +5759,11 @@ func (ec *executionContext) ___Directive_args(ctx context.Context, field graphql
 		}
 	}()
 	fc := &graphql.FieldContext{
-		Object:   "__Directive",
-		Field:    field,
-		Args:     nil,
-		IsMethod: false,
+		Object:     "__Directive",
+		Field:      field,
+		Args:       nil,
+		IsMethod:   false,
+		IsResolver: false,
 	}
 
 	ctx = graphql.WithFieldContext(ctx, fc)
@@ -5695,10 +5794,11 @@ func (ec *executionContext) ___EnumValue_name(ctx context.Context, field graphql
 		}
 	}()
 	fc := &graphql.FieldContext{
-		Object:   "__EnumValue",
-		Field:    field,
-		Args:     nil,
-		IsMethod: false,
+		Object:     "__EnumValue",
+		Field:      field,
+		Args:       nil,
+		IsMethod:   false,
+		IsResolver: false,
 	}
 
 	ctx = graphql.WithFieldContext(ctx, fc)
@@ -5729,10 +5829,11 @@ func (ec *executionContext) ___EnumValue_description(ctx context.Context, field 
 		}
 	}()
 	fc := &graphql.FieldContext{
-		Object:   "__EnumValue",
-		Field:    field,
-		Args:     nil,
-		IsMethod: false,
+		Object:     "__EnumValue",
+		Field:      field,
+		Args:       nil,
+		IsMethod:   false,
+		IsResolver: false,
 	}
 
 	ctx = graphql.WithFieldContext(ctx, fc)
@@ -5760,10 +5861,11 @@ func (ec *executionContext) ___EnumValue_isDeprecated(ctx context.Context, field
 		}
 	}()
 	fc := &graphql.FieldContext{
-		Object:   "__EnumValue",
-		Field:    field,
-		Args:     nil,
-		IsMethod: true,
+		Object:     "__EnumValue",
+		Field:      field,
+		Args:       nil,
+		IsMethod:   true,
+		IsResolver: false,
 	}
 
 	ctx = graphql.WithFieldContext(ctx, fc)
@@ -5794,10 +5896,11 @@ func (ec *executionContext) ___EnumValue_deprecationReason(ctx context.Context, 
 		}
 	}()
 	fc := &graphql.FieldContext{
-		Object:   "__EnumValue",
-		Field:    field,
-		Args:     nil,
-		IsMethod: true,
+		Object:     "__EnumValue",
+		Field:      field,
+		Args:       nil,
+		IsMethod:   true,
+		IsResolver: false,
 	}
 
 	ctx = graphql.WithFieldContext(ctx, fc)
@@ -5825,10 +5928,11 @@ func (ec *executionContext) ___Field_name(ctx context.Context, field graphql.Col
 		}
 	}()
 	fc := &graphql.FieldContext{
-		Object:   "__Field",
-		Field:    field,
-		Args:     nil,
-		IsMethod: false,
+		Object:     "__Field",
+		Field:      field,
+		Args:       nil,
+		IsMethod:   false,
+		IsResolver: false,
 	}
 
 	ctx = graphql.WithFieldContext(ctx, fc)
@@ -5859,10 +5963,11 @@ func (ec *executionContext) ___Field_description(ctx context.Context, field grap
 		}
 	}()
 	fc := &graphql.FieldContext{
-		Object:   "__Field",
-		Field:    field,
-		Args:     nil,
-		IsMethod: false,
+		Object:     "__Field",
+		Field:      field,
+		Args:       nil,
+		IsMethod:   false,
+		IsResolver: false,
 	}
 
 	ctx = graphql.WithFieldContext(ctx, fc)
@@ -5890,10 +5995,11 @@ func (ec *executionContext) ___Field_args(ctx context.Context, field graphql.Col
 		}
 	}()
 	fc := &graphql.FieldContext{
-		Object:   "__Field",
-		Field:    field,
-		Args:     nil,
-		IsMethod: false,
+		Object:     "__Field",
+		Field:      field,
+		Args:       nil,
+		IsMethod:   false,
+		IsResolver: false,
 	}
 
 	ctx = graphql.WithFieldContext(ctx, fc)
@@ -5924,10 +6030,11 @@ func (ec *executionContext) ___Field_type(ctx context.Context, field graphql.Col
 		}
 	}()
 	fc := &graphql.FieldContext{
-		Object:   "__Field",
-		Field:    field,
-		Args:     nil,
-		IsMethod: false,
+		Object:     "__Field",
+		Field:      field,
+		Args:       nil,
+		IsMethod:   false,
+		IsResolver: false,
 	}
 
 	ctx = graphql.WithFieldContext(ctx, fc)
@@ -5958,10 +6065,11 @@ func (ec *executionContext) ___Field_isDeprecated(ctx context.Context, field gra
 		}
 	}()
 	fc := &graphql.FieldContext{
-		Object:   "__Field",
-		Field:    field,
-		Args:     nil,
-		IsMethod: true,
+		Object:     "__Field",
+		Field:      field,
+		Args:       nil,
+		IsMethod:   true,
+		IsResolver: false,
 	}
 
 	ctx = graphql.WithFieldContext(ctx, fc)
@@ -5992,10 +6100,11 @@ func (ec *executionContext) ___Field_deprecationReason(ctx context.Context, fiel
 		}
 	}()
 	fc := &graphql.FieldContext{
-		Object:   "__Field",
-		Field:    field,
-		Args:     nil,
-		IsMethod: true,
+		Object:     "__Field",
+		Field:      field,
+		Args:       nil,
+		IsMethod:   true,
+		IsResolver: false,
 	}
 
 	ctx = graphql.WithFieldContext(ctx, fc)
@@ -6023,10 +6132,11 @@ func (ec *executionContext) ___InputValue_name(ctx context.Context, field graphq
 		}
 	}()
 	fc := &graphql.FieldContext{
-		Object:   "__InputValue",
-		Field:    field,
-		Args:     nil,
-		IsMethod: false,
+		Object:     "__InputValue",
+		Field:      field,
+		Args:       nil,
+		IsMethod:   false,
+		IsResolver: false,
 	}
 
 	ctx = graphql.WithFieldContext(ctx, fc)
@@ -6057,10 +6167,11 @@ func (ec *executionContext) ___InputValue_description(ctx context.Context, field
 		}
 	}()
 	fc := &graphql.FieldContext{
-		Object:   "__InputValue",
-		Field:    field,
-		Args:     nil,
-		IsMethod: false,
+		Object:     "__InputValue",
+		Field:      field,
+		Args:       nil,
+		IsMethod:   false,
+		IsResolver: false,
 	}
 
 	ctx = graphql.WithFieldContext(ctx, fc)
@@ -6088,10 +6199,11 @@ func (ec *executionContext) ___InputValue_type(ctx context.Context, field graphq
 		}
 	}()
 	fc := &graphql.FieldContext{
-		Object:   "__InputValue",
-		Field:    field,
-		Args:     nil,
-		IsMethod: false,
+		Object:     "__InputValue",
+		Field:      field,
+		Args:       nil,
+		IsMethod:   false,
+		IsResolver: false,
 	}
 
 	ctx = graphql.WithFieldContext(ctx, fc)
@@ -6122,10 +6234,11 @@ func (ec *executionContext) ___InputValue_defaultValue(ctx context.Context, fiel
 		}
 	}()
 	fc := &graphql.FieldContext{
-		Object:   "__InputValue",
-		Field:    field,
-		Args:     nil,
-		IsMethod: false,
+		Object:     "__InputValue",
+		Field:      field,
+		Args:       nil,
+		IsMethod:   false,
+		IsResolver: false,
 	}
 
 	ctx = graphql.WithFieldContext(ctx, fc)
@@ -6153,10 +6266,11 @@ func (ec *executionContext) ___Schema_types(ctx context.Context, field graphql.C
 		}
 	}()
 	fc := &graphql.FieldContext{
-		Object:   "__Schema",
-		Field:    field,
-		Args:     nil,
-		IsMethod: true,
+		Object:     "__Schema",
+		Field:      field,
+		Args:       nil,
+		IsMethod:   true,
+		IsResolver: false,
 	}
 
 	ctx = graphql.WithFieldContext(ctx, fc)
@@ -6187,10 +6301,11 @@ func (ec *executionContext) ___Schema_queryType(ctx context.Context, field graph
 		}
 	}()
 	fc := &graphql.FieldContext{
-		Object:   "__Schema",
-		Field:    field,
-		Args:     nil,
-		IsMethod: true,
+		Object:     "__Schema",
+		Field:      field,
+		Args:       nil,
+		IsMethod:   true,
+		IsResolver: false,
 	}
 
 	ctx = graphql.WithFieldContext(ctx, fc)
@@ -6221,10 +6336,11 @@ func (ec *executionContext) ___Schema_mutationType(ctx context.Context, field gr
 		}
 	}()
 	fc := &graphql.FieldContext{
-		Object:   "__Schema",
-		Field:    field,
-		Args:     nil,
-		IsMethod: true,
+		Object:     "__Schema",
+		Field:      field,
+		Args:       nil,
+		IsMethod:   true,
+		IsResolver: false,
 	}
 
 	ctx = graphql.WithFieldContext(ctx, fc)
@@ -6252,10 +6368,11 @@ func (ec *executionContext) ___Schema_subscriptionType(ctx context.Context, fiel
 		}
 	}()
 	fc := &graphql.FieldContext{
-		Object:   "__Schema",
-		Field:    field,
-		Args:     nil,
-		IsMethod: true,
+		Object:     "__Schema",
+		Field:      field,
+		Args:       nil,
+		IsMethod:   true,
+		IsResolver: false,
 	}
 
 	ctx = graphql.WithFieldContext(ctx, fc)
@@ -6283,10 +6400,11 @@ func (ec *executionContext) ___Schema_directives(ctx context.Context, field grap
 		}
 	}()
 	fc := &graphql.FieldContext{
-		Object:   "__Schema",
-		Field:    field,
-		Args:     nil,
-		IsMethod: true,
+		Object:     "__Schema",
+		Field:      field,
+		Args:       nil,
+		IsMethod:   true,
+		IsResolver: false,
 	}
 
 	ctx = graphql.WithFieldContext(ctx, fc)
@@ -6317,10 +6435,11 @@ func (ec *executionContext) ___Type_kind(ctx context.Context, field graphql.Coll
 		}
 	}()
 	fc := &graphql.FieldContext{
-		Object:   "__Type",
-		Field:    field,
-		Args:     nil,
-		IsMethod: true,
+		Object:     "__Type",
+		Field:      field,
+		Args:       nil,
+		IsMethod:   true,
+		IsResolver: false,
 	}
 
 	ctx = graphql.WithFieldContext(ctx, fc)
@@ -6351,10 +6470,11 @@ func (ec *executionContext) ___Type_name(ctx context.Context, field graphql.Coll
 		}
 	}()
 	fc := &graphql.FieldContext{
-		Object:   "__Type",
-		Field:    field,
-		Args:     nil,
-		IsMethod: true,
+		Object:     "__Type",
+		Field:      field,
+		Args:       nil,
+		IsMethod:   true,
+		IsResolver: false,
 	}
 
 	ctx = graphql.WithFieldContext(ctx, fc)
@@ -6382,10 +6502,11 @@ func (ec *executionContext) ___Type_description(ctx context.Context, field graph
 		}
 	}()
 	fc := &graphql.FieldContext{
-		Object:   "__Type",
-		Field:    field,
-		Args:     nil,
-		IsMethod: true,
+		Object:     "__Type",
+		Field:      field,
+		Args:       nil,
+		IsMethod:   true,
+		IsResolver: false,
 	}
 
 	ctx = graphql.WithFieldContext(ctx, fc)
@@ -6413,10 +6534,11 @@ func (ec *executionContext) ___Type_fields(ctx context.Context, field graphql.Co
 		}
 	}()
 	fc := &graphql.FieldContext{
-		Object:   "__Type",
-		Field:    field,
-		Args:     nil,
-		IsMethod: true,
+		Object:     "__Type",
+		Field:      field,
+		Args:       nil,
+		IsMethod:   true,
+		IsResolver: false,
 	}
 
 	ctx = graphql.WithFieldContext(ctx, fc)
@@ -6451,10 +6573,11 @@ func (ec *executionContext) ___Type_interfaces(ctx context.Context, field graphq
 		}
 	}()
 	fc := &graphql.FieldContext{
-		Object:   "__Type",
-		Field:    field,
-		Args:     nil,
-		IsMethod: true,
+		Object:     "__Type",
+		Field:      field,
+		Args:       nil,
+		IsMethod:   true,
+		IsResolver: false,
 	}
 
 	ctx = graphql.WithFieldContext(ctx, fc)
@@ -6482,10 +6605,11 @@ func (ec *executionContext) ___Type_possibleTypes(ctx context.Context, field gra
 		}
 	}()
 	fc := &graphql.FieldContext{
-		Object:   "__Type",
-		Field:    field,
-		Args:     nil,
-		IsMethod: true,
+		Object:     "__Type",
+		Field:      field,
+		Args:       nil,
+		IsMethod:   true,
+		IsResolver: false,
 	}
 
 	ctx = graphql.WithFieldContext(ctx, fc)
@@ -6513,10 +6637,11 @@ func (ec *executionContext) ___Type_enumValues(ctx context.Context, field graphq
 		}
 	}()
 	fc := &graphql.FieldContext{
-		Object:   "__Type",
-		Field:    field,
-		Args:     nil,
-		IsMethod: true,
+		Object:     "__Type",
+		Field:      field,
+		Args:       nil,
+		IsMethod:   true,
+		IsResolver: false,
 	}
 
 	ctx = graphql.WithFieldContext(ctx, fc)
@@ -6551,10 +6676,11 @@ func (ec *executionContext) ___Type_inputFields(ctx context.Context, field graph
 		}
 	}()
 	fc := &graphql.FieldContext{
-		Object:   "__Type",
-		Field:    field,
-		Args:     nil,
-		IsMethod: true,
+		Object:     "__Type",
+		Field:      field,
+		Args:       nil,
+		IsMethod:   true,
+		IsResolver: false,
 	}
 
 	ctx = graphql.WithFieldContext(ctx, fc)
@@ -6582,10 +6708,11 @@ func (ec *executionContext) ___Type_ofType(ctx context.Context, field graphql.Co
 		}
 	}()
 	fc := &graphql.FieldContext{
-		Object:   "__Type",
-		Field:    field,
-		Args:     nil,
-		IsMethod: true,
+		Object:     "__Type",
+		Field:      field,
+		Args:       nil,
+		IsMethod:   true,
+		IsResolver: false,
 	}
 
 	ctx = graphql.WithFieldContext(ctx, fc)
@@ -6618,7 +6745,7 @@ func (ec *executionContext) unmarshalInputCreateAllocatingPoolInput(ctx context.
 		case "resourceTypeId":
 			var err error
 
-			ctx := graphql.WithFieldInputContext(ctx, graphql.NewFieldInputWithField("resourceTypeId"))
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("resourceTypeId"))
 			it.ResourceTypeID, err = ec.unmarshalNID2int(ctx, v)
 			if err != nil {
 				return it, err
@@ -6626,7 +6753,7 @@ func (ec *executionContext) unmarshalInputCreateAllocatingPoolInput(ctx context.
 		case "poolName":
 			var err error
 
-			ctx := graphql.WithFieldInputContext(ctx, graphql.NewFieldInputWithField("poolName"))
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("poolName"))
 			it.PoolName, err = ec.unmarshalNString2string(ctx, v)
 			if err != nil {
 				return it, err
@@ -6634,7 +6761,7 @@ func (ec *executionContext) unmarshalInputCreateAllocatingPoolInput(ctx context.
 		case "description":
 			var err error
 
-			ctx := graphql.WithFieldInputContext(ctx, graphql.NewFieldInputWithField("description"))
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("description"))
 			it.Description, err = ec.unmarshalOString2ᚖstring(ctx, v)
 			if err != nil {
 				return it, err
@@ -6642,7 +6769,7 @@ func (ec *executionContext) unmarshalInputCreateAllocatingPoolInput(ctx context.
 		case "allocationStrategyId":
 			var err error
 
-			ctx := graphql.WithFieldInputContext(ctx, graphql.NewFieldInputWithField("allocationStrategyId"))
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("allocationStrategyId"))
 			it.AllocationStrategyID, err = ec.unmarshalNID2int(ctx, v)
 			if err != nil {
 				return it, err
@@ -6650,7 +6777,7 @@ func (ec *executionContext) unmarshalInputCreateAllocatingPoolInput(ctx context.
 		case "poolDealocationSafetyPeriod":
 			var err error
 
-			ctx := graphql.WithFieldInputContext(ctx, graphql.NewFieldInputWithField("poolDealocationSafetyPeriod"))
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("poolDealocationSafetyPeriod"))
 			it.PoolDealocationSafetyPeriod, err = ec.unmarshalNInt2int(ctx, v)
 			if err != nil {
 				return it, err
@@ -6658,7 +6785,7 @@ func (ec *executionContext) unmarshalInputCreateAllocatingPoolInput(ctx context.
 		case "poolProperties":
 			var err error
 
-			ctx := graphql.WithFieldInputContext(ctx, graphql.NewFieldInputWithField("poolProperties"))
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("poolProperties"))
 			it.PoolProperties, err = ec.unmarshalNMap2map(ctx, v)
 			if err != nil {
 				return it, err
@@ -6666,7 +6793,7 @@ func (ec *executionContext) unmarshalInputCreateAllocatingPoolInput(ctx context.
 		case "poolPropertyTypes":
 			var err error
 
-			ctx := graphql.WithFieldInputContext(ctx, graphql.NewFieldInputWithField("poolPropertyTypes"))
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("poolPropertyTypes"))
 			it.PoolPropertyTypes, err = ec.unmarshalNMap2map(ctx, v)
 			if err != nil {
 				return it, err
@@ -6686,7 +6813,7 @@ func (ec *executionContext) unmarshalInputCreateAllocationStrategyInput(ctx cont
 		case "name":
 			var err error
 
-			ctx := graphql.WithFieldInputContext(ctx, graphql.NewFieldInputWithField("name"))
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("name"))
 			it.Name, err = ec.unmarshalNString2string(ctx, v)
 			if err != nil {
 				return it, err
@@ -6694,7 +6821,7 @@ func (ec *executionContext) unmarshalInputCreateAllocationStrategyInput(ctx cont
 		case "description":
 			var err error
 
-			ctx := graphql.WithFieldInputContext(ctx, graphql.NewFieldInputWithField("description"))
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("description"))
 			it.Description, err = ec.unmarshalOString2ᚖstring(ctx, v)
 			if err != nil {
 				return it, err
@@ -6702,7 +6829,7 @@ func (ec *executionContext) unmarshalInputCreateAllocationStrategyInput(ctx cont
 		case "script":
 			var err error
 
-			ctx := graphql.WithFieldInputContext(ctx, graphql.NewFieldInputWithField("script"))
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("script"))
 			it.Script, err = ec.unmarshalNString2string(ctx, v)
 			if err != nil {
 				return it, err
@@ -6710,7 +6837,7 @@ func (ec *executionContext) unmarshalInputCreateAllocationStrategyInput(ctx cont
 		case "lang":
 			var err error
 
-			ctx := graphql.WithFieldInputContext(ctx, graphql.NewFieldInputWithField("lang"))
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("lang"))
 			it.Lang, err = ec.unmarshalNAllocationStrategyLang2githubᚗcomᚋnetᚑautoᚋresourceManagerᚋentᚋallocationstrategyᚐLang(ctx, v)
 			if err != nil {
 				return it, err
@@ -6730,7 +6857,7 @@ func (ec *executionContext) unmarshalInputCreateNestedAllocatingPoolInput(ctx co
 		case "resourceTypeId":
 			var err error
 
-			ctx := graphql.WithFieldInputContext(ctx, graphql.NewFieldInputWithField("resourceTypeId"))
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("resourceTypeId"))
 			it.ResourceTypeID, err = ec.unmarshalNID2int(ctx, v)
 			if err != nil {
 				return it, err
@@ -6738,7 +6865,7 @@ func (ec *executionContext) unmarshalInputCreateNestedAllocatingPoolInput(ctx co
 		case "poolName":
 			var err error
 
-			ctx := graphql.WithFieldInputContext(ctx, graphql.NewFieldInputWithField("poolName"))
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("poolName"))
 			it.PoolName, err = ec.unmarshalNString2string(ctx, v)
 			if err != nil {
 				return it, err
@@ -6746,7 +6873,7 @@ func (ec *executionContext) unmarshalInputCreateNestedAllocatingPoolInput(ctx co
 		case "description":
 			var err error
 
-			ctx := graphql.WithFieldInputContext(ctx, graphql.NewFieldInputWithField("description"))
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("description"))
 			it.Description, err = ec.unmarshalOString2ᚖstring(ctx, v)
 			if err != nil {
 				return it, err
@@ -6754,7 +6881,7 @@ func (ec *executionContext) unmarshalInputCreateNestedAllocatingPoolInput(ctx co
 		case "allocationStrategyId":
 			var err error
 
-			ctx := graphql.WithFieldInputContext(ctx, graphql.NewFieldInputWithField("allocationStrategyId"))
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("allocationStrategyId"))
 			it.AllocationStrategyID, err = ec.unmarshalNID2int(ctx, v)
 			if err != nil {
 				return it, err
@@ -6762,7 +6889,7 @@ func (ec *executionContext) unmarshalInputCreateNestedAllocatingPoolInput(ctx co
 		case "poolDealocationSafetyPeriod":
 			var err error
 
-			ctx := graphql.WithFieldInputContext(ctx, graphql.NewFieldInputWithField("poolDealocationSafetyPeriod"))
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("poolDealocationSafetyPeriod"))
 			it.PoolDealocationSafetyPeriod, err = ec.unmarshalNInt2int(ctx, v)
 			if err != nil {
 				return it, err
@@ -6770,7 +6897,7 @@ func (ec *executionContext) unmarshalInputCreateNestedAllocatingPoolInput(ctx co
 		case "parentResourceId":
 			var err error
 
-			ctx := graphql.WithFieldInputContext(ctx, graphql.NewFieldInputWithField("parentResourceId"))
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("parentResourceId"))
 			it.ParentResourceID, err = ec.unmarshalNID2int(ctx, v)
 			if err != nil {
 				return it, err
@@ -6790,7 +6917,7 @@ func (ec *executionContext) unmarshalInputCreateNestedSetPoolInput(ctx context.C
 		case "resourceTypeId":
 			var err error
 
-			ctx := graphql.WithFieldInputContext(ctx, graphql.NewFieldInputWithField("resourceTypeId"))
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("resourceTypeId"))
 			it.ResourceTypeID, err = ec.unmarshalNID2int(ctx, v)
 			if err != nil {
 				return it, err
@@ -6798,7 +6925,7 @@ func (ec *executionContext) unmarshalInputCreateNestedSetPoolInput(ctx context.C
 		case "poolName":
 			var err error
 
-			ctx := graphql.WithFieldInputContext(ctx, graphql.NewFieldInputWithField("poolName"))
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("poolName"))
 			it.PoolName, err = ec.unmarshalNString2string(ctx, v)
 			if err != nil {
 				return it, err
@@ -6806,7 +6933,7 @@ func (ec *executionContext) unmarshalInputCreateNestedSetPoolInput(ctx context.C
 		case "description":
 			var err error
 
-			ctx := graphql.WithFieldInputContext(ctx, graphql.NewFieldInputWithField("description"))
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("description"))
 			it.Description, err = ec.unmarshalOString2ᚖstring(ctx, v)
 			if err != nil {
 				return it, err
@@ -6814,7 +6941,7 @@ func (ec *executionContext) unmarshalInputCreateNestedSetPoolInput(ctx context.C
 		case "poolDealocationSafetyPeriod":
 			var err error
 
-			ctx := graphql.WithFieldInputContext(ctx, graphql.NewFieldInputWithField("poolDealocationSafetyPeriod"))
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("poolDealocationSafetyPeriod"))
 			it.PoolDealocationSafetyPeriod, err = ec.unmarshalNInt2int(ctx, v)
 			if err != nil {
 				return it, err
@@ -6822,7 +6949,7 @@ func (ec *executionContext) unmarshalInputCreateNestedSetPoolInput(ctx context.C
 		case "poolValues":
 			var err error
 
-			ctx := graphql.WithFieldInputContext(ctx, graphql.NewFieldInputWithField("poolValues"))
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("poolValues"))
 			it.PoolValues, err = ec.unmarshalNMap2ᚕmap(ctx, v)
 			if err != nil {
 				return it, err
@@ -6830,7 +6957,7 @@ func (ec *executionContext) unmarshalInputCreateNestedSetPoolInput(ctx context.C
 		case "parentResourceId":
 			var err error
 
-			ctx := graphql.WithFieldInputContext(ctx, graphql.NewFieldInputWithField("parentResourceId"))
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("parentResourceId"))
 			it.ParentResourceID, err = ec.unmarshalNID2int(ctx, v)
 			if err != nil {
 				return it, err
@@ -6850,7 +6977,7 @@ func (ec *executionContext) unmarshalInputCreateNestedSingletonPoolInput(ctx con
 		case "resourceTypeId":
 			var err error
 
-			ctx := graphql.WithFieldInputContext(ctx, graphql.NewFieldInputWithField("resourceTypeId"))
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("resourceTypeId"))
 			it.ResourceTypeID, err = ec.unmarshalNID2int(ctx, v)
 			if err != nil {
 				return it, err
@@ -6858,7 +6985,7 @@ func (ec *executionContext) unmarshalInputCreateNestedSingletonPoolInput(ctx con
 		case "poolName":
 			var err error
 
-			ctx := graphql.WithFieldInputContext(ctx, graphql.NewFieldInputWithField("poolName"))
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("poolName"))
 			it.PoolName, err = ec.unmarshalNString2string(ctx, v)
 			if err != nil {
 				return it, err
@@ -6866,7 +6993,7 @@ func (ec *executionContext) unmarshalInputCreateNestedSingletonPoolInput(ctx con
 		case "description":
 			var err error
 
-			ctx := graphql.WithFieldInputContext(ctx, graphql.NewFieldInputWithField("description"))
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("description"))
 			it.Description, err = ec.unmarshalOString2ᚖstring(ctx, v)
 			if err != nil {
 				return it, err
@@ -6874,7 +7001,7 @@ func (ec *executionContext) unmarshalInputCreateNestedSingletonPoolInput(ctx con
 		case "poolValues":
 			var err error
 
-			ctx := graphql.WithFieldInputContext(ctx, graphql.NewFieldInputWithField("poolValues"))
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("poolValues"))
 			it.PoolValues, err = ec.unmarshalNMap2ᚕmap(ctx, v)
 			if err != nil {
 				return it, err
@@ -6882,7 +7009,7 @@ func (ec *executionContext) unmarshalInputCreateNestedSingletonPoolInput(ctx con
 		case "parentResourceId":
 			var err error
 
-			ctx := graphql.WithFieldInputContext(ctx, graphql.NewFieldInputWithField("parentResourceId"))
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("parentResourceId"))
 			it.ParentResourceID, err = ec.unmarshalNID2int(ctx, v)
 			if err != nil {
 				return it, err
@@ -6902,7 +7029,7 @@ func (ec *executionContext) unmarshalInputCreateResourceTypeInput(ctx context.Co
 		case "resourceName":
 			var err error
 
-			ctx := graphql.WithFieldInputContext(ctx, graphql.NewFieldInputWithField("resourceName"))
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("resourceName"))
 			it.ResourceName, err = ec.unmarshalNString2string(ctx, v)
 			if err != nil {
 				return it, err
@@ -6910,7 +7037,7 @@ func (ec *executionContext) unmarshalInputCreateResourceTypeInput(ctx context.Co
 		case "resourceProperties":
 			var err error
 
-			ctx := graphql.WithFieldInputContext(ctx, graphql.NewFieldInputWithField("resourceProperties"))
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("resourceProperties"))
 			it.ResourceProperties, err = ec.unmarshalNMap2map(ctx, v)
 			if err != nil {
 				return it, err
@@ -6930,7 +7057,7 @@ func (ec *executionContext) unmarshalInputCreateSetPoolInput(ctx context.Context
 		case "resourceTypeId":
 			var err error
 
-			ctx := graphql.WithFieldInputContext(ctx, graphql.NewFieldInputWithField("resourceTypeId"))
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("resourceTypeId"))
 			it.ResourceTypeID, err = ec.unmarshalNID2int(ctx, v)
 			if err != nil {
 				return it, err
@@ -6938,7 +7065,7 @@ func (ec *executionContext) unmarshalInputCreateSetPoolInput(ctx context.Context
 		case "poolName":
 			var err error
 
-			ctx := graphql.WithFieldInputContext(ctx, graphql.NewFieldInputWithField("poolName"))
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("poolName"))
 			it.PoolName, err = ec.unmarshalNString2string(ctx, v)
 			if err != nil {
 				return it, err
@@ -6946,7 +7073,7 @@ func (ec *executionContext) unmarshalInputCreateSetPoolInput(ctx context.Context
 		case "description":
 			var err error
 
-			ctx := graphql.WithFieldInputContext(ctx, graphql.NewFieldInputWithField("description"))
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("description"))
 			it.Description, err = ec.unmarshalOString2ᚖstring(ctx, v)
 			if err != nil {
 				return it, err
@@ -6954,7 +7081,7 @@ func (ec *executionContext) unmarshalInputCreateSetPoolInput(ctx context.Context
 		case "poolDealocationSafetyPeriod":
 			var err error
 
-			ctx := graphql.WithFieldInputContext(ctx, graphql.NewFieldInputWithField("poolDealocationSafetyPeriod"))
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("poolDealocationSafetyPeriod"))
 			it.PoolDealocationSafetyPeriod, err = ec.unmarshalNInt2int(ctx, v)
 			if err != nil {
 				return it, err
@@ -6962,7 +7089,7 @@ func (ec *executionContext) unmarshalInputCreateSetPoolInput(ctx context.Context
 		case "poolValues":
 			var err error
 
-			ctx := graphql.WithFieldInputContext(ctx, graphql.NewFieldInputWithField("poolValues"))
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("poolValues"))
 			it.PoolValues, err = ec.unmarshalNMap2ᚕmapᚄ(ctx, v)
 			if err != nil {
 				return it, err
@@ -6982,7 +7109,7 @@ func (ec *executionContext) unmarshalInputCreateSingletonPoolInput(ctx context.C
 		case "resourceTypeId":
 			var err error
 
-			ctx := graphql.WithFieldInputContext(ctx, graphql.NewFieldInputWithField("resourceTypeId"))
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("resourceTypeId"))
 			it.ResourceTypeID, err = ec.unmarshalNID2int(ctx, v)
 			if err != nil {
 				return it, err
@@ -6990,7 +7117,7 @@ func (ec *executionContext) unmarshalInputCreateSingletonPoolInput(ctx context.C
 		case "poolName":
 			var err error
 
-			ctx := graphql.WithFieldInputContext(ctx, graphql.NewFieldInputWithField("poolName"))
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("poolName"))
 			it.PoolName, err = ec.unmarshalNString2string(ctx, v)
 			if err != nil {
 				return it, err
@@ -6998,7 +7125,7 @@ func (ec *executionContext) unmarshalInputCreateSingletonPoolInput(ctx context.C
 		case "description":
 			var err error
 
-			ctx := graphql.WithFieldInputContext(ctx, graphql.NewFieldInputWithField("description"))
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("description"))
 			it.Description, err = ec.unmarshalOString2ᚖstring(ctx, v)
 			if err != nil {
 				return it, err
@@ -7006,7 +7133,7 @@ func (ec *executionContext) unmarshalInputCreateSingletonPoolInput(ctx context.C
 		case "poolValues":
 			var err error
 
-			ctx := graphql.WithFieldInputContext(ctx, graphql.NewFieldInputWithField("poolValues"))
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("poolValues"))
 			it.PoolValues, err = ec.unmarshalNMap2ᚕmapᚄ(ctx, v)
 			if err != nil {
 				return it, err
@@ -7026,7 +7153,7 @@ func (ec *executionContext) unmarshalInputCreateTagInput(ctx context.Context, ob
 		case "tagText":
 			var err error
 
-			ctx := graphql.WithFieldInputContext(ctx, graphql.NewFieldInputWithField("tagText"))
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("tagText"))
 			it.TagText, err = ec.unmarshalNString2string(ctx, v)
 			if err != nil {
 				return it, err
@@ -7046,7 +7173,7 @@ func (ec *executionContext) unmarshalInputDeleteAllocationStrategyInput(ctx cont
 		case "allocationStrategyId":
 			var err error
 
-			ctx := graphql.WithFieldInputContext(ctx, graphql.NewFieldInputWithField("allocationStrategyId"))
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("allocationStrategyId"))
 			it.AllocationStrategyID, err = ec.unmarshalNID2int(ctx, v)
 			if err != nil {
 				return it, err
@@ -7066,7 +7193,7 @@ func (ec *executionContext) unmarshalInputDeleteResourcePoolInput(ctx context.Co
 		case "resourcePoolId":
 			var err error
 
-			ctx := graphql.WithFieldInputContext(ctx, graphql.NewFieldInputWithField("resourcePoolId"))
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("resourcePoolId"))
 			it.ResourcePoolID, err = ec.unmarshalNID2int(ctx, v)
 			if err != nil {
 				return it, err
@@ -7086,7 +7213,7 @@ func (ec *executionContext) unmarshalInputDeleteResourceTypeInput(ctx context.Co
 		case "resourceTypeId":
 			var err error
 
-			ctx := graphql.WithFieldInputContext(ctx, graphql.NewFieldInputWithField("resourceTypeId"))
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("resourceTypeId"))
 			it.ResourceTypeID, err = ec.unmarshalNID2int(ctx, v)
 			if err != nil {
 				return it, err
@@ -7106,7 +7233,7 @@ func (ec *executionContext) unmarshalInputDeleteTagInput(ctx context.Context, ob
 		case "tagId":
 			var err error
 
-			ctx := graphql.WithFieldInputContext(ctx, graphql.NewFieldInputWithField("tagId"))
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("tagId"))
 			it.TagID, err = ec.unmarshalNID2int(ctx, v)
 			if err != nil {
 				return it, err
@@ -7126,7 +7253,7 @@ func (ec *executionContext) unmarshalInputResourceInput(ctx context.Context, obj
 		case "Properties":
 			var err error
 
-			ctx := graphql.WithFieldInputContext(ctx, graphql.NewFieldInputWithField("Properties"))
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("Properties"))
 			it.Properties, err = ec.unmarshalNMap2map(ctx, v)
 			if err != nil {
 				return it, err
@@ -7134,7 +7261,7 @@ func (ec *executionContext) unmarshalInputResourceInput(ctx context.Context, obj
 		case "UpdatedAt":
 			var err error
 
-			ctx := graphql.WithFieldInputContext(ctx, graphql.NewFieldInputWithField("UpdatedAt"))
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("UpdatedAt"))
 			it.UpdatedAt, err = ec.unmarshalNString2string(ctx, v)
 			if err != nil {
 				return it, err
@@ -7142,7 +7269,7 @@ func (ec *executionContext) unmarshalInputResourceInput(ctx context.Context, obj
 		case "Status":
 			var err error
 
-			ctx := graphql.WithFieldInputContext(ctx, graphql.NewFieldInputWithField("Status"))
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("Status"))
 			it.Status, err = ec.unmarshalNString2string(ctx, v)
 			if err != nil {
 				return it, err
@@ -7162,7 +7289,7 @@ func (ec *executionContext) unmarshalInputResourcePoolInput(ctx context.Context,
 		case "poolProperties":
 			var err error
 
-			ctx := graphql.WithFieldInputContext(ctx, graphql.NewFieldInputWithField("poolProperties"))
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("poolProperties"))
 			it.PoolProperties, err = ec.unmarshalNMap2map(ctx, v)
 			if err != nil {
 				return it, err
@@ -7170,7 +7297,7 @@ func (ec *executionContext) unmarshalInputResourcePoolInput(ctx context.Context,
 		case "ResourcePoolName":
 			var err error
 
-			ctx := graphql.WithFieldInputContext(ctx, graphql.NewFieldInputWithField("ResourcePoolName"))
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("ResourcePoolName"))
 			it.ResourcePoolName, err = ec.unmarshalNString2string(ctx, v)
 			if err != nil {
 				return it, err
@@ -7190,7 +7317,7 @@ func (ec *executionContext) unmarshalInputTagAnd(ctx context.Context, obj interf
 		case "matchesAll":
 			var err error
 
-			ctx := graphql.WithFieldInputContext(ctx, graphql.NewFieldInputWithField("matchesAll"))
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("matchesAll"))
 			it.MatchesAll, err = ec.unmarshalNString2ᚕstringᚄ(ctx, v)
 			if err != nil {
 				return it, err
@@ -7210,7 +7337,7 @@ func (ec *executionContext) unmarshalInputTagOr(ctx context.Context, obj interfa
 		case "matchesAny":
 			var err error
 
-			ctx := graphql.WithFieldInputContext(ctx, graphql.NewFieldInputWithField("matchesAny"))
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("matchesAny"))
 			it.MatchesAny, err = ec.unmarshalNTagAnd2ᚕᚖgithubᚗcomᚋnetᚑautoᚋresourceManagerᚋgraphᚋgraphqlᚋmodelᚐTagAndᚄ(ctx, v)
 			if err != nil {
 				return it, err
@@ -7230,7 +7357,7 @@ func (ec *executionContext) unmarshalInputTagPoolInput(ctx context.Context, obj 
 		case "tagId":
 			var err error
 
-			ctx := graphql.WithFieldInputContext(ctx, graphql.NewFieldInputWithField("tagId"))
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("tagId"))
 			it.TagID, err = ec.unmarshalNID2int(ctx, v)
 			if err != nil {
 				return it, err
@@ -7238,7 +7365,7 @@ func (ec *executionContext) unmarshalInputTagPoolInput(ctx context.Context, obj 
 		case "poolId":
 			var err error
 
-			ctx := graphql.WithFieldInputContext(ctx, graphql.NewFieldInputWithField("poolId"))
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("poolId"))
 			it.PoolID, err = ec.unmarshalNID2int(ctx, v)
 			if err != nil {
 				return it, err
@@ -7258,7 +7385,7 @@ func (ec *executionContext) unmarshalInputUntagPoolInput(ctx context.Context, ob
 		case "tagId":
 			var err error
 
-			ctx := graphql.WithFieldInputContext(ctx, graphql.NewFieldInputWithField("tagId"))
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("tagId"))
 			it.TagID, err = ec.unmarshalNID2int(ctx, v)
 			if err != nil {
 				return it, err
@@ -7266,7 +7393,7 @@ func (ec *executionContext) unmarshalInputUntagPoolInput(ctx context.Context, ob
 		case "poolId":
 			var err error
 
-			ctx := graphql.WithFieldInputContext(ctx, graphql.NewFieldInputWithField("poolId"))
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("poolId"))
 			it.PoolID, err = ec.unmarshalNID2int(ctx, v)
 			if err != nil {
 				return it, err
@@ -7286,7 +7413,7 @@ func (ec *executionContext) unmarshalInputUpdateResourceTypeNameInput(ctx contex
 		case "resourceTypeId":
 			var err error
 
-			ctx := graphql.WithFieldInputContext(ctx, graphql.NewFieldInputWithField("resourceTypeId"))
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("resourceTypeId"))
 			it.ResourceTypeID, err = ec.unmarshalNID2int(ctx, v)
 			if err != nil {
 				return it, err
@@ -7294,7 +7421,7 @@ func (ec *executionContext) unmarshalInputUpdateResourceTypeNameInput(ctx contex
 		case "resourceName":
 			var err error
 
-			ctx := graphql.WithFieldInputContext(ctx, graphql.NewFieldInputWithField("resourceName"))
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("resourceName"))
 			it.ResourceName, err = ec.unmarshalNString2string(ctx, v)
 			if err != nil {
 				return it, err
@@ -7314,7 +7441,7 @@ func (ec *executionContext) unmarshalInputUpdateTagInput(ctx context.Context, ob
 		case "tagId":
 			var err error
 
-			ctx := graphql.WithFieldInputContext(ctx, graphql.NewFieldInputWithField("tagId"))
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("tagId"))
 			it.TagID, err = ec.unmarshalNID2int(ctx, v)
 			if err != nil {
 				return it, err
@@ -7322,7 +7449,7 @@ func (ec *executionContext) unmarshalInputUpdateTagInput(ctx context.Context, ob
 		case "tagText":
 			var err error
 
-			ctx := graphql.WithFieldInputContext(ctx, graphql.NewFieldInputWithField("tagText"))
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("tagText"))
 			it.TagText, err = ec.unmarshalNString2string(ctx, v)
 			if err != nil {
 				return it, err
@@ -8996,7 +9123,7 @@ func (ec *executionContext) marshalNAllocationStrategy2ᚖgithubᚗcomᚋnetᚑa
 func (ec *executionContext) unmarshalNAllocationStrategyLang2githubᚗcomᚋnetᚑautoᚋresourceManagerᚋentᚋallocationstrategyᚐLang(ctx context.Context, v interface{}) (allocationstrategy.Lang, error) {
 	var res allocationstrategy.Lang
 	err := res.UnmarshalGQL(v)
-	return res, graphql.WrapErrorWithInputPath(ctx, err)
+	return res, graphql.ErrorOnPath(ctx, err)
 }
 
 func (ec *executionContext) marshalNAllocationStrategyLang2githubᚗcomᚋnetᚑautoᚋresourceManagerᚋentᚋallocationstrategyᚐLang(ctx context.Context, sel ast.SelectionSet, v allocationstrategy.Lang) graphql.Marshaler {
@@ -9005,7 +9132,7 @@ func (ec *executionContext) marshalNAllocationStrategyLang2githubᚗcomᚋnetᚑ
 
 func (ec *executionContext) unmarshalNBoolean2bool(ctx context.Context, v interface{}) (bool, error) {
 	res, err := graphql.UnmarshalBoolean(v)
-	return res, graphql.WrapErrorWithInputPath(ctx, err)
+	return res, graphql.ErrorOnPath(ctx, err)
 }
 
 func (ec *executionContext) marshalNBoolean2bool(ctx context.Context, sel ast.SelectionSet, v bool) graphql.Marshaler {
@@ -9048,7 +9175,7 @@ func (ec *executionContext) marshalNCreateAllocationStrategyPayload2ᚖgithubᚗ
 
 func (ec *executionContext) unmarshalNCreateNestedAllocatingPoolInput2githubᚗcomᚋnetᚑautoᚋresourceManagerᚋgraphᚋgraphqlᚋmodelᚐCreateNestedAllocatingPoolInput(ctx context.Context, v interface{}) (model.CreateNestedAllocatingPoolInput, error) {
 	res, err := ec.unmarshalInputCreateNestedAllocatingPoolInput(ctx, v)
-	return res, graphql.WrapErrorWithInputPath(ctx, err)
+	return res, graphql.ErrorOnPath(ctx, err)
 }
 
 func (ec *executionContext) marshalNCreateNestedAllocatingPoolPayload2githubᚗcomᚋnetᚑautoᚋresourceManagerᚋgraphᚋgraphqlᚋmodelᚐCreateNestedAllocatingPoolPayload(ctx context.Context, sel ast.SelectionSet, v model.CreateNestedAllocatingPoolPayload) graphql.Marshaler {
@@ -9067,7 +9194,7 @@ func (ec *executionContext) marshalNCreateNestedAllocatingPoolPayload2ᚖgithub�
 
 func (ec *executionContext) unmarshalNCreateNestedSetPoolInput2githubᚗcomᚋnetᚑautoᚋresourceManagerᚋgraphᚋgraphqlᚋmodelᚐCreateNestedSetPoolInput(ctx context.Context, v interface{}) (model.CreateNestedSetPoolInput, error) {
 	res, err := ec.unmarshalInputCreateNestedSetPoolInput(ctx, v)
-	return res, graphql.WrapErrorWithInputPath(ctx, err)
+	return res, graphql.ErrorOnPath(ctx, err)
 }
 
 func (ec *executionContext) marshalNCreateNestedSetPoolPayload2githubᚗcomᚋnetᚑautoᚋresourceManagerᚋgraphᚋgraphqlᚋmodelᚐCreateNestedSetPoolPayload(ctx context.Context, sel ast.SelectionSet, v model.CreateNestedSetPoolPayload) graphql.Marshaler {
@@ -9086,7 +9213,7 @@ func (ec *executionContext) marshalNCreateNestedSetPoolPayload2ᚖgithubᚗcom�
 
 func (ec *executionContext) unmarshalNCreateNestedSingletonPoolInput2githubᚗcomᚋnetᚑautoᚋresourceManagerᚋgraphᚋgraphqlᚋmodelᚐCreateNestedSingletonPoolInput(ctx context.Context, v interface{}) (model.CreateNestedSingletonPoolInput, error) {
 	res, err := ec.unmarshalInputCreateNestedSingletonPoolInput(ctx, v)
-	return res, graphql.WrapErrorWithInputPath(ctx, err)
+	return res, graphql.ErrorOnPath(ctx, err)
 }
 
 func (ec *executionContext) marshalNCreateNestedSingletonPoolPayload2githubᚗcomᚋnetᚑautoᚋresourceManagerᚋgraphᚋgraphqlᚋmodelᚐCreateNestedSingletonPoolPayload(ctx context.Context, sel ast.SelectionSet, v model.CreateNestedSingletonPoolPayload) graphql.Marshaler {
@@ -9105,7 +9232,7 @@ func (ec *executionContext) marshalNCreateNestedSingletonPoolPayload2ᚖgithub�
 
 func (ec *executionContext) unmarshalNCreateResourceTypeInput2githubᚗcomᚋnetᚑautoᚋresourceManagerᚋgraphᚋgraphqlᚋmodelᚐCreateResourceTypeInput(ctx context.Context, v interface{}) (model.CreateResourceTypeInput, error) {
 	res, err := ec.unmarshalInputCreateResourceTypeInput(ctx, v)
-	return res, graphql.WrapErrorWithInputPath(ctx, err)
+	return res, graphql.ErrorOnPath(ctx, err)
 }
 
 func (ec *executionContext) marshalNCreateResourceTypePayload2githubᚗcomᚋnetᚑautoᚋresourceManagerᚋgraphᚋgraphqlᚋmodelᚐCreateResourceTypePayload(ctx context.Context, sel ast.SelectionSet, v model.CreateResourceTypePayload) graphql.Marshaler {
@@ -9124,7 +9251,7 @@ func (ec *executionContext) marshalNCreateResourceTypePayload2ᚖgithubᚗcomᚋ
 
 func (ec *executionContext) unmarshalNCreateSetPoolInput2githubᚗcomᚋnetᚑautoᚋresourceManagerᚋgraphᚋgraphqlᚋmodelᚐCreateSetPoolInput(ctx context.Context, v interface{}) (model.CreateSetPoolInput, error) {
 	res, err := ec.unmarshalInputCreateSetPoolInput(ctx, v)
-	return res, graphql.WrapErrorWithInputPath(ctx, err)
+	return res, graphql.ErrorOnPath(ctx, err)
 }
 
 func (ec *executionContext) marshalNCreateSetPoolPayload2githubᚗcomᚋnetᚑautoᚋresourceManagerᚋgraphᚋgraphqlᚋmodelᚐCreateSetPoolPayload(ctx context.Context, sel ast.SelectionSet, v model.CreateSetPoolPayload) graphql.Marshaler {
@@ -9157,7 +9284,7 @@ func (ec *executionContext) marshalNCreateSingletonPoolPayload2ᚖgithubᚗcom�
 
 func (ec *executionContext) unmarshalNCreateTagInput2githubᚗcomᚋnetᚑautoᚋresourceManagerᚋgraphᚋgraphqlᚋmodelᚐCreateTagInput(ctx context.Context, v interface{}) (model.CreateTagInput, error) {
 	res, err := ec.unmarshalInputCreateTagInput(ctx, v)
-	return res, graphql.WrapErrorWithInputPath(ctx, err)
+	return res, graphql.ErrorOnPath(ctx, err)
 }
 
 func (ec *executionContext) marshalNCreateTagPayload2githubᚗcomᚋnetᚑautoᚋresourceManagerᚋgraphᚋgraphqlᚋmodelᚐCreateTagPayload(ctx context.Context, sel ast.SelectionSet, v model.CreateTagPayload) graphql.Marshaler {
@@ -9190,7 +9317,7 @@ func (ec *executionContext) marshalNDeleteAllocationStrategyPayload2ᚖgithubᚗ
 
 func (ec *executionContext) unmarshalNDeleteResourcePoolInput2githubᚗcomᚋnetᚑautoᚋresourceManagerᚋgraphᚋgraphqlᚋmodelᚐDeleteResourcePoolInput(ctx context.Context, v interface{}) (model.DeleteResourcePoolInput, error) {
 	res, err := ec.unmarshalInputDeleteResourcePoolInput(ctx, v)
-	return res, graphql.WrapErrorWithInputPath(ctx, err)
+	return res, graphql.ErrorOnPath(ctx, err)
 }
 
 func (ec *executionContext) marshalNDeleteResourcePoolPayload2githubᚗcomᚋnetᚑautoᚋresourceManagerᚋgraphᚋgraphqlᚋmodelᚐDeleteResourcePoolPayload(ctx context.Context, sel ast.SelectionSet, v model.DeleteResourcePoolPayload) graphql.Marshaler {
@@ -9209,7 +9336,7 @@ func (ec *executionContext) marshalNDeleteResourcePoolPayload2ᚖgithubᚗcomᚋ
 
 func (ec *executionContext) unmarshalNDeleteResourceTypeInput2githubᚗcomᚋnetᚑautoᚋresourceManagerᚋgraphᚋgraphqlᚋmodelᚐDeleteResourceTypeInput(ctx context.Context, v interface{}) (model.DeleteResourceTypeInput, error) {
 	res, err := ec.unmarshalInputDeleteResourceTypeInput(ctx, v)
-	return res, graphql.WrapErrorWithInputPath(ctx, err)
+	return res, graphql.ErrorOnPath(ctx, err)
 }
 
 func (ec *executionContext) marshalNDeleteResourceTypePayload2githubᚗcomᚋnetᚑautoᚋresourceManagerᚋgraphᚋgraphqlᚋmodelᚐDeleteResourceTypePayload(ctx context.Context, sel ast.SelectionSet, v model.DeleteResourceTypePayload) graphql.Marshaler {
@@ -9228,7 +9355,7 @@ func (ec *executionContext) marshalNDeleteResourceTypePayload2ᚖgithubᚗcomᚋ
 
 func (ec *executionContext) unmarshalNDeleteTagInput2githubᚗcomᚋnetᚑautoᚋresourceManagerᚋgraphᚋgraphqlᚋmodelᚐDeleteTagInput(ctx context.Context, v interface{}) (model.DeleteTagInput, error) {
 	res, err := ec.unmarshalInputDeleteTagInput(ctx, v)
-	return res, graphql.WrapErrorWithInputPath(ctx, err)
+	return res, graphql.ErrorOnPath(ctx, err)
 }
 
 func (ec *executionContext) marshalNDeleteTagPayload2githubᚗcomᚋnetᚑautoᚋresourceManagerᚋgraphᚋgraphqlᚋmodelᚐDeleteTagPayload(ctx context.Context, sel ast.SelectionSet, v model.DeleteTagPayload) graphql.Marshaler {
@@ -9247,7 +9374,7 @@ func (ec *executionContext) marshalNDeleteTagPayload2ᚖgithubᚗcomᚋnetᚑaut
 
 func (ec *executionContext) unmarshalNFloat2float64(ctx context.Context, v interface{}) (float64, error) {
 	res, err := graphql.UnmarshalFloat(v)
-	return res, graphql.WrapErrorWithInputPath(ctx, err)
+	return res, graphql.ErrorOnPath(ctx, err)
 }
 
 func (ec *executionContext) marshalNFloat2float64(ctx context.Context, sel ast.SelectionSet, v float64) graphql.Marshaler {
@@ -9262,7 +9389,7 @@ func (ec *executionContext) marshalNFloat2float64(ctx context.Context, sel ast.S
 
 func (ec *executionContext) unmarshalNFloat2ᚖfloat64(ctx context.Context, v interface{}) (*float64, error) {
 	res, err := graphql.UnmarshalFloat(v)
-	return &res, graphql.WrapErrorWithInputPath(ctx, err)
+	return &res, graphql.ErrorOnPath(ctx, err)
 }
 
 func (ec *executionContext) marshalNFloat2ᚖfloat64(ctx context.Context, sel ast.SelectionSet, v *float64) graphql.Marshaler {
@@ -9283,7 +9410,7 @@ func (ec *executionContext) marshalNFloat2ᚖfloat64(ctx context.Context, sel as
 
 func (ec *executionContext) unmarshalNID2int(ctx context.Context, v interface{}) (int, error) {
 	res, err := graphql.UnmarshalIntID(v)
-	return res, graphql.WrapErrorWithInputPath(ctx, err)
+	return res, graphql.ErrorOnPath(ctx, err)
 }
 
 func (ec *executionContext) marshalNID2int(ctx context.Context, sel ast.SelectionSet, v int) graphql.Marshaler {
@@ -9298,7 +9425,7 @@ func (ec *executionContext) marshalNID2int(ctx context.Context, sel ast.Selectio
 
 func (ec *executionContext) unmarshalNInt2int(ctx context.Context, v interface{}) (int, error) {
 	res, err := graphql.UnmarshalInt(v)
-	return res, graphql.WrapErrorWithInputPath(ctx, err)
+	return res, graphql.ErrorOnPath(ctx, err)
 }
 
 func (ec *executionContext) marshalNInt2int(ctx context.Context, sel ast.SelectionSet, v int) graphql.Marshaler {
@@ -9313,7 +9440,7 @@ func (ec *executionContext) marshalNInt2int(ctx context.Context, sel ast.Selecti
 
 func (ec *executionContext) unmarshalNInt2ᚖint(ctx context.Context, v interface{}) (*int, error) {
 	res, err := graphql.UnmarshalInt(v)
-	return &res, graphql.WrapErrorWithInputPath(ctx, err)
+	return &res, graphql.ErrorOnPath(ctx, err)
 }
 
 func (ec *executionContext) marshalNInt2ᚖint(ctx context.Context, sel ast.SelectionSet, v *int) graphql.Marshaler {
@@ -9334,7 +9461,7 @@ func (ec *executionContext) marshalNInt2ᚖint(ctx context.Context, sel ast.Sele
 
 func (ec *executionContext) unmarshalNMap2map(ctx context.Context, v interface{}) (map[string]interface{}, error) {
 	res, err := graphql.UnmarshalMap(v)
-	return res, graphql.WrapErrorWithInputPath(ctx, err)
+	return res, graphql.ErrorOnPath(ctx, err)
 }
 
 func (ec *executionContext) marshalNMap2map(ctx context.Context, sel ast.SelectionSet, v map[string]interface{}) graphql.Marshaler {
@@ -9365,10 +9492,10 @@ func (ec *executionContext) unmarshalNMap2ᚕmap(ctx context.Context, v interfac
 	var err error
 	res := make([]map[string]interface{}, len(vSlice))
 	for i := range vSlice {
-		ctx := graphql.WithFieldInputContext(ctx, graphql.NewFieldInputWithIndex(i))
+		ctx := graphql.WithPathContext(ctx, graphql.NewPathWithIndex(i))
 		res[i], err = ec.unmarshalOMap2map(ctx, vSlice[i])
 		if err != nil {
-			return nil, graphql.WrapErrorWithInputPath(ctx, err)
+			return nil, err
 		}
 	}
 	return res, nil
@@ -9395,10 +9522,10 @@ func (ec *executionContext) unmarshalNMap2ᚕmapᚄ(ctx context.Context, v inter
 	var err error
 	res := make([]map[string]interface{}, len(vSlice))
 	for i := range vSlice {
-		ctx := graphql.WithFieldInputContext(ctx, graphql.NewFieldInputWithIndex(i))
+		ctx := graphql.WithPathContext(ctx, graphql.NewPathWithIndex(i))
 		res[i], err = ec.unmarshalNMap2map(ctx, vSlice[i])
 		if err != nil {
-			return nil, graphql.WrapErrorWithInputPath(ctx, err)
+			return nil, err
 		}
 	}
 	return res, nil
@@ -9448,7 +9575,7 @@ func (ec *executionContext) marshalNPoolCapacityPayload2ᚖgithubᚗcomᚋnetᚑ
 func (ec *executionContext) unmarshalNPoolType2githubᚗcomᚋnetᚑautoᚋresourceManagerᚋentᚋresourcepoolᚐPoolType(ctx context.Context, v interface{}) (resourcepool.PoolType, error) {
 	var res resourcepool.PoolType
 	err := res.UnmarshalGQL(v)
-	return res, graphql.WrapErrorWithInputPath(ctx, err)
+	return res, graphql.ErrorOnPath(ctx, err)
 }
 
 func (ec *executionContext) marshalNPoolType2githubᚗcomᚋnetᚑautoᚋresourceManagerᚋentᚋresourcepoolᚐPoolType(ctx context.Context, sel ast.SelectionSet, v resourcepool.PoolType) graphql.Marshaler {
@@ -9467,10 +9594,10 @@ func (ec *executionContext) unmarshalNPoolType2ᚕgithubᚗcomᚋnetᚑautoᚋre
 	var err error
 	res := make([]resourcepool.PoolType, len(vSlice))
 	for i := range vSlice {
-		ctx := graphql.WithFieldInputContext(ctx, graphql.NewFieldInputWithIndex(i))
+		ctx := graphql.WithPathContext(ctx, graphql.NewPathWithIndex(i))
 		res[i], err = ec.unmarshalNPoolType2githubᚗcomᚋnetᚑautoᚋresourceManagerᚋentᚋresourcepoolᚐPoolType(ctx, vSlice[i])
 		if err != nil {
-			return nil, graphql.WrapErrorWithInputPath(ctx, err)
+			return nil, err
 		}
 	}
 	return res, nil
@@ -9660,10 +9787,10 @@ func (ec *executionContext) unmarshalNResourceInput2ᚕᚖgithubᚗcomᚋnetᚑa
 	var err error
 	res := make([]*model.ResourceInput, len(vSlice))
 	for i := range vSlice {
-		ctx := graphql.WithFieldInputContext(ctx, graphql.NewFieldInputWithIndex(i))
+		ctx := graphql.WithPathContext(ctx, graphql.NewPathWithIndex(i))
 		res[i], err = ec.unmarshalNResourceInput2ᚖgithubᚗcomᚋnetᚑautoᚋresourceManagerᚋgraphᚋgraphqlᚋmodelᚐResourceInput(ctx, vSlice[i])
 		if err != nil {
-			return nil, graphql.WrapErrorWithInputPath(ctx, err)
+			return nil, err
 		}
 	}
 	return res, nil
@@ -9671,7 +9798,7 @@ func (ec *executionContext) unmarshalNResourceInput2ᚕᚖgithubᚗcomᚋnetᚑa
 
 func (ec *executionContext) unmarshalNResourceInput2ᚖgithubᚗcomᚋnetᚑautoᚋresourceManagerᚋgraphᚋgraphqlᚋmodelᚐResourceInput(ctx context.Context, v interface{}) (*model.ResourceInput, error) {
 	res, err := ec.unmarshalInputResourceInput(ctx, v)
-	return &res, graphql.WrapErrorWithInputPath(ctx, err)
+	return &res, graphql.ErrorOnPath(ctx, err)
 }
 
 func (ec *executionContext) marshalNResourcePool2githubᚗcomᚋnetᚑautoᚋresourceManagerᚋentᚐResourcePool(ctx context.Context, sel ast.SelectionSet, v ent.ResourcePool) graphql.Marshaler {
@@ -9727,7 +9854,7 @@ func (ec *executionContext) marshalNResourcePool2ᚖgithubᚗcomᚋnetᚑautoᚋ
 
 func (ec *executionContext) unmarshalNResourcePoolInput2githubᚗcomᚋnetᚑautoᚋresourceManagerᚋgraphᚋgraphqlᚋmodelᚐResourcePoolInput(ctx context.Context, v interface{}) (model.ResourcePoolInput, error) {
 	res, err := ec.unmarshalInputResourcePoolInput(ctx, v)
-	return res, graphql.WrapErrorWithInputPath(ctx, err)
+	return res, graphql.ErrorOnPath(ctx, err)
 }
 
 func (ec *executionContext) marshalNResourceType2githubᚗcomᚋnetᚑautoᚋresourceManagerᚋentᚐResourceType(ctx context.Context, sel ast.SelectionSet, v ent.ResourceType) graphql.Marshaler {
@@ -9783,7 +9910,7 @@ func (ec *executionContext) marshalNResourceType2ᚖgithubᚗcomᚋnetᚑautoᚋ
 
 func (ec *executionContext) unmarshalNString2string(ctx context.Context, v interface{}) (string, error) {
 	res, err := graphql.UnmarshalString(v)
-	return res, graphql.WrapErrorWithInputPath(ctx, err)
+	return res, graphql.ErrorOnPath(ctx, err)
 }
 
 func (ec *executionContext) marshalNString2string(ctx context.Context, sel ast.SelectionSet, v string) graphql.Marshaler {
@@ -9808,10 +9935,10 @@ func (ec *executionContext) unmarshalNString2ᚕstringᚄ(ctx context.Context, v
 	var err error
 	res := make([]string, len(vSlice))
 	for i := range vSlice {
-		ctx := graphql.WithFieldInputContext(ctx, graphql.NewFieldInputWithIndex(i))
+		ctx := graphql.WithPathContext(ctx, graphql.NewPathWithIndex(i))
 		res[i], err = ec.unmarshalNString2string(ctx, vSlice[i])
 		if err != nil {
-			return nil, graphql.WrapErrorWithInputPath(ctx, err)
+			return nil, err
 		}
 	}
 	return res, nil
@@ -9828,7 +9955,7 @@ func (ec *executionContext) marshalNString2ᚕstringᚄ(ctx context.Context, sel
 
 func (ec *executionContext) unmarshalNString2ᚖstring(ctx context.Context, v interface{}) (*string, error) {
 	res, err := graphql.UnmarshalString(v)
-	return &res, graphql.WrapErrorWithInputPath(ctx, err)
+	return &res, graphql.ErrorOnPath(ctx, err)
 }
 
 func (ec *executionContext) marshalNString2ᚖstring(ctx context.Context, sel ast.SelectionSet, v *string) graphql.Marshaler {
@@ -9906,10 +10033,10 @@ func (ec *executionContext) unmarshalNTagAnd2ᚕᚖgithubᚗcomᚋnetᚑautoᚋr
 	var err error
 	res := make([]*model.TagAnd, len(vSlice))
 	for i := range vSlice {
-		ctx := graphql.WithFieldInputContext(ctx, graphql.NewFieldInputWithIndex(i))
+		ctx := graphql.WithPathContext(ctx, graphql.NewPathWithIndex(i))
 		res[i], err = ec.unmarshalNTagAnd2ᚖgithubᚗcomᚋnetᚑautoᚋresourceManagerᚋgraphᚋgraphqlᚋmodelᚐTagAnd(ctx, vSlice[i])
 		if err != nil {
-			return nil, graphql.WrapErrorWithInputPath(ctx, err)
+			return nil, err
 		}
 	}
 	return res, nil
@@ -9917,12 +10044,12 @@ func (ec *executionContext) unmarshalNTagAnd2ᚕᚖgithubᚗcomᚋnetᚑautoᚋr
 
 func (ec *executionContext) unmarshalNTagAnd2ᚖgithubᚗcomᚋnetᚑautoᚋresourceManagerᚋgraphᚋgraphqlᚋmodelᚐTagAnd(ctx context.Context, v interface{}) (*model.TagAnd, error) {
 	res, err := ec.unmarshalInputTagAnd(ctx, v)
-	return &res, graphql.WrapErrorWithInputPath(ctx, err)
+	return &res, graphql.ErrorOnPath(ctx, err)
 }
 
 func (ec *executionContext) unmarshalNTagPoolInput2githubᚗcomᚋnetᚑautoᚋresourceManagerᚋgraphᚋgraphqlᚋmodelᚐTagPoolInput(ctx context.Context, v interface{}) (model.TagPoolInput, error) {
 	res, err := ec.unmarshalInputTagPoolInput(ctx, v)
-	return res, graphql.WrapErrorWithInputPath(ctx, err)
+	return res, graphql.ErrorOnPath(ctx, err)
 }
 
 func (ec *executionContext) marshalNTagPoolPayload2githubᚗcomᚋnetᚑautoᚋresourceManagerᚋgraphᚋgraphqlᚋmodelᚐTagPoolPayload(ctx context.Context, sel ast.SelectionSet, v model.TagPoolPayload) graphql.Marshaler {
@@ -9941,7 +10068,7 @@ func (ec *executionContext) marshalNTagPoolPayload2ᚖgithubᚗcomᚋnetᚑauto�
 
 func (ec *executionContext) unmarshalNUntagPoolInput2githubᚗcomᚋnetᚑautoᚋresourceManagerᚋgraphᚋgraphqlᚋmodelᚐUntagPoolInput(ctx context.Context, v interface{}) (model.UntagPoolInput, error) {
 	res, err := ec.unmarshalInputUntagPoolInput(ctx, v)
-	return res, graphql.WrapErrorWithInputPath(ctx, err)
+	return res, graphql.ErrorOnPath(ctx, err)
 }
 
 func (ec *executionContext) marshalNUntagPoolPayload2githubᚗcomᚋnetᚑautoᚋresourceManagerᚋgraphᚋgraphqlᚋmodelᚐUntagPoolPayload(ctx context.Context, sel ast.SelectionSet, v model.UntagPoolPayload) graphql.Marshaler {
@@ -9960,7 +10087,7 @@ func (ec *executionContext) marshalNUntagPoolPayload2ᚖgithubᚗcomᚋnetᚑaut
 
 func (ec *executionContext) unmarshalNUpdateResourceTypeNameInput2githubᚗcomᚋnetᚑautoᚋresourceManagerᚋgraphᚋgraphqlᚋmodelᚐUpdateResourceTypeNameInput(ctx context.Context, v interface{}) (model.UpdateResourceTypeNameInput, error) {
 	res, err := ec.unmarshalInputUpdateResourceTypeNameInput(ctx, v)
-	return res, graphql.WrapErrorWithInputPath(ctx, err)
+	return res, graphql.ErrorOnPath(ctx, err)
 }
 
 func (ec *executionContext) marshalNUpdateResourceTypeNamePayload2githubᚗcomᚋnetᚑautoᚋresourceManagerᚋgraphᚋgraphqlᚋmodelᚐUpdateResourceTypeNamePayload(ctx context.Context, sel ast.SelectionSet, v model.UpdateResourceTypeNamePayload) graphql.Marshaler {
@@ -9979,7 +10106,7 @@ func (ec *executionContext) marshalNUpdateResourceTypeNamePayload2ᚖgithubᚗco
 
 func (ec *executionContext) unmarshalNUpdateTagInput2githubᚗcomᚋnetᚑautoᚋresourceManagerᚋgraphᚋgraphqlᚋmodelᚐUpdateTagInput(ctx context.Context, v interface{}) (model.UpdateTagInput, error) {
 	res, err := ec.unmarshalInputUpdateTagInput(ctx, v)
-	return res, graphql.WrapErrorWithInputPath(ctx, err)
+	return res, graphql.ErrorOnPath(ctx, err)
 }
 
 func (ec *executionContext) marshalNUpdateTagPayload2githubᚗcomᚋnetᚑautoᚋresourceManagerᚋgraphᚋgraphqlᚋmodelᚐUpdateTagPayload(ctx context.Context, sel ast.SelectionSet, v model.UpdateTagPayload) graphql.Marshaler {
@@ -10039,7 +10166,7 @@ func (ec *executionContext) marshalN__Directive2ᚕgithubᚗcomᚋ99designsᚋgq
 
 func (ec *executionContext) unmarshalN__DirectiveLocation2string(ctx context.Context, v interface{}) (string, error) {
 	res, err := graphql.UnmarshalString(v)
-	return res, graphql.WrapErrorWithInputPath(ctx, err)
+	return res, graphql.ErrorOnPath(ctx, err)
 }
 
 func (ec *executionContext) marshalN__DirectiveLocation2string(ctx context.Context, sel ast.SelectionSet, v string) graphql.Marshaler {
@@ -10064,10 +10191,10 @@ func (ec *executionContext) unmarshalN__DirectiveLocation2ᚕstringᚄ(ctx conte
 	var err error
 	res := make([]string, len(vSlice))
 	for i := range vSlice {
-		ctx := graphql.WithFieldInputContext(ctx, graphql.NewFieldInputWithIndex(i))
+		ctx := graphql.WithPathContext(ctx, graphql.NewPathWithIndex(i))
 		res[i], err = ec.unmarshalN__DirectiveLocation2string(ctx, vSlice[i])
 		if err != nil {
-			return nil, graphql.WrapErrorWithInputPath(ctx, err)
+			return nil, err
 		}
 	}
 	return res, nil
@@ -10212,7 +10339,7 @@ func (ec *executionContext) marshalN__Type2ᚖgithubᚗcomᚋ99designsᚋgqlgen�
 
 func (ec *executionContext) unmarshalN__TypeKind2string(ctx context.Context, v interface{}) (string, error) {
 	res, err := graphql.UnmarshalString(v)
-	return res, graphql.WrapErrorWithInputPath(ctx, err)
+	return res, graphql.ErrorOnPath(ctx, err)
 }
 
 func (ec *executionContext) marshalN__TypeKind2string(ctx context.Context, sel ast.SelectionSet, v string) graphql.Marshaler {
@@ -10234,7 +10361,7 @@ func (ec *executionContext) marshalOAllocationStrategy2ᚖgithubᚗcomᚋnetᚑa
 
 func (ec *executionContext) unmarshalOBoolean2bool(ctx context.Context, v interface{}) (bool, error) {
 	res, err := graphql.UnmarshalBoolean(v)
-	return res, graphql.WrapErrorWithInputPath(ctx, err)
+	return res, graphql.ErrorOnPath(ctx, err)
 }
 
 func (ec *executionContext) marshalOBoolean2bool(ctx context.Context, sel ast.SelectionSet, v bool) graphql.Marshaler {
@@ -10246,7 +10373,7 @@ func (ec *executionContext) unmarshalOBoolean2ᚖbool(ctx context.Context, v int
 		return nil, nil
 	}
 	res, err := graphql.UnmarshalBoolean(v)
-	return &res, graphql.WrapErrorWithInputPath(ctx, err)
+	return &res, graphql.ErrorOnPath(ctx, err)
 }
 
 func (ec *executionContext) marshalOBoolean2ᚖbool(ctx context.Context, sel ast.SelectionSet, v *bool) graphql.Marshaler {
@@ -10261,7 +10388,7 @@ func (ec *executionContext) unmarshalOCreateAllocatingPoolInput2ᚖgithubᚗcom�
 		return nil, nil
 	}
 	res, err := ec.unmarshalInputCreateAllocatingPoolInput(ctx, v)
-	return &res, graphql.WrapErrorWithInputPath(ctx, err)
+	return &res, graphql.ErrorOnPath(ctx, err)
 }
 
 func (ec *executionContext) unmarshalOCreateAllocationStrategyInput2ᚖgithubᚗcomᚋnetᚑautoᚋresourceManagerᚋgraphᚋgraphqlᚋmodelᚐCreateAllocationStrategyInput(ctx context.Context, v interface{}) (*model.CreateAllocationStrategyInput, error) {
@@ -10269,7 +10396,7 @@ func (ec *executionContext) unmarshalOCreateAllocationStrategyInput2ᚖgithubᚗ
 		return nil, nil
 	}
 	res, err := ec.unmarshalInputCreateAllocationStrategyInput(ctx, v)
-	return &res, graphql.WrapErrorWithInputPath(ctx, err)
+	return &res, graphql.ErrorOnPath(ctx, err)
 }
 
 func (ec *executionContext) unmarshalOCreateSingletonPoolInput2ᚖgithubᚗcomᚋnetᚑautoᚋresourceManagerᚋgraphᚋgraphqlᚋmodelᚐCreateSingletonPoolInput(ctx context.Context, v interface{}) (*model.CreateSingletonPoolInput, error) {
@@ -10277,7 +10404,7 @@ func (ec *executionContext) unmarshalOCreateSingletonPoolInput2ᚖgithubᚗcom�
 		return nil, nil
 	}
 	res, err := ec.unmarshalInputCreateSingletonPoolInput(ctx, v)
-	return &res, graphql.WrapErrorWithInputPath(ctx, err)
+	return &res, graphql.ErrorOnPath(ctx, err)
 }
 
 func (ec *executionContext) unmarshalODeleteAllocationStrategyInput2ᚖgithubᚗcomᚋnetᚑautoᚋresourceManagerᚋgraphᚋgraphqlᚋmodelᚐDeleteAllocationStrategyInput(ctx context.Context, v interface{}) (*model.DeleteAllocationStrategyInput, error) {
@@ -10285,7 +10412,7 @@ func (ec *executionContext) unmarshalODeleteAllocationStrategyInput2ᚖgithubᚗ
 		return nil, nil
 	}
 	res, err := ec.unmarshalInputDeleteAllocationStrategyInput(ctx, v)
-	return &res, graphql.WrapErrorWithInputPath(ctx, err)
+	return &res, graphql.ErrorOnPath(ctx, err)
 }
 
 func (ec *executionContext) unmarshalOID2ᚖint(ctx context.Context, v interface{}) (*int, error) {
@@ -10293,7 +10420,7 @@ func (ec *executionContext) unmarshalOID2ᚖint(ctx context.Context, v interface
 		return nil, nil
 	}
 	res, err := graphql.UnmarshalIntID(v)
-	return &res, graphql.WrapErrorWithInputPath(ctx, err)
+	return &res, graphql.ErrorOnPath(ctx, err)
 }
 
 func (ec *executionContext) marshalOID2ᚖint(ctx context.Context, sel ast.SelectionSet, v *int) graphql.Marshaler {
@@ -10308,7 +10435,7 @@ func (ec *executionContext) unmarshalOInt2ᚖint(ctx context.Context, v interfac
 		return nil, nil
 	}
 	res, err := graphql.UnmarshalInt(v)
-	return &res, graphql.WrapErrorWithInputPath(ctx, err)
+	return &res, graphql.ErrorOnPath(ctx, err)
 }
 
 func (ec *executionContext) marshalOInt2ᚖint(ctx context.Context, sel ast.SelectionSet, v *int) graphql.Marshaler {
@@ -10323,7 +10450,7 @@ func (ec *executionContext) unmarshalOMap2map(ctx context.Context, v interface{}
 		return nil, nil
 	}
 	res, err := graphql.UnmarshalMap(v)
-	return res, graphql.WrapErrorWithInputPath(ctx, err)
+	return res, graphql.ErrorOnPath(ctx, err)
 }
 
 func (ec *executionContext) marshalOMap2map(ctx context.Context, sel ast.SelectionSet, v map[string]interface{}) graphql.Marshaler {
@@ -10403,7 +10530,7 @@ func (ec *executionContext) marshalOResourcePool2ᚖgithubᚗcomᚋnetᚑautoᚋ
 
 func (ec *executionContext) unmarshalOString2string(ctx context.Context, v interface{}) (string, error) {
 	res, err := graphql.UnmarshalString(v)
-	return res, graphql.WrapErrorWithInputPath(ctx, err)
+	return res, graphql.ErrorOnPath(ctx, err)
 }
 
 func (ec *executionContext) marshalOString2string(ctx context.Context, sel ast.SelectionSet, v string) graphql.Marshaler {
@@ -10425,10 +10552,10 @@ func (ec *executionContext) unmarshalOString2ᚕstringᚄ(ctx context.Context, v
 	var err error
 	res := make([]string, len(vSlice))
 	for i := range vSlice {
-		ctx := graphql.WithFieldInputContext(ctx, graphql.NewFieldInputWithIndex(i))
+		ctx := graphql.WithPathContext(ctx, graphql.NewPathWithIndex(i))
 		res[i], err = ec.unmarshalNString2string(ctx, vSlice[i])
 		if err != nil {
-			return nil, graphql.WrapErrorWithInputPath(ctx, err)
+			return nil, err
 		}
 	}
 	return res, nil
@@ -10451,7 +10578,7 @@ func (ec *executionContext) unmarshalOString2ᚖstring(ctx context.Context, v in
 		return nil, nil
 	}
 	res, err := graphql.UnmarshalString(v)
-	return &res, graphql.WrapErrorWithInputPath(ctx, err)
+	return &res, graphql.ErrorOnPath(ctx, err)
 }
 
 func (ec *executionContext) marshalOString2ᚖstring(ctx context.Context, sel ast.SelectionSet, v *string) graphql.Marshaler {
@@ -10473,7 +10600,7 @@ func (ec *executionContext) unmarshalOTagOr2ᚖgithubᚗcomᚋnetᚑautoᚋresou
 		return nil, nil
 	}
 	res, err := ec.unmarshalInputTagOr(ctx, v)
-	return &res, graphql.WrapErrorWithInputPath(ctx, err)
+	return &res, graphql.ErrorOnPath(ctx, err)
 }
 
 func (ec *executionContext) marshalO__EnumValue2ᚕgithubᚗcomᚋ99designsᚋgqlgenᚋgraphqlᚋintrospectionᚐEnumValueᚄ(ctx context.Context, sel ast.SelectionSet, v []introspection.EnumValue) graphql.Marshaler {

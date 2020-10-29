@@ -7,14 +7,15 @@ package main
 
 import (
 	"context"
-	"fmt"
+	"contrib.go.opencensus.io/integrations/ocsql"
 	"github.com/facebookincubator/symphony/pkg/log"
-	"github.com/facebookincubator/symphony/pkg/server"
-	viewer2 "github.com/facebookincubator/symphony/pkg/viewer"
+	"github.com/facebookincubator/symphony/pkg/server/metrics"
+	"github.com/facebookincubator/symphony/pkg/server/xserver"
+	"github.com/facebookincubator/symphony/pkg/telemetry"
 	"github.com/net-auto/resourceManager/ent"
 	"github.com/net-auto/resourceManager/graph/graphhttp"
-	"github.com/net-auto/resourceManager/psql"
 	"github.com/net-auto/resourceManager/viewer"
+	"go.opencensus.io/stats/view"
 	"gocloud.dev/server/health"
 )
 
@@ -30,19 +31,18 @@ func newApplication(ctx context.Context, flags *cliFlags) (*application, func(),
 	if err != nil {
 		return nil, nil, err
 	}
-	psqlConfig := flags.PsqlConfig
-	viewerConfig := flags.TenancyConfig
-	psqlTenancy, err := newPsqlTenancy(psqlConfig, viewerConfig, logger)
+	zapLogger := log.ProvideZapLogger(logger)
+	psqlTenancy, err := newPsqlTenancy(ctx, flags)
 	if err != nil {
 		cleanup()
 		return nil, nil, err
 	}
-	tenancy, err := newTenancy(psqlTenancy)
+	tenancy, err := newTenancy(ctx, psqlTenancy)
 	if err != nil {
 		cleanup()
 		return nil, nil, err
 	}
-	telemetryConfig := &flags.TelemetryConfig
+	telemetryConfig := flags.TelemetryConfig
 	v := newHealthChecks(psqlTenancy)
 	graphhttpConfig := graphhttp.Config{
 		Tenancy:      tenancy,
@@ -55,7 +55,28 @@ func newApplication(ctx context.Context, flags *cliFlags) (*application, func(),
 		cleanup()
 		return nil, nil, err
 	}
-	mainApplication := newApp(logger, server, flags)
+	string2 := flags.ListenAddress
+	viewExporter, err := telemetry.ProvideViewExporter(telemetryConfig)
+	if err != nil {
+		cleanup2()
+		cleanup()
+		return nil, nil, err
+	}
+	v2 := provideViews()
+	metricsConfig := metrics.Config{
+		Log:      zapLogger,
+		Exporter: viewExporter,
+		Views:    v2,
+	}
+	metricsMetrics := metrics.New(metricsConfig)
+	addr := flags.MetricsAddress
+	mainApplication := &application{
+		Logger:      zapLogger,
+		server:      server,
+		addr:        string2,
+		metrics:     metricsMetrics,
+		metricsAddr: addr,
+	}
 	return mainApplication, func() {
 		cleanup2()
 		cleanup()
@@ -64,16 +85,8 @@ func newApplication(ctx context.Context, flags *cliFlags) (*application, func(),
 
 // wire.go:
 
-func newApp(logger log.Logger, httpServer *server.Server, flags *cliFlags) *application {
-	var app application
-	app.Logger = logger.Background()
-	app.http.Server = httpServer
-	app.http.addr = flags.HTTPAddr
-	return &app
-}
-
-func newTenancy(tenancy *viewer.PsqlTenancy) (viewer.Tenancy, error) {
-	initFunc := func(*ent.Client) {
+func newTenancy(ctx context.Context, tenancy *viewer.PsqlTenancy) (viewer.Tenancy, error) {
+	initFunc := func(client *ent.Client) {
 
 	}
 	return viewer.NewCacheTenancy(tenancy, initFunc), nil
@@ -83,12 +96,12 @@ func newHealthChecks(tenancy *viewer.PsqlTenancy) []health.Checker {
 	return []health.Checker{tenancy}
 }
 
-func newPsqlTenancy(config psql.Config, tenancyConfig viewer2.Config, logger log.Logger) (*viewer.PsqlTenancy, error) {
-	tenancy, err := viewer.NewPsqlTenancy(config.String(), tenancyConfig.TenantMaxConn)
-	if err != nil {
-		return nil, fmt.Errorf("creating psql tenancy: %w", err)
-	}
-	tenancy.SetLogger(logger)
-	psql.SetLogger(&config, logger)
-	return tenancy, nil
+func newPsqlTenancy(ctx context.Context, flags *cliFlags) (*viewer.PsqlTenancy, error) {
+	return viewer.NewPsqlTenancy(ctx, flags.DatabaseURL, flags.TenancyConfig.TenantMaxConn)
+}
+
+func provideViews() []*view.View {
+	views := xserver.DefaultViews()
+	views = append(views, ocsql.DefaultViews...)
+	return views
 }

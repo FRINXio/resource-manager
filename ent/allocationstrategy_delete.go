@@ -16,14 +16,13 @@ import (
 // AllocationStrategyDelete is the builder for deleting a AllocationStrategy entity.
 type AllocationStrategyDelete struct {
 	config
-	hooks      []Hook
-	mutation   *AllocationStrategyMutation
-	predicates []predicate.AllocationStrategy
+	hooks    []Hook
+	mutation *AllocationStrategyMutation
 }
 
 // Where adds a new predicate to the delete builder.
 func (asd *AllocationStrategyDelete) Where(ps ...predicate.AllocationStrategy) *AllocationStrategyDelete {
-	asd.predicates = append(asd.predicates, ps...)
+	asd.mutation.predicates = append(asd.mutation.predicates, ps...)
 	return asd
 }
 
@@ -75,7 +74,7 @@ func (asd *AllocationStrategyDelete) sqlExec(ctx context.Context) (int, error) {
 			},
 		},
 	}
-	if ps := asd.predicates; len(ps) > 0 {
+	if ps := asd.mutation.predicates; len(ps) > 0 {
 		_spec.Predicate = func(selector *sql.Selector) {
 			for i := range ps {
 				ps[i](selector)

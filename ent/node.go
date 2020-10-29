@@ -9,9 +9,10 @@ import (
 	"sync"
 	"sync/atomic"
 
-	"github.com/99designs/gqlgen/graphql/errcode"
+	"github.com/facebook/ent/dialect"
 	"github.com/facebook/ent/dialect/sql"
 	"github.com/facebook/ent/dialect/sql/schema"
+	"github.com/facebookincubator/ent-contrib/entgql"
 	"github.com/hashicorp/go-multierror"
 	"github.com/net-auto/resourceManager/ent/allocationstrategy"
 	"github.com/net-auto/resourceManager/ent/poolproperties"
@@ -21,14 +22,12 @@ import (
 	"github.com/net-auto/resourceManager/ent/resourcepool"
 	"github.com/net-auto/resourceManager/ent/resourcetype"
 	"github.com/net-auto/resourceManager/ent/tag"
-	"github.com/vektah/gqlparser/v2/gqlerror"
 	"golang.org/x/sync/semaphore"
 )
 
-// Noder wraps Node/IsNode methods.
+// Noder wraps the basic Node method.
 type Noder interface {
 	Node(context.Context) (*Node, error)
-	IsNode()
 }
 
 // Node in the graph.
@@ -93,22 +92,18 @@ func (as *AllocationStrategy) Node(ctx context.Context) (node *Node, err error) 
 		Name:  "script",
 		Value: string(buf),
 	}
-	var ids []int
-	ids, err = as.QueryPools().
+	node.Edges[0] = &Edge{
+		Type: "ResourcePool",
+		Name: "pools",
+	}
+	node.Edges[0].IDs, err = as.QueryPools().
 		Select(resourcepool.FieldID).
 		Ints(ctx)
 	if err != nil {
 		return nil, err
 	}
-	node.Edges[0] = &Edge{
-		IDs:  ids,
-		Type: "ResourcePool",
-		Name: "pools",
-	}
 	return node, nil
 }
-
-func (AllocationStrategy) IsNode() {}
 
 func (pp *PoolProperties) Node(ctx context.Context) (node *Node, err error) {
 	node = &Node{
@@ -117,44 +112,38 @@ func (pp *PoolProperties) Node(ctx context.Context) (node *Node, err error) {
 		Fields: make([]*Field, 0),
 		Edges:  make([]*Edge, 3),
 	}
-	var ids []int
-	ids, err = pp.QueryPool().
+	node.Edges[0] = &Edge{
+		Type: "ResourcePool",
+		Name: "pool",
+	}
+	node.Edges[0].IDs, err = pp.QueryPool().
 		Select(resourcepool.FieldID).
 		Ints(ctx)
 	if err != nil {
 		return nil, err
 	}
-	node.Edges[0] = &Edge{
-		IDs:  ids,
-		Type: "ResourcePool",
-		Name: "pool",
+	node.Edges[1] = &Edge{
+		Type: "ResourceType",
+		Name: "resourceType",
 	}
-	ids, err = pp.QueryResourceType().
+	node.Edges[1].IDs, err = pp.QueryResourceType().
 		Select(resourcetype.FieldID).
 		Ints(ctx)
 	if err != nil {
 		return nil, err
 	}
-	node.Edges[1] = &Edge{
-		IDs:  ids,
-		Type: "ResourceType",
-		Name: "resourceType",
+	node.Edges[2] = &Edge{
+		Type: "Property",
+		Name: "properties",
 	}
-	ids, err = pp.QueryProperties().
+	node.Edges[2].IDs, err = pp.QueryProperties().
 		Select(property.FieldID).
 		Ints(ctx)
 	if err != nil {
 		return nil, err
 	}
-	node.Edges[2] = &Edge{
-		IDs:  ids,
-		Type: "Property",
-		Name: "properties",
-	}
 	return node, nil
 }
-
-func (PoolProperties) IsNode() {}
 
 func (pr *Property) Node(ctx context.Context) (node *Node, err error) {
 	node = &Node{
@@ -228,22 +217,18 @@ func (pr *Property) Node(ctx context.Context) (node *Node, err error) {
 		Name:  "string_val",
 		Value: string(buf),
 	}
-	var ids []int
-	ids, err = pr.QueryType().
+	node.Edges[0] = &Edge{
+		Type: "PropertyType",
+		Name: "type",
+	}
+	node.Edges[0].IDs, err = pr.QueryType().
 		Select(propertytype.FieldID).
 		Ints(ctx)
 	if err != nil {
 		return nil, err
 	}
-	node.Edges[0] = &Edge{
-		IDs:  ids,
-		Type: "PropertyType",
-		Name: "type",
-	}
 	return node, nil
 }
-
-func (Property) IsNode() {}
 
 func (pt *PropertyType) Node(ctx context.Context) (node *Node, err error) {
 	node = &Node{
@@ -397,33 +382,28 @@ func (pt *PropertyType) Node(ctx context.Context) (node *Node, err error) {
 		Name:  "nodeType",
 		Value: string(buf),
 	}
-	var ids []int
-	ids, err = pt.QueryProperties().
+	node.Edges[0] = &Edge{
+		Type: "Property",
+		Name: "properties",
+	}
+	node.Edges[0].IDs, err = pt.QueryProperties().
 		Select(property.FieldID).
 		Ints(ctx)
 	if err != nil {
 		return nil, err
 	}
-	node.Edges[0] = &Edge{
-		IDs:  ids,
-		Type: "Property",
-		Name: "properties",
+	node.Edges[1] = &Edge{
+		Type: "ResourceType",
+		Name: "resource_type",
 	}
-	ids, err = pt.QueryResourceType().
+	node.Edges[1].IDs, err = pt.QueryResourceType().
 		Select(resourcetype.FieldID).
 		Ints(ctx)
 	if err != nil {
 		return nil, err
 	}
-	node.Edges[1] = &Edge{
-		IDs:  ids,
-		Type: "ResourceType",
-		Name: "resource_type",
-	}
 	return node, nil
 }
-
-func (PropertyType) IsNode() {}
 
 func (r *Resource) Node(ctx context.Context) (node *Node, err error) {
 	node = &Node{
@@ -449,44 +429,38 @@ func (r *Resource) Node(ctx context.Context) (node *Node, err error) {
 		Name:  "updated_at",
 		Value: string(buf),
 	}
-	var ids []int
-	ids, err = r.QueryPool().
-		Select(resourcepool.FieldID).
-		Ints(ctx)
-	if err != nil {
-		return nil, err
-	}
 	node.Edges[0] = &Edge{
-		IDs:  ids,
 		Type: "ResourcePool",
 		Name: "pool",
 	}
-	ids, err = r.QueryProperties().
-		Select(property.FieldID).
+	node.Edges[0].IDs, err = r.QueryPool().
+		Select(resourcepool.FieldID).
 		Ints(ctx)
 	if err != nil {
 		return nil, err
 	}
 	node.Edges[1] = &Edge{
-		IDs:  ids,
 		Type: "Property",
 		Name: "properties",
 	}
-	ids, err = r.QueryNestedPool().
-		Select(resourcepool.FieldID).
+	node.Edges[1].IDs, err = r.QueryProperties().
+		Select(property.FieldID).
 		Ints(ctx)
 	if err != nil {
 		return nil, err
 	}
 	node.Edges[2] = &Edge{
-		IDs:  ids,
 		Type: "ResourcePool",
 		Name: "nested_pool",
 	}
+	node.Edges[2].IDs, err = r.QueryNestedPool().
+		Select(resourcepool.FieldID).
+		Ints(ctx)
+	if err != nil {
+		return nil, err
+	}
 	return node, nil
 }
-
-func (Resource) IsNode() {}
 
 func (rp *ResourcePool) Node(ctx context.Context) (node *Node, err error) {
 	node = &Node{
@@ -528,77 +502,68 @@ func (rp *ResourcePool) Node(ctx context.Context) (node *Node, err error) {
 		Name:  "dealocation_safety_period",
 		Value: string(buf),
 	}
-	var ids []int
-	ids, err = rp.QueryResourceType().
+	node.Edges[0] = &Edge{
+		Type: "ResourceType",
+		Name: "resource_type",
+	}
+	node.Edges[0].IDs, err = rp.QueryResourceType().
 		Select(resourcetype.FieldID).
 		Ints(ctx)
 	if err != nil {
 		return nil, err
 	}
-	node.Edges[0] = &Edge{
-		IDs:  ids,
-		Type: "ResourceType",
-		Name: "resource_type",
+	node.Edges[1] = &Edge{
+		Type: "Tag",
+		Name: "tags",
 	}
-	ids, err = rp.QueryTags().
+	node.Edges[1].IDs, err = rp.QueryTags().
 		Select(tag.FieldID).
 		Ints(ctx)
 	if err != nil {
 		return nil, err
 	}
-	node.Edges[1] = &Edge{
-		IDs:  ids,
-		Type: "Tag",
-		Name: "tags",
-	}
-	ids, err = rp.QueryClaims().
-		Select(resource.FieldID).
-		Ints(ctx)
-	if err != nil {
-		return nil, err
-	}
 	node.Edges[2] = &Edge{
-		IDs:  ids,
 		Type: "Resource",
 		Name: "claims",
 	}
-	ids, err = rp.QueryPoolProperties().
-		Select(poolproperties.FieldID).
+	node.Edges[2].IDs, err = rp.QueryClaims().
+		Select(resource.FieldID).
 		Ints(ctx)
 	if err != nil {
 		return nil, err
 	}
 	node.Edges[3] = &Edge{
-		IDs:  ids,
 		Type: "PoolProperties",
 		Name: "poolProperties",
 	}
-	ids, err = rp.QueryAllocationStrategy().
-		Select(allocationstrategy.FieldID).
+	node.Edges[3].IDs, err = rp.QueryPoolProperties().
+		Select(poolproperties.FieldID).
 		Ints(ctx)
 	if err != nil {
 		return nil, err
 	}
 	node.Edges[4] = &Edge{
-		IDs:  ids,
 		Type: "AllocationStrategy",
 		Name: "allocation_strategy",
 	}
-	ids, err = rp.QueryParentResource().
-		Select(resource.FieldID).
+	node.Edges[4].IDs, err = rp.QueryAllocationStrategy().
+		Select(allocationstrategy.FieldID).
 		Ints(ctx)
 	if err != nil {
 		return nil, err
 	}
 	node.Edges[5] = &Edge{
-		IDs:  ids,
 		Type: "Resource",
 		Name: "parent_resource",
 	}
+	node.Edges[5].IDs, err = rp.QueryParentResource().
+		Select(resource.FieldID).
+		Ints(ctx)
+	if err != nil {
+		return nil, err
+	}
 	return node, nil
 }
-
-func (ResourcePool) IsNode() {}
 
 func (rt *ResourceType) Node(ctx context.Context) (node *Node, err error) {
 	node = &Node{
@@ -616,33 +581,28 @@ func (rt *ResourceType) Node(ctx context.Context) (node *Node, err error) {
 		Name:  "name",
 		Value: string(buf),
 	}
-	var ids []int
-	ids, err = rt.QueryPropertyTypes().
+	node.Edges[0] = &Edge{
+		Type: "PropertyType",
+		Name: "property_types",
+	}
+	node.Edges[0].IDs, err = rt.QueryPropertyTypes().
 		Select(propertytype.FieldID).
 		Ints(ctx)
 	if err != nil {
 		return nil, err
 	}
-	node.Edges[0] = &Edge{
-		IDs:  ids,
-		Type: "PropertyType",
-		Name: "property_types",
+	node.Edges[1] = &Edge{
+		Type: "ResourcePool",
+		Name: "pools",
 	}
-	ids, err = rt.QueryPools().
+	node.Edges[1].IDs, err = rt.QueryPools().
 		Select(resourcepool.FieldID).
 		Ints(ctx)
 	if err != nil {
 		return nil, err
 	}
-	node.Edges[1] = &Edge{
-		IDs:  ids,
-		Type: "ResourcePool",
-		Name: "pools",
-	}
 	return node, nil
 }
-
-func (ResourceType) IsNode() {}
 
 func (t *Tag) Node(ctx context.Context) (node *Node, err error) {
 	node = &Node{
@@ -660,22 +620,18 @@ func (t *Tag) Node(ctx context.Context) (node *Node, err error) {
 		Name:  "tag",
 		Value: string(buf),
 	}
-	var ids []int
-	ids, err = t.QueryPools().
+	node.Edges[0] = &Edge{
+		Type: "ResourcePool",
+		Name: "pools",
+	}
+	node.Edges[0].IDs, err = t.QueryPools().
 		Select(resourcepool.FieldID).
 		Ints(ctx)
 	if err != nil {
 		return nil, err
 	}
-	node.Edges[0] = &Edge{
-		IDs:  ids,
-		Type: "ResourcePool",
-		Name: "pools",
-	}
 	return node, nil
 }
-
-func (Tag) IsNode() {}
 
 func (c *Client) Node(ctx context.Context, id int) (*Node, error) {
 	n, err := c.Noder(ctx, id)
@@ -685,29 +641,49 @@ func (c *Client) Node(ctx context.Context, id int) (*Node, error) {
 	return n.Node(ctx)
 }
 
-func errNodeNotFound(id int) *gqlerror.Error {
-	err := gqlerror.Errorf("Could not resolve to a node with the global id of '%v'", id)
-	errcode.Set(err, "NOT_FOUND")
-	return err
-}
-
 var errNodeInvalidID = &NotFoundError{"node"}
 
-func (c *Client) Noder(ctx context.Context, id int) (_ Noder, err error) {
+// NodeOption allows configuring the Noder execution using functional options.
+type NodeOption func(*NodeOptions)
+
+// WithNodeType sets the Type of the node (i.e. the table to query).
+// If was not provided, the table will be derived from the universal-id
+// configuration as described in: https://entgo.io/docs/migrate/#universal-ids.
+func WithNodeType(t string) NodeOption {
+	return func(o *NodeOptions) {
+		o.Type = t
+	}
+}
+
+// NodeOptions holds the configuration for Noder execution.
+type NodeOptions struct {
+	// Type of the node (schema table).
+	Type string
+}
+
+// Noder returns a Node by its id. If the NodeType was not provided, it will
+// be derived from the id value according to the universal-id configuration.
+//
+//		c.Noder(ctx, id)
+//		c.Noder(ctx, id, ent.WithNodeType(pet.Table))
+//
+func (c *Client) Noder(ctx context.Context, id int, opts ...NodeOption) (_ Noder, err error) {
 	defer func() {
 		if IsNotFound(err) {
-			err = multierror.Append(err, errNodeNotFound(id))
+			err = multierror.Append(err, entgql.ErrNodeNotFound(id))
 		}
 	}()
-	tables, err := c.tables.Load(ctx, c.driver)
-	if err != nil {
-		return nil, err
+	options := &NodeOptions{}
+	for _, opt := range opts {
+		opt(options)
 	}
-	idx := id / (1<<32 - 1)
-	if idx < 0 || idx >= len(tables) {
-		return nil, fmt.Errorf("cannot resolve table from id %v: %w", id, errNodeInvalidID)
+	if options.Type == "" {
+		options.Type, err = c.tables.nodeType(ctx, c.driver, id)
+		if err != nil {
+			return nil, err
+		}
 	}
-	return c.noder(ctx, tables[idx], id)
+	return c.noder(ctx, options.Type, id)
 }
 
 func (c *Client) noder(ctx context.Context, tbl string, id int) (Noder, error) {
@@ -785,23 +761,29 @@ func (c *Client) noder(ctx context.Context, tbl string, id int) (Noder, error) {
 		}
 		return n, nil
 	default:
-		return nil, fmt.Errorf("cannot resolve noder from table %q: %w", tbl, errNodeInvalidID)
+		return nil, fmt.Errorf("cannot resolve Noder from table %q: %w", tbl, errNodeInvalidID)
 	}
 }
 
-type (
-	tables struct {
-		once  sync.Once
-		sem   *semaphore.Weighted
-		value atomic.Value
-	}
+type tables struct {
+	once  sync.Once
+	sem   *semaphore.Weighted
+	value atomic.Value
+}
 
-	querier interface {
-		Query(ctx context.Context, query string, args, v interface{}) error
+func (t *tables) nodeType(ctx context.Context, drv dialect.Driver, id int) (string, error) {
+	tables, err := t.Load(ctx, drv)
+	if err != nil {
+		return "", err
 	}
-)
+	idx := id / (1<<32 - 1)
+	if idx < 0 || idx >= len(tables) {
+		return "", fmt.Errorf("cannot resolve table from id %v: %w", id, errNodeInvalidID)
+	}
+	return tables[idx], nil
+}
 
-func (t *tables) Load(ctx context.Context, querier querier) ([]string, error) {
+func (t *tables) Load(ctx context.Context, drv dialect.Driver) ([]string, error) {
 	if tables := t.value.Load(); tables != nil {
 		return tables.([]string), nil
 	}
@@ -813,20 +795,21 @@ func (t *tables) Load(ctx context.Context, querier querier) ([]string, error) {
 	if tables := t.value.Load(); tables != nil {
 		return tables.([]string), nil
 	}
-	tables, err := t.load(ctx, querier)
+	tables, err := t.load(ctx, drv)
 	if err == nil {
 		t.value.Store(tables)
 	}
 	return tables, err
 }
 
-func (tables) load(ctx context.Context, querier querier) ([]string, error) {
+func (tables) load(ctx context.Context, drv dialect.Driver) ([]string, error) {
 	rows := &sql.Rows{}
-	query, args := sql.Select("type").
+	query, args := sql.Dialect(drv.Dialect()).
+		Select("type").
 		From(sql.Table(schema.TypeTable)).
 		OrderBy(sql.Asc("id")).
 		Query()
-	if err := querier.Query(ctx, query, args, rows); err != nil {
+	if err := drv.Query(ctx, query, args, rows); err != nil {
 		return nil, err
 	}
 	defer rows.Close()

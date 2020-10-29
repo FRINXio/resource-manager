@@ -73,8 +73,12 @@ func (rpq *ResourcePoolQuery) QueryResourceType() *ResourceTypeQuery {
 		if err := rpq.prepareQuery(ctx); err != nil {
 			return nil, err
 		}
+		selector := rpq.sqlQuery()
+		if err := selector.Err(); err != nil {
+			return nil, err
+		}
 		step := sqlgraph.NewStep(
-			sqlgraph.From(resourcepool.Table, resourcepool.FieldID, rpq.sqlQuery()),
+			sqlgraph.From(resourcepool.Table, resourcepool.FieldID, selector),
 			sqlgraph.To(resourcetype.Table, resourcetype.FieldID),
 			sqlgraph.Edge(sqlgraph.M2O, true, resourcepool.ResourceTypeTable, resourcepool.ResourceTypeColumn),
 		)
@@ -91,8 +95,12 @@ func (rpq *ResourcePoolQuery) QueryTags() *TagQuery {
 		if err := rpq.prepareQuery(ctx); err != nil {
 			return nil, err
 		}
+		selector := rpq.sqlQuery()
+		if err := selector.Err(); err != nil {
+			return nil, err
+		}
 		step := sqlgraph.NewStep(
-			sqlgraph.From(resourcepool.Table, resourcepool.FieldID, rpq.sqlQuery()),
+			sqlgraph.From(resourcepool.Table, resourcepool.FieldID, selector),
 			sqlgraph.To(tag.Table, tag.FieldID),
 			sqlgraph.Edge(sqlgraph.M2M, true, resourcepool.TagsTable, resourcepool.TagsPrimaryKey...),
 		)
@@ -109,8 +117,12 @@ func (rpq *ResourcePoolQuery) QueryClaims() *ResourceQuery {
 		if err := rpq.prepareQuery(ctx); err != nil {
 			return nil, err
 		}
+		selector := rpq.sqlQuery()
+		if err := selector.Err(); err != nil {
+			return nil, err
+		}
 		step := sqlgraph.NewStep(
-			sqlgraph.From(resourcepool.Table, resourcepool.FieldID, rpq.sqlQuery()),
+			sqlgraph.From(resourcepool.Table, resourcepool.FieldID, selector),
 			sqlgraph.To(resource.Table, resource.FieldID),
 			sqlgraph.Edge(sqlgraph.O2M, false, resourcepool.ClaimsTable, resourcepool.ClaimsColumn),
 		)
@@ -127,8 +139,12 @@ func (rpq *ResourcePoolQuery) QueryPoolProperties() *PoolPropertiesQuery {
 		if err := rpq.prepareQuery(ctx); err != nil {
 			return nil, err
 		}
+		selector := rpq.sqlQuery()
+		if err := selector.Err(); err != nil {
+			return nil, err
+		}
 		step := sqlgraph.NewStep(
-			sqlgraph.From(resourcepool.Table, resourcepool.FieldID, rpq.sqlQuery()),
+			sqlgraph.From(resourcepool.Table, resourcepool.FieldID, selector),
 			sqlgraph.To(poolproperties.Table, poolproperties.FieldID),
 			sqlgraph.Edge(sqlgraph.O2O, false, resourcepool.PoolPropertiesTable, resourcepool.PoolPropertiesColumn),
 		)
@@ -145,8 +161,12 @@ func (rpq *ResourcePoolQuery) QueryAllocationStrategy() *AllocationStrategyQuery
 		if err := rpq.prepareQuery(ctx); err != nil {
 			return nil, err
 		}
+		selector := rpq.sqlQuery()
+		if err := selector.Err(); err != nil {
+			return nil, err
+		}
 		step := sqlgraph.NewStep(
-			sqlgraph.From(resourcepool.Table, resourcepool.FieldID, rpq.sqlQuery()),
+			sqlgraph.From(resourcepool.Table, resourcepool.FieldID, selector),
 			sqlgraph.To(allocationstrategy.Table, allocationstrategy.FieldID),
 			sqlgraph.Edge(sqlgraph.M2O, false, resourcepool.AllocationStrategyTable, resourcepool.AllocationStrategyColumn),
 		)
@@ -163,8 +183,12 @@ func (rpq *ResourcePoolQuery) QueryParentResource() *ResourceQuery {
 		if err := rpq.prepareQuery(ctx); err != nil {
 			return nil, err
 		}
+		selector := rpq.sqlQuery()
+		if err := selector.Err(); err != nil {
+			return nil, err
+		}
 		step := sqlgraph.NewStep(
-			sqlgraph.From(resourcepool.Table, resourcepool.FieldID, rpq.sqlQuery()),
+			sqlgraph.From(resourcepool.Table, resourcepool.FieldID, selector),
 			sqlgraph.To(resource.Table, resource.FieldID),
 			sqlgraph.Edge(sqlgraph.O2O, true, resourcepool.ParentResourceTable, resourcepool.ParentResourceColumn),
 		)
@@ -176,23 +200,23 @@ func (rpq *ResourcePoolQuery) QueryParentResource() *ResourceQuery {
 
 // First returns the first ResourcePool entity in the query. Returns *NotFoundError when no resourcepool was found.
 func (rpq *ResourcePoolQuery) First(ctx context.Context) (*ResourcePool, error) {
-	rps, err := rpq.Limit(1).All(ctx)
+	nodes, err := rpq.Limit(1).All(ctx)
 	if err != nil {
 		return nil, err
 	}
-	if len(rps) == 0 {
+	if len(nodes) == 0 {
 		return nil, &NotFoundError{resourcepool.Label}
 	}
-	return rps[0], nil
+	return nodes[0], nil
 }
 
 // FirstX is like First, but panics if an error occurs.
 func (rpq *ResourcePoolQuery) FirstX(ctx context.Context) *ResourcePool {
-	rp, err := rpq.First(ctx)
+	node, err := rpq.First(ctx)
 	if err != nil && !IsNotFound(err) {
 		panic(err)
 	}
-	return rp
+	return node
 }
 
 // FirstID returns the first ResourcePool id in the query. Returns *NotFoundError when no id was found.
@@ -208,8 +232,8 @@ func (rpq *ResourcePoolQuery) FirstID(ctx context.Context) (id int, err error) {
 	return ids[0], nil
 }
 
-// FirstXID is like FirstID, but panics if an error occurs.
-func (rpq *ResourcePoolQuery) FirstXID(ctx context.Context) int {
+// FirstIDX is like FirstID, but panics if an error occurs.
+func (rpq *ResourcePoolQuery) FirstIDX(ctx context.Context) int {
 	id, err := rpq.FirstID(ctx)
 	if err != nil && !IsNotFound(err) {
 		panic(err)
@@ -219,13 +243,13 @@ func (rpq *ResourcePoolQuery) FirstXID(ctx context.Context) int {
 
 // Only returns the only ResourcePool entity in the query, returns an error if not exactly one entity was returned.
 func (rpq *ResourcePoolQuery) Only(ctx context.Context) (*ResourcePool, error) {
-	rps, err := rpq.Limit(2).All(ctx)
+	nodes, err := rpq.Limit(2).All(ctx)
 	if err != nil {
 		return nil, err
 	}
-	switch len(rps) {
+	switch len(nodes) {
 	case 1:
-		return rps[0], nil
+		return nodes[0], nil
 	case 0:
 		return nil, &NotFoundError{resourcepool.Label}
 	default:
@@ -235,11 +259,11 @@ func (rpq *ResourcePoolQuery) Only(ctx context.Context) (*ResourcePool, error) {
 
 // OnlyX is like Only, but panics if an error occurs.
 func (rpq *ResourcePoolQuery) OnlyX(ctx context.Context) *ResourcePool {
-	rp, err := rpq.Only(ctx)
+	node, err := rpq.Only(ctx)
 	if err != nil {
 		panic(err)
 	}
-	return rp
+	return node
 }
 
 // OnlyID returns the only ResourcePool id in the query, returns an error if not exactly one id was returned.
@@ -278,11 +302,11 @@ func (rpq *ResourcePoolQuery) All(ctx context.Context) ([]*ResourcePool, error) 
 
 // AllX is like All, but panics if an error occurs.
 func (rpq *ResourcePoolQuery) AllX(ctx context.Context) []*ResourcePool {
-	rps, err := rpq.All(ctx)
+	nodes, err := rpq.All(ctx)
 	if err != nil {
 		panic(err)
 	}
-	return rps
+	return nodes
 }
 
 // IDs executes the query and returns a list of ResourcePool ids.
@@ -559,6 +583,7 @@ func (rpq *ResourcePoolQuery) sqlAll(ctx context.Context) ([]*ResourcePool, erro
 		for _, node := range nodes {
 			ids[node.ID] = node
 			fks = append(fks, node.ID)
+			node.Edges.Tags = []*Tag{}
 		}
 		var (
 			edgeids []int
@@ -622,6 +647,7 @@ func (rpq *ResourcePoolQuery) sqlAll(ctx context.Context) ([]*ResourcePool, erro
 		for i := range nodes {
 			fks = append(fks, nodes[i].ID)
 			nodeids[nodes[i].ID] = nodes[i]
+			nodes[i].Edges.Claims = []*Resource{}
 		}
 		query.withFKs = true
 		query.Where(predicate.Resource(func(s *sql.Selector) {
@@ -767,7 +793,7 @@ func (rpq *ResourcePoolQuery) querySpec() *sqlgraph.QuerySpec {
 	if ps := rpq.order; len(ps) > 0 {
 		_spec.Order = func(selector *sql.Selector) {
 			for i := range ps {
-				ps[i](selector)
+				ps[i](selector, resourcepool.ValidColumn)
 			}
 		}
 	}
@@ -786,7 +812,7 @@ func (rpq *ResourcePoolQuery) sqlQuery() *sql.Selector {
 		p(selector)
 	}
 	for _, p := range rpq.order {
-		p(selector)
+		p(selector, resourcepool.ValidColumn)
 	}
 	if offset := rpq.offset; offset != nil {
 		// limit is mandatory for offset clause. We start
@@ -1021,8 +1047,17 @@ func (rpgb *ResourcePoolGroupBy) BoolX(ctx context.Context) bool {
 }
 
 func (rpgb *ResourcePoolGroupBy) sqlScan(ctx context.Context, v interface{}) error {
+	for _, f := range rpgb.fields {
+		if !resourcepool.ValidColumn(f) {
+			return &ValidationError{Name: f, err: fmt.Errorf("invalid field %q for group-by", f)}
+		}
+	}
+	selector := rpgb.sqlQuery()
+	if err := selector.Err(); err != nil {
+		return err
+	}
 	rows := &sql.Rows{}
-	query, args := rpgb.sqlQuery().Query()
+	query, args := selector.Query()
 	if err := rpgb.driver.Query(ctx, query, args, rows); err != nil {
 		return err
 	}
@@ -1035,7 +1070,7 @@ func (rpgb *ResourcePoolGroupBy) sqlQuery() *sql.Selector {
 	columns := make([]string, 0, len(rpgb.fields)+len(rpgb.fns))
 	columns = append(columns, rpgb.fields...)
 	for _, fn := range rpgb.fns {
-		columns = append(columns, fn(selector))
+		columns = append(columns, fn(selector, resourcepool.ValidColumn))
 	}
 	return selector.Select(columns...).GroupBy(rpgb.fields...)
 }
@@ -1255,6 +1290,11 @@ func (rps *ResourcePoolSelect) BoolX(ctx context.Context) bool {
 }
 
 func (rps *ResourcePoolSelect) sqlScan(ctx context.Context, v interface{}) error {
+	for _, f := range rps.fields {
+		if !resourcepool.ValidColumn(f) {
+			return &ValidationError{Name: f, err: fmt.Errorf("invalid field %q for selection", f)}
+		}
+	}
 	rows := &sql.Rows{}
 	query, args := rps.sqlQuery().Query()
 	if err := rps.driver.Query(ctx, query, args, rows); err != nil {

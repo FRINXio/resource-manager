@@ -17,14 +17,13 @@ import (
 // AllocationStrategyUpdate is the builder for updating AllocationStrategy entities.
 type AllocationStrategyUpdate struct {
 	config
-	hooks      []Hook
-	mutation   *AllocationStrategyMutation
-	predicates []predicate.AllocationStrategy
+	hooks    []Hook
+	mutation *AllocationStrategyMutation
 }
 
 // Where adds a new predicate for the builder.
 func (asu *AllocationStrategyUpdate) Where(ps ...predicate.AllocationStrategy) *AllocationStrategyUpdate {
-	asu.predicates = append(asu.predicates, ps...)
+	asu.mutation.predicates = append(asu.mutation.predicates, ps...)
 	return asu
 }
 
@@ -117,33 +116,23 @@ func (asu *AllocationStrategyUpdate) RemovePools(r ...*ResourcePool) *Allocation
 
 // Save executes the query and returns the number of rows/vertices matched by this operation.
 func (asu *AllocationStrategyUpdate) Save(ctx context.Context) (int, error) {
-	if v, ok := asu.mutation.Name(); ok {
-		if err := allocationstrategy.NameValidator(v); err != nil {
-			return 0, &ValidationError{Name: "name", err: fmt.Errorf("ent: validator failed for field \"name\": %w", err)}
-		}
-	}
-	if v, ok := asu.mutation.Lang(); ok {
-		if err := allocationstrategy.LangValidator(v); err != nil {
-			return 0, &ValidationError{Name: "lang", err: fmt.Errorf("ent: validator failed for field \"lang\": %w", err)}
-		}
-	}
-	if v, ok := asu.mutation.Script(); ok {
-		if err := allocationstrategy.ScriptValidator(v); err != nil {
-			return 0, &ValidationError{Name: "script", err: fmt.Errorf("ent: validator failed for field \"script\": %w", err)}
-		}
-	}
-
 	var (
 		err      error
 		affected int
 	)
 	if len(asu.hooks) == 0 {
+		if err = asu.check(); err != nil {
+			return 0, err
+		}
 		affected, err = asu.sqlSave(ctx)
 	} else {
 		var mut Mutator = MutateFunc(func(ctx context.Context, m Mutation) (Value, error) {
 			mutation, ok := m.(*AllocationStrategyMutation)
 			if !ok {
 				return nil, fmt.Errorf("unexpected mutation type %T", m)
+			}
+			if err = asu.check(); err != nil {
+				return 0, err
 			}
 			asu.mutation = mutation
 			affected, err = asu.sqlSave(ctx)
@@ -182,6 +171,26 @@ func (asu *AllocationStrategyUpdate) ExecX(ctx context.Context) {
 	}
 }
 
+// check runs all checks and user-defined validators on the builder.
+func (asu *AllocationStrategyUpdate) check() error {
+	if v, ok := asu.mutation.Name(); ok {
+		if err := allocationstrategy.NameValidator(v); err != nil {
+			return &ValidationError{Name: "name", err: fmt.Errorf("ent: validator failed for field \"name\": %w", err)}
+		}
+	}
+	if v, ok := asu.mutation.Lang(); ok {
+		if err := allocationstrategy.LangValidator(v); err != nil {
+			return &ValidationError{Name: "lang", err: fmt.Errorf("ent: validator failed for field \"lang\": %w", err)}
+		}
+	}
+	if v, ok := asu.mutation.Script(); ok {
+		if err := allocationstrategy.ScriptValidator(v); err != nil {
+			return &ValidationError{Name: "script", err: fmt.Errorf("ent: validator failed for field \"script\": %w", err)}
+		}
+	}
+	return nil
+}
+
 func (asu *AllocationStrategyUpdate) sqlSave(ctx context.Context) (n int, err error) {
 	_spec := &sqlgraph.UpdateSpec{
 		Node: &sqlgraph.NodeSpec{
@@ -193,7 +202,7 @@ func (asu *AllocationStrategyUpdate) sqlSave(ctx context.Context) (n int, err er
 			},
 		},
 	}
-	if ps := asu.predicates; len(ps) > 0 {
+	if ps := asu.mutation.predicates; len(ps) > 0 {
 		_spec.Predicate = func(selector *sql.Selector) {
 			for i := range ps {
 				ps[i](selector)
@@ -395,33 +404,23 @@ func (asuo *AllocationStrategyUpdateOne) RemovePools(r ...*ResourcePool) *Alloca
 
 // Save executes the query and returns the updated entity.
 func (asuo *AllocationStrategyUpdateOne) Save(ctx context.Context) (*AllocationStrategy, error) {
-	if v, ok := asuo.mutation.Name(); ok {
-		if err := allocationstrategy.NameValidator(v); err != nil {
-			return nil, &ValidationError{Name: "name", err: fmt.Errorf("ent: validator failed for field \"name\": %w", err)}
-		}
-	}
-	if v, ok := asuo.mutation.Lang(); ok {
-		if err := allocationstrategy.LangValidator(v); err != nil {
-			return nil, &ValidationError{Name: "lang", err: fmt.Errorf("ent: validator failed for field \"lang\": %w", err)}
-		}
-	}
-	if v, ok := asuo.mutation.Script(); ok {
-		if err := allocationstrategy.ScriptValidator(v); err != nil {
-			return nil, &ValidationError{Name: "script", err: fmt.Errorf("ent: validator failed for field \"script\": %w", err)}
-		}
-	}
-
 	var (
 		err  error
 		node *AllocationStrategy
 	)
 	if len(asuo.hooks) == 0 {
+		if err = asuo.check(); err != nil {
+			return nil, err
+		}
 		node, err = asuo.sqlSave(ctx)
 	} else {
 		var mut Mutator = MutateFunc(func(ctx context.Context, m Mutation) (Value, error) {
 			mutation, ok := m.(*AllocationStrategyMutation)
 			if !ok {
 				return nil, fmt.Errorf("unexpected mutation type %T", m)
+			}
+			if err = asuo.check(); err != nil {
+				return nil, err
 			}
 			asuo.mutation = mutation
 			node, err = asuo.sqlSave(ctx)
@@ -440,11 +439,11 @@ func (asuo *AllocationStrategyUpdateOne) Save(ctx context.Context) (*AllocationS
 
 // SaveX is like Save, but panics if an error occurs.
 func (asuo *AllocationStrategyUpdateOne) SaveX(ctx context.Context) *AllocationStrategy {
-	as, err := asuo.Save(ctx)
+	node, err := asuo.Save(ctx)
 	if err != nil {
 		panic(err)
 	}
-	return as
+	return node
 }
 
 // Exec executes the query on the entity.
@@ -460,7 +459,27 @@ func (asuo *AllocationStrategyUpdateOne) ExecX(ctx context.Context) {
 	}
 }
 
-func (asuo *AllocationStrategyUpdateOne) sqlSave(ctx context.Context) (as *AllocationStrategy, err error) {
+// check runs all checks and user-defined validators on the builder.
+func (asuo *AllocationStrategyUpdateOne) check() error {
+	if v, ok := asuo.mutation.Name(); ok {
+		if err := allocationstrategy.NameValidator(v); err != nil {
+			return &ValidationError{Name: "name", err: fmt.Errorf("ent: validator failed for field \"name\": %w", err)}
+		}
+	}
+	if v, ok := asuo.mutation.Lang(); ok {
+		if err := allocationstrategy.LangValidator(v); err != nil {
+			return &ValidationError{Name: "lang", err: fmt.Errorf("ent: validator failed for field \"lang\": %w", err)}
+		}
+	}
+	if v, ok := asuo.mutation.Script(); ok {
+		if err := allocationstrategy.ScriptValidator(v); err != nil {
+			return &ValidationError{Name: "script", err: fmt.Errorf("ent: validator failed for field \"script\": %w", err)}
+		}
+	}
+	return nil
+}
+
+func (asuo *AllocationStrategyUpdateOne) sqlSave(ctx context.Context) (_node *AllocationStrategy, err error) {
 	_spec := &sqlgraph.UpdateSpec{
 		Node: &sqlgraph.NodeSpec{
 			Table:   allocationstrategy.Table,
@@ -564,9 +583,9 @@ func (asuo *AllocationStrategyUpdateOne) sqlSave(ctx context.Context) (as *Alloc
 		}
 		_spec.Edges.Add = append(_spec.Edges.Add, edge)
 	}
-	as = &AllocationStrategy{config: asuo.config}
-	_spec.Assign = as.assignValues
-	_spec.ScanValues = as.scanValues()
+	_node = &AllocationStrategy{config: asuo.config}
+	_spec.Assign = _node.assignValues
+	_spec.ScanValues = _node.scanValues()
 	if err = sqlgraph.UpdateNode(ctx, asuo.driver, _spec); err != nil {
 		if _, ok := err.(*sqlgraph.NotFoundError); ok {
 			err = &NotFoundError{allocationstrategy.Label}
@@ -575,5 +594,5 @@ func (asuo *AllocationStrategyUpdateOne) sqlSave(ctx context.Context) (as *Alloc
 		}
 		return nil, err
 	}
-	return as, nil
+	return _node, nil
 }

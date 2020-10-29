@@ -7,10 +7,12 @@ package main
 import (
 	"context"
 	"github.com/alecthomas/kong"
+	"github.com/facebookincubator/symphony/pkg/server/metrics"
 	"github.com/net-auto/resourceManager/ent/schema"
 	"github.com/net-auto/resourceManager/psql"
 	logger "github.com/net-auto/resourceManager/logging"
 	stdlog "log"
+	"net/url"
 	"os"
 	"syscall"
 
@@ -26,12 +28,14 @@ import (
 )
 
 type cliFlags struct {
-	HTTPAddr           string            `name:"web.listen-address" default:":http" help:"Web address to listen on."`
-	PsqlConfig         psql.Config       `name:"psql.dsn" env:"PSQL_DSN" required:"" placeholder:"STRING" help:"PSQPostgres data source name."`
-	LogConfig          log.Config        `embed:""`
-	TelemetryConfig    telemetry.Config  `embed:""`
-	TenancyConfig      viewer.Config     `embed:""`
-	RbacConfig         schema.RbacConfig `embed:""`
+	ConfigFile      kong.ConfigFlag  `type:"existingfile" placeholder:"PATH" help:"Configuration file path."`
+	ListenAddress   string           `name:"web.listen-address" default:":http" help:"Web address to listen on."`
+	MetricsAddress  metrics.Addr     `name:"metrics.listen-address" default:":9464" help:"Metrics address to listen on."`
+	DatabaseURL     *url.URL         `name:"db.url" env:"DB_URL" required:"" placeholder:"URL" help:"Database URL."`
+	LogConfig       log.Config       `embed:""`
+	TelemetryConfig telemetry.Config `embed:""`
+	TenancyConfig   viewer.Config    `embed:""`
+	RbacConfig      schema.RbacConfig `embed:""`
 	LogPath 		   string            `name:"logPath" env:"RM_LOG_PATH" default:"./rm.log" help:"Path to logfile." type:"path"`
 	LogLevel 		   string            `name:"loglevel" env:"RM_LOG_LEVEL" default:"info" help:"Logging level - fatal, error, warning, info, debug or trace." type:"string"`
 	LogWithColors 	   bool              `name:"logWithColors" default:"false" help:"Force colors in log." type:"bool"`
@@ -60,7 +64,7 @@ func main() {
 	logger.Info(ctx,"initializing RBAC with %+v", zap.Reflect("rbacConfig", cf.RbacConfig))
 	initializeRbacSettings(cf)
 
-	logger.Info(ctx,"starting application %+v", zap.String("httpEndpoint", cf.HTTPAddr))
+	logger.Info(ctx,"starting application %+v", zap.String("httpEndpoint", cf.ListenAddress))
 
 	err = app.run(ctx)
 	logger.Info(ctx,"terminating application %+v", zap.Error(err))
@@ -74,19 +78,22 @@ func initializeRbacSettings(cf cliFlags) {
 
 type application struct {
 	*zap.Logger
-	http struct {
-		*server.Server
-		addr string
-	}
+	server      *server.Server
+	addr        string
+	metrics     *metrics.Metrics
+	metricsAddr metrics.Addr
 }
 
 func (app *application) run(ctx context.Context) error {
 	ctx, cancel := context.WithCancel(ctx)
 	g := ctxgroup.WithContext(ctx)
 	g.Go(func(context.Context) error {
-		err := app.http.ListenAndServe(app.http.addr)
+		err := app.server.ListenAndServe(app.addr)
 		app.Debug("http server terminated", zap.Error(err))
 		return err
+	})
+	g.Go(func(ctx context.Context) error {
+		return app.metrics.Serve(ctx, app.metricsAddr)
 	})
 	g.Go(func(ctx context.Context) error {
 		defer cancel()
@@ -95,14 +102,9 @@ func (app *application) run(ctx context.Context) error {
 	})
 	<-ctx.Done()
 
-	app.Warn("start application termination",
-		zap.NamedError("reason", ctx.Err()),
-	)
-	defer app.Debug("end application termination")
-
 	g.Go(func(context.Context) error {
 		app.Debug("start http server termination")
-		err := app.http.Shutdown(context.Background())
+		err := app.server.Shutdown(context.Background())
 		app.Debug("end http server termination", zap.Error(err))
 		return err
 	})

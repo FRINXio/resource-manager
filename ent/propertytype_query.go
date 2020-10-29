@@ -66,8 +66,12 @@ func (ptq *PropertyTypeQuery) QueryProperties() *PropertyQuery {
 		if err := ptq.prepareQuery(ctx); err != nil {
 			return nil, err
 		}
+		selector := ptq.sqlQuery()
+		if err := selector.Err(); err != nil {
+			return nil, err
+		}
 		step := sqlgraph.NewStep(
-			sqlgraph.From(propertytype.Table, propertytype.FieldID, ptq.sqlQuery()),
+			sqlgraph.From(propertytype.Table, propertytype.FieldID, selector),
 			sqlgraph.To(property.Table, property.FieldID),
 			sqlgraph.Edge(sqlgraph.O2M, true, propertytype.PropertiesTable, propertytype.PropertiesColumn),
 		)
@@ -84,8 +88,12 @@ func (ptq *PropertyTypeQuery) QueryResourceType() *ResourceTypeQuery {
 		if err := ptq.prepareQuery(ctx); err != nil {
 			return nil, err
 		}
+		selector := ptq.sqlQuery()
+		if err := selector.Err(); err != nil {
+			return nil, err
+		}
 		step := sqlgraph.NewStep(
-			sqlgraph.From(propertytype.Table, propertytype.FieldID, ptq.sqlQuery()),
+			sqlgraph.From(propertytype.Table, propertytype.FieldID, selector),
 			sqlgraph.To(resourcetype.Table, resourcetype.FieldID),
 			sqlgraph.Edge(sqlgraph.M2O, true, propertytype.ResourceTypeTable, propertytype.ResourceTypeColumn),
 		)
@@ -97,23 +105,23 @@ func (ptq *PropertyTypeQuery) QueryResourceType() *ResourceTypeQuery {
 
 // First returns the first PropertyType entity in the query. Returns *NotFoundError when no propertytype was found.
 func (ptq *PropertyTypeQuery) First(ctx context.Context) (*PropertyType, error) {
-	pts, err := ptq.Limit(1).All(ctx)
+	nodes, err := ptq.Limit(1).All(ctx)
 	if err != nil {
 		return nil, err
 	}
-	if len(pts) == 0 {
+	if len(nodes) == 0 {
 		return nil, &NotFoundError{propertytype.Label}
 	}
-	return pts[0], nil
+	return nodes[0], nil
 }
 
 // FirstX is like First, but panics if an error occurs.
 func (ptq *PropertyTypeQuery) FirstX(ctx context.Context) *PropertyType {
-	pt, err := ptq.First(ctx)
+	node, err := ptq.First(ctx)
 	if err != nil && !IsNotFound(err) {
 		panic(err)
 	}
-	return pt
+	return node
 }
 
 // FirstID returns the first PropertyType id in the query. Returns *NotFoundError when no id was found.
@@ -129,8 +137,8 @@ func (ptq *PropertyTypeQuery) FirstID(ctx context.Context) (id int, err error) {
 	return ids[0], nil
 }
 
-// FirstXID is like FirstID, but panics if an error occurs.
-func (ptq *PropertyTypeQuery) FirstXID(ctx context.Context) int {
+// FirstIDX is like FirstID, but panics if an error occurs.
+func (ptq *PropertyTypeQuery) FirstIDX(ctx context.Context) int {
 	id, err := ptq.FirstID(ctx)
 	if err != nil && !IsNotFound(err) {
 		panic(err)
@@ -140,13 +148,13 @@ func (ptq *PropertyTypeQuery) FirstXID(ctx context.Context) int {
 
 // Only returns the only PropertyType entity in the query, returns an error if not exactly one entity was returned.
 func (ptq *PropertyTypeQuery) Only(ctx context.Context) (*PropertyType, error) {
-	pts, err := ptq.Limit(2).All(ctx)
+	nodes, err := ptq.Limit(2).All(ctx)
 	if err != nil {
 		return nil, err
 	}
-	switch len(pts) {
+	switch len(nodes) {
 	case 1:
-		return pts[0], nil
+		return nodes[0], nil
 	case 0:
 		return nil, &NotFoundError{propertytype.Label}
 	default:
@@ -156,11 +164,11 @@ func (ptq *PropertyTypeQuery) Only(ctx context.Context) (*PropertyType, error) {
 
 // OnlyX is like Only, but panics if an error occurs.
 func (ptq *PropertyTypeQuery) OnlyX(ctx context.Context) *PropertyType {
-	pt, err := ptq.Only(ctx)
+	node, err := ptq.Only(ctx)
 	if err != nil {
 		panic(err)
 	}
-	return pt
+	return node
 }
 
 // OnlyID returns the only PropertyType id in the query, returns an error if not exactly one id was returned.
@@ -199,11 +207,11 @@ func (ptq *PropertyTypeQuery) All(ctx context.Context) ([]*PropertyType, error) 
 
 // AllX is like All, but panics if an error occurs.
 func (ptq *PropertyTypeQuery) AllX(ctx context.Context) []*PropertyType {
-	pts, err := ptq.All(ctx)
+	nodes, err := ptq.All(ctx)
 	if err != nil {
 		panic(err)
 	}
-	return pts
+	return nodes
 }
 
 // IDs executes the query and returns a list of PropertyType ids.
@@ -407,6 +415,7 @@ func (ptq *PropertyTypeQuery) sqlAll(ctx context.Context) ([]*PropertyType, erro
 		for i := range nodes {
 			fks = append(fks, nodes[i].ID)
 			nodeids[nodes[i].ID] = nodes[i]
+			nodes[i].Edges.Properties = []*Property{}
 		}
 		query.withFKs = true
 		query.Where(predicate.Property(func(s *sql.Selector) {
@@ -499,7 +508,7 @@ func (ptq *PropertyTypeQuery) querySpec() *sqlgraph.QuerySpec {
 	if ps := ptq.order; len(ps) > 0 {
 		_spec.Order = func(selector *sql.Selector) {
 			for i := range ps {
-				ps[i](selector)
+				ps[i](selector, propertytype.ValidColumn)
 			}
 		}
 	}
@@ -518,7 +527,7 @@ func (ptq *PropertyTypeQuery) sqlQuery() *sql.Selector {
 		p(selector)
 	}
 	for _, p := range ptq.order {
-		p(selector)
+		p(selector, propertytype.ValidColumn)
 	}
 	if offset := ptq.offset; offset != nil {
 		// limit is mandatory for offset clause. We start
@@ -753,8 +762,17 @@ func (ptgb *PropertyTypeGroupBy) BoolX(ctx context.Context) bool {
 }
 
 func (ptgb *PropertyTypeGroupBy) sqlScan(ctx context.Context, v interface{}) error {
+	for _, f := range ptgb.fields {
+		if !propertytype.ValidColumn(f) {
+			return &ValidationError{Name: f, err: fmt.Errorf("invalid field %q for group-by", f)}
+		}
+	}
+	selector := ptgb.sqlQuery()
+	if err := selector.Err(); err != nil {
+		return err
+	}
 	rows := &sql.Rows{}
-	query, args := ptgb.sqlQuery().Query()
+	query, args := selector.Query()
 	if err := ptgb.driver.Query(ctx, query, args, rows); err != nil {
 		return err
 	}
@@ -767,7 +785,7 @@ func (ptgb *PropertyTypeGroupBy) sqlQuery() *sql.Selector {
 	columns := make([]string, 0, len(ptgb.fields)+len(ptgb.fns))
 	columns = append(columns, ptgb.fields...)
 	for _, fn := range ptgb.fns {
-		columns = append(columns, fn(selector))
+		columns = append(columns, fn(selector, propertytype.ValidColumn))
 	}
 	return selector.Select(columns...).GroupBy(ptgb.fields...)
 }
@@ -987,6 +1005,11 @@ func (pts *PropertyTypeSelect) BoolX(ctx context.Context) bool {
 }
 
 func (pts *PropertyTypeSelect) sqlScan(ctx context.Context, v interface{}) error {
+	for _, f := range pts.fields {
+		if !propertytype.ValidColumn(f) {
+			return &ValidationError{Name: f, err: fmt.Errorf("invalid field %q for selection", f)}
+		}
+	}
 	rows := &sql.Rows{}
 	query, args := pts.sqlQuery().Query()
 	if err := pts.driver.Query(ctx, query, args, rows); err != nil {

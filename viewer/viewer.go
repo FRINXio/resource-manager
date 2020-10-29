@@ -51,7 +51,7 @@ func TenancyHandler(h http.Handler, tenancy Tenancy, _ log.Logger) http.Handler 
 
 		logger.Debug(r.Context(),"getting tenancy client for %+v", zap.String("tenant", tenant))
 
-		client, err := tenancy.ClientFor(r.Context(), tenant)
+		client, err := tenancy.ClientFor(r.Context(), tenant, logger)
 		if err != nil {
 			const msg = "cannot get tenancy client"
 			logger.Warn(r.Context(), msg + "error: %+v", zap.Error(err))

@@ -64,20 +64,23 @@ func (rtc *ResourceTypeCreate) Mutation() *ResourceTypeMutation {
 
 // Save creates the ResourceType in the database.
 func (rtc *ResourceTypeCreate) Save(ctx context.Context) (*ResourceType, error) {
-	if err := rtc.preSave(); err != nil {
-		return nil, err
-	}
 	var (
 		err  error
 		node *ResourceType
 	)
 	if len(rtc.hooks) == 0 {
+		if err = rtc.check(); err != nil {
+			return nil, err
+		}
 		node, err = rtc.sqlSave(ctx)
 	} else {
 		var mut Mutator = MutateFunc(func(ctx context.Context, m Mutation) (Value, error) {
 			mutation, ok := m.(*ResourceTypeMutation)
 			if !ok {
 				return nil, fmt.Errorf("unexpected mutation type %T", m)
+			}
+			if err = rtc.check(); err != nil {
+				return nil, err
 			}
 			rtc.mutation = mutation
 			node, err = rtc.sqlSave(ctx)
@@ -103,7 +106,8 @@ func (rtc *ResourceTypeCreate) SaveX(ctx context.Context) *ResourceType {
 	return v
 }
 
-func (rtc *ResourceTypeCreate) preSave() error {
+// check runs all checks and user-defined validators on the builder.
+func (rtc *ResourceTypeCreate) check() error {
 	if _, ok := rtc.mutation.Name(); !ok {
 		return &ValidationError{Name: "name", err: errors.New("ent: missing required field \"name\"")}
 	}
@@ -116,7 +120,7 @@ func (rtc *ResourceTypeCreate) preSave() error {
 }
 
 func (rtc *ResourceTypeCreate) sqlSave(ctx context.Context) (*ResourceType, error) {
-	rt, _spec := rtc.createSpec()
+	_node, _spec := rtc.createSpec()
 	if err := sqlgraph.CreateNode(ctx, rtc.driver, _spec); err != nil {
 		if cerr, ok := isSQLConstraintError(err); ok {
 			err = cerr
@@ -124,13 +128,13 @@ func (rtc *ResourceTypeCreate) sqlSave(ctx context.Context) (*ResourceType, erro
 		return nil, err
 	}
 	id := _spec.ID.Value.(int64)
-	rt.ID = int(id)
-	return rt, nil
+	_node.ID = int(id)
+	return _node, nil
 }
 
 func (rtc *ResourceTypeCreate) createSpec() (*ResourceType, *sqlgraph.CreateSpec) {
 	var (
-		rt    = &ResourceType{config: rtc.config}
+		_node = &ResourceType{config: rtc.config}
 		_spec = &sqlgraph.CreateSpec{
 			Table: resourcetype.Table,
 			ID: &sqlgraph.FieldSpec{
@@ -145,7 +149,7 @@ func (rtc *ResourceTypeCreate) createSpec() (*ResourceType, *sqlgraph.CreateSpec
 			Value:  value,
 			Column: resourcetype.FieldName,
 		})
-		rt.Name = value
+		_node.Name = value
 	}
 	if nodes := rtc.mutation.PropertyTypesIDs(); len(nodes) > 0 {
 		edge := &sqlgraph.EdgeSpec{
@@ -185,7 +189,7 @@ func (rtc *ResourceTypeCreate) createSpec() (*ResourceType, *sqlgraph.CreateSpec
 		}
 		_spec.Edges = append(_spec.Edges, edge)
 	}
-	return rt, _spec
+	return _node, _spec
 }
 
 // ResourceTypeCreateBulk is the builder for creating a bulk of ResourceType entities.
@@ -203,12 +207,12 @@ func (rtcb *ResourceTypeCreateBulk) Save(ctx context.Context) ([]*ResourceType, 
 		func(i int, root context.Context) {
 			builder := rtcb.builders[i]
 			var mut Mutator = MutateFunc(func(ctx context.Context, m Mutation) (Value, error) {
-				if err := builder.preSave(); err != nil {
-					return nil, err
-				}
 				mutation, ok := m.(*ResourceTypeMutation)
 				if !ok {
 					return nil, fmt.Errorf("unexpected mutation type %T", m)
+				}
+				if err := builder.check(); err != nil {
+					return nil, err
 				}
 				builder.mutation = mutation
 				nodes[i], specs[i] = builder.createSpec()

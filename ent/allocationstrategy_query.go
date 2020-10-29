@@ -63,8 +63,12 @@ func (asq *AllocationStrategyQuery) QueryPools() *ResourcePoolQuery {
 		if err := asq.prepareQuery(ctx); err != nil {
 			return nil, err
 		}
+		selector := asq.sqlQuery()
+		if err := selector.Err(); err != nil {
+			return nil, err
+		}
 		step := sqlgraph.NewStep(
-			sqlgraph.From(allocationstrategy.Table, allocationstrategy.FieldID, asq.sqlQuery()),
+			sqlgraph.From(allocationstrategy.Table, allocationstrategy.FieldID, selector),
 			sqlgraph.To(resourcepool.Table, resourcepool.FieldID),
 			sqlgraph.Edge(sqlgraph.O2M, true, allocationstrategy.PoolsTable, allocationstrategy.PoolsColumn),
 		)
@@ -76,23 +80,23 @@ func (asq *AllocationStrategyQuery) QueryPools() *ResourcePoolQuery {
 
 // First returns the first AllocationStrategy entity in the query. Returns *NotFoundError when no allocationstrategy was found.
 func (asq *AllocationStrategyQuery) First(ctx context.Context) (*AllocationStrategy, error) {
-	asSlice, err := asq.Limit(1).All(ctx)
+	nodes, err := asq.Limit(1).All(ctx)
 	if err != nil {
 		return nil, err
 	}
-	if len(asSlice) == 0 {
+	if len(nodes) == 0 {
 		return nil, &NotFoundError{allocationstrategy.Label}
 	}
-	return asSlice[0], nil
+	return nodes[0], nil
 }
 
 // FirstX is like First, but panics if an error occurs.
 func (asq *AllocationStrategyQuery) FirstX(ctx context.Context) *AllocationStrategy {
-	as, err := asq.First(ctx)
+	node, err := asq.First(ctx)
 	if err != nil && !IsNotFound(err) {
 		panic(err)
 	}
-	return as
+	return node
 }
 
 // FirstID returns the first AllocationStrategy id in the query. Returns *NotFoundError when no id was found.
@@ -108,8 +112,8 @@ func (asq *AllocationStrategyQuery) FirstID(ctx context.Context) (id int, err er
 	return ids[0], nil
 }
 
-// FirstXID is like FirstID, but panics if an error occurs.
-func (asq *AllocationStrategyQuery) FirstXID(ctx context.Context) int {
+// FirstIDX is like FirstID, but panics if an error occurs.
+func (asq *AllocationStrategyQuery) FirstIDX(ctx context.Context) int {
 	id, err := asq.FirstID(ctx)
 	if err != nil && !IsNotFound(err) {
 		panic(err)
@@ -119,13 +123,13 @@ func (asq *AllocationStrategyQuery) FirstXID(ctx context.Context) int {
 
 // Only returns the only AllocationStrategy entity in the query, returns an error if not exactly one entity was returned.
 func (asq *AllocationStrategyQuery) Only(ctx context.Context) (*AllocationStrategy, error) {
-	asSlice, err := asq.Limit(2).All(ctx)
+	nodes, err := asq.Limit(2).All(ctx)
 	if err != nil {
 		return nil, err
 	}
-	switch len(asSlice) {
+	switch len(nodes) {
 	case 1:
-		return asSlice[0], nil
+		return nodes[0], nil
 	case 0:
 		return nil, &NotFoundError{allocationstrategy.Label}
 	default:
@@ -135,11 +139,11 @@ func (asq *AllocationStrategyQuery) Only(ctx context.Context) (*AllocationStrate
 
 // OnlyX is like Only, but panics if an error occurs.
 func (asq *AllocationStrategyQuery) OnlyX(ctx context.Context) *AllocationStrategy {
-	as, err := asq.Only(ctx)
+	node, err := asq.Only(ctx)
 	if err != nil {
 		panic(err)
 	}
-	return as
+	return node
 }
 
 // OnlyID returns the only AllocationStrategy id in the query, returns an error if not exactly one id was returned.
@@ -178,11 +182,11 @@ func (asq *AllocationStrategyQuery) All(ctx context.Context) ([]*AllocationStrat
 
 // AllX is like All, but panics if an error occurs.
 func (asq *AllocationStrategyQuery) AllX(ctx context.Context) []*AllocationStrategy {
-	asSlice, err := asq.All(ctx)
+	nodes, err := asq.All(ctx)
 	if err != nil {
 		panic(err)
 	}
-	return asSlice
+	return nodes
 }
 
 // IDs executes the query and returns a list of AllocationStrategy ids.
@@ -364,6 +368,7 @@ func (asq *AllocationStrategyQuery) sqlAll(ctx context.Context) ([]*AllocationSt
 		for i := range nodes {
 			fks = append(fks, nodes[i].ID)
 			nodeids[nodes[i].ID] = nodes[i]
+			nodes[i].Edges.Pools = []*ResourcePool{}
 		}
 		query.withFKs = true
 		query.Where(predicate.ResourcePool(func(s *sql.Selector) {
@@ -431,7 +436,7 @@ func (asq *AllocationStrategyQuery) querySpec() *sqlgraph.QuerySpec {
 	if ps := asq.order; len(ps) > 0 {
 		_spec.Order = func(selector *sql.Selector) {
 			for i := range ps {
-				ps[i](selector)
+				ps[i](selector, allocationstrategy.ValidColumn)
 			}
 		}
 	}
@@ -450,7 +455,7 @@ func (asq *AllocationStrategyQuery) sqlQuery() *sql.Selector {
 		p(selector)
 	}
 	for _, p := range asq.order {
-		p(selector)
+		p(selector, allocationstrategy.ValidColumn)
 	}
 	if offset := asq.offset; offset != nil {
 		// limit is mandatory for offset clause. We start
@@ -685,8 +690,17 @@ func (asgb *AllocationStrategyGroupBy) BoolX(ctx context.Context) bool {
 }
 
 func (asgb *AllocationStrategyGroupBy) sqlScan(ctx context.Context, v interface{}) error {
+	for _, f := range asgb.fields {
+		if !allocationstrategy.ValidColumn(f) {
+			return &ValidationError{Name: f, err: fmt.Errorf("invalid field %q for group-by", f)}
+		}
+	}
+	selector := asgb.sqlQuery()
+	if err := selector.Err(); err != nil {
+		return err
+	}
 	rows := &sql.Rows{}
-	query, args := asgb.sqlQuery().Query()
+	query, args := selector.Query()
 	if err := asgb.driver.Query(ctx, query, args, rows); err != nil {
 		return err
 	}
@@ -699,7 +713,7 @@ func (asgb *AllocationStrategyGroupBy) sqlQuery() *sql.Selector {
 	columns := make([]string, 0, len(asgb.fields)+len(asgb.fns))
 	columns = append(columns, asgb.fields...)
 	for _, fn := range asgb.fns {
-		columns = append(columns, fn(selector))
+		columns = append(columns, fn(selector, allocationstrategy.ValidColumn))
 	}
 	return selector.Select(columns...).GroupBy(asgb.fields...)
 }
@@ -919,6 +933,11 @@ func (ass *AllocationStrategySelect) BoolX(ctx context.Context) bool {
 }
 
 func (ass *AllocationStrategySelect) sqlScan(ctx context.Context, v interface{}) error {
+	for _, f := range ass.fields {
+		if !allocationstrategy.ValidColumn(f) {
+			return &ValidationError{Name: f, err: fmt.Errorf("invalid field %q for selection", f)}
+		}
+	}
 	rows := &sql.Rows{}
 	query, args := ass.sqlQuery().Query()
 	if err := ass.driver.Query(ctx, query, args, rows); err != nil {

@@ -82,20 +82,24 @@ func (asc *AllocationStrategyCreate) Mutation() *AllocationStrategyMutation {
 
 // Save creates the AllocationStrategy in the database.
 func (asc *AllocationStrategyCreate) Save(ctx context.Context) (*AllocationStrategy, error) {
-	if err := asc.preSave(); err != nil {
-		return nil, err
-	}
 	var (
 		err  error
 		node *AllocationStrategy
 	)
+	asc.defaults()
 	if len(asc.hooks) == 0 {
+		if err = asc.check(); err != nil {
+			return nil, err
+		}
 		node, err = asc.sqlSave(ctx)
 	} else {
 		var mut Mutator = MutateFunc(func(ctx context.Context, m Mutation) (Value, error) {
 			mutation, ok := m.(*AllocationStrategyMutation)
 			if !ok {
 				return nil, fmt.Errorf("unexpected mutation type %T", m)
+			}
+			if err = asc.check(); err != nil {
+				return nil, err
 			}
 			asc.mutation = mutation
 			node, err = asc.sqlSave(ctx)
@@ -121,7 +125,16 @@ func (asc *AllocationStrategyCreate) SaveX(ctx context.Context) *AllocationStrat
 	return v
 }
 
-func (asc *AllocationStrategyCreate) preSave() error {
+// defaults sets the default values of the builder before save.
+func (asc *AllocationStrategyCreate) defaults() {
+	if _, ok := asc.mutation.Lang(); !ok {
+		v := allocationstrategy.DefaultLang
+		asc.mutation.SetLang(v)
+	}
+}
+
+// check runs all checks and user-defined validators on the builder.
+func (asc *AllocationStrategyCreate) check() error {
 	if _, ok := asc.mutation.Name(); !ok {
 		return &ValidationError{Name: "name", err: errors.New("ent: missing required field \"name\"")}
 	}
@@ -131,8 +144,7 @@ func (asc *AllocationStrategyCreate) preSave() error {
 		}
 	}
 	if _, ok := asc.mutation.Lang(); !ok {
-		v := allocationstrategy.DefaultLang
-		asc.mutation.SetLang(v)
+		return &ValidationError{Name: "lang", err: errors.New("ent: missing required field \"lang\"")}
 	}
 	if v, ok := asc.mutation.Lang(); ok {
 		if err := allocationstrategy.LangValidator(v); err != nil {
@@ -151,7 +163,7 @@ func (asc *AllocationStrategyCreate) preSave() error {
 }
 
 func (asc *AllocationStrategyCreate) sqlSave(ctx context.Context) (*AllocationStrategy, error) {
-	as, _spec := asc.createSpec()
+	_node, _spec := asc.createSpec()
 	if err := sqlgraph.CreateNode(ctx, asc.driver, _spec); err != nil {
 		if cerr, ok := isSQLConstraintError(err); ok {
 			err = cerr
@@ -159,13 +171,13 @@ func (asc *AllocationStrategyCreate) sqlSave(ctx context.Context) (*AllocationSt
 		return nil, err
 	}
 	id := _spec.ID.Value.(int64)
-	as.ID = int(id)
-	return as, nil
+	_node.ID = int(id)
+	return _node, nil
 }
 
 func (asc *AllocationStrategyCreate) createSpec() (*AllocationStrategy, *sqlgraph.CreateSpec) {
 	var (
-		as    = &AllocationStrategy{config: asc.config}
+		_node = &AllocationStrategy{config: asc.config}
 		_spec = &sqlgraph.CreateSpec{
 			Table: allocationstrategy.Table,
 			ID: &sqlgraph.FieldSpec{
@@ -180,7 +192,7 @@ func (asc *AllocationStrategyCreate) createSpec() (*AllocationStrategy, *sqlgrap
 			Value:  value,
 			Column: allocationstrategy.FieldName,
 		})
-		as.Name = value
+		_node.Name = value
 	}
 	if value, ok := asc.mutation.Description(); ok {
 		_spec.Fields = append(_spec.Fields, &sqlgraph.FieldSpec{
@@ -188,7 +200,7 @@ func (asc *AllocationStrategyCreate) createSpec() (*AllocationStrategy, *sqlgrap
 			Value:  value,
 			Column: allocationstrategy.FieldDescription,
 		})
-		as.Description = &value
+		_node.Description = &value
 	}
 	if value, ok := asc.mutation.Lang(); ok {
 		_spec.Fields = append(_spec.Fields, &sqlgraph.FieldSpec{
@@ -196,7 +208,7 @@ func (asc *AllocationStrategyCreate) createSpec() (*AllocationStrategy, *sqlgrap
 			Value:  value,
 			Column: allocationstrategy.FieldLang,
 		})
-		as.Lang = value
+		_node.Lang = value
 	}
 	if value, ok := asc.mutation.Script(); ok {
 		_spec.Fields = append(_spec.Fields, &sqlgraph.FieldSpec{
@@ -204,7 +216,7 @@ func (asc *AllocationStrategyCreate) createSpec() (*AllocationStrategy, *sqlgrap
 			Value:  value,
 			Column: allocationstrategy.FieldScript,
 		})
-		as.Script = value
+		_node.Script = value
 	}
 	if nodes := asc.mutation.PoolsIDs(); len(nodes) > 0 {
 		edge := &sqlgraph.EdgeSpec{
@@ -225,7 +237,7 @@ func (asc *AllocationStrategyCreate) createSpec() (*AllocationStrategy, *sqlgrap
 		}
 		_spec.Edges = append(_spec.Edges, edge)
 	}
-	return as, _spec
+	return _node, _spec
 }
 
 // AllocationStrategyCreateBulk is the builder for creating a bulk of AllocationStrategy entities.
@@ -242,13 +254,14 @@ func (ascb *AllocationStrategyCreateBulk) Save(ctx context.Context) ([]*Allocati
 	for i := range ascb.builders {
 		func(i int, root context.Context) {
 			builder := ascb.builders[i]
+			builder.defaults()
 			var mut Mutator = MutateFunc(func(ctx context.Context, m Mutation) (Value, error) {
-				if err := builder.preSave(); err != nil {
-					return nil, err
-				}
 				mutation, ok := m.(*AllocationStrategyMutation)
 				if !ok {
 					return nil, fmt.Errorf("unexpected mutation type %T", m)
+				}
+				if err := builder.check(); err != nil {
+					return nil, err
 				}
 				builder.mutation = mutation
 				nodes[i], specs[i] = builder.createSpec()

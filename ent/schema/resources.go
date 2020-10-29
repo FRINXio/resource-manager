@@ -5,7 +5,7 @@
 package schema
 
 import (
-	"github.com/facebookincubator/symphony/pkg/ent-contrib/entgql"
+	"github.com/facebookincubator/ent-contrib/entgql"
 	"time"
 
 	"github.com/facebook/ent"

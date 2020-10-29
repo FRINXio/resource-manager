@@ -44,7 +44,6 @@ type Client struct {
 	ResourceType *ResourceTypeClient
 	// Tag is the client for interacting with the Tag builders.
 	Tag *TagClient
-
 	// additional fields for node api
 	tables tables
 }
@@ -245,11 +244,11 @@ func (c *AllocationStrategyClient) Get(ctx context.Context, id int) (*Allocation
 
 // GetX is like Get, but panics if an error occurs.
 func (c *AllocationStrategyClient) GetX(ctx context.Context, id int) *AllocationStrategy {
-	as, err := c.Get(ctx, id)
+	obj, err := c.Get(ctx, id)
 	if err != nil {
 		panic(err)
 	}
-	return as
+	return obj
 }
 
 // QueryPools queries the pools edge of a AllocationStrategy.
@@ -350,11 +349,11 @@ func (c *PoolPropertiesClient) Get(ctx context.Context, id int) (*PoolProperties
 
 // GetX is like Get, but panics if an error occurs.
 func (c *PoolPropertiesClient) GetX(ctx context.Context, id int) *PoolProperties {
-	pp, err := c.Get(ctx, id)
+	obj, err := c.Get(ctx, id)
 	if err != nil {
 		panic(err)
 	}
-	return pp
+	return obj
 }
 
 // QueryPool queries the pool edge of a PoolProperties.
@@ -487,11 +486,11 @@ func (c *PropertyClient) Get(ctx context.Context, id int) (*Property, error) {
 
 // GetX is like Get, but panics if an error occurs.
 func (c *PropertyClient) GetX(ctx context.Context, id int) *Property {
-	pr, err := c.Get(ctx, id)
+	obj, err := c.Get(ctx, id)
 	if err != nil {
 		panic(err)
 	}
-	return pr
+	return obj
 }
 
 // QueryType queries the type edge of a Property.
@@ -592,11 +591,11 @@ func (c *PropertyTypeClient) Get(ctx context.Context, id int) (*PropertyType, er
 
 // GetX is like Get, but panics if an error occurs.
 func (c *PropertyTypeClient) GetX(ctx context.Context, id int) *PropertyType {
-	pt, err := c.Get(ctx, id)
+	obj, err := c.Get(ctx, id)
 	if err != nil {
 		panic(err)
 	}
-	return pt
+	return obj
 }
 
 // QueryProperties queries the properties edge of a PropertyType.
@@ -713,11 +712,11 @@ func (c *ResourceClient) Get(ctx context.Context, id int) (*Resource, error) {
 
 // GetX is like Get, but panics if an error occurs.
 func (c *ResourceClient) GetX(ctx context.Context, id int) *Resource {
-	r, err := c.Get(ctx, id)
+	obj, err := c.Get(ctx, id)
 	if err != nil {
 		panic(err)
 	}
-	return r
+	return obj
 }
 
 // QueryPool queries the pool edge of a Resource.
@@ -850,11 +849,11 @@ func (c *ResourcePoolClient) Get(ctx context.Context, id int) (*ResourcePool, er
 
 // GetX is like Get, but panics if an error occurs.
 func (c *ResourcePoolClient) GetX(ctx context.Context, id int) *ResourcePool {
-	rp, err := c.Get(ctx, id)
+	obj, err := c.Get(ctx, id)
 	if err != nil {
 		panic(err)
 	}
-	return rp
+	return obj
 }
 
 // QueryResourceType queries the resource_type edge of a ResourcePool.
@@ -1035,11 +1034,11 @@ func (c *ResourceTypeClient) Get(ctx context.Context, id int) (*ResourceType, er
 
 // GetX is like Get, but panics if an error occurs.
 func (c *ResourceTypeClient) GetX(ctx context.Context, id int) *ResourceType {
-	rt, err := c.Get(ctx, id)
+	obj, err := c.Get(ctx, id)
 	if err != nil {
 		panic(err)
 	}
-	return rt
+	return obj
 }
 
 // QueryPropertyTypes queries the property_types edge of a ResourceType.
@@ -1156,11 +1155,11 @@ func (c *TagClient) Get(ctx context.Context, id int) (*Tag, error) {
 
 // GetX is like Get, but panics if an error occurs.
 func (c *TagClient) GetX(ctx context.Context, id int) *Tag {
-	t, err := c.Get(ctx, id)
+	obj, err := c.Get(ctx, id)
 	if err != nil {
 		panic(err)
 	}
-	return t
+	return obj
 }
 
 // QueryPools queries the pools edge of a Tag.

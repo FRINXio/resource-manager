@@ -19,14 +19,13 @@ import (
 // PoolPropertiesUpdate is the builder for updating PoolProperties entities.
 type PoolPropertiesUpdate struct {
 	config
-	hooks      []Hook
-	mutation   *PoolPropertiesMutation
-	predicates []predicate.PoolProperties
+	hooks    []Hook
+	mutation *PoolPropertiesMutation
 }
 
 // Where adds a new predicate for the builder.
 func (ppu *PoolPropertiesUpdate) Where(ps ...predicate.PoolProperties) *PoolPropertiesUpdate {
-	ppu.predicates = append(ppu.predicates, ps...)
+	ppu.mutation.predicates = append(ppu.mutation.predicates, ps...)
 	return ppu
 }
 
@@ -134,7 +133,6 @@ func (ppu *PoolPropertiesUpdate) RemoveProperties(p ...*Property) *PoolPropertie
 
 // Save executes the query and returns the number of rows/vertices matched by this operation.
 func (ppu *PoolPropertiesUpdate) Save(ctx context.Context) (int, error) {
-
 	var (
 		err      error
 		affected int
@@ -195,7 +193,7 @@ func (ppu *PoolPropertiesUpdate) sqlSave(ctx context.Context) (n int, err error)
 			},
 		},
 	}
-	if ps := ppu.predicates; len(ps) > 0 {
+	if ps := ppu.mutation.predicates; len(ps) > 0 {
 		_spec.Predicate = func(selector *sql.Selector) {
 			for i := range ps {
 				ps[i](selector)
@@ -467,7 +465,6 @@ func (ppuo *PoolPropertiesUpdateOne) RemoveProperties(p ...*Property) *PoolPrope
 
 // Save executes the query and returns the updated entity.
 func (ppuo *PoolPropertiesUpdateOne) Save(ctx context.Context) (*PoolProperties, error) {
-
 	var (
 		err  error
 		node *PoolProperties
@@ -497,11 +494,11 @@ func (ppuo *PoolPropertiesUpdateOne) Save(ctx context.Context) (*PoolProperties,
 
 // SaveX is like Save, but panics if an error occurs.
 func (ppuo *PoolPropertiesUpdateOne) SaveX(ctx context.Context) *PoolProperties {
-	pp, err := ppuo.Save(ctx)
+	node, err := ppuo.Save(ctx)
 	if err != nil {
 		panic(err)
 	}
-	return pp
+	return node
 }
 
 // Exec executes the query on the entity.
@@ -517,7 +514,7 @@ func (ppuo *PoolPropertiesUpdateOne) ExecX(ctx context.Context) {
 	}
 }
 
-func (ppuo *PoolPropertiesUpdateOne) sqlSave(ctx context.Context) (pp *PoolProperties, err error) {
+func (ppuo *PoolPropertiesUpdateOne) sqlSave(ctx context.Context) (_node *PoolProperties, err error) {
 	_spec := &sqlgraph.UpdateSpec{
 		Node: &sqlgraph.NodeSpec{
 			Table:   poolproperties.Table,
@@ -676,9 +673,9 @@ func (ppuo *PoolPropertiesUpdateOne) sqlSave(ctx context.Context) (pp *PoolPrope
 		}
 		_spec.Edges.Add = append(_spec.Edges.Add, edge)
 	}
-	pp = &PoolProperties{config: ppuo.config}
-	_spec.Assign = pp.assignValues
-	_spec.ScanValues = pp.scanValues()
+	_node = &PoolProperties{config: ppuo.config}
+	_spec.Assign = _node.assignValues
+	_spec.ScanValues = _node.scanValues()
 	if err = sqlgraph.UpdateNode(ctx, ppuo.driver, _spec); err != nil {
 		if _, ok := err.(*sqlgraph.NotFoundError); ok {
 			err = &NotFoundError{poolproperties.Label}
@@ -687,5 +684,5 @@ func (ppuo *PoolPropertiesUpdateOne) sqlSave(ctx context.Context) (pp *PoolPrope
 		}
 		return nil, err
 	}
-	return pp, nil
+	return _node, nil
 }

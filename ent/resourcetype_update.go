@@ -18,14 +18,13 @@ import (
 // ResourceTypeUpdate is the builder for updating ResourceType entities.
 type ResourceTypeUpdate struct {
 	config
-	hooks      []Hook
-	mutation   *ResourceTypeMutation
-	predicates []predicate.ResourceType
+	hooks    []Hook
+	mutation *ResourceTypeMutation
 }
 
 // Where adds a new predicate for the builder.
 func (rtu *ResourceTypeUpdate) Where(ps ...predicate.ResourceType) *ResourceTypeUpdate {
-	rtu.predicates = append(rtu.predicates, ps...)
+	rtu.mutation.predicates = append(rtu.mutation.predicates, ps...)
 	return rtu
 }
 
@@ -114,23 +113,23 @@ func (rtu *ResourceTypeUpdate) RemovePools(r ...*ResourcePool) *ResourceTypeUpda
 
 // Save executes the query and returns the number of rows/vertices matched by this operation.
 func (rtu *ResourceTypeUpdate) Save(ctx context.Context) (int, error) {
-	if v, ok := rtu.mutation.Name(); ok {
-		if err := resourcetype.NameValidator(v); err != nil {
-			return 0, &ValidationError{Name: "name", err: fmt.Errorf("ent: validator failed for field \"name\": %w", err)}
-		}
-	}
-
 	var (
 		err      error
 		affected int
 	)
 	if len(rtu.hooks) == 0 {
+		if err = rtu.check(); err != nil {
+			return 0, err
+		}
 		affected, err = rtu.sqlSave(ctx)
 	} else {
 		var mut Mutator = MutateFunc(func(ctx context.Context, m Mutation) (Value, error) {
 			mutation, ok := m.(*ResourceTypeMutation)
 			if !ok {
 				return nil, fmt.Errorf("unexpected mutation type %T", m)
+			}
+			if err = rtu.check(); err != nil {
+				return 0, err
 			}
 			rtu.mutation = mutation
 			affected, err = rtu.sqlSave(ctx)
@@ -169,6 +168,16 @@ func (rtu *ResourceTypeUpdate) ExecX(ctx context.Context) {
 	}
 }
 
+// check runs all checks and user-defined validators on the builder.
+func (rtu *ResourceTypeUpdate) check() error {
+	if v, ok := rtu.mutation.Name(); ok {
+		if err := resourcetype.NameValidator(v); err != nil {
+			return &ValidationError{Name: "name", err: fmt.Errorf("ent: validator failed for field \"name\": %w", err)}
+		}
+	}
+	return nil
+}
+
 func (rtu *ResourceTypeUpdate) sqlSave(ctx context.Context) (n int, err error) {
 	_spec := &sqlgraph.UpdateSpec{
 		Node: &sqlgraph.NodeSpec{
@@ -180,7 +189,7 @@ func (rtu *ResourceTypeUpdate) sqlSave(ctx context.Context) (n int, err error) {
 			},
 		},
 	}
-	if ps := rtu.predicates; len(ps) > 0 {
+	if ps := rtu.mutation.predicates; len(ps) > 0 {
 		_spec.Predicate = func(selector *sql.Selector) {
 			for i := range ps {
 				ps[i](selector)
@@ -405,23 +414,23 @@ func (rtuo *ResourceTypeUpdateOne) RemovePools(r ...*ResourcePool) *ResourceType
 
 // Save executes the query and returns the updated entity.
 func (rtuo *ResourceTypeUpdateOne) Save(ctx context.Context) (*ResourceType, error) {
-	if v, ok := rtuo.mutation.Name(); ok {
-		if err := resourcetype.NameValidator(v); err != nil {
-			return nil, &ValidationError{Name: "name", err: fmt.Errorf("ent: validator failed for field \"name\": %w", err)}
-		}
-	}
-
 	var (
 		err  error
 		node *ResourceType
 	)
 	if len(rtuo.hooks) == 0 {
+		if err = rtuo.check(); err != nil {
+			return nil, err
+		}
 		node, err = rtuo.sqlSave(ctx)
 	} else {
 		var mut Mutator = MutateFunc(func(ctx context.Context, m Mutation) (Value, error) {
 			mutation, ok := m.(*ResourceTypeMutation)
 			if !ok {
 				return nil, fmt.Errorf("unexpected mutation type %T", m)
+			}
+			if err = rtuo.check(); err != nil {
+				return nil, err
 			}
 			rtuo.mutation = mutation
 			node, err = rtuo.sqlSave(ctx)
@@ -440,11 +449,11 @@ func (rtuo *ResourceTypeUpdateOne) Save(ctx context.Context) (*ResourceType, err
 
 // SaveX is like Save, but panics if an error occurs.
 func (rtuo *ResourceTypeUpdateOne) SaveX(ctx context.Context) *ResourceType {
-	rt, err := rtuo.Save(ctx)
+	node, err := rtuo.Save(ctx)
 	if err != nil {
 		panic(err)
 	}
-	return rt
+	return node
 }
 
 // Exec executes the query on the entity.
@@ -460,7 +469,17 @@ func (rtuo *ResourceTypeUpdateOne) ExecX(ctx context.Context) {
 	}
 }
 
-func (rtuo *ResourceTypeUpdateOne) sqlSave(ctx context.Context) (rt *ResourceType, err error) {
+// check runs all checks and user-defined validators on the builder.
+func (rtuo *ResourceTypeUpdateOne) check() error {
+	if v, ok := rtuo.mutation.Name(); ok {
+		if err := resourcetype.NameValidator(v); err != nil {
+			return &ValidationError{Name: "name", err: fmt.Errorf("ent: validator failed for field \"name\": %w", err)}
+		}
+	}
+	return nil
+}
+
+func (rtuo *ResourceTypeUpdateOne) sqlSave(ctx context.Context) (_node *ResourceType, err error) {
 	_spec := &sqlgraph.UpdateSpec{
 		Node: &sqlgraph.NodeSpec{
 			Table:   resourcetype.Table,
@@ -591,9 +610,9 @@ func (rtuo *ResourceTypeUpdateOne) sqlSave(ctx context.Context) (rt *ResourceTyp
 		}
 		_spec.Edges.Add = append(_spec.Edges.Add, edge)
 	}
-	rt = &ResourceType{config: rtuo.config}
-	_spec.Assign = rt.assignValues
-	_spec.ScanValues = rt.scanValues()
+	_node = &ResourceType{config: rtuo.config}
+	_spec.Assign = _node.assignValues
+	_spec.ScanValues = _node.scanValues()
 	if err = sqlgraph.UpdateNode(ctx, rtuo.driver, _spec); err != nil {
 		if _, ok := err.(*sqlgraph.NotFoundError); ok {
 			err = &NotFoundError{resourcetype.Label}
@@ -602,5 +621,5 @@ func (rtuo *ResourceTypeUpdateOne) sqlSave(ctx context.Context) (rt *ResourceTyp
 		}
 		return nil, err
 	}
-	return rt, nil
+	return _node, nil
 }

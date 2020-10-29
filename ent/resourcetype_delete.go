@@ -16,14 +16,13 @@ import (
 // ResourceTypeDelete is the builder for deleting a ResourceType entity.
 type ResourceTypeDelete struct {
 	config
-	hooks      []Hook
-	mutation   *ResourceTypeMutation
-	predicates []predicate.ResourceType
+	hooks    []Hook
+	mutation *ResourceTypeMutation
 }
 
 // Where adds a new predicate to the delete builder.
 func (rtd *ResourceTypeDelete) Where(ps ...predicate.ResourceType) *ResourceTypeDelete {
-	rtd.predicates = append(rtd.predicates, ps...)
+	rtd.mutation.predicates = append(rtd.mutation.predicates, ps...)
 	return rtd
 }
 
@@ -75,7 +74,7 @@ func (rtd *ResourceTypeDelete) sqlExec(ctx context.Context) (int, error) {
 			},
 		},
 	}
-	if ps := rtd.predicates; len(ps) > 0 {
+	if ps := rtd.mutation.predicates; len(ps) > 0 {
 		_spec.Predicate = func(selector *sql.Selector) {
 			for i := range ps {
 				ps[i](selector)

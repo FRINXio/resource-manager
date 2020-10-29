@@ -16,14 +16,13 @@ import (
 // PoolPropertiesDelete is the builder for deleting a PoolProperties entity.
 type PoolPropertiesDelete struct {
 	config
-	hooks      []Hook
-	mutation   *PoolPropertiesMutation
-	predicates []predicate.PoolProperties
+	hooks    []Hook
+	mutation *PoolPropertiesMutation
 }
 
 // Where adds a new predicate to the delete builder.
 func (ppd *PoolPropertiesDelete) Where(ps ...predicate.PoolProperties) *PoolPropertiesDelete {
-	ppd.predicates = append(ppd.predicates, ps...)
+	ppd.mutation.predicates = append(ppd.mutation.predicates, ps...)
 	return ppd
 }
 
@@ -75,7 +74,7 @@ func (ppd *PoolPropertiesDelete) sqlExec(ctx context.Context) (int, error) {
 			},
 		},
 	}
-	if ps := ppd.predicates; len(ps) > 0 {
+	if ps := ppd.mutation.predicates; len(ps) > 0 {
 		_spec.Predicate = func(selector *sql.Selector) {
 			for i := range ps {
 				ps[i](selector)

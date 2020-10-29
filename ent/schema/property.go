@@ -10,7 +10,7 @@ import (
 	"github.com/facebook/ent"
 	"github.com/facebook/ent/schema/edge"
 	"github.com/facebook/ent/schema/field"
-	"github.com/facebookincubator/symphony/pkg/ent-contrib/entgql"
+	"github.com/facebookincubator/ent-contrib/entgql"
 )
 
 // PropertyType defines the property type schema.

@@ -16,14 +16,13 @@ import (
 // ResourcePoolDelete is the builder for deleting a ResourcePool entity.
 type ResourcePoolDelete struct {
 	config
-	hooks      []Hook
-	mutation   *ResourcePoolMutation
-	predicates []predicate.ResourcePool
+	hooks    []Hook
+	mutation *ResourcePoolMutation
 }
 
 // Where adds a new predicate to the delete builder.
 func (rpd *ResourcePoolDelete) Where(ps ...predicate.ResourcePool) *ResourcePoolDelete {
-	rpd.predicates = append(rpd.predicates, ps...)
+	rpd.mutation.predicates = append(rpd.mutation.predicates, ps...)
 	return rpd
 }
 
@@ -75,7 +74,7 @@ func (rpd *ResourcePoolDelete) sqlExec(ctx context.Context) (int, error) {
 			},
 		},
 	}
-	if ps := rpd.predicates; len(ps) > 0 {
+	if ps := rpd.mutation.predicates; len(ps) > 0 {
 		_spec.Predicate = func(selector *sql.Selector) {
 			for i := range ps {
 				ps[i](selector)

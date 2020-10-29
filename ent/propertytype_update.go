@@ -18,14 +18,13 @@ import (
 // PropertyTypeUpdate is the builder for updating PropertyType entities.
 type PropertyTypeUpdate struct {
 	config
-	hooks      []Hook
-	mutation   *PropertyTypeMutation
-	predicates []predicate.PropertyType
+	hooks    []Hook
+	mutation *PropertyTypeMutation
 }
 
 // Where adds a new predicate for the builder.
 func (ptu *PropertyTypeUpdate) Where(ps ...predicate.PropertyType) *PropertyTypeUpdate {
-	ptu.predicates = append(ptu.predicates, ps...)
+	ptu.mutation.predicates = append(ptu.mutation.predicates, ps...)
 	return ptu
 }
 
@@ -454,23 +453,23 @@ func (ptu *PropertyTypeUpdate) ClearResourceType() *PropertyTypeUpdate {
 
 // Save executes the query and returns the number of rows/vertices matched by this operation.
 func (ptu *PropertyTypeUpdate) Save(ctx context.Context) (int, error) {
-	if v, ok := ptu.mutation.GetType(); ok {
-		if err := propertytype.TypeValidator(v); err != nil {
-			return 0, &ValidationError{Name: "type", err: fmt.Errorf("ent: validator failed for field \"type\": %w", err)}
-		}
-	}
-
 	var (
 		err      error
 		affected int
 	)
 	if len(ptu.hooks) == 0 {
+		if err = ptu.check(); err != nil {
+			return 0, err
+		}
 		affected, err = ptu.sqlSave(ctx)
 	} else {
 		var mut Mutator = MutateFunc(func(ctx context.Context, m Mutation) (Value, error) {
 			mutation, ok := m.(*PropertyTypeMutation)
 			if !ok {
 				return nil, fmt.Errorf("unexpected mutation type %T", m)
+			}
+			if err = ptu.check(); err != nil {
+				return 0, err
 			}
 			ptu.mutation = mutation
 			affected, err = ptu.sqlSave(ctx)
@@ -509,6 +508,16 @@ func (ptu *PropertyTypeUpdate) ExecX(ctx context.Context) {
 	}
 }
 
+// check runs all checks and user-defined validators on the builder.
+func (ptu *PropertyTypeUpdate) check() error {
+	if v, ok := ptu.mutation.GetType(); ok {
+		if err := propertytype.TypeValidator(v); err != nil {
+			return &ValidationError{Name: "type", err: fmt.Errorf("ent: validator failed for field \"type\": %w", err)}
+		}
+	}
+	return nil
+}
+
 func (ptu *PropertyTypeUpdate) sqlSave(ctx context.Context) (n int, err error) {
 	_spec := &sqlgraph.UpdateSpec{
 		Node: &sqlgraph.NodeSpec{
@@ -520,7 +529,7 @@ func (ptu *PropertyTypeUpdate) sqlSave(ctx context.Context) (n int, err error) {
 			},
 		},
 	}
-	if ps := ptu.predicates; len(ps) > 0 {
+	if ps := ptu.mutation.predicates; len(ps) > 0 {
 		_spec.Predicate = func(selector *sql.Selector) {
 			for i := range ps {
 				ps[i](selector)
@@ -1306,23 +1315,23 @@ func (ptuo *PropertyTypeUpdateOne) ClearResourceType() *PropertyTypeUpdateOne {
 
 // Save executes the query and returns the updated entity.
 func (ptuo *PropertyTypeUpdateOne) Save(ctx context.Context) (*PropertyType, error) {
-	if v, ok := ptuo.mutation.GetType(); ok {
-		if err := propertytype.TypeValidator(v); err != nil {
-			return nil, &ValidationError{Name: "type", err: fmt.Errorf("ent: validator failed for field \"type\": %w", err)}
-		}
-	}
-
 	var (
 		err  error
 		node *PropertyType
 	)
 	if len(ptuo.hooks) == 0 {
+		if err = ptuo.check(); err != nil {
+			return nil, err
+		}
 		node, err = ptuo.sqlSave(ctx)
 	} else {
 		var mut Mutator = MutateFunc(func(ctx context.Context, m Mutation) (Value, error) {
 			mutation, ok := m.(*PropertyTypeMutation)
 			if !ok {
 				return nil, fmt.Errorf("unexpected mutation type %T", m)
+			}
+			if err = ptuo.check(); err != nil {
+				return nil, err
 			}
 			ptuo.mutation = mutation
 			node, err = ptuo.sqlSave(ctx)
@@ -1341,11 +1350,11 @@ func (ptuo *PropertyTypeUpdateOne) Save(ctx context.Context) (*PropertyType, err
 
 // SaveX is like Save, but panics if an error occurs.
 func (ptuo *PropertyTypeUpdateOne) SaveX(ctx context.Context) *PropertyType {
-	pt, err := ptuo.Save(ctx)
+	node, err := ptuo.Save(ctx)
 	if err != nil {
 		panic(err)
 	}
-	return pt
+	return node
 }
 
 // Exec executes the query on the entity.
@@ -1361,7 +1370,17 @@ func (ptuo *PropertyTypeUpdateOne) ExecX(ctx context.Context) {
 	}
 }
 
-func (ptuo *PropertyTypeUpdateOne) sqlSave(ctx context.Context) (pt *PropertyType, err error) {
+// check runs all checks and user-defined validators on the builder.
+func (ptuo *PropertyTypeUpdateOne) check() error {
+	if v, ok := ptuo.mutation.GetType(); ok {
+		if err := propertytype.TypeValidator(v); err != nil {
+			return &ValidationError{Name: "type", err: fmt.Errorf("ent: validator failed for field \"type\": %w", err)}
+		}
+	}
+	return nil
+}
+
+func (ptuo *PropertyTypeUpdateOne) sqlSave(ctx context.Context) (_node *PropertyType, err error) {
 	_spec := &sqlgraph.UpdateSpec{
 		Node: &sqlgraph.NodeSpec{
 			Table:   propertytype.Table,
@@ -1713,9 +1732,9 @@ func (ptuo *PropertyTypeUpdateOne) sqlSave(ctx context.Context) (pt *PropertyTyp
 		}
 		_spec.Edges.Add = append(_spec.Edges.Add, edge)
 	}
-	pt = &PropertyType{config: ptuo.config}
-	_spec.Assign = pt.assignValues
-	_spec.ScanValues = pt.scanValues()
+	_node = &PropertyType{config: ptuo.config}
+	_spec.Assign = _node.assignValues
+	_spec.ScanValues = _node.scanValues()
 	if err = sqlgraph.UpdateNode(ctx, ptuo.driver, _spec); err != nil {
 		if _, ok := err.(*sqlgraph.NotFoundError); ok {
 			err = &NotFoundError{propertytype.Label}
@@ -1724,5 +1743,5 @@ func (ptuo *PropertyTypeUpdateOne) sqlSave(ctx context.Context) (pt *PropertyTyp
 		}
 		return nil, err
 	}
-	return pt, nil
+	return _node, nil
 }

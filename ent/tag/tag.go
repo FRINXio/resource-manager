@@ -34,6 +34,16 @@ var (
 	PoolsPrimaryKey = []string{"tag_id", "resource_pool_id"}
 )
 
+// ValidColumn reports if the column name is valid (part of the table columns).
+func ValidColumn(column string) bool {
+	for i := range Columns {
+		if column == Columns[i] {
+			return true
+		}
+	}
+	return false
+}
+
 var (
 	// TagValidator is a validator for the "tag" field. It is called by the builders before save.
 	TagValidator func(string) error

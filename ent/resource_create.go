@@ -102,20 +102,24 @@ func (rc *ResourceCreate) Mutation() *ResourceMutation {
 
 // Save creates the Resource in the database.
 func (rc *ResourceCreate) Save(ctx context.Context) (*Resource, error) {
-	if err := rc.preSave(); err != nil {
-		return nil, err
-	}
 	var (
 		err  error
 		node *Resource
 	)
+	rc.defaults()
 	if len(rc.hooks) == 0 {
+		if err = rc.check(); err != nil {
+			return nil, err
+		}
 		node, err = rc.sqlSave(ctx)
 	} else {
 		var mut Mutator = MutateFunc(func(ctx context.Context, m Mutation) (Value, error) {
 			mutation, ok := m.(*ResourceMutation)
 			if !ok {
 				return nil, fmt.Errorf("unexpected mutation type %T", m)
+			}
+			if err = rc.check(); err != nil {
+				return nil, err
 			}
 			rc.mutation = mutation
 			node, err = rc.sqlSave(ctx)
@@ -141,7 +145,16 @@ func (rc *ResourceCreate) SaveX(ctx context.Context) *Resource {
 	return v
 }
 
-func (rc *ResourceCreate) preSave() error {
+// defaults sets the default values of the builder before save.
+func (rc *ResourceCreate) defaults() {
+	if _, ok := rc.mutation.UpdatedAt(); !ok {
+		v := resource.DefaultUpdatedAt()
+		rc.mutation.SetUpdatedAt(v)
+	}
+}
+
+// check runs all checks and user-defined validators on the builder.
+func (rc *ResourceCreate) check() error {
 	if _, ok := rc.mutation.Status(); !ok {
 		return &ValidationError{Name: "status", err: errors.New("ent: missing required field \"status\"")}
 	}
@@ -151,14 +164,13 @@ func (rc *ResourceCreate) preSave() error {
 		}
 	}
 	if _, ok := rc.mutation.UpdatedAt(); !ok {
-		v := resource.DefaultUpdatedAt()
-		rc.mutation.SetUpdatedAt(v)
+		return &ValidationError{Name: "updated_at", err: errors.New("ent: missing required field \"updated_at\"")}
 	}
 	return nil
 }
 
 func (rc *ResourceCreate) sqlSave(ctx context.Context) (*Resource, error) {
-	r, _spec := rc.createSpec()
+	_node, _spec := rc.createSpec()
 	if err := sqlgraph.CreateNode(ctx, rc.driver, _spec); err != nil {
 		if cerr, ok := isSQLConstraintError(err); ok {
 			err = cerr
@@ -166,13 +178,13 @@ func (rc *ResourceCreate) sqlSave(ctx context.Context) (*Resource, error) {
 		return nil, err
 	}
 	id := _spec.ID.Value.(int64)
-	r.ID = int(id)
-	return r, nil
+	_node.ID = int(id)
+	return _node, nil
 }
 
 func (rc *ResourceCreate) createSpec() (*Resource, *sqlgraph.CreateSpec) {
 	var (
-		r     = &Resource{config: rc.config}
+		_node = &Resource{config: rc.config}
 		_spec = &sqlgraph.CreateSpec{
 			Table: resource.Table,
 			ID: &sqlgraph.FieldSpec{
@@ -187,7 +199,7 @@ func (rc *ResourceCreate) createSpec() (*Resource, *sqlgraph.CreateSpec) {
 			Value:  value,
 			Column: resource.FieldStatus,
 		})
-		r.Status = value
+		_node.Status = value
 	}
 	if value, ok := rc.mutation.UpdatedAt(); ok {
 		_spec.Fields = append(_spec.Fields, &sqlgraph.FieldSpec{
@@ -195,7 +207,7 @@ func (rc *ResourceCreate) createSpec() (*Resource, *sqlgraph.CreateSpec) {
 			Value:  value,
 			Column: resource.FieldUpdatedAt,
 		})
-		r.UpdatedAt = value
+		_node.UpdatedAt = value
 	}
 	if nodes := rc.mutation.PoolIDs(); len(nodes) > 0 {
 		edge := &sqlgraph.EdgeSpec{
@@ -254,7 +266,7 @@ func (rc *ResourceCreate) createSpec() (*Resource, *sqlgraph.CreateSpec) {
 		}
 		_spec.Edges = append(_spec.Edges, edge)
 	}
-	return r, _spec
+	return _node, _spec
 }
 
 // ResourceCreateBulk is the builder for creating a bulk of Resource entities.
@@ -271,13 +283,14 @@ func (rcb *ResourceCreateBulk) Save(ctx context.Context) ([]*Resource, error) {
 	for i := range rcb.builders {
 		func(i int, root context.Context) {
 			builder := rcb.builders[i]
+			builder.defaults()
 			var mut Mutator = MutateFunc(func(ctx context.Context, m Mutation) (Value, error) {
-				if err := builder.preSave(); err != nil {
-					return nil, err
-				}
 				mutation, ok := m.(*ResourceMutation)
 				if !ok {
 					return nil, fmt.Errorf("unexpected mutation type %T", m)
+				}
+				if err := builder.check(); err != nil {
+					return nil, err
 				}
 				builder.mutation = mutation
 				nodes[i], specs[i] = builder.createSpec()

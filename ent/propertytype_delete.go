@@ -16,14 +16,13 @@ import (
 // PropertyTypeDelete is the builder for deleting a PropertyType entity.
 type PropertyTypeDelete struct {
 	config
-	hooks      []Hook
-	mutation   *PropertyTypeMutation
-	predicates []predicate.PropertyType
+	hooks    []Hook
+	mutation *PropertyTypeMutation
 }
 
 // Where adds a new predicate to the delete builder.
 func (ptd *PropertyTypeDelete) Where(ps ...predicate.PropertyType) *PropertyTypeDelete {
-	ptd.predicates = append(ptd.predicates, ps...)
+	ptd.mutation.predicates = append(ptd.mutation.predicates, ps...)
 	return ptd
 }
 
@@ -75,7 +74,7 @@ func (ptd *PropertyTypeDelete) sqlExec(ctx context.Context) (int, error) {
 			},
 		},
 	}
-	if ps := ptd.predicates; len(ps) > 0 {
+	if ps := ptd.mutation.predicates; len(ps) > 0 {
 		_spec.Predicate = func(selector *sql.Selector) {
 			for i := range ps {
 				ps[i](selector)

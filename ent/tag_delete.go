@@ -16,14 +16,13 @@ import (
 // TagDelete is the builder for deleting a Tag entity.
 type TagDelete struct {
 	config
-	hooks      []Hook
-	mutation   *TagMutation
-	predicates []predicate.Tag
+	hooks    []Hook
+	mutation *TagMutation
 }
 
 // Where adds a new predicate to the delete builder.
 func (td *TagDelete) Where(ps ...predicate.Tag) *TagDelete {
-	td.predicates = append(td.predicates, ps...)
+	td.mutation.predicates = append(td.mutation.predicates, ps...)
 	return td
 }
 
@@ -75,7 +74,7 @@ func (td *TagDelete) sqlExec(ctx context.Context) (int, error) {
 			},
 		},
 	}
-	if ps := td.predicates; len(ps) > 0 {
+	if ps := td.mutation.predicates; len(ps) > 0 {
 		_spec.Predicate = func(selector *sql.Selector) {
 			for i := range ps {
 				ps[i](selector)

@@ -63,8 +63,12 @@ func (tq *TagQuery) QueryPools() *ResourcePoolQuery {
 		if err := tq.prepareQuery(ctx); err != nil {
 			return nil, err
 		}
+		selector := tq.sqlQuery()
+		if err := selector.Err(); err != nil {
+			return nil, err
+		}
 		step := sqlgraph.NewStep(
-			sqlgraph.From(tag.Table, tag.FieldID, tq.sqlQuery()),
+			sqlgraph.From(tag.Table, tag.FieldID, selector),
 			sqlgraph.To(resourcepool.Table, resourcepool.FieldID),
 			sqlgraph.Edge(sqlgraph.M2M, false, tag.PoolsTable, tag.PoolsPrimaryKey...),
 		)
@@ -76,23 +80,23 @@ func (tq *TagQuery) QueryPools() *ResourcePoolQuery {
 
 // First returns the first Tag entity in the query. Returns *NotFoundError when no tag was found.
 func (tq *TagQuery) First(ctx context.Context) (*Tag, error) {
-	ts, err := tq.Limit(1).All(ctx)
+	nodes, err := tq.Limit(1).All(ctx)
 	if err != nil {
 		return nil, err
 	}
-	if len(ts) == 0 {
+	if len(nodes) == 0 {
 		return nil, &NotFoundError{tag.Label}
 	}
-	return ts[0], nil
+	return nodes[0], nil
 }
 
 // FirstX is like First, but panics if an error occurs.
 func (tq *TagQuery) FirstX(ctx context.Context) *Tag {
-	t, err := tq.First(ctx)
+	node, err := tq.First(ctx)
 	if err != nil && !IsNotFound(err) {
 		panic(err)
 	}
-	return t
+	return node
 }
 
 // FirstID returns the first Tag id in the query. Returns *NotFoundError when no id was found.
@@ -108,8 +112,8 @@ func (tq *TagQuery) FirstID(ctx context.Context) (id int, err error) {
 	return ids[0], nil
 }
 
-// FirstXID is like FirstID, but panics if an error occurs.
-func (tq *TagQuery) FirstXID(ctx context.Context) int {
+// FirstIDX is like FirstID, but panics if an error occurs.
+func (tq *TagQuery) FirstIDX(ctx context.Context) int {
 	id, err := tq.FirstID(ctx)
 	if err != nil && !IsNotFound(err) {
 		panic(err)
@@ -119,13 +123,13 @@ func (tq *TagQuery) FirstXID(ctx context.Context) int {
 
 // Only returns the only Tag entity in the query, returns an error if not exactly one entity was returned.
 func (tq *TagQuery) Only(ctx context.Context) (*Tag, error) {
-	ts, err := tq.Limit(2).All(ctx)
+	nodes, err := tq.Limit(2).All(ctx)
 	if err != nil {
 		return nil, err
 	}
-	switch len(ts) {
+	switch len(nodes) {
 	case 1:
-		return ts[0], nil
+		return nodes[0], nil
 	case 0:
 		return nil, &NotFoundError{tag.Label}
 	default:
@@ -135,11 +139,11 @@ func (tq *TagQuery) Only(ctx context.Context) (*Tag, error) {
 
 // OnlyX is like Only, but panics if an error occurs.
 func (tq *TagQuery) OnlyX(ctx context.Context) *Tag {
-	t, err := tq.Only(ctx)
+	node, err := tq.Only(ctx)
 	if err != nil {
 		panic(err)
 	}
-	return t
+	return node
 }
 
 // OnlyID returns the only Tag id in the query, returns an error if not exactly one id was returned.
@@ -178,11 +182,11 @@ func (tq *TagQuery) All(ctx context.Context) ([]*Tag, error) {
 
 // AllX is like All, but panics if an error occurs.
 func (tq *TagQuery) AllX(ctx context.Context) []*Tag {
-	ts, err := tq.All(ctx)
+	nodes, err := tq.All(ctx)
 	if err != nil {
 		panic(err)
 	}
-	return ts
+	return nodes
 }
 
 // IDs executes the query and returns a list of Tag ids.
@@ -361,6 +365,7 @@ func (tq *TagQuery) sqlAll(ctx context.Context) ([]*Tag, error) {
 		for _, node := range nodes {
 			ids[node.ID] = node
 			fks = append(fks, node.ID)
+			node.Edges.Pools = []*ResourcePool{}
 		}
 		var (
 			edgeids []int
@@ -463,7 +468,7 @@ func (tq *TagQuery) querySpec() *sqlgraph.QuerySpec {
 	if ps := tq.order; len(ps) > 0 {
 		_spec.Order = func(selector *sql.Selector) {
 			for i := range ps {
-				ps[i](selector)
+				ps[i](selector, tag.ValidColumn)
 			}
 		}
 	}
@@ -482,7 +487,7 @@ func (tq *TagQuery) sqlQuery() *sql.Selector {
 		p(selector)
 	}
 	for _, p := range tq.order {
-		p(selector)
+		p(selector, tag.ValidColumn)
 	}
 	if offset := tq.offset; offset != nil {
 		// limit is mandatory for offset clause. We start
@@ -717,8 +722,17 @@ func (tgb *TagGroupBy) BoolX(ctx context.Context) bool {
 }
 
 func (tgb *TagGroupBy) sqlScan(ctx context.Context, v interface{}) error {
+	for _, f := range tgb.fields {
+		if !tag.ValidColumn(f) {
+			return &ValidationError{Name: f, err: fmt.Errorf("invalid field %q for group-by", f)}
+		}
+	}
+	selector := tgb.sqlQuery()
+	if err := selector.Err(); err != nil {
+		return err
+	}
 	rows := &sql.Rows{}
-	query, args := tgb.sqlQuery().Query()
+	query, args := selector.Query()
 	if err := tgb.driver.Query(ctx, query, args, rows); err != nil {
 		return err
 	}
@@ -731,7 +745,7 @@ func (tgb *TagGroupBy) sqlQuery() *sql.Selector {
 	columns := make([]string, 0, len(tgb.fields)+len(tgb.fns))
 	columns = append(columns, tgb.fields...)
 	for _, fn := range tgb.fns {
-		columns = append(columns, fn(selector))
+		columns = append(columns, fn(selector, tag.ValidColumn))
 	}
 	return selector.Select(columns...).GroupBy(tgb.fields...)
 }
@@ -951,6 +965,11 @@ func (ts *TagSelect) BoolX(ctx context.Context) bool {
 }
 
 func (ts *TagSelect) sqlScan(ctx context.Context, v interface{}) error {
+	for _, f := range ts.fields {
+		if !tag.ValidColumn(f) {
+			return &ValidationError{Name: f, err: fmt.Errorf("invalid field %q for selection", f)}
+		}
+	}
 	rows := &sql.Rows{}
 	query, args := ts.sqlQuery().Query()
 	if err := ts.driver.Query(ctx, query, args, rows); err != nil {

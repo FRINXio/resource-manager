@@ -781,7 +781,7 @@ func (r *tagResolver) Pools(ctx context.Context, obj *ent.Tag) ([]*ent.ResourceP
 }
 
 // Mutation returns generated.MutationResolver implementation.
-//  Mutation() function removed in favour of resolver.go.Mutation()
+func (r *Resolver) Mutation() generated.MutationResolver { return &mutationResolver{r} }
 
 // OutputCursor returns generated.OutputCursorResolver implementation.
 func (r *Resolver) OutputCursor() generated.OutputCursorResolver { return &outputCursorResolver{r} }

@@ -17,13 +17,14 @@ import (
 	"github.com/net-auto/resourceManager/ent/tag"
 
 	"github.com/facebook/ent"
+	"github.com/facebook/ent/privacy"
 )
 
-// The init function reads all schema descriptors with runtime
-// code (default values, validators or hooks) and stitches it
+// The init function reads all schema descriptors with runtime code
+// (default values, validators, hooks and policies) and stitches it
 // to their package variables.
 func init() {
-	allocationstrategy.Policy = schema.AllocationStrategy{}.Policy()
+	allocationstrategy.Policy = privacy.NewPolicies(schema.AllocationStrategy{})
 	allocationstrategy.Hooks[0] = func(next ent.Mutator) ent.Mutator {
 		return ent.MutateFunc(func(ctx context.Context, m ent.Mutation) (ent.Value, error) {
 			if err := allocationstrategy.Policy.EvalMutation(ctx, m); err != nil {
@@ -42,7 +43,7 @@ func init() {
 	allocationstrategyDescScript := allocationstrategyFields[3].Descriptor()
 	// allocationstrategy.ScriptValidator is a validator for the "script" field. It is called by the builders before save.
 	allocationstrategy.ScriptValidator = allocationstrategyDescScript.Validators[0].(func(string) error)
-	poolproperties.Policy = schema.PoolProperties{}.Policy()
+	poolproperties.Policy = privacy.NewPolicies(schema.PoolProperties{})
 	poolproperties.Hooks[0] = func(next ent.Mutator) ent.Mutator {
 		return ent.MutateFunc(func(ctx context.Context, m ent.Mutation) (ent.Value, error) {
 			if err := poolproperties.Policy.EvalMutation(ctx, m); err != nil {
@@ -51,7 +52,7 @@ func init() {
 			return next.Mutate(ctx, m)
 		})
 	}
-	property.Policy = schema.Property{}.Policy()
+	property.Policy = privacy.NewPolicies(schema.Property{})
 	property.Hooks[0] = func(next ent.Mutator) ent.Mutator {
 		return ent.MutateFunc(func(ctx context.Context, m ent.Mutation) (ent.Value, error) {
 			if err := property.Policy.EvalMutation(ctx, m); err != nil {
@@ -60,7 +61,7 @@ func init() {
 			return next.Mutate(ctx, m)
 		})
 	}
-	propertytype.Policy = schema.PropertyType{}.Policy()
+	propertytype.Policy = privacy.NewPolicies(schema.PropertyType{})
 	propertytype.Hooks[0] = func(next ent.Mutator) ent.Mutator {
 		return ent.MutateFunc(func(ctx context.Context, m ent.Mutation) (ent.Value, error) {
 			if err := propertytype.Policy.EvalMutation(ctx, m); err != nil {
@@ -87,7 +88,7 @@ func init() {
 	propertytypeDescDeleted := propertytypeFields[16].Descriptor()
 	// propertytype.DefaultDeleted holds the default value on creation for the deleted field.
 	propertytype.DefaultDeleted = propertytypeDescDeleted.Default.(bool)
-	resource.Policy = schema.Resource{}.Policy()
+	resource.Policy = privacy.NewPolicies(schema.Resource{})
 	resource.Hooks[0] = func(next ent.Mutator) ent.Mutator {
 		return ent.MutateFunc(func(ctx context.Context, m ent.Mutation) (ent.Value, error) {
 			if err := resource.Policy.EvalMutation(ctx, m); err != nil {
@@ -104,7 +105,7 @@ func init() {
 	resource.DefaultUpdatedAt = resourceDescUpdatedAt.Default.(func() time.Time)
 	// resource.UpdateDefaultUpdatedAt holds the default value on update for the updated_at field.
 	resource.UpdateDefaultUpdatedAt = resourceDescUpdatedAt.UpdateDefault.(func() time.Time)
-	resourcepool.Policy = schema.ResourcePool{}.Policy()
+	resourcepool.Policy = privacy.NewPolicies(schema.ResourcePool{})
 	resourcepool.Hooks[0] = func(next ent.Mutator) ent.Mutator {
 		return ent.MutateFunc(func(ctx context.Context, m ent.Mutation) (ent.Value, error) {
 			if err := resourcepool.Policy.EvalMutation(ctx, m); err != nil {
@@ -123,7 +124,7 @@ func init() {
 	resourcepoolDescDealocationSafetyPeriod := resourcepoolFields[3].Descriptor()
 	// resourcepool.DefaultDealocationSafetyPeriod holds the default value on creation for the dealocation_safety_period field.
 	resourcepool.DefaultDealocationSafetyPeriod = resourcepoolDescDealocationSafetyPeriod.Default.(int)
-	resourcetype.Policy = schema.ResourceType{}.Policy()
+	resourcetype.Policy = privacy.NewPolicies(schema.ResourceType{})
 	resourcetype.Hooks[0] = func(next ent.Mutator) ent.Mutator {
 		return ent.MutateFunc(func(ctx context.Context, m ent.Mutation) (ent.Value, error) {
 			if err := resourcetype.Policy.EvalMutation(ctx, m); err != nil {
@@ -147,6 +148,6 @@ func init() {
 }
 
 const (
-	Version = "v0.4.3-0.20200907090222-545048151374"            // Version of ent codegen.
-	Sum     = "h1:1NlkWZx4sUWO7/OSN81sCXWTivqIjG53sL5d4GWc7Mk=" // Sum of ent codegen.
+	Version = "v0.4.4-0.20201019115128-98aeb19013f1"            // Version of ent codegen.
+	Sum     = "h1:fUz6h13o1ZlCy2PJwm/pVXCe6msMEs6CIaJnjJvIRpU=" // Sum of ent codegen.
 )

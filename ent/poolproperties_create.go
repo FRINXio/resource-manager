@@ -77,20 +77,23 @@ func (ppc *PoolPropertiesCreate) Mutation() *PoolPropertiesMutation {
 
 // Save creates the PoolProperties in the database.
 func (ppc *PoolPropertiesCreate) Save(ctx context.Context) (*PoolProperties, error) {
-	if err := ppc.preSave(); err != nil {
-		return nil, err
-	}
 	var (
 		err  error
 		node *PoolProperties
 	)
 	if len(ppc.hooks) == 0 {
+		if err = ppc.check(); err != nil {
+			return nil, err
+		}
 		node, err = ppc.sqlSave(ctx)
 	} else {
 		var mut Mutator = MutateFunc(func(ctx context.Context, m Mutation) (Value, error) {
 			mutation, ok := m.(*PoolPropertiesMutation)
 			if !ok {
 				return nil, fmt.Errorf("unexpected mutation type %T", m)
+			}
+			if err = ppc.check(); err != nil {
+				return nil, err
 			}
 			ppc.mutation = mutation
 			node, err = ppc.sqlSave(ctx)
@@ -116,12 +119,13 @@ func (ppc *PoolPropertiesCreate) SaveX(ctx context.Context) *PoolProperties {
 	return v
 }
 
-func (ppc *PoolPropertiesCreate) preSave() error {
+// check runs all checks and user-defined validators on the builder.
+func (ppc *PoolPropertiesCreate) check() error {
 	return nil
 }
 
 func (ppc *PoolPropertiesCreate) sqlSave(ctx context.Context) (*PoolProperties, error) {
-	pp, _spec := ppc.createSpec()
+	_node, _spec := ppc.createSpec()
 	if err := sqlgraph.CreateNode(ctx, ppc.driver, _spec); err != nil {
 		if cerr, ok := isSQLConstraintError(err); ok {
 			err = cerr
@@ -129,13 +133,13 @@ func (ppc *PoolPropertiesCreate) sqlSave(ctx context.Context) (*PoolProperties, 
 		return nil, err
 	}
 	id := _spec.ID.Value.(int64)
-	pp.ID = int(id)
-	return pp, nil
+	_node.ID = int(id)
+	return _node, nil
 }
 
 func (ppc *PoolPropertiesCreate) createSpec() (*PoolProperties, *sqlgraph.CreateSpec) {
 	var (
-		pp    = &PoolProperties{config: ppc.config}
+		_node = &PoolProperties{config: ppc.config}
 		_spec = &sqlgraph.CreateSpec{
 			Table: poolproperties.Table,
 			ID: &sqlgraph.FieldSpec{
@@ -201,7 +205,7 @@ func (ppc *PoolPropertiesCreate) createSpec() (*PoolProperties, *sqlgraph.Create
 		}
 		_spec.Edges = append(_spec.Edges, edge)
 	}
-	return pp, _spec
+	return _node, _spec
 }
 
 // PoolPropertiesCreateBulk is the builder for creating a bulk of PoolProperties entities.
@@ -219,12 +223,12 @@ func (ppcb *PoolPropertiesCreateBulk) Save(ctx context.Context) ([]*PoolProperti
 		func(i int, root context.Context) {
 			builder := ppcb.builders[i]
 			var mut Mutator = MutateFunc(func(ctx context.Context, m Mutation) (Value, error) {
-				if err := builder.preSave(); err != nil {
-					return nil, err
-				}
 				mutation, ok := m.(*PoolPropertiesMutation)
 				if !ok {
 					return nil, fmt.Errorf("unexpected mutation type %T", m)
+				}
+				if err := builder.check(); err != nil {
+					return nil, err
 				}
 				builder.mutation = mutation
 				nodes[i], specs[i] = builder.createSpec()

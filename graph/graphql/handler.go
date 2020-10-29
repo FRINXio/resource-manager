@@ -7,9 +7,11 @@ package graphql
 import (
 	"context"
 	"errors"
-	"fmt"
+	"github.com/99designs/gqlgen/graphql/handler/extension"
+	"github.com/facebookincubator/ent-contrib/entgql"
+	"github.com/facebookincubator/symphony/graph/graphql/complexity"
+	"github.com/facebookincubator/symphony/pkg/gqlutil"
 	"net/http"
-	"strings"
 	"time"
 
 	// "github.com/net-auto/resourceManager/graph/graphql/directive"
@@ -22,14 +24,12 @@ import (
 	"github.com/net-auto/resourceManager/graph/graphql/resolver"
 
 	"github.com/99designs/gqlgen/graphql"
-	"github.com/99designs/gqlgen/graphql/handler"
 	"github.com/99designs/gqlgen/graphql/playground"
 	"github.com/NYTimes/gziphandler"
 	"github.com/gorilla/mux"
 	"github.com/gorilla/websocket"
 	"github.com/vektah/gqlparser/v2/gqlerror"
 	"go.opencensus.io/plugin/ochttp"
-	"go.opencensus.io/stats/view"
 	"go.uber.org/zap"
 )
 
@@ -57,25 +57,12 @@ func init() {
 }
 
 // NewHandler creates a graphql http handler.
-func NewHandler(cfg HandlerConfig) (http.Handler, func(), error) {
+func NewHandler(cfg HandlerConfig) (http.Handler, error) {
 	rsv := resolver.New(
 		resolver.Config{
-			Client: cfg.Client,
 			Logger: cfg.Logger,
 		},
 	)
-
-	// TODO directive
-	// views := append(
-	// 	ocgql.DefaultViews,
-	// 	directive.ServerDeprecatedCountByObjectInputField,
-	// )
-	views := ocgql.DefaultViews
-
-	if err := view.Register(views...); err != nil {
-		return nil, nil, fmt.Errorf("registering views: %w", err)
-	}
-	closer := func() { view.Unregister(views...) }
 
 	router := mux.NewRouter()
 	router.Use(func(handler http.Handler) http.Handler {
@@ -89,7 +76,7 @@ func NewHandler(cfg HandlerConfig) (http.Handler, func(), error) {
 		})
 	})
 
-	srv := handler.NewDefaultServer(
+	srv := gqlutil.NewServer(
 		generated.NewExecutableSchema(
 			generated.Config{
 				Resolvers: rsv,
@@ -99,10 +86,14 @@ func NewHandler(cfg HandlerConfig) (http.Handler, func(), error) {
 			},
 		),
 	)
+
+	srv.Use(entgql.Transactioner{
+		TxOpener: entgql.TxOpenerFunc(ent.OpenTxFromContext),
+	})
+
 	srv.SetErrorPresenter(errorPresenter(cfg.Logger))
-	srv.SetRecoverFunc(recoverFunc(cfg.Logger))
-	srv.Use(ocgql.Tracer{})
-	srv.Use(ocgql.Metrics{})
+	srv.SetRecoverFunc(gqlutil.RecoverFunc(cfg.Logger))
+	srv.Use(extension.FixedComplexityLimit(complexity.Infinite))
 
 	router.Path("/graphiql").
 		Handler(
@@ -122,28 +113,29 @@ func NewHandler(cfg HandlerConfig) (http.Handler, func(), error) {
 			),
 		)
 
-	return router, closer, nil
+	return router, nil
 }
 
 func errorPresenter(logger log.Logger) graphql.ErrorPresenterFunc {
-	return func(ctx context.Context, err error) *gqlerror.Error {
-		gqlerr := graphql.DefaultErrorPresenter(ctx, err)
-		if strings.Contains(err.Error(), privacy.Deny.Error()) {
-			gqlerr.Message = "Permission denied"
-		} else if _, ok := err.(*gqlerror.Error); !ok {
-			logger.For(ctx).Error("graphql internal error", zap.Error(err))
-			gqlerr.Message = fmt.Sprintf("Sorry, something went wrong - %v", err)
+	return func(ctx context.Context, err error) (gqlerr *gqlerror.Error) {
+		defer func() {
+			if errors.Is(err, privacy.Deny) {
+				gqlerr.Message = "Permission denied"
+			}
+		}()
+		if errors.As(err, &gqlerr) {
+			if gqlerr.Path == nil {
+				gqlerr.Path = graphql.GetPath(ctx)
+			}
+			return gqlerr
 		}
-		return gqlerr
-	}
-}
-
-func recoverFunc(logger log.Logger) graphql.RecoverFunc {
-	return func(ctx context.Context, err interface{}) error {
-		logger.For(ctx).Error("graphql panic recovery",
-			zap.Any("error", err),
-			zap.Stack("stack"),
-		)
-		return errors.New("internal system error")
+		logger.For(ctx).
+			Error("graphql internal failure",
+				zap.Error(err),
+			)
+		return &gqlerror.Error{
+			Message: "Sorry, something went wrong",
+			Path:    graphql.GetPath(ctx),
+		}
 	}
 }

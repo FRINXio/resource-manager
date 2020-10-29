@@ -7,12 +7,10 @@ package graphhttp
 
 import (
 	"github.com/facebookincubator/symphony/pkg/log"
-	"github.com/facebookincubator/symphony/pkg/mysql"
 	"github.com/facebookincubator/symphony/pkg/server"
 	"github.com/facebookincubator/symphony/pkg/server/xserver"
 	"github.com/facebookincubator/symphony/pkg/telemetry"
 	"github.com/net-auto/resourceManager/viewer"
-	"go.opencensus.io/stats/view"
 	"gocloud.dev/server/health"
 )
 
@@ -23,23 +21,16 @@ func NewServer(cfg Config) (*server.Server, func(), error) {
 	if err != nil {
 		return nil, nil, err
 	}
-	router, cleanup, err := newRouter(graphhttpRouterConfig)
+	router, err := newRouter(graphhttpRouterConfig)
 	if err != nil {
 		return nil, nil, err
 	}
 	logger := cfg.Logger
 	zapLogger := xserver.NewRequestLogger(logger)
 	v := cfg.HealthChecks
-	v2 := provideViews()
 	config := cfg.Telemetry
-	exporter, err := telemetry.ProvideViewExporter(config)
+	exporter, cleanup, err := telemetry.ProvideTraceExporter(config)
 	if err != nil {
-		cleanup()
-		return nil, nil, err
-	}
-	traceExporter, cleanup2, err := telemetry.ProvideTraceExporter(config)
-	if err != nil {
-		cleanup()
 		return nil, nil, err
 	}
 	profilingEnabler := _wireProfilingEnablerValue
@@ -49,9 +40,7 @@ func NewServer(cfg Config) (*server.Server, func(), error) {
 	options := &server.Options{
 		RequestLogger:         zapLogger,
 		HealthChecks:          v,
-		Views:                 v2,
-		ViewExporter:          exporter,
-		TraceExporter:         traceExporter,
+		TraceExporter:         exporter,
 		EnableProfiling:       profilingEnabler,
 		DefaultSamplingPolicy: sampler,
 		RecoveryHandler:       handlerFunc,
@@ -59,7 +48,6 @@ func NewServer(cfg Config) (*server.Server, func(), error) {
 	}
 	serverServer := server.New(router, options)
 	return serverServer, func() {
-		cleanup2()
 		cleanup()
 	}, nil
 }
@@ -75,7 +63,7 @@ var (
 type Config struct {
 	Tenancy      viewer.Tenancy
 	Logger       log.Logger
-	Telemetry    *telemetry.Config
+	Telemetry    telemetry.Config
 	HealthChecks []health.Checker
 }
 
@@ -83,10 +71,4 @@ func newRouterConfig(config Config) (cfg routerConfig, err error) {
 	cfg = routerConfig{logger: config.Logger}
 	cfg.viewer.tenancy = config.Tenancy
 	return cfg, nil
-}
-
-func provideViews() []*view.View {
-	views := xserver.DefaultViews()
-	views = append(views, mysql.DefaultViews...)
-	return views
 }

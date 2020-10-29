@@ -47,6 +47,16 @@ var Columns = []string{
 	FieldScript,
 }
 
+// ValidColumn reports if the column name is valid (part of the table columns).
+func ValidColumn(column string) bool {
+	for i := range Columns {
+		if column == Columns[i] {
+			return true
+		}
+	}
+	return false
+}
+
 // Note that the variables below are initialized by the runtime
 // package on the initialization of the application. Therefore,
 // it should be imported in the main as follows:
@@ -94,10 +104,10 @@ func (l Lang) MarshalGQL(w io.Writer) {
 }
 
 // UnmarshalGQL implements graphql.Unmarshaler interface.
-func (l *Lang) UnmarshalGQL(v interface{}) error {
-	str, ok := v.(string)
+func (l *Lang) UnmarshalGQL(val interface{}) error {
+	str, ok := val.(string)
 	if !ok {
-		return fmt.Errorf("enum %T must be a string", v)
+		return fmt.Errorf("enum %T must be a string", val)
 	}
 	*l = Lang(str)
 	if err := LangValidator(*l); err != nil {

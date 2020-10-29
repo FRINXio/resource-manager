@@ -18,14 +18,13 @@ import (
 // PropertyUpdate is the builder for updating Property entities.
 type PropertyUpdate struct {
 	config
-	hooks      []Hook
-	mutation   *PropertyMutation
-	predicates []predicate.Property
+	hooks    []Hook
+	mutation *PropertyMutation
 }
 
 // Where adds a new predicate for the builder.
 func (pu *PropertyUpdate) Where(ps ...predicate.Property) *PropertyUpdate {
-	pu.predicates = append(pu.predicates, ps...)
+	pu.mutation.predicates = append(pu.mutation.predicates, ps...)
 	return pu
 }
 
@@ -255,21 +254,23 @@ func (pu *PropertyUpdate) ClearType() *PropertyUpdate {
 
 // Save executes the query and returns the number of rows/vertices matched by this operation.
 func (pu *PropertyUpdate) Save(ctx context.Context) (int, error) {
-
-	if _, ok := pu.mutation.TypeID(); pu.mutation.TypeCleared() && !ok {
-		return 0, errors.New("ent: clearing a unique edge \"type\"")
-	}
 	var (
 		err      error
 		affected int
 	)
 	if len(pu.hooks) == 0 {
+		if err = pu.check(); err != nil {
+			return 0, err
+		}
 		affected, err = pu.sqlSave(ctx)
 	} else {
 		var mut Mutator = MutateFunc(func(ctx context.Context, m Mutation) (Value, error) {
 			mutation, ok := m.(*PropertyMutation)
 			if !ok {
 				return nil, fmt.Errorf("unexpected mutation type %T", m)
+			}
+			if err = pu.check(); err != nil {
+				return 0, err
 			}
 			pu.mutation = mutation
 			affected, err = pu.sqlSave(ctx)
@@ -308,6 +309,14 @@ func (pu *PropertyUpdate) ExecX(ctx context.Context) {
 	}
 }
 
+// check runs all checks and user-defined validators on the builder.
+func (pu *PropertyUpdate) check() error {
+	if _, ok := pu.mutation.TypeID(); pu.mutation.TypeCleared() && !ok {
+		return errors.New("ent: clearing a required unique edge \"type\"")
+	}
+	return nil
+}
+
 func (pu *PropertyUpdate) sqlSave(ctx context.Context) (n int, err error) {
 	_spec := &sqlgraph.UpdateSpec{
 		Node: &sqlgraph.NodeSpec{
@@ -319,7 +328,7 @@ func (pu *PropertyUpdate) sqlSave(ctx context.Context) (n int, err error) {
 			},
 		},
 	}
-	if ps := pu.predicates; len(ps) > 0 {
+	if ps := pu.mutation.predicates; len(ps) > 0 {
 		_spec.Predicate = func(selector *sql.Selector) {
 			for i := range ps {
 				ps[i](selector)
@@ -751,21 +760,23 @@ func (puo *PropertyUpdateOne) ClearType() *PropertyUpdateOne {
 
 // Save executes the query and returns the updated entity.
 func (puo *PropertyUpdateOne) Save(ctx context.Context) (*Property, error) {
-
-	if _, ok := puo.mutation.TypeID(); puo.mutation.TypeCleared() && !ok {
-		return nil, errors.New("ent: clearing a unique edge \"type\"")
-	}
 	var (
 		err  error
 		node *Property
 	)
 	if len(puo.hooks) == 0 {
+		if err = puo.check(); err != nil {
+			return nil, err
+		}
 		node, err = puo.sqlSave(ctx)
 	} else {
 		var mut Mutator = MutateFunc(func(ctx context.Context, m Mutation) (Value, error) {
 			mutation, ok := m.(*PropertyMutation)
 			if !ok {
 				return nil, fmt.Errorf("unexpected mutation type %T", m)
+			}
+			if err = puo.check(); err != nil {
+				return nil, err
 			}
 			puo.mutation = mutation
 			node, err = puo.sqlSave(ctx)
@@ -784,11 +795,11 @@ func (puo *PropertyUpdateOne) Save(ctx context.Context) (*Property, error) {
 
 // SaveX is like Save, but panics if an error occurs.
 func (puo *PropertyUpdateOne) SaveX(ctx context.Context) *Property {
-	pr, err := puo.Save(ctx)
+	node, err := puo.Save(ctx)
 	if err != nil {
 		panic(err)
 	}
-	return pr
+	return node
 }
 
 // Exec executes the query on the entity.
@@ -804,7 +815,15 @@ func (puo *PropertyUpdateOne) ExecX(ctx context.Context) {
 	}
 }
 
-func (puo *PropertyUpdateOne) sqlSave(ctx context.Context) (pr *Property, err error) {
+// check runs all checks and user-defined validators on the builder.
+func (puo *PropertyUpdateOne) check() error {
+	if _, ok := puo.mutation.TypeID(); puo.mutation.TypeCleared() && !ok {
+		return errors.New("ent: clearing a required unique edge \"type\"")
+	}
+	return nil
+}
+
+func (puo *PropertyUpdateOne) sqlSave(ctx context.Context) (_node *Property, err error) {
 	_spec := &sqlgraph.UpdateSpec{
 		Node: &sqlgraph.NodeSpec{
 			Table:   property.Table,
@@ -1001,9 +1020,9 @@ func (puo *PropertyUpdateOne) sqlSave(ctx context.Context) (pr *Property, err er
 		}
 		_spec.Edges.Add = append(_spec.Edges.Add, edge)
 	}
-	pr = &Property{config: puo.config}
-	_spec.Assign = pr.assignValues
-	_spec.ScanValues = pr.scanValues()
+	_node = &Property{config: puo.config}
+	_spec.Assign = _node.assignValues
+	_spec.ScanValues = _node.scanValues()
 	if err = sqlgraph.UpdateNode(ctx, puo.driver, _spec); err != nil {
 		if _, ok := err.(*sqlgraph.NotFoundError); ok {
 			err = &NotFoundError{property.Label}
@@ -1012,5 +1031,5 @@ func (puo *PropertyUpdateOne) sqlSave(ctx context.Context) (pr *Property, err er
 		}
 		return nil, err
 	}
-	return pr, nil
+	return _node, nil
 }

@@ -21,14 +21,13 @@ import (
 // ResourcePoolUpdate is the builder for updating ResourcePool entities.
 type ResourcePoolUpdate struct {
 	config
-	hooks      []Hook
-	mutation   *ResourcePoolMutation
-	predicates []predicate.ResourcePool
+	hooks    []Hook
+	mutation *ResourcePoolMutation
 }
 
 // Where adds a new predicate for the builder.
 func (rpu *ResourcePoolUpdate) Where(ps ...predicate.ResourcePool) *ResourcePoolUpdate {
-	rpu.predicates = append(rpu.predicates, ps...)
+	rpu.mutation.predicates = append(rpu.mutation.predicates, ps...)
 	return rpu
 }
 
@@ -264,28 +263,23 @@ func (rpu *ResourcePoolUpdate) ClearParentResource() *ResourcePoolUpdate {
 
 // Save executes the query and returns the number of rows/vertices matched by this operation.
 func (rpu *ResourcePoolUpdate) Save(ctx context.Context) (int, error) {
-	if v, ok := rpu.mutation.Name(); ok {
-		if err := resourcepool.NameValidator(v); err != nil {
-			return 0, &ValidationError{Name: "name", err: fmt.Errorf("ent: validator failed for field \"name\": %w", err)}
-		}
-	}
-	if v, ok := rpu.mutation.PoolType(); ok {
-		if err := resourcepool.PoolTypeValidator(v); err != nil {
-			return 0, &ValidationError{Name: "pool_type", err: fmt.Errorf("ent: validator failed for field \"pool_type\": %w", err)}
-		}
-	}
-
 	var (
 		err      error
 		affected int
 	)
 	if len(rpu.hooks) == 0 {
+		if err = rpu.check(); err != nil {
+			return 0, err
+		}
 		affected, err = rpu.sqlSave(ctx)
 	} else {
 		var mut Mutator = MutateFunc(func(ctx context.Context, m Mutation) (Value, error) {
 			mutation, ok := m.(*ResourcePoolMutation)
 			if !ok {
 				return nil, fmt.Errorf("unexpected mutation type %T", m)
+			}
+			if err = rpu.check(); err != nil {
+				return 0, err
 			}
 			rpu.mutation = mutation
 			affected, err = rpu.sqlSave(ctx)
@@ -324,6 +318,21 @@ func (rpu *ResourcePoolUpdate) ExecX(ctx context.Context) {
 	}
 }
 
+// check runs all checks and user-defined validators on the builder.
+func (rpu *ResourcePoolUpdate) check() error {
+	if v, ok := rpu.mutation.Name(); ok {
+		if err := resourcepool.NameValidator(v); err != nil {
+			return &ValidationError{Name: "name", err: fmt.Errorf("ent: validator failed for field \"name\": %w", err)}
+		}
+	}
+	if v, ok := rpu.mutation.PoolType(); ok {
+		if err := resourcepool.PoolTypeValidator(v); err != nil {
+			return &ValidationError{Name: "pool_type", err: fmt.Errorf("ent: validator failed for field \"pool_type\": %w", err)}
+		}
+	}
+	return nil
+}
+
 func (rpu *ResourcePoolUpdate) sqlSave(ctx context.Context) (n int, err error) {
 	_spec := &sqlgraph.UpdateSpec{
 		Node: &sqlgraph.NodeSpec{
@@ -335,7 +344,7 @@ func (rpu *ResourcePoolUpdate) sqlSave(ctx context.Context) (n int, err error) {
 			},
 		},
 	}
-	if ps := rpu.predicates; len(ps) > 0 {
+	if ps := rpu.mutation.predicates; len(ps) > 0 {
 		_spec.Predicate = func(selector *sql.Selector) {
 			for i := range ps {
 				ps[i](selector)
@@ -881,28 +890,23 @@ func (rpuo *ResourcePoolUpdateOne) ClearParentResource() *ResourcePoolUpdateOne 
 
 // Save executes the query and returns the updated entity.
 func (rpuo *ResourcePoolUpdateOne) Save(ctx context.Context) (*ResourcePool, error) {
-	if v, ok := rpuo.mutation.Name(); ok {
-		if err := resourcepool.NameValidator(v); err != nil {
-			return nil, &ValidationError{Name: "name", err: fmt.Errorf("ent: validator failed for field \"name\": %w", err)}
-		}
-	}
-	if v, ok := rpuo.mutation.PoolType(); ok {
-		if err := resourcepool.PoolTypeValidator(v); err != nil {
-			return nil, &ValidationError{Name: "pool_type", err: fmt.Errorf("ent: validator failed for field \"pool_type\": %w", err)}
-		}
-	}
-
 	var (
 		err  error
 		node *ResourcePool
 	)
 	if len(rpuo.hooks) == 0 {
+		if err = rpuo.check(); err != nil {
+			return nil, err
+		}
 		node, err = rpuo.sqlSave(ctx)
 	} else {
 		var mut Mutator = MutateFunc(func(ctx context.Context, m Mutation) (Value, error) {
 			mutation, ok := m.(*ResourcePoolMutation)
 			if !ok {
 				return nil, fmt.Errorf("unexpected mutation type %T", m)
+			}
+			if err = rpuo.check(); err != nil {
+				return nil, err
 			}
 			rpuo.mutation = mutation
 			node, err = rpuo.sqlSave(ctx)
@@ -921,11 +925,11 @@ func (rpuo *ResourcePoolUpdateOne) Save(ctx context.Context) (*ResourcePool, err
 
 // SaveX is like Save, but panics if an error occurs.
 func (rpuo *ResourcePoolUpdateOne) SaveX(ctx context.Context) *ResourcePool {
-	rp, err := rpuo.Save(ctx)
+	node, err := rpuo.Save(ctx)
 	if err != nil {
 		panic(err)
 	}
-	return rp
+	return node
 }
 
 // Exec executes the query on the entity.
@@ -941,7 +945,22 @@ func (rpuo *ResourcePoolUpdateOne) ExecX(ctx context.Context) {
 	}
 }
 
-func (rpuo *ResourcePoolUpdateOne) sqlSave(ctx context.Context) (rp *ResourcePool, err error) {
+// check runs all checks and user-defined validators on the builder.
+func (rpuo *ResourcePoolUpdateOne) check() error {
+	if v, ok := rpuo.mutation.Name(); ok {
+		if err := resourcepool.NameValidator(v); err != nil {
+			return &ValidationError{Name: "name", err: fmt.Errorf("ent: validator failed for field \"name\": %w", err)}
+		}
+	}
+	if v, ok := rpuo.mutation.PoolType(); ok {
+		if err := resourcepool.PoolTypeValidator(v); err != nil {
+			return &ValidationError{Name: "pool_type", err: fmt.Errorf("ent: validator failed for field \"pool_type\": %w", err)}
+		}
+	}
+	return nil
+}
+
+func (rpuo *ResourcePoolUpdateOne) sqlSave(ctx context.Context) (_node *ResourcePool, err error) {
 	_spec := &sqlgraph.UpdateSpec{
 		Node: &sqlgraph.NodeSpec{
 			Table:   resourcepool.Table,
@@ -1246,9 +1265,9 @@ func (rpuo *ResourcePoolUpdateOne) sqlSave(ctx context.Context) (rp *ResourcePoo
 		}
 		_spec.Edges.Add = append(_spec.Edges.Add, edge)
 	}
-	rp = &ResourcePool{config: rpuo.config}
-	_spec.Assign = rp.assignValues
-	_spec.ScanValues = rp.scanValues()
+	_node = &ResourcePool{config: rpuo.config}
+	_spec.Assign = _node.assignValues
+	_spec.ScanValues = _node.scanValues()
 	if err = sqlgraph.UpdateNode(ctx, rpuo.driver, _spec); err != nil {
 		if _, ok := err.(*sqlgraph.NotFoundError); ok {
 			err = &NotFoundError{resourcepool.Label}
@@ -1257,5 +1276,5 @@ func (rpuo *ResourcePoolUpdateOne) sqlSave(ctx context.Context) (rp *ResourcePoo
 		}
 		return nil, err
 	}
-	return rp, nil
+	return _node, nil
 }

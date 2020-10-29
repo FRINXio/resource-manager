@@ -10,15 +10,12 @@ import (
 	"net/http"
 
 	"github.com/facebookincubator/symphony/pkg/log"
-	"github.com/facebookincubator/symphony/pkg/mysql"
 	"github.com/facebookincubator/symphony/pkg/server"
 	"github.com/facebookincubator/symphony/pkg/server/xserver"
 	"github.com/facebookincubator/symphony/pkg/telemetry"
-	"github.com/net-auto/resourceManager/viewer"
-	"go.opencensus.io/stats/view"
-
 	"github.com/google/wire"
 	"github.com/gorilla/mux"
+	"github.com/net-auto/resourceManager/viewer"
 	"gocloud.dev/server/health"
 )
 
@@ -26,7 +23,7 @@ import (
 type Config struct {
 	Tenancy      viewer.Tenancy
 	Logger       log.Logger
-	Telemetry    *telemetry.Config
+	Telemetry    telemetry.Config
 	HealthChecks []health.Checker
 }
 
@@ -34,7 +31,6 @@ type Config struct {
 func NewServer(cfg Config) (*server.Server, func(), error) {
 	wire.Build(
 		xserver.ServiceSet,
-		provideViews,
 		wire.FieldsOf(new(Config), "Logger", "Telemetry", "HealthChecks"),
 		newRouterConfig,
 		newRouter,
@@ -47,10 +43,4 @@ func newRouterConfig(config Config) (cfg routerConfig, err error) {
 	cfg = routerConfig{logger: config.Logger}
 	cfg.viewer.tenancy = config.Tenancy
 	return cfg, nil
-}
-
-func provideViews() []*view.View {
-	views := xserver.DefaultViews()
-	views = append(views, mysql.DefaultViews...)
-	return views
 }

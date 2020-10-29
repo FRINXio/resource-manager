@@ -19,14 +19,13 @@ import (
 // ResourceUpdate is the builder for updating Resource entities.
 type ResourceUpdate struct {
 	config
-	hooks      []Hook
-	mutation   *ResourceMutation
-	predicates []predicate.Resource
+	hooks    []Hook
+	mutation *ResourceMutation
 }
 
 // Where adds a new predicate for the builder.
 func (ru *ResourceUpdate) Where(ps ...predicate.Resource) *ResourceUpdate {
-	ru.predicates = append(ru.predicates, ps...)
+	ru.mutation.predicates = append(ru.mutation.predicates, ps...)
 	return ru
 }
 
@@ -135,27 +134,24 @@ func (ru *ResourceUpdate) ClearNestedPool() *ResourceUpdate {
 
 // Save executes the query and returns the number of rows/vertices matched by this operation.
 func (ru *ResourceUpdate) Save(ctx context.Context) (int, error) {
-	if v, ok := ru.mutation.Status(); ok {
-		if err := resource.StatusValidator(v); err != nil {
-			return 0, &ValidationError{Name: "status", err: fmt.Errorf("ent: validator failed for field \"status\": %w", err)}
-		}
-	}
-	if _, ok := ru.mutation.UpdatedAt(); !ok {
-		v := resource.UpdateDefaultUpdatedAt()
-		ru.mutation.SetUpdatedAt(v)
-	}
-
 	var (
 		err      error
 		affected int
 	)
+	ru.defaults()
 	if len(ru.hooks) == 0 {
+		if err = ru.check(); err != nil {
+			return 0, err
+		}
 		affected, err = ru.sqlSave(ctx)
 	} else {
 		var mut Mutator = MutateFunc(func(ctx context.Context, m Mutation) (Value, error) {
 			mutation, ok := m.(*ResourceMutation)
 			if !ok {
 				return nil, fmt.Errorf("unexpected mutation type %T", m)
+			}
+			if err = ru.check(); err != nil {
+				return 0, err
 			}
 			ru.mutation = mutation
 			affected, err = ru.sqlSave(ctx)
@@ -194,6 +190,24 @@ func (ru *ResourceUpdate) ExecX(ctx context.Context) {
 	}
 }
 
+// defaults sets the default values of the builder before save.
+func (ru *ResourceUpdate) defaults() {
+	if _, ok := ru.mutation.UpdatedAt(); !ok {
+		v := resource.UpdateDefaultUpdatedAt()
+		ru.mutation.SetUpdatedAt(v)
+	}
+}
+
+// check runs all checks and user-defined validators on the builder.
+func (ru *ResourceUpdate) check() error {
+	if v, ok := ru.mutation.Status(); ok {
+		if err := resource.StatusValidator(v); err != nil {
+			return &ValidationError{Name: "status", err: fmt.Errorf("ent: validator failed for field \"status\": %w", err)}
+		}
+	}
+	return nil
+}
+
 func (ru *ResourceUpdate) sqlSave(ctx context.Context) (n int, err error) {
 	_spec := &sqlgraph.UpdateSpec{
 		Node: &sqlgraph.NodeSpec{
@@ -205,7 +219,7 @@ func (ru *ResourceUpdate) sqlSave(ctx context.Context) (n int, err error) {
 			},
 		},
 	}
-	if ps := ru.predicates; len(ps) > 0 {
+	if ps := ru.mutation.predicates; len(ps) > 0 {
 		_spec.Predicate = func(selector *sql.Selector) {
 			for i := range ps {
 				ps[i](selector)
@@ -473,27 +487,24 @@ func (ruo *ResourceUpdateOne) ClearNestedPool() *ResourceUpdateOne {
 
 // Save executes the query and returns the updated entity.
 func (ruo *ResourceUpdateOne) Save(ctx context.Context) (*Resource, error) {
-	if v, ok := ruo.mutation.Status(); ok {
-		if err := resource.StatusValidator(v); err != nil {
-			return nil, &ValidationError{Name: "status", err: fmt.Errorf("ent: validator failed for field \"status\": %w", err)}
-		}
-	}
-	if _, ok := ruo.mutation.UpdatedAt(); !ok {
-		v := resource.UpdateDefaultUpdatedAt()
-		ruo.mutation.SetUpdatedAt(v)
-	}
-
 	var (
 		err  error
 		node *Resource
 	)
+	ruo.defaults()
 	if len(ruo.hooks) == 0 {
+		if err = ruo.check(); err != nil {
+			return nil, err
+		}
 		node, err = ruo.sqlSave(ctx)
 	} else {
 		var mut Mutator = MutateFunc(func(ctx context.Context, m Mutation) (Value, error) {
 			mutation, ok := m.(*ResourceMutation)
 			if !ok {
 				return nil, fmt.Errorf("unexpected mutation type %T", m)
+			}
+			if err = ruo.check(); err != nil {
+				return nil, err
 			}
 			ruo.mutation = mutation
 			node, err = ruo.sqlSave(ctx)
@@ -512,11 +523,11 @@ func (ruo *ResourceUpdateOne) Save(ctx context.Context) (*Resource, error) {
 
 // SaveX is like Save, but panics if an error occurs.
 func (ruo *ResourceUpdateOne) SaveX(ctx context.Context) *Resource {
-	r, err := ruo.Save(ctx)
+	node, err := ruo.Save(ctx)
 	if err != nil {
 		panic(err)
 	}
-	return r
+	return node
 }
 
 // Exec executes the query on the entity.
@@ -532,7 +543,25 @@ func (ruo *ResourceUpdateOne) ExecX(ctx context.Context) {
 	}
 }
 
-func (ruo *ResourceUpdateOne) sqlSave(ctx context.Context) (r *Resource, err error) {
+// defaults sets the default values of the builder before save.
+func (ruo *ResourceUpdateOne) defaults() {
+	if _, ok := ruo.mutation.UpdatedAt(); !ok {
+		v := resource.UpdateDefaultUpdatedAt()
+		ruo.mutation.SetUpdatedAt(v)
+	}
+}
+
+// check runs all checks and user-defined validators on the builder.
+func (ruo *ResourceUpdateOne) check() error {
+	if v, ok := ruo.mutation.Status(); ok {
+		if err := resource.StatusValidator(v); err != nil {
+			return &ValidationError{Name: "status", err: fmt.Errorf("ent: validator failed for field \"status\": %w", err)}
+		}
+	}
+	return nil
+}
+
+func (ruo *ResourceUpdateOne) sqlSave(ctx context.Context) (_node *Resource, err error) {
 	_spec := &sqlgraph.UpdateSpec{
 		Node: &sqlgraph.NodeSpec{
 			Table:   resource.Table,
@@ -686,9 +715,9 @@ func (ruo *ResourceUpdateOne) sqlSave(ctx context.Context) (r *Resource, err err
 		}
 		_spec.Edges.Add = append(_spec.Edges.Add, edge)
 	}
-	r = &Resource{config: ruo.config}
-	_spec.Assign = r.assignValues
-	_spec.ScanValues = r.scanValues()
+	_node = &Resource{config: ruo.config}
+	_spec.Assign = _node.assignValues
+	_spec.ScanValues = _node.scanValues()
 	if err = sqlgraph.UpdateNode(ctx, ruo.driver, _spec); err != nil {
 		if _, ok := err.(*sqlgraph.NotFoundError); ok {
 			err = &NotFoundError{resource.Label}
@@ -697,5 +726,5 @@ func (ruo *ResourceUpdateOne) sqlSave(ctx context.Context) (r *Resource, err err
 		}
 		return nil, err
 	}
-	return r, nil
+	return _node, nil
 }

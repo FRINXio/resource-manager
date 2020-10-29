@@ -8,50 +8,47 @@ package main
 
 import (
 	"context"
-	"fmt"
-
+	"contrib.go.opencensus.io/integrations/ocsql"
 	"github.com/facebookincubator/symphony/pkg/log"
-	"github.com/facebookincubator/symphony/pkg/server"
-	fb_viewer "github.com/facebookincubator/symphony/pkg/viewer"
+	"github.com/facebookincubator/symphony/pkg/server/metrics"
+	"github.com/facebookincubator/symphony/pkg/server/xserver"
+	"github.com/facebookincubator/symphony/pkg/telemetry"
+	"github.com/google/wire"
 	"github.com/net-auto/resourceManager/ent"
-	"github.com/net-auto/resourceManager/psql"
 	"github.com/net-auto/resourceManager/graph/graphhttp"
 	"github.com/net-auto/resourceManager/viewer"
-
-	"github.com/google/wire"
+	"go.opencensus.io/stats/view"
 	"gocloud.dev/server/health"
 )
 
 func newApplication(ctx context.Context, flags *cliFlags) (*application, func(), error) {
 	wire.Build(
 		wire.FieldsOf(new(*cliFlags),
-			"PsqlConfig",
+			"ListenAddress",
+			"MetricsAddress",
 			"LogConfig",
 			"TelemetryConfig",
-			"TenancyConfig",
 		),
 		log.Provider,
-		newApp,
+		wire.Struct(
+			new(application),
+			"*",
+		),
 		newTenancy,
 		newHealthChecks,
 		newPsqlTenancy,
+		metrics.Provider,
+		telemetry.ProvideViewExporter,
+		provideViews,
 		graphhttp.NewServer,
 		wire.Struct(new(graphhttp.Config), "*"),
 	)
 	return nil, nil, nil
 }
 
-func newApp(logger log.Logger, httpServer *server.Server, flags *cliFlags) *application {
-	var app application
-	app.Logger = logger.Background()
-	app.http.Server = httpServer
-	app.http.addr = flags.HTTPAddr
-	return &app
-}
+func newTenancy(ctx context.Context, tenancy *viewer.PsqlTenancy) (viewer.Tenancy, error) {
+	initFunc := func(client *ent.Client) {
 
-func newTenancy(tenancy *viewer.PsqlTenancy) (viewer.Tenancy, error) {
-	initFunc := func(*ent.Client) {
-		// NOOP
 	}
 	return viewer.NewCacheTenancy(tenancy, initFunc), nil
 }
@@ -60,12 +57,12 @@ func newHealthChecks(tenancy *viewer.PsqlTenancy) []health.Checker {
 	return []health.Checker{tenancy}
 }
 
-func newPsqlTenancy(config psql.Config, tenancyConfig fb_viewer.Config, logger log.Logger) (*viewer.PsqlTenancy, error) {
-	tenancy, err := viewer.NewPsqlTenancy(config.String(), tenancyConfig.TenantMaxConn)
-	if err != nil {
-		return nil, fmt.Errorf("creating psql tenancy: %w", err)
-	}
-	tenancy.SetLogger(logger)
-	psql.SetLogger(&config, logger)
-	return tenancy, nil
+func newPsqlTenancy(ctx context.Context, flags *cliFlags) (*viewer.PsqlTenancy, error) {
+	return viewer.NewPsqlTenancy(ctx, flags.DatabaseURL, flags.TenancyConfig.TenantMaxConn)
+}
+
+func provideViews() []*view.View {
+	views := xserver.DefaultViews()
+	views = append(views, ocsql.DefaultViews...)
+	return views
 }

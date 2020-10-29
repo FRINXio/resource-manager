@@ -177,20 +177,24 @@ func (rpc *ResourcePoolCreate) Mutation() *ResourcePoolMutation {
 
 // Save creates the ResourcePool in the database.
 func (rpc *ResourcePoolCreate) Save(ctx context.Context) (*ResourcePool, error) {
-	if err := rpc.preSave(); err != nil {
-		return nil, err
-	}
 	var (
 		err  error
 		node *ResourcePool
 	)
+	rpc.defaults()
 	if len(rpc.hooks) == 0 {
+		if err = rpc.check(); err != nil {
+			return nil, err
+		}
 		node, err = rpc.sqlSave(ctx)
 	} else {
 		var mut Mutator = MutateFunc(func(ctx context.Context, m Mutation) (Value, error) {
 			mutation, ok := m.(*ResourcePoolMutation)
 			if !ok {
 				return nil, fmt.Errorf("unexpected mutation type %T", m)
+			}
+			if err = rpc.check(); err != nil {
+				return nil, err
 			}
 			rpc.mutation = mutation
 			node, err = rpc.sqlSave(ctx)
@@ -216,7 +220,16 @@ func (rpc *ResourcePoolCreate) SaveX(ctx context.Context) *ResourcePool {
 	return v
 }
 
-func (rpc *ResourcePoolCreate) preSave() error {
+// defaults sets the default values of the builder before save.
+func (rpc *ResourcePoolCreate) defaults() {
+	if _, ok := rpc.mutation.DealocationSafetyPeriod(); !ok {
+		v := resourcepool.DefaultDealocationSafetyPeriod
+		rpc.mutation.SetDealocationSafetyPeriod(v)
+	}
+}
+
+// check runs all checks and user-defined validators on the builder.
+func (rpc *ResourcePoolCreate) check() error {
 	if _, ok := rpc.mutation.Name(); !ok {
 		return &ValidationError{Name: "name", err: errors.New("ent: missing required field \"name\"")}
 	}
@@ -234,14 +247,13 @@ func (rpc *ResourcePoolCreate) preSave() error {
 		}
 	}
 	if _, ok := rpc.mutation.DealocationSafetyPeriod(); !ok {
-		v := resourcepool.DefaultDealocationSafetyPeriod
-		rpc.mutation.SetDealocationSafetyPeriod(v)
+		return &ValidationError{Name: "dealocation_safety_period", err: errors.New("ent: missing required field \"dealocation_safety_period\"")}
 	}
 	return nil
 }
 
 func (rpc *ResourcePoolCreate) sqlSave(ctx context.Context) (*ResourcePool, error) {
-	rp, _spec := rpc.createSpec()
+	_node, _spec := rpc.createSpec()
 	if err := sqlgraph.CreateNode(ctx, rpc.driver, _spec); err != nil {
 		if cerr, ok := isSQLConstraintError(err); ok {
 			err = cerr
@@ -249,13 +261,13 @@ func (rpc *ResourcePoolCreate) sqlSave(ctx context.Context) (*ResourcePool, erro
 		return nil, err
 	}
 	id := _spec.ID.Value.(int64)
-	rp.ID = int(id)
-	return rp, nil
+	_node.ID = int(id)
+	return _node, nil
 }
 
 func (rpc *ResourcePoolCreate) createSpec() (*ResourcePool, *sqlgraph.CreateSpec) {
 	var (
-		rp    = &ResourcePool{config: rpc.config}
+		_node = &ResourcePool{config: rpc.config}
 		_spec = &sqlgraph.CreateSpec{
 			Table: resourcepool.Table,
 			ID: &sqlgraph.FieldSpec{
@@ -270,7 +282,7 @@ func (rpc *ResourcePoolCreate) createSpec() (*ResourcePool, *sqlgraph.CreateSpec
 			Value:  value,
 			Column: resourcepool.FieldName,
 		})
-		rp.Name = value
+		_node.Name = value
 	}
 	if value, ok := rpc.mutation.Description(); ok {
 		_spec.Fields = append(_spec.Fields, &sqlgraph.FieldSpec{
@@ -278,7 +290,7 @@ func (rpc *ResourcePoolCreate) createSpec() (*ResourcePool, *sqlgraph.CreateSpec
 			Value:  value,
 			Column: resourcepool.FieldDescription,
 		})
-		rp.Description = &value
+		_node.Description = &value
 	}
 	if value, ok := rpc.mutation.PoolType(); ok {
 		_spec.Fields = append(_spec.Fields, &sqlgraph.FieldSpec{
@@ -286,7 +298,7 @@ func (rpc *ResourcePoolCreate) createSpec() (*ResourcePool, *sqlgraph.CreateSpec
 			Value:  value,
 			Column: resourcepool.FieldPoolType,
 		})
-		rp.PoolType = value
+		_node.PoolType = value
 	}
 	if value, ok := rpc.mutation.DealocationSafetyPeriod(); ok {
 		_spec.Fields = append(_spec.Fields, &sqlgraph.FieldSpec{
@@ -294,7 +306,7 @@ func (rpc *ResourcePoolCreate) createSpec() (*ResourcePool, *sqlgraph.CreateSpec
 			Value:  value,
 			Column: resourcepool.FieldDealocationSafetyPeriod,
 		})
-		rp.DealocationSafetyPeriod = value
+		_node.DealocationSafetyPeriod = value
 	}
 	if nodes := rpc.mutation.ResourceTypeIDs(); len(nodes) > 0 {
 		edge := &sqlgraph.EdgeSpec{
@@ -410,7 +422,7 @@ func (rpc *ResourcePoolCreate) createSpec() (*ResourcePool, *sqlgraph.CreateSpec
 		}
 		_spec.Edges = append(_spec.Edges, edge)
 	}
-	return rp, _spec
+	return _node, _spec
 }
 
 // ResourcePoolCreateBulk is the builder for creating a bulk of ResourcePool entities.
@@ -427,13 +439,14 @@ func (rpcb *ResourcePoolCreateBulk) Save(ctx context.Context) ([]*ResourcePool, 
 	for i := range rpcb.builders {
 		func(i int, root context.Context) {
 			builder := rpcb.builders[i]
+			builder.defaults()
 			var mut Mutator = MutateFunc(func(ctx context.Context, m Mutation) (Value, error) {
-				if err := builder.preSave(); err != nil {
-					return nil, err
-				}
 				mutation, ok := m.(*ResourcePoolMutation)
 				if !ok {
 					return nil, fmt.Errorf("unexpected mutation type %T", m)
+				}
+				if err := builder.check(); err != nil {
+					return nil, err
 				}
 				builder.mutation = mutation
 				nodes[i], specs[i] = builder.createSpec()

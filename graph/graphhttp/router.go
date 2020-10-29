@@ -22,7 +22,7 @@ type routerConfig struct {
 	logger  log.Logger
 }
 
-func newRouter(cfg routerConfig) (*mux.Router, func(), error) {
+func newRouter(cfg routerConfig) (*mux.Router, error) {
 	router := mux.NewRouter()
 	router.Use(
 		func(h http.Handler) http.Handler {
@@ -30,17 +30,17 @@ func newRouter(cfg routerConfig) (*mux.Router, func(), error) {
 		},
 	)
 
-	handler, cleanup, err := graphql.NewHandler(
+	handler, err := graphql.NewHandler(
 		graphql.HandlerConfig{
 			Logger: cfg.logger,
 		},
 	)
 	if err != nil {
-		return nil, nil, fmt.Errorf("creating graphql handler: %w", err)
+		return nil, fmt.Errorf("creating graphql handler: %w", err)
 	}
 	router.PathPrefix("/").
 		Handler(handler).
 		Name("root")
 
-	return router, cleanup, nil
+	return router, nil
 }

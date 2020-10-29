@@ -17,14 +17,13 @@ import (
 // TagUpdate is the builder for updating Tag entities.
 type TagUpdate struct {
 	config
-	hooks      []Hook
-	mutation   *TagMutation
-	predicates []predicate.Tag
+	hooks    []Hook
+	mutation *TagMutation
 }
 
 // Where adds a new predicate for the builder.
 func (tu *TagUpdate) Where(ps ...predicate.Tag) *TagUpdate {
-	tu.predicates = append(tu.predicates, ps...)
+	tu.mutation.predicates = append(tu.mutation.predicates, ps...)
 	return tu
 }
 
@@ -77,23 +76,23 @@ func (tu *TagUpdate) RemovePools(r ...*ResourcePool) *TagUpdate {
 
 // Save executes the query and returns the number of rows/vertices matched by this operation.
 func (tu *TagUpdate) Save(ctx context.Context) (int, error) {
-	if v, ok := tu.mutation.Tag(); ok {
-		if err := tag.TagValidator(v); err != nil {
-			return 0, &ValidationError{Name: "tag", err: fmt.Errorf("ent: validator failed for field \"tag\": %w", err)}
-		}
-	}
-
 	var (
 		err      error
 		affected int
 	)
 	if len(tu.hooks) == 0 {
+		if err = tu.check(); err != nil {
+			return 0, err
+		}
 		affected, err = tu.sqlSave(ctx)
 	} else {
 		var mut Mutator = MutateFunc(func(ctx context.Context, m Mutation) (Value, error) {
 			mutation, ok := m.(*TagMutation)
 			if !ok {
 				return nil, fmt.Errorf("unexpected mutation type %T", m)
+			}
+			if err = tu.check(); err != nil {
+				return 0, err
 			}
 			tu.mutation = mutation
 			affected, err = tu.sqlSave(ctx)
@@ -132,6 +131,16 @@ func (tu *TagUpdate) ExecX(ctx context.Context) {
 	}
 }
 
+// check runs all checks and user-defined validators on the builder.
+func (tu *TagUpdate) check() error {
+	if v, ok := tu.mutation.Tag(); ok {
+		if err := tag.TagValidator(v); err != nil {
+			return &ValidationError{Name: "tag", err: fmt.Errorf("ent: validator failed for field \"tag\": %w", err)}
+		}
+	}
+	return nil
+}
+
 func (tu *TagUpdate) sqlSave(ctx context.Context) (n int, err error) {
 	_spec := &sqlgraph.UpdateSpec{
 		Node: &sqlgraph.NodeSpec{
@@ -143,7 +152,7 @@ func (tu *TagUpdate) sqlSave(ctx context.Context) (n int, err error) {
 			},
 		},
 	}
-	if ps := tu.predicates; len(ps) > 0 {
+	if ps := tu.mutation.predicates; len(ps) > 0 {
 		_spec.Predicate = func(selector *sql.Selector) {
 			for i := range ps {
 				ps[i](selector)
@@ -278,23 +287,23 @@ func (tuo *TagUpdateOne) RemovePools(r ...*ResourcePool) *TagUpdateOne {
 
 // Save executes the query and returns the updated entity.
 func (tuo *TagUpdateOne) Save(ctx context.Context) (*Tag, error) {
-	if v, ok := tuo.mutation.Tag(); ok {
-		if err := tag.TagValidator(v); err != nil {
-			return nil, &ValidationError{Name: "tag", err: fmt.Errorf("ent: validator failed for field \"tag\": %w", err)}
-		}
-	}
-
 	var (
 		err  error
 		node *Tag
 	)
 	if len(tuo.hooks) == 0 {
+		if err = tuo.check(); err != nil {
+			return nil, err
+		}
 		node, err = tuo.sqlSave(ctx)
 	} else {
 		var mut Mutator = MutateFunc(func(ctx context.Context, m Mutation) (Value, error) {
 			mutation, ok := m.(*TagMutation)
 			if !ok {
 				return nil, fmt.Errorf("unexpected mutation type %T", m)
+			}
+			if err = tuo.check(); err != nil {
+				return nil, err
 			}
 			tuo.mutation = mutation
 			node, err = tuo.sqlSave(ctx)
@@ -313,11 +322,11 @@ func (tuo *TagUpdateOne) Save(ctx context.Context) (*Tag, error) {
 
 // SaveX is like Save, but panics if an error occurs.
 func (tuo *TagUpdateOne) SaveX(ctx context.Context) *Tag {
-	t, err := tuo.Save(ctx)
+	node, err := tuo.Save(ctx)
 	if err != nil {
 		panic(err)
 	}
-	return t
+	return node
 }
 
 // Exec executes the query on the entity.
@@ -333,7 +342,17 @@ func (tuo *TagUpdateOne) ExecX(ctx context.Context) {
 	}
 }
 
-func (tuo *TagUpdateOne) sqlSave(ctx context.Context) (t *Tag, err error) {
+// check runs all checks and user-defined validators on the builder.
+func (tuo *TagUpdateOne) check() error {
+	if v, ok := tuo.mutation.Tag(); ok {
+		if err := tag.TagValidator(v); err != nil {
+			return &ValidationError{Name: "tag", err: fmt.Errorf("ent: validator failed for field \"tag\": %w", err)}
+		}
+	}
+	return nil
+}
+
+func (tuo *TagUpdateOne) sqlSave(ctx context.Context) (_node *Tag, err error) {
 	_spec := &sqlgraph.UpdateSpec{
 		Node: &sqlgraph.NodeSpec{
 			Table:   tag.Table,
@@ -410,9 +429,9 @@ func (tuo *TagUpdateOne) sqlSave(ctx context.Context) (t *Tag, err error) {
 		}
 		_spec.Edges.Add = append(_spec.Edges.Add, edge)
 	}
-	t = &Tag{config: tuo.config}
-	_spec.Assign = t.assignValues
-	_spec.ScanValues = t.scanValues()
+	_node = &Tag{config: tuo.config}
+	_spec.Assign = _node.assignValues
+	_spec.ScanValues = _node.scanValues()
 	if err = sqlgraph.UpdateNode(ctx, tuo.driver, _spec); err != nil {
 		if _, ok := err.(*sqlgraph.NotFoundError); ok {
 			err = &NotFoundError{tag.Label}
@@ -421,5 +440,5 @@ func (tuo *TagUpdateOne) sqlSave(ctx context.Context) (t *Tag, err error) {
 		}
 		return nil, err
 	}
-	return t, nil
+	return _node, nil
 }

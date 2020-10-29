@@ -48,20 +48,23 @@ func (tc *TagCreate) Mutation() *TagMutation {
 
 // Save creates the Tag in the database.
 func (tc *TagCreate) Save(ctx context.Context) (*Tag, error) {
-	if err := tc.preSave(); err != nil {
-		return nil, err
-	}
 	var (
 		err  error
 		node *Tag
 	)
 	if len(tc.hooks) == 0 {
+		if err = tc.check(); err != nil {
+			return nil, err
+		}
 		node, err = tc.sqlSave(ctx)
 	} else {
 		var mut Mutator = MutateFunc(func(ctx context.Context, m Mutation) (Value, error) {
 			mutation, ok := m.(*TagMutation)
 			if !ok {
 				return nil, fmt.Errorf("unexpected mutation type %T", m)
+			}
+			if err = tc.check(); err != nil {
+				return nil, err
 			}
 			tc.mutation = mutation
 			node, err = tc.sqlSave(ctx)
@@ -87,7 +90,8 @@ func (tc *TagCreate) SaveX(ctx context.Context) *Tag {
 	return v
 }
 
-func (tc *TagCreate) preSave() error {
+// check runs all checks and user-defined validators on the builder.
+func (tc *TagCreate) check() error {
 	if _, ok := tc.mutation.Tag(); !ok {
 		return &ValidationError{Name: "tag", err: errors.New("ent: missing required field \"tag\"")}
 	}
@@ -100,7 +104,7 @@ func (tc *TagCreate) preSave() error {
 }
 
 func (tc *TagCreate) sqlSave(ctx context.Context) (*Tag, error) {
-	t, _spec := tc.createSpec()
+	_node, _spec := tc.createSpec()
 	if err := sqlgraph.CreateNode(ctx, tc.driver, _spec); err != nil {
 		if cerr, ok := isSQLConstraintError(err); ok {
 			err = cerr
@@ -108,13 +112,13 @@ func (tc *TagCreate) sqlSave(ctx context.Context) (*Tag, error) {
 		return nil, err
 	}
 	id := _spec.ID.Value.(int64)
-	t.ID = int(id)
-	return t, nil
+	_node.ID = int(id)
+	return _node, nil
 }
 
 func (tc *TagCreate) createSpec() (*Tag, *sqlgraph.CreateSpec) {
 	var (
-		t     = &Tag{config: tc.config}
+		_node = &Tag{config: tc.config}
 		_spec = &sqlgraph.CreateSpec{
 			Table: tag.Table,
 			ID: &sqlgraph.FieldSpec{
@@ -129,7 +133,7 @@ func (tc *TagCreate) createSpec() (*Tag, *sqlgraph.CreateSpec) {
 			Value:  value,
 			Column: tag.FieldTag,
 		})
-		t.Tag = value
+		_node.Tag = value
 	}
 	if nodes := tc.mutation.PoolsIDs(); len(nodes) > 0 {
 		edge := &sqlgraph.EdgeSpec{
@@ -150,7 +154,7 @@ func (tc *TagCreate) createSpec() (*Tag, *sqlgraph.CreateSpec) {
 		}
 		_spec.Edges = append(_spec.Edges, edge)
 	}
-	return t, _spec
+	return _node, _spec
 }
 
 // TagCreateBulk is the builder for creating a bulk of Tag entities.
@@ -168,12 +172,12 @@ func (tcb *TagCreateBulk) Save(ctx context.Context) ([]*Tag, error) {
 		func(i int, root context.Context) {
 			builder := tcb.builders[i]
 			var mut Mutator = MutateFunc(func(ctx context.Context, m Mutation) (Value, error) {
-				if err := builder.preSave(); err != nil {
-					return nil, err
-				}
 				mutation, ok := m.(*TagMutation)
 				if !ok {
 					return nil, fmt.Errorf("unexpected mutation type %T", m)
+				}
+				if err := builder.check(); err != nil {
+					return nil, err
 				}
 				builder.mutation = mutation
 				nodes[i], specs[i] = builder.createSpec()

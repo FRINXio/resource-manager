@@ -10,6 +10,7 @@ import (
 
 	"github.com/net-auto/resourceManager/ent/allocationstrategy"
 	"github.com/net-auto/resourceManager/ent/poolproperties"
+	"github.com/net-auto/resourceManager/ent/predicate"
 	"github.com/net-auto/resourceManager/ent/property"
 	"github.com/net-auto/resourceManager/ent/propertytype"
 	"github.com/net-auto/resourceManager/ent/resource"
@@ -56,6 +57,7 @@ type AllocationStrategyMutation struct {
 	clearedpools  bool
 	done          bool
 	oldValue      func(context.Context) (*AllocationStrategy, error)
+	predicates    []predicate.AllocationStrategy
 }
 
 var _ ent.Mutation = (*AllocationStrategyMutation)(nil)
@@ -629,6 +631,7 @@ type PoolPropertiesMutation struct {
 	clearedproperties   bool
 	done                bool
 	oldValue            func(context.Context) (*PoolProperties, error)
+	predicates          []predicate.PoolProperties
 }
 
 var _ ent.Mutation = (*PoolPropertiesMutation)(nil)
@@ -1100,6 +1103,7 @@ type PropertyMutation struct {
 	cleared_type      bool
 	done              bool
 	oldValue          func(context.Context) (*Property, error)
+	predicates        []predicate.Property
 }
 
 var _ ent.Mutation = (*PropertyMutation)(nil)
@@ -2223,6 +2227,7 @@ type PropertyTypeMutation struct {
 	clearedresource_type bool
 	done                 bool
 	oldValue             func(context.Context) (*PropertyType, error)
+	predicates           []predicate.PropertyType
 }
 
 var _ ent.Mutation = (*PropertyTypeMutation)(nil)
@@ -4053,6 +4058,7 @@ type ResourceMutation struct {
 	clearednested_pool bool
 	done               bool
 	oldValue           func(context.Context) (*Resource, error)
+	predicates         []predicate.Resource
 }
 
 var _ ent.Mutation = (*ResourceMutation)(nil)
@@ -4621,6 +4627,7 @@ type ResourcePoolMutation struct {
 	clearedparent_resource       bool
 	done                         bool
 	oldValue                     func(context.Context) (*ResourcePool, error)
+	predicates                   []predicate.ResourcePool
 }
 
 var _ ent.Mutation = (*ResourcePoolMutation)(nil)
@@ -5535,6 +5542,7 @@ type ResourceTypeMutation struct {
 	clearedpools          bool
 	done                  bool
 	oldValue              func(context.Context) (*ResourceType, error)
+	predicates            []predicate.ResourceType
 }
 
 var _ ent.Mutation = (*ResourceTypeMutation)(nil)
@@ -5999,6 +6007,7 @@ type TagMutation struct {
 	clearedpools  bool
 	done          bool
 	oldValue      func(context.Context) (*Tag, error)
+	predicates    []predicate.Tag
 }
 
 var _ ent.Mutation = (*TagMutation)(nil)

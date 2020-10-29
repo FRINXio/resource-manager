@@ -116,7 +116,6 @@ func OpenTestDb(ctx context.Context) *ent.Client {
 func GetContext() context.Context {
 	ctx := context.Background()
 	ctx = authz.NewContext(ctx, &models.PermissionSettings{
-		CanWrite:        true,
 		WorkforcePolicy: authz.NewWorkforcePolicy(true, true)})
 	return ctx
 }

@@ -150,20 +150,23 @@ func (pc *PropertyCreate) Mutation() *PropertyMutation {
 
 // Save creates the Property in the database.
 func (pc *PropertyCreate) Save(ctx context.Context) (*Property, error) {
-	if err := pc.preSave(); err != nil {
-		return nil, err
-	}
 	var (
 		err  error
 		node *Property
 	)
 	if len(pc.hooks) == 0 {
+		if err = pc.check(); err != nil {
+			return nil, err
+		}
 		node, err = pc.sqlSave(ctx)
 	} else {
 		var mut Mutator = MutateFunc(func(ctx context.Context, m Mutation) (Value, error) {
 			mutation, ok := m.(*PropertyMutation)
 			if !ok {
 				return nil, fmt.Errorf("unexpected mutation type %T", m)
+			}
+			if err = pc.check(); err != nil {
+				return nil, err
 			}
 			pc.mutation = mutation
 			node, err = pc.sqlSave(ctx)
@@ -189,7 +192,8 @@ func (pc *PropertyCreate) SaveX(ctx context.Context) *Property {
 	return v
 }
 
-func (pc *PropertyCreate) preSave() error {
+// check runs all checks and user-defined validators on the builder.
+func (pc *PropertyCreate) check() error {
 	if _, ok := pc.mutation.TypeID(); !ok {
 		return &ValidationError{Name: "type", err: errors.New("ent: missing required edge \"type\"")}
 	}
@@ -197,7 +201,7 @@ func (pc *PropertyCreate) preSave() error {
 }
 
 func (pc *PropertyCreate) sqlSave(ctx context.Context) (*Property, error) {
-	pr, _spec := pc.createSpec()
+	_node, _spec := pc.createSpec()
 	if err := sqlgraph.CreateNode(ctx, pc.driver, _spec); err != nil {
 		if cerr, ok := isSQLConstraintError(err); ok {
 			err = cerr
@@ -205,13 +209,13 @@ func (pc *PropertyCreate) sqlSave(ctx context.Context) (*Property, error) {
 		return nil, err
 	}
 	id := _spec.ID.Value.(int64)
-	pr.ID = int(id)
-	return pr, nil
+	_node.ID = int(id)
+	return _node, nil
 }
 
 func (pc *PropertyCreate) createSpec() (*Property, *sqlgraph.CreateSpec) {
 	var (
-		pr    = &Property{config: pc.config}
+		_node = &Property{config: pc.config}
 		_spec = &sqlgraph.CreateSpec{
 			Table: property.Table,
 			ID: &sqlgraph.FieldSpec{
@@ -226,7 +230,7 @@ func (pc *PropertyCreate) createSpec() (*Property, *sqlgraph.CreateSpec) {
 			Value:  value,
 			Column: property.FieldIntVal,
 		})
-		pr.IntVal = &value
+		_node.IntVal = &value
 	}
 	if value, ok := pc.mutation.BoolVal(); ok {
 		_spec.Fields = append(_spec.Fields, &sqlgraph.FieldSpec{
@@ -234,7 +238,7 @@ func (pc *PropertyCreate) createSpec() (*Property, *sqlgraph.CreateSpec) {
 			Value:  value,
 			Column: property.FieldBoolVal,
 		})
-		pr.BoolVal = &value
+		_node.BoolVal = &value
 	}
 	if value, ok := pc.mutation.FloatVal(); ok {
 		_spec.Fields = append(_spec.Fields, &sqlgraph.FieldSpec{
@@ -242,7 +246,7 @@ func (pc *PropertyCreate) createSpec() (*Property, *sqlgraph.CreateSpec) {
 			Value:  value,
 			Column: property.FieldFloatVal,
 		})
-		pr.FloatVal = &value
+		_node.FloatVal = &value
 	}
 	if value, ok := pc.mutation.LatitudeVal(); ok {
 		_spec.Fields = append(_spec.Fields, &sqlgraph.FieldSpec{
@@ -250,7 +254,7 @@ func (pc *PropertyCreate) createSpec() (*Property, *sqlgraph.CreateSpec) {
 			Value:  value,
 			Column: property.FieldLatitudeVal,
 		})
-		pr.LatitudeVal = &value
+		_node.LatitudeVal = &value
 	}
 	if value, ok := pc.mutation.LongitudeVal(); ok {
 		_spec.Fields = append(_spec.Fields, &sqlgraph.FieldSpec{
@@ -258,7 +262,7 @@ func (pc *PropertyCreate) createSpec() (*Property, *sqlgraph.CreateSpec) {
 			Value:  value,
 			Column: property.FieldLongitudeVal,
 		})
-		pr.LongitudeVal = &value
+		_node.LongitudeVal = &value
 	}
 	if value, ok := pc.mutation.RangeFromVal(); ok {
 		_spec.Fields = append(_spec.Fields, &sqlgraph.FieldSpec{
@@ -266,7 +270,7 @@ func (pc *PropertyCreate) createSpec() (*Property, *sqlgraph.CreateSpec) {
 			Value:  value,
 			Column: property.FieldRangeFromVal,
 		})
-		pr.RangeFromVal = &value
+		_node.RangeFromVal = &value
 	}
 	if value, ok := pc.mutation.RangeToVal(); ok {
 		_spec.Fields = append(_spec.Fields, &sqlgraph.FieldSpec{
@@ -274,7 +278,7 @@ func (pc *PropertyCreate) createSpec() (*Property, *sqlgraph.CreateSpec) {
 			Value:  value,
 			Column: property.FieldRangeToVal,
 		})
-		pr.RangeToVal = &value
+		_node.RangeToVal = &value
 	}
 	if value, ok := pc.mutation.StringVal(); ok {
 		_spec.Fields = append(_spec.Fields, &sqlgraph.FieldSpec{
@@ -282,7 +286,7 @@ func (pc *PropertyCreate) createSpec() (*Property, *sqlgraph.CreateSpec) {
 			Value:  value,
 			Column: property.FieldStringVal,
 		})
-		pr.StringVal = &value
+		_node.StringVal = &value
 	}
 	if nodes := pc.mutation.TypeIDs(); len(nodes) > 0 {
 		edge := &sqlgraph.EdgeSpec{
@@ -303,7 +307,7 @@ func (pc *PropertyCreate) createSpec() (*Property, *sqlgraph.CreateSpec) {
 		}
 		_spec.Edges = append(_spec.Edges, edge)
 	}
-	return pr, _spec
+	return _node, _spec
 }
 
 // PropertyCreateBulk is the builder for creating a bulk of Property entities.
@@ -321,12 +325,12 @@ func (pcb *PropertyCreateBulk) Save(ctx context.Context) ([]*Property, error) {
 		func(i int, root context.Context) {
 			builder := pcb.builders[i]
 			var mut Mutator = MutateFunc(func(ctx context.Context, m Mutation) (Value, error) {
-				if err := builder.preSave(); err != nil {
-					return nil, err
-				}
 				mutation, ok := m.(*PropertyMutation)
 				if !ok {
 					return nil, fmt.Errorf("unexpected mutation type %T", m)
+				}
+				if err := builder.check(); err != nil {
+					return nil, err
 				}
 				builder.mutation = mutation
 				nodes[i], specs[i] = builder.createSpec()

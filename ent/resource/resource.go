@@ -65,6 +65,21 @@ var ForeignKeys = []string{
 	"resource_pool_claims",
 }
 
+// ValidColumn reports if the column name is valid (part of the table columns).
+func ValidColumn(column string) bool {
+	for i := range Columns {
+		if column == Columns[i] {
+			return true
+		}
+	}
+	for i := range ForeignKeys {
+		if column == ForeignKeys[i] {
+			return true
+		}
+	}
+	return false
+}
+
 // Note that the variables below are initialized by the runtime
 // package on the initialization of the application. Therefore,
 // it should be imported in the main as follows:
@@ -111,10 +126,10 @@ func (s Status) MarshalGQL(w io.Writer) {
 }
 
 // UnmarshalGQL implements graphql.Unmarshaler interface.
-func (s *Status) UnmarshalGQL(v interface{}) error {
-	str, ok := v.(string)
+func (s *Status) UnmarshalGQL(val interface{}) error {
+	str, ok := val.(string)
 	if !ok {
-		return fmt.Errorf("enum %T must be a string", v)
+		return fmt.Errorf("enum %T must be a string", val)
 	}
 	*s = Status(str)
 	if err := StatusValidator(*s); err != nil {
