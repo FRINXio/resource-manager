@@ -11,10 +11,10 @@ import (
 	"fmt"
 
 	"github.com/facebookincubator/symphony/pkg/log"
-	"github.com/facebookincubator/symphony/pkg/mysql"
 	"github.com/facebookincubator/symphony/pkg/server"
 	fb_viewer "github.com/facebookincubator/symphony/pkg/viewer"
 	"github.com/net-auto/resourceManager/ent"
+	"github.com/net-auto/resourceManager/psql"
 	"github.com/net-auto/resourceManager/graph/graphhttp"
 	"github.com/net-auto/resourceManager/viewer"
 
@@ -25,7 +25,7 @@ import (
 func newApplication(ctx context.Context, flags *cliFlags) (*application, func(), error) {
 	wire.Build(
 		wire.FieldsOf(new(*cliFlags),
-			"MySQLConfig",
+			"PsqlConfig",
 			"LogConfig",
 			"TelemetryConfig",
 			"TenancyConfig",
@@ -34,7 +34,7 @@ func newApplication(ctx context.Context, flags *cliFlags) (*application, func(),
 		newApp,
 		newTenancy,
 		newHealthChecks,
-		newMySQLTenancy,
+		newPsqlTenancy,
 		graphhttp.NewServer,
 		wire.Struct(new(graphhttp.Config), "*"),
 	)
@@ -49,23 +49,23 @@ func newApp(logger log.Logger, httpServer *server.Server, flags *cliFlags) *appl
 	return &app
 }
 
-func newTenancy(tenancy *viewer.MySQLTenancy) (viewer.Tenancy, error) {
+func newTenancy(tenancy *viewer.PsqlTenancy) (viewer.Tenancy, error) {
 	initFunc := func(*ent.Client) {
 		// NOOP
 	}
 	return viewer.NewCacheTenancy(tenancy, initFunc), nil
 }
 
-func newHealthChecks(tenancy *viewer.MySQLTenancy) []health.Checker {
+func newHealthChecks(tenancy *viewer.PsqlTenancy) []health.Checker {
 	return []health.Checker{tenancy}
 }
 
-func newMySQLTenancy(config mysql.Config, tenancyConfig fb_viewer.Config, logger log.Logger) (*viewer.MySQLTenancy, error) {
-	tenancy, err := viewer.NewMySQLTenancy(config.String(), tenancyConfig.TenantMaxConn)
+func newPsqlTenancy(config psql.Config, tenancyConfig fb_viewer.Config, logger log.Logger) (*viewer.PsqlTenancy, error) {
+	tenancy, err := viewer.NewPsqlTenancy(config.String(), tenancyConfig.TenantMaxConn)
 	if err != nil {
-		return nil, fmt.Errorf("creating mysql tenancy: %w", err)
+		return nil, fmt.Errorf("creating psql tenancy: %w", err)
 	}
 	tenancy.SetLogger(logger)
-	mysql.SetLogger(logger)
+	psql.SetLogger(&config, logger)
 	return tenancy, nil
 }

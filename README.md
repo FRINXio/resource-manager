@@ -8,7 +8,8 @@ Generate an access token in github and place it into .env.
 Execute build.sh and then run.sh
 
 Note: See build.sh for git configuration required for using symphony as a dependency
-Note: run.sh runs a mysql container
+
+Note: run.sh expects DB to be running on localhost
 
 Subsequently, you can use test-queries.graphql to exercise the APIs
 
@@ -33,11 +34,7 @@ go test -run Integration ./pools/...
 ## TODOs
 
 * !! Unify property (de)serialisation across the pool package
-* !! graphql error handling ... no msg is returned to caller e.g. when creating a duplicate pool
 * graphql.schema - add support for directives to better control entity field values
-* !! pool - support labels
-* ent - research and implement policies/privacy for entities based on user role (RBAC)
-* docker-compose - create docker compose for graphql server + mysql
 * security ?
 * logging
 * actions triggers ?
@@ -146,7 +143,7 @@ go get github.com/google/wire/cmd/wire
 
 Generate wiring code:
 ```
-wire ./graph/...
+wire ./...
 ```
 
 ### ent.go

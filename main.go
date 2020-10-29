@@ -8,6 +8,7 @@ import (
 	"context"
 	"github.com/alecthomas/kong"
 	"github.com/net-auto/resourceManager/ent/schema"
+	"github.com/net-auto/resourceManager/psql"
 	logger "github.com/net-auto/resourceManager/logging"
 	stdlog "log"
 	"os"
@@ -16,7 +17,6 @@ import (
 	"github.com/facebookincubator/symphony/pkg/ctxgroup"
 	"github.com/facebookincubator/symphony/pkg/ctxutil"
 	"github.com/facebookincubator/symphony/pkg/log"
-	"github.com/facebookincubator/symphony/pkg/mysql"
 	"github.com/facebookincubator/symphony/pkg/server"
 	"github.com/facebookincubator/symphony/pkg/telemetry"
 	"github.com/facebookincubator/symphony/pkg/viewer"
@@ -27,7 +27,7 @@ import (
 
 type cliFlags struct {
 	HTTPAddr           string            `name:"web.listen-address" default:":http" help:"Web address to listen on."`
-	MySQLConfig        mysql.Config      `name:"mysql.dsn" env:"MYSQL_DSN" required:"" placeholder:"STRING" help:"MySQL data source name."`
+	PsqlConfig         psql.Config       `name:"psql.dsn" env:"PSQL_DSN" required:"" placeholder:"STRING" help:"PSQPostgres data source name."`
 	LogConfig          log.Config        `embed:""`
 	TelemetryConfig    telemetry.Config  `embed:""`
 	TenancyConfig      viewer.Config     `embed:""`

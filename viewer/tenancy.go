@@ -11,6 +11,7 @@ import (
 	"database/sql"
 	"fmt"
 	"github.com/net-auto/resourceManager/pools/allocating_strategies"
+	"github.com/net-auto/resourceManager/psql"
 	"runtime"
 	"sync"
 
@@ -18,11 +19,10 @@ import (
 	entsql "github.com/facebook/ent/dialect/sql"
 	"github.com/facebookincubator/symphony/pkg/ent/migrate"
 	"github.com/facebookincubator/symphony/pkg/log"
-	pkgmysql "github.com/facebookincubator/symphony/pkg/mysql"
 	fb_viewer "github.com/facebookincubator/symphony/pkg/viewer"
 	"github.com/net-auto/resourceManager/ent"
 
-	"github.com/go-sql-driver/mysql"
+	"github.com/jackc/pgx"
 	"go.opencensus.io/trace"
 	"go.uber.org/zap"
 	"gocloud.dev/server/health"
@@ -96,7 +96,7 @@ func (c *CacheTenancy) ClientFor(ctx context.Context, name string) (*ent.Client,
 }
 
 // SetLogger sets tenancy logger.
-func (m *MySQLTenancy) SetLogger(logger log.Logger) {
+func (m *PsqlTenancy) SetLogger(logger log.Logger) {
 	m.logger = logger
 }
 
@@ -109,32 +109,32 @@ func (c *CacheTenancy) CheckHealth() error {
 }
 
 // MySQLTenancy provides logical database per tenant.
-type MySQLTenancy struct {
+type PsqlTenancy struct {
 	health.Checker
 	logger        log.Logger
-	config        *mysql.Config
+	dsnUrl        string
 	tenantMaxConn int
 	closers       []func()
 	tenantManager *TenantService
 }
 
-// NewMySQLTenancy creates mysql tenancy for data source.
-func NewMySQLTenancy(dsn string, tenantMaxConn int) (*MySQLTenancy, error) {
-	config, err := mysql.ParseDSN(dsn)
+// NewPsqlTenancy creates psql tenancy for data source.
+func NewPsqlTenancy(dsn string, tenantMaxConn int) (*PsqlTenancy, error) {
+	_, err := pgx.ParseConnectionString(dsn)
 	if err != nil {
 		return nil, fmt.Errorf("parsing dsn: %w", err)
 	}
-	db := pkgmysql.Open(dsn)
+	db := psql.Open(dsn)
 	checker := sqlhealth.New(db)
-	tenancy := &MySQLTenancy{
+	tenancy := &PsqlTenancy{
 		Checker:       checker,
-		config:        config,
+		dsnUrl:        dsn,
 		tenantMaxConn: tenantMaxConn,
 		logger:        log.NewNopLogger(),
 		closers:       []func(){checker.Stop},
 		tenantManager: NewTenantService(db),
 	}
-	runtime.SetFinalizer(tenancy, func(tenancy *MySQLTenancy) {
+	runtime.SetFinalizer(tenancy, func(tenancy *PsqlTenancy) {
 		for _, closer := range tenancy.closers {
 			closer()
 		}
@@ -143,8 +143,8 @@ func NewMySQLTenancy(dsn string, tenantMaxConn int) (*MySQLTenancy, error) {
 }
 
 // ClientFor implements Tenancy interface.
-func (m *MySQLTenancy) ClientFor(ctx context.Context, name string) (*ent.Client, error) {
-	client := ent.NewClient(ent.Driver(entsql.OpenDB(dialect.MySQL, m.dbFor(name))))
+func (m *PsqlTenancy) ClientFor(ctx context.Context, name string) (*ent.Client, error) {
+	client := ent.NewClient(ent.Driver(entsql.OpenDB(dialect.Postgres, m.dbFor(name))))
 
 	if exists, err := m.tenantManager.Exist(ctx, name); !exists && err == nil {
 		m.logger.For(ctx).Info("Creating db for new tenant", zap.String("tenant", name))
@@ -170,7 +170,7 @@ func (m *MySQLTenancy) ClientFor(ctx context.Context, name string) (*ent.Client,
 	return client, nil
 }
 
-func (m *MySQLTenancy) migrate(ctx context.Context, client *ent.Client) error {
+func (m *PsqlTenancy) migrate(ctx context.Context, client *ent.Client) error {
 	ctx, span := trace.StartSpan(ctx, "tenancy.Migrate")
 	defer span.End()
 	if err := client.Schema.Create(ctx,
@@ -184,10 +184,15 @@ func (m *MySQLTenancy) migrate(ctx context.Context, client *ent.Client) error {
 	return nil
 }
 
-func (m *MySQLTenancy) dbFor(name string) *sql.DB {
-	m.config.DBName = fb_viewer.DBName(name)
-	db := pkgmysql.Open(m.config.FormatDSN())
+func (m *PsqlTenancy) dbFor(name string) *sql.DB {
+	dbName, err := psql.ReplaceDbName(m.dsnUrl, fb_viewer.DBName(name))
+	if (err != nil) {
+		m.logger.Background().Error("Unable to create DB for tenant: ", zap.Error(err))
+		panic("Unable to create DB for tenant: " + err.Error())
+	}
+	m.dsnUrl = dbName
+	db := psql.Open(m.dsnUrl)
 	db.SetMaxOpenConns(m.tenantMaxConn)
-	m.closers = append(m.closers, pkgmysql.RecordStats(db))
+	m.closers = append(m.closers, psql.RecordStats(db))
 	return db
 }

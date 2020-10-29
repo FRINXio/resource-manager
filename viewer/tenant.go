@@ -32,40 +32,22 @@ func NewTenantService(db *sql.DB) *TenantService {
 
 // Create a tenant by name.
 func (s TenantService) Create(ctx context.Context, name string) (tenant *Tenant, err error) {
-	var tx *sql.Tx
-	if tx, err = s.db.BeginTx(ctx, nil); err != nil {
-		return nil, fmt.Errorf("beginning transaction: %w", err)
-	}
-	defer func() {
-		if r := recover(); r != nil {
-			_ = tx.Rollback()
-			panic(r)
-		}
-		if err != nil {
-			_ = tx.Rollback()
-			return
-		}
-		if err = tx.Commit(); err != nil {
-			err = fmt.Errorf("committing transaction: %w", err)
-		}
-	}()
-
-	return create(tx, ctx, name, s)
+	return create(s.db, ctx, name, s)
 }
 
-func create(tx *sql.Tx, ctx context.Context, name string, s TenantService) (*Tenant, error) {
+func create(tx *sql.DB, ctx context.Context, name string, s TenantService) (*Tenant, error) {
 	if name == "" {
 		return nil, errors.Errorf("missing tenant name")
 	}
 
-	switch exist, err := s.exist(tx, ctx, name); {
+	switch exist, err := s.Exist(ctx, name); {
 	case err != nil:
 		return nil, err
 	case exist:
 		return nil, errors.Errorf("tenant %q exists", name)
 	}
 
-	if _, err := tx.ExecContext(ctx, fmt.Sprintf("CREATE DATABASE `%s` DEFAULT CHARACTER SET utf8mb4 DEFAULT COLLATE utf8mb4_bin", viewer.DBName(name))); err != nil {
+	if _, err := tx.ExecContext(ctx, fmt.Sprintf("CREATE DATABASE %s ENCODING 'UTF8' LC_COLLATE 'en_US.utf8' LC_CTYPE 'en_US.utf8'", viewer.DBName(name))); err != nil {
 		return nil, err
 	}
 	return &Tenant{Id: name, Name: name}, nil
@@ -135,15 +117,18 @@ func (s TenantService) Exist(ctx context.Context, name string) (exists bool, err
 }
 
 func (s TenantService) exist(tx *sql.Tx, ctx context.Context, name string) (bool, error) {
-	rows, err := tx.QueryContext(ctx,
-		"SELECT COUNT(*) FROM INFORMATION_SCHEMA.SCHEMATA WHERE SCHEMA_NAME = ?", viewer.DBName(name),
+	rows, err := tx.QueryContext(
+		ctx,
+		"SELECT 1 FROM pg_database WHERE datname = $1",
+		viewer.DBName(name),
 	)
+
 	if err != nil {
 		return false, err
 	}
 	defer rows.Close()
 	if !rows.Next() {
-		return false, sql.ErrNoRows
+		return false, nil
 	}
 	var n int
 	if err := rows.Scan(&n); err != nil {

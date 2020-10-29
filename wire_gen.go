@@ -9,11 +9,11 @@ import (
 	"context"
 	"fmt"
 	"github.com/facebookincubator/symphony/pkg/log"
-	"github.com/facebookincubator/symphony/pkg/mysql"
 	"github.com/facebookincubator/symphony/pkg/server"
 	viewer2 "github.com/facebookincubator/symphony/pkg/viewer"
 	"github.com/net-auto/resourceManager/ent"
 	"github.com/net-auto/resourceManager/graph/graphhttp"
+	"github.com/net-auto/resourceManager/psql"
 	"github.com/net-auto/resourceManager/viewer"
 	"gocloud.dev/server/health"
 )
@@ -30,20 +30,20 @@ func newApplication(ctx context.Context, flags *cliFlags) (*application, func(),
 	if err != nil {
 		return nil, nil, err
 	}
-	mysqlConfig := flags.MySQLConfig
+	psqlConfig := flags.PsqlConfig
 	viewerConfig := flags.TenancyConfig
-	mySQLTenancy, err := newMySQLTenancy(mysqlConfig, viewerConfig, logger)
+	psqlTenancy, err := newPsqlTenancy(psqlConfig, viewerConfig, logger)
 	if err != nil {
 		cleanup()
 		return nil, nil, err
 	}
-	tenancy, err := newTenancy(mySQLTenancy)
+	tenancy, err := newTenancy(psqlTenancy)
 	if err != nil {
 		cleanup()
 		return nil, nil, err
 	}
 	telemetryConfig := &flags.TelemetryConfig
-	v := newHealthChecks(mySQLTenancy)
+	v := newHealthChecks(psqlTenancy)
 	graphhttpConfig := graphhttp.Config{
 		Tenancy:      tenancy,
 		Logger:       logger,
@@ -72,23 +72,23 @@ func newApp(logger log.Logger, httpServer *server.Server, flags *cliFlags) *appl
 	return &app
 }
 
-func newTenancy(tenancy *viewer.MySQLTenancy) (viewer.Tenancy, error) {
+func newTenancy(tenancy *viewer.PsqlTenancy) (viewer.Tenancy, error) {
 	initFunc := func(*ent.Client) {
 
 	}
 	return viewer.NewCacheTenancy(tenancy, initFunc), nil
 }
 
-func newHealthChecks(tenancy *viewer.MySQLTenancy) []health.Checker {
+func newHealthChecks(tenancy *viewer.PsqlTenancy) []health.Checker {
 	return []health.Checker{tenancy}
 }
 
-func newMySQLTenancy(config mysql.Config, tenancyConfig viewer2.Config, logger log.Logger) (*viewer.MySQLTenancy, error) {
-	tenancy, err := viewer.NewMySQLTenancy(config.String(), tenancyConfig.TenantMaxConn)
+func newPsqlTenancy(config psql.Config, tenancyConfig viewer2.Config, logger log.Logger) (*viewer.PsqlTenancy, error) {
+	tenancy, err := viewer.NewPsqlTenancy(config.String(), tenancyConfig.TenantMaxConn)
 	if err != nil {
-		return nil, fmt.Errorf("creating mysql tenancy: %w", err)
+		return nil, fmt.Errorf("creating psql tenancy: %w", err)
 	}
 	tenancy.SetLogger(logger)
-	mysql.SetLogger(logger)
+	psql.SetLogger(&config, logger)
 	return tenancy, nil
 }
