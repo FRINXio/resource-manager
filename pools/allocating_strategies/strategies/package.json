@@ -1,7 +1,7 @@
 {
   "name": "strategies",
   "version": "1.0.0",
-  "license": "BSD-3-Clause-No-Nuclear-Warranty",
+  "license": "BSD-3-Clause",
   "description": "",
   "scripts": {
     "test": "jest --reporters=jest-silent-reporter",
