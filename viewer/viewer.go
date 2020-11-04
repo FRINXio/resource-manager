@@ -30,7 +30,7 @@ const (
 )
 
 // TenancyHandler adds viewer / tenancy into incoming requests.
-func TenancyHandler(h http.Handler, tenancy Tenancy, _ log.Logger) http.Handler {
+func TenancyHandler(h http.Handler, tenancy Tenancy, symphLogger log.Logger) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		tenant := r.Header.Get(TenantHeader)
 		if tenant == "" {
@@ -51,7 +51,7 @@ func TenancyHandler(h http.Handler, tenancy Tenancy, _ log.Logger) http.Handler 
 
 		logger.Debug(r.Context(),"getting tenancy client for %+v", zap.String("tenant", tenant))
 
-		client, err := tenancy.ClientFor(r.Context(), tenant, logger)
+		client, err := tenancy.ClientFor(r.Context(), tenant, symphLogger.For(r.Context()))
 		if err != nil {
 			const msg = "cannot get tenancy client"
 			logger.Warn(r.Context(), msg + "error: %+v", zap.Error(err))

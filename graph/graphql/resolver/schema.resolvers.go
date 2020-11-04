@@ -5,7 +5,7 @@ package resolver
 
 import (
 	"context"
-	log "github.com/net-auto/resourceManager/logging"
+
 	"github.com/net-auto/resourceManager/ent"
 	"github.com/net-auto/resourceManager/ent/allocationstrategy"
 	"github.com/net-auto/resourceManager/ent/predicate"
@@ -16,6 +16,7 @@ import (
 	tagWhere "github.com/net-auto/resourceManager/ent/tag"
 	"github.com/net-auto/resourceManager/graph/graphql/generated"
 	"github.com/net-auto/resourceManager/graph/graphql/model"
+	log "github.com/net-auto/resourceManager/logging"
 	p "github.com/net-auto/resourceManager/pools"
 	"github.com/vektah/gqlparser/v2/gqlerror"
 )
@@ -406,7 +407,7 @@ func (r *mutationResolver) DeleteResourceType(ctx context.Context, input model.D
 	// delete property types
 	_, err = client.PropertyType.Delete().Where(propertytype.HasResourceTypeWith(resourcetype.ID(resourceType.ID))).Exec(ctx)
 	if err != nil {
-		log.Error(ctx, err,  "Unable delete resource type ID %d", input.ResourceTypeID)
+		log.Error(ctx, err, "Unable delete resource type ID %d", input.ResourceTypeID)
 		return retValue, gqlerror.Errorf("Unable to delete resource type - error deleting property types: %v", err)
 	}
 
@@ -414,7 +415,7 @@ func (r *mutationResolver) DeleteResourceType(ctx context.Context, input model.D
 	if err := client.ResourceType.DeleteOneID(input.ResourceTypeID).Exec(ctx); err == nil {
 		return &model.DeleteResourceTypePayload{ResourceTypeID: input.ResourceTypeID}, nil
 	} else {
-		log.Error(ctx, err,  "Unable delete resource type ID %d", input.ResourceTypeID)
+		log.Error(ctx, err, "Unable delete resource type ID %d", input.ResourceTypeID)
 		return retValue, gqlerror.Errorf("Unable to delete resource type: %v", err)
 	}
 }
@@ -423,7 +424,7 @@ func (r *mutationResolver) UpdateResourceTypeName(ctx context.Context, input mod
 	var client = r.ClientFrom(ctx)
 	retValue := &model.UpdateResourceTypeNamePayload{ResourceTypeID: input.ResourceTypeID}
 	if _, err := client.ResourceType.UpdateOneID(input.ResourceTypeID).SetName(input.ResourceName).Save(ctx); err != nil {
-		log.Error(ctx, err,  "Unable to update resource type ID %d", input.ResourceTypeID)
+		log.Error(ctx, err, "Unable to update resource type ID %d", input.ResourceTypeID)
 		return retValue, gqlerror.Errorf("Unable to update resource type: %v", err)
 	} else {
 		return retValue, nil
@@ -486,7 +487,7 @@ func (r *queryResolver) QueryResources(ctx context.Context, poolID int) ([]*ent.
 func (r *queryResolver) QueryAllocationStrategy(ctx context.Context, allocationStrategyID int) (*ent.AllocationStrategy, error) {
 	client := r.ClientFrom(ctx)
 	if strats, err := client.AllocationStrategy.Query().Where(allocationstrategy.ID(allocationStrategyID)).Only(ctx); err != nil {
-		log.Error(ctx, err,  "Unable to retrieve allocation strategy ID %d", allocationStrategyID)
+		log.Error(ctx, err, "Unable to retrieve allocation strategy ID %d", allocationStrategyID)
 		return nil, gqlerror.Errorf("Unable to query strategy: %v", err)
 	} else {
 		return strats, nil
@@ -496,7 +497,7 @@ func (r *queryResolver) QueryAllocationStrategy(ctx context.Context, allocationS
 func (r *queryResolver) QueryAllocationStrategies(ctx context.Context) ([]*ent.AllocationStrategy, error) {
 	client := r.ClientFrom(ctx)
 	if strats, err := client.AllocationStrategy.Query().All(ctx); err != nil {
-		log.Error(ctx, err,  "Unable to retrieve allocation strategies")
+		log.Error(ctx, err, "Unable to retrieve allocation strategies")
 		return nil, gqlerror.Errorf("Unable to query strategies: %v", err)
 	} else {
 		return strats, nil
@@ -506,7 +507,7 @@ func (r *queryResolver) QueryAllocationStrategies(ctx context.Context) ([]*ent.A
 func (r *queryResolver) QueryResourceTypes(ctx context.Context) ([]*ent.ResourceType, error) {
 	client := r.ClientFrom(ctx)
 	if resourceTypes, err := client.ResourceType.Query().All(ctx); err != nil {
-		log.Error(ctx, err,  "Unable to retrieve resource types")
+		log.Error(ctx, err, "Unable to retrieve resource types")
 		return nil, gqlerror.Errorf("Unable to query resource types: %v", err)
 	} else {
 		return resourceTypes, nil
@@ -517,7 +518,7 @@ func (r *queryResolver) QueryResourcePool(ctx context.Context, poolID int) (*ent
 	rp, err := r.ClientFrom(ctx).ResourcePool.Get(ctx, poolID)
 
 	if err != nil {
-		log.Error(ctx, err,  "Unable to retrieve resource pool")
+		log.Error(ctx, err, "Unable to retrieve resource pool")
 	}
 
 	return rp, err
@@ -532,7 +533,7 @@ func (r *queryResolver) QueryResourcePools(ctx context.Context, resourceTypeID *
 	}
 
 	if resourcePools, err := query.All(ctx); err != nil {
-		log.Error(ctx, err,  "Unable to retrieve resource pools")
+		log.Error(ctx, err, "Unable to retrieve resource pools")
 		return nil, gqlerror.Errorf("Unable to query resource pools: %v", err)
 	} else {
 		return resourcePools, nil
@@ -550,7 +551,7 @@ func (r *queryResolver) QueryRootResourcePools(ctx context.Context, resourceType
 	}
 
 	if resourcePools, err := query.All(ctx); err != nil {
-		log.Error(ctx, err,  "Unable to retrieve root resource pools")
+		log.Error(ctx, err, "Unable to retrieve root resource pools")
 		return nil, gqlerror.Errorf("Unable to query resource pools: %v", err)
 	} else {
 		return resourcePools, nil
@@ -569,7 +570,7 @@ func (r *queryResolver) QueryLeafResourcePools(ctx context.Context, resourceType
 	}
 
 	if resourcePools, err := query.All(ctx); err != nil {
-		log.Error(ctx, err,  "Unable to retrieve leaf resource pools")
+		log.Error(ctx, err, "Unable to retrieve leaf resource pools")
 		return nil, gqlerror.Errorf("Unable to query resource pools: %v", err)
 	} else {
 		return resourcePools, nil
@@ -600,7 +601,7 @@ func (r *queryResolver) SearchPoolsByTags(ctx context.Context, tags *model.TagOr
 
 	matchedPools, err := client.ResourcePool.Query().Where(predicateOr).All(ctx)
 	if err != nil {
-		log.Error(ctx, err,  "Unable to retrieve pools by tags")
+		log.Error(ctx, err, "Unable to retrieve pools by tags")
 		return nil, gqlerror.Errorf("Unable to query pools: %v", err)
 	}
 	return matchedPools, nil
@@ -610,7 +611,7 @@ func (r *queryResolver) QueryTags(ctx context.Context) ([]*ent.Tag, error) {
 	var client = r.ClientFrom(ctx)
 	tags, err := client.Tag.Query().All(ctx)
 	if err != nil {
-		log.Error(ctx, err,  "Unable to retrieve tags")
+		log.Error(ctx, err, "Unable to retrieve tags")
 		return nil, gqlerror.Errorf("Unable to query tags: %v", err)
 	}
 	return tags, nil
@@ -621,7 +622,7 @@ func (r *queryResolver) Node(ctx context.Context, id int) (ent.Noder, error) {
 	node, err := client.Noder(ctx, id)
 
 	if err != nil {
-		log.Error(ctx, err,  "Unable to retrieve node with ID %d", id)
+		log.Error(ctx, err, "Unable to retrieve node with ID %d", id)
 	}
 
 	return node, err
@@ -630,12 +631,12 @@ func (r *queryResolver) Node(ctx context.Context, id int) (ent.Noder, error) {
 func (r *resourceResolver) Properties(ctx context.Context, obj *ent.Resource) (map[string]interface{}, error) {
 	props, err := obj.QueryProperties().WithType().All(ctx)
 	if err != nil {
-		log.Error(ctx, err,  "Unable to retrieve properties for resource with ID %d", obj.ID)
+		log.Error(ctx, err, "Unable to retrieve properties for resource with ID %d", obj.ID)
 		return nil, gqlerror.Errorf("Unable to query properties: %v", err)
 	}
 
 	if props, err := p.PropertiesToMap(props); err != nil {
-		log.Error(ctx, err,  "Unable to process properties for resource with ID %d", obj.ID)
+		log.Error(ctx, err, "Unable to process properties for resource with ID %d", obj.ID)
 		return nil, gqlerror.Errorf("Unable to query properties: %v", err)
 	} else {
 		return props, nil
@@ -644,7 +645,7 @@ func (r *resourceResolver) Properties(ctx context.Context, obj *ent.Resource) (m
 
 func (r *resourceResolver) NestedPool(ctx context.Context, obj *ent.Resource) (*ent.ResourcePool, error) {
 	if es, err := obj.Edges.NestedPoolOrErr(); !ent.IsNotLoaded(err) {
-		log.Error(ctx, err,  "Unable to retrieve nested pool for resource with ID %d", obj.ID)
+		log.Error(ctx, err, "Unable to retrieve nested pool for resource with ID %d", obj.ID)
 		return es, err
 	}
 	if pool, err := obj.QueryNestedPool().First(ctx); ent.IsNotFound(err) {
@@ -762,7 +763,7 @@ func (r *resourceTypeResolver) Pools(ctx context.Context, obj *ent.ResourceType)
 		log.Error(ctx, err, "Loading resource pools for resource type %d failed", obj.ID)
 	}
 
-    return pools, err
+	return pools, err
 }
 
 func (r *tagResolver) Pools(ctx context.Context, obj *ent.Tag) ([]*ent.ResourcePool, error) {

@@ -14,8 +14,11 @@ import (
 	"github.com/facebookincubator/symphony/pkg/telemetry"
 	"github.com/net-auto/resourceManager/ent"
 	"github.com/net-auto/resourceManager/graph/graphhttp"
+	"github.com/net-auto/resourceManager/logging"
 	"github.com/net-auto/resourceManager/viewer"
 	"go.opencensus.io/stats/view"
+	"go.uber.org/zap"
+	"go.uber.org/zap/zapcore"
 	"gocloud.dev/server/health"
 )
 
@@ -26,39 +29,31 @@ import (
 // Injectors from wire.go:
 
 func newApplication(ctx context.Context, flags *cliFlags) (*application, func(), error) {
-	config := flags.LogConfig
-	logger, cleanup, err := log.ProvideLogger(config)
-	if err != nil {
-		return nil, nil, err
-	}
+	logger := provideLogger(ctx, flags)
 	zapLogger := log.ProvideZapLogger(logger)
 	psqlTenancy, err := newPsqlTenancy(ctx, flags)
 	if err != nil {
-		cleanup()
 		return nil, nil, err
 	}
 	tenancy, err := newTenancy(ctx, psqlTenancy)
 	if err != nil {
-		cleanup()
 		return nil, nil, err
 	}
-	telemetryConfig := flags.TelemetryConfig
+	config := flags.TelemetryConfig
 	v := newHealthChecks(psqlTenancy)
 	graphhttpConfig := graphhttp.Config{
 		Tenancy:      tenancy,
 		Logger:       logger,
-		Telemetry:    telemetryConfig,
+		Telemetry:    config,
 		HealthChecks: v,
 	}
-	server, cleanup2, err := graphhttp.NewServer(graphhttpConfig)
+	server, cleanup, err := graphhttp.NewServer(graphhttpConfig)
 	if err != nil {
-		cleanup()
 		return nil, nil, err
 	}
 	string2 := flags.ListenAddress
-	viewExporter, err := telemetry.ProvideViewExporter(telemetryConfig)
+	viewExporter, err := telemetry.ProvideViewExporter(config)
 	if err != nil {
-		cleanup2()
 		cleanup()
 		return nil, nil, err
 	}
@@ -78,7 +73,6 @@ func newApplication(ctx context.Context, flags *cliFlags) (*application, func(),
 		metricsAddr: addr,
 	}
 	return mainApplication, func() {
-		cleanup2()
 		cleanup()
 	}, nil
 }
@@ -98,6 +92,68 @@ func newHealthChecks(tenancy *viewer.PsqlTenancy) []health.Checker {
 
 func newPsqlTenancy(ctx context.Context, flags *cliFlags) (*viewer.PsqlTenancy, error) {
 	return viewer.NewPsqlTenancy(ctx, flags.DatabaseURL, flags.TenancyConfig.TenantMaxConn)
+}
+
+// Adapter exposing RM logger into symphony logger
+type rmLoggerSymphonyAdapter struct {
+	bg *zap.Logger
+}
+
+// Background returns a context-unaware logger.
+func (l rmLoggerSymphonyAdapter) Background() *zap.Logger {
+	return l.bg
+}
+
+// For returns a context-aware logger.
+func (l rmLoggerSymphonyAdapter) For(ctx context.Context) *zap.Logger {
+	return l.Background().With(log.FieldsFromContext(ctx)...)
+}
+
+// provideLogger initializes RM logger and exposes it to the wiring system as symphony logger
+func provideLogger(ctx context.Context, cf *cliFlags) log.Logger {
+	logging.Init(cf.LogPath, cf.LogLevel, cf.LogWithColors)
+	var zapLevel zapcore.Level
+	switch cf.LogLevel {
+	case "trace":
+	case "debug":
+		zapLevel = zapcore.DebugLevel
+		break
+	case "warn":
+		zapLevel = zapcore.WarnLevel
+		break
+	case "error":
+		zapLevel = zapcore.ErrorLevel
+		break
+	case "panic":
+		zapLevel = zapcore.PanicLevel
+		break
+	case "fatal":
+		zapLevel = zapcore.FatalLevel
+		break
+	case "info":
+	default:
+		zapLevel = zapcore.InfoLevel
+		break
+	}
+	zapLevel.Enabled(zap.DebugLevel)
+	zapEncoder := zapcore.NewConsoleEncoder(zapcore.EncoderConfig{
+		MessageKey:       "msg",
+		LevelKey:         "",
+		TimeKey:          "",
+		NameKey:          "",
+		CallerKey:        "",
+		FunctionKey:      "",
+		StacktraceKey:    "",
+		LineEnding:       "",
+		EncodeLevel:      nil,
+		EncodeTime:       nil,
+		EncodeDuration:   nil,
+		EncodeCaller:     zapcore.ShortCallerEncoder,
+		EncodeName:       zapcore.FullNameEncoder,
+		ConsoleSeparator: " ",
+	})
+	core := zapcore.NewCore(zapEncoder, zapcore.AddSync(logging.GetLogger().Writer()), zapLevel)
+	return rmLoggerSymphonyAdapter{zap.New(core)}
 }
 
 func provideViews() []*view.View {

@@ -170,14 +170,12 @@ func (m *PsqlTenancy) createTenanDb(ctx context.Context, logger *zap.Logger, nam
 		return fmt.Errorf("opening root psql database: %w", err)
 	}
 
-	logger.Error("X : Checking if exists")
 	if exists, err := ExistTenantDb(ctx, name, dbRoot); !exists && err == nil {
 		logger.Info("Creating db for new tenant", zap.String("tenant", name))
 		if _, err := CreateTenantDb(ctx, name, dbRoot); err != nil {
 			return err
 		}
 	} else if exists && err == nil {
-		logger.Error("X : Exists ???")
 		// Do nothing, db already in place
 	} else {
 		logger.Error("Creating db for new tenant failed", zap.String("tenant", name))

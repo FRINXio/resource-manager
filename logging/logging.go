@@ -26,6 +26,10 @@ func Close() {
 	}
 }
 
+func GetLogger() *logrus.Logger {
+	return log
+}
+
 func Init(path string, logLevel string, withColors bool) {
 	f, err := os.OpenFile(path, os.O_WRONLY | os.O_CREATE | os.O_APPEND, 0755)
 

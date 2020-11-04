@@ -9,7 +9,6 @@ import (
 	"github.com/alecthomas/kong"
 	"github.com/facebookincubator/symphony/pkg/server/metrics"
 	"github.com/net-auto/resourceManager/ent/schema"
-	"github.com/net-auto/resourceManager/psql"
 	logger "github.com/net-auto/resourceManager/logging"
 	stdlog "log"
 	"net/url"
@@ -18,7 +17,6 @@ import (
 
 	"github.com/facebookincubator/symphony/pkg/ctxgroup"
 	"github.com/facebookincubator/symphony/pkg/ctxutil"
-	"github.com/facebookincubator/symphony/pkg/log"
 	"github.com/facebookincubator/symphony/pkg/server"
 	"github.com/facebookincubator/symphony/pkg/telemetry"
 	"github.com/facebookincubator/symphony/pkg/viewer"
@@ -28,17 +26,16 @@ import (
 )
 
 type cliFlags struct {
-	ConfigFile      kong.ConfigFlag  `type:"existingfile" placeholder:"PATH" help:"Configuration file path."`
-	ListenAddress   string           `name:"web.listen-address" default:":http" help:"Web address to listen on."`
-	MetricsAddress  metrics.Addr     `name:"metrics.listen-address" default:":9464" help:"Metrics address to listen on."`
-	DatabaseURL     *url.URL         `name:"db.url" env:"DB_URL" required:"" placeholder:"URL" help:"Database URL."`
-	LogConfig       log.Config       `embed:""`
-	TelemetryConfig telemetry.Config `embed:""`
-	TenancyConfig   viewer.Config    `embed:""`
+	ConfigFile      kong.ConfigFlag   `type:"existingfile" placeholder:"PATH" help:"Configuration file path."`
+	ListenAddress   string            `name:"web.listen-address" default:":http" help:"Web address to listen on."`
+	MetricsAddress  metrics.Addr      `name:"metrics.listen-address" default:":9464" help:"Metrics address to listen on."`
+	DatabaseURL     *url.URL          `name:"db.url" env:"DB_URL" required:"" placeholder:"URL" help:"Database URL."`
+	TelemetryConfig telemetry.Config  `embed:""`
+	TenancyConfig   viewer.Config     `embed:""`
 	RbacConfig      schema.RbacConfig `embed:""`
-	LogPath 		   string            `name:"logPath" env:"RM_LOG_PATH" default:"./rm.log" help:"Path to logfile." type:"path"`
-	LogLevel 		   string            `name:"loglevel" env:"RM_LOG_LEVEL" default:"info" help:"Logging level - fatal, error, warning, info, debug or trace." type:"string"`
-	LogWithColors 	   bool              `name:"logWithColors" default:"false" help:"Force colors in log." type:"bool"`
+	LogPath         string            `name:"logPath" env:"RM_LOG_PATH" default:"./rm.log" help:"Path to logfile." type:"path"`
+	LogLevel        string            `name:"loglevel" env:"RM_LOG_LEVEL" default:"info" help:"Logging level - fatal, error, warning, info, debug or trace." type:"string"`
+	LogWithColors   bool              `name:"logWithColors" default:"false" help:"Force colors in log." type:"bool"`
 }
 
 func main() {
@@ -51,23 +48,21 @@ func main() {
 		syscall.SIGTERM,
 	)
 
-
 	app, cleanup, err := newApplication(ctx, &cf)
 	if err != nil {
 		stdlog.Fatal(err)
 	}
 	defer cleanup()
 
-	logger.Init(cf.LogPath, cf.LogLevel, cf.LogWithColors)
 	defer logger.Close()
 
-	logger.Info(ctx,"initializing RBAC with %+v", zap.Reflect("rbacConfig", cf.RbacConfig))
+	logger.Info(ctx, "initializing RBAC with %+v", zap.Reflect("rbacConfig", cf.RbacConfig))
 	initializeRbacSettings(cf)
 
-	logger.Info(ctx,"starting application %+v", zap.String("httpEndpoint", cf.ListenAddress))
+	logger.Info(ctx, "starting application %+v", zap.String("httpEndpoint", cf.ListenAddress))
 
 	err = app.run(ctx)
-	logger.Info(ctx,"terminating application %+v", zap.Error(err))
+	logger.Info(ctx, "terminating application %+v", zap.Error(err))
 }
 
 // initializeRbacSettings configures which roles and groups grant users admin access ... globally
