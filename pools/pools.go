@@ -2,6 +2,7 @@ package pools
 
 import (
 	"context"
+	log "github.com/net-auto/resourceManager/logging"
 
 	"github.com/net-auto/resourceManager/ent"
 	"github.com/net-auto/resourceManager/ent/resource"
@@ -67,6 +68,7 @@ func newFixedPoolInner(ctx context.Context,
 		Save(ctx)
 
 	if err != nil {
+		log.Error(ctx, err, "Unable to create new pool \"%s\". Error creating pool", poolName)
 		return nil, errors.Wrapf(err, "Unable to create new pool \"%s\". Error creating pool", poolName)
 	}
 
@@ -74,27 +76,11 @@ func newFixedPoolInner(ctx context.Context,
 	_, resourceErr := PreCreateResources(ctx, client, propertyValues, pool, resourceType, resource.StatusFree)
 
 	if resourceErr != nil {
+		log.Error(ctx, err, "Unable to create new pool \"%s\"", poolName)
 		return nil, errors.Wrapf(resourceErr, "Unable to create pool")
 	}
 
 	return pool, nil
-}
-
-// ExistingPool wraps existing pool entity
-func ExistingPool(
-	ctx context.Context,
-	client *ent.Client,
-	poolName string) (Pool, error) {
-
-	pool, err := client.ResourcePool.Query().
-		Where(resourcePool.NameEQ(poolName)).
-		Only(ctx)
-
-	if err != nil {
-		return nil, errors.Wrapf(err, "Cannot create pool from existing entity")
-	}
-
-	return existingPool(ctx, client, pool)
 }
 
 // ExistingPool wraps existing pool entity by ID
@@ -108,6 +94,7 @@ func ExistingPoolFromId(
 		Only(ctx)
 
 	if err != nil {
+		log.Error(ctx, err, "Unable to find pool ID %d", poolId)
 		return nil, errors.Wrapf(err, "Cannot create pool from existing entity")
 	}
 
@@ -127,10 +114,13 @@ func existingPool(
 	case resourcePool.PoolTypeAllocating:
 		wasmer, err := NewWasmerUsingEnvVars()
 		if err != nil {
+			log.Error(ctx, err, "Unable to create wasmer for %d", pool.ID)
 			return nil, err
 		}
 		return &AllocatingPool{SetPool{poolBase{pool, ctx, client}}, wasmer}, nil
 	default:
-		return nil, errors.Errorf("Unknown pool type \"%s\"", pool.PoolType)
+		err := errors.Errorf("Unknown pool type \"%s\"", pool.PoolType)
+		log.Error(ctx, err, "cannot create pool")
+		return nil, err
 	}
 }

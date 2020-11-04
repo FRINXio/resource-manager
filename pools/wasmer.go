@@ -4,12 +4,13 @@ import (
 	"bytes"
 	"context"
 	"encoding/json"
-	"fmt"
 	"os"
 	"os/exec"
 	"strconv"
 	"strings"
 	"time"
+
+	log "github.com/net-auto/resourceManager/logging"
 
 	"github.com/net-auto/resourceManager/ent"
 	"github.com/net-auto/resourceManager/ent/allocationstrategy"
@@ -37,7 +38,10 @@ func loadEnvVar(key string, defaultValue string) (string, error) {
 		if defaultValue != "" {
 			return defaultValue, nil
 		}
-		return "", errors.Errorf("Environment variable \"%s\" not found", key)
+
+		err := errors.Errorf("Environment variable \"%s\" not found", key)
+		log.Error(nil, err, "Environment variable missing")
+		return "", err
 	}
 	return value, nil
 }
@@ -50,7 +54,9 @@ func NewWasmerUsingEnvVars() (*Wasmer, error) {
 	}
 	maxTimeoutMillis, err := strconv.Atoi(maxTimeoutMillisStr)
 	if err != nil {
-		return nil, errors.Wrapf(err, "Cannot convert \"%s\" to int", maxTimeoutMillisStr)
+		err := errors.Wrapf(err, "Cannot convert \"%s\" to int", maxTimeoutMillisStr)
+		log.Error(nil, err, "Conversion error")
+		return nil, err
 	}
 	maxTimeout := time.Duration(maxTimeoutMillis) * time.Millisecond
 
@@ -110,14 +116,18 @@ func InvokeAllocationStrategy(
 	case allocationstrategy.LangPy:
 		return invoker.invokePy(strat.Script, userInput, resourcePool, currentResources, poolPropertiesMaps, functionName)
 	default:
-		return nil, "", errors.Errorf("Unknown language \"%s\" for strategy \"%s\"", strat.Lang, strat.Name)
+		err := errors.Errorf("Unknown language \"%s\" for strategy \"%s\"", strat.Lang, strat.Name)
+		log.Error(nil, err, "Unknown strategy language")
+		return nil, "", err
 	}
 }
 
 func serializeJsVariable(name string, data interface{}) (string, error) {
 	userInputBytes, err := json.Marshal(data)
 	if err != nil {
-		return "", errors.Wrap(err, "Cannot serialize userInput into json")
+		err := errors.Wrap(err, "Cannot serialize userInput into json")
+		log.Error(nil, err, "Cannot serialize userInput")
+		return "", err
 	}
 	return "const " + name + " = " + string(userInputBytes[:]) + ";\n", nil
 }
@@ -182,8 +192,7 @@ if (result != null) {
 `
 
 	scriptWithInvoker := header + strategyScript + footer
-	// TODO logging
-	fmt.Println("Executing\n" + scriptWithInvoker)
+	log.Debug(nil, "Executing:\n %s", scriptWithInvoker)
 	return wasmer.invoke(wasmer.wasmerBinPath, wasmer.jsBinPath, "--", "--std", "-e", scriptWithInvoker)
 }
 
@@ -202,18 +211,21 @@ func (wasmer Wasmer) invoke(name string, arg ...string) (map[string]interface{},
 	stderr := string(stderrBuffer.Bytes())
 
 	if err != nil {
-		return nil, "", errors.Wrapf(err,
+		err := errors.Wrapf(err,
 			"Error invoking user script. Stdout: \"%s\", Stderr: \"%s\"", string(stdout), stderr)
+		log.Error(nil, err, "Error invoking user script")
+		return nil, "", err
 	}
 
-	// TODO logging fmt.Println("Stdout:" + string(stdout[:]))
-	// TODO logging fmt.Println("Stderr:" + stderr[:])
+	log.Debug(nil, "Stdout: %s", string(stdout[:]))
+	log.Debug(nil, "Stderr: %s", stderr[:])
 
 	m := make(map[string]interface{})
 	if err := json.Unmarshal(stdout, &m); err != nil {
+		log.Error(nil, err, "Parsing error")
 		return nil, stderr, errors.Wrapf(err,
 			"Unable to parse allocation function output as flat JSON: \"%s\". " +
-			"Error output: \"%s\"", string(stdout), string(stderr))
+			"Error output: \"%s\"", string(stdout), stderr)
 	}
 	return m, stderr, nil
 }
@@ -230,11 +242,13 @@ func prefixLines(str string, prefix string) string {
 func serializePythonVariable(name string, data interface{}) (string, error) {
 	userInputBytes, err := json.Marshal(data)
 	if err != nil {
+		log.Error(nil, err, "Cannot serialize")
 		return "", errors.Wrapf(err, "Cannot serialize %s into json", name)
 	}
 	// Encode twice so that the result starts and ends with a quote. All inner quotes will be escaped.
 	userInputBytes, err = json.Marshal(string(userInputBytes[:]))
 	if err != nil {
+		log.Error(nil, err, "Cannot serialize")
 		return "", errors.Wrapf(err, "Cannot serialize %s into json second time", name)
 	}
 	return name + "=json.loads(" + string(userInputBytes[:]) + ")\n", nil
@@ -298,7 +312,7 @@ if not result is None:
 `
 	script = header + prefixLines(script, "  ") + footer
 
-	// TODO logging fmt.Println("Executing\n" + script)
+	log.Debug(nil, "Executing:\n %s ", script)
 
 	// options:
 	// -q: quiet, do not print python version

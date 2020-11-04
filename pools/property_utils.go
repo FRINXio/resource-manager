@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"strconv"
 	"encoding/json"
+	log "github.com/net-auto/resourceManager/logging"
 
 	"github.com/net-auto/resourceManager/ent"
 	"github.com/net-auto/resourceManager/ent/predicate"
@@ -39,7 +40,9 @@ func GetValue(prop *ent.Property) (interface{}, error) {
 		}
 		return *prop.BoolVal, nil
 	default:
-		return nil, fmt.Errorf("Unsupported property type \"%s\"", prop.Edges.Type.Type)
+		err := fmt.Errorf("Unsupported property type \"%s\"", prop.Edges.Type.Type)
+		log.Error(nil, err, "Unsupported property type")
+		return nil, err
 	}
 }
 
@@ -68,6 +71,7 @@ func CompareProps(
 		// FIXME: N+1 selects problem
 		pT, err := resourceType.QueryPropertyTypes().Where(propertytype.NameEQ(pN)).Only(ctx)
 		if err != nil {
+			log.Error(ctx, err, "Unable to retrieve property types")
 			return nil, errors.Wrapf(err, "Unknown property: \"%s\" for resource type: \"%s\"", pN, resourceType)
 		}
 		// TODO nil handling
@@ -94,6 +98,7 @@ func CompareProps(
 			case json.Number:
 				intVal64, err := pV.(json.Number).Int64()
 				if err != nil {
+					log.Error(ctx, err, "Unable to convert a json number")
 					return nil, errors.Errorf("Unable to convert a json number, error: %v", err)
 				}
 				intVal = int(intVal64)
@@ -108,7 +113,9 @@ func CompareProps(
 		case "bool":
 			propPredict = property.And(propPredict, property.BoolValEQ(pV.(bool)))
 		default:
-			return nil, errors.Errorf("Unsupported property type \"%s\"", pT.Type)
+			err := errors.Errorf("Unsupported property type \"%s\"", pT.Type)
+			log.Error(ctx, err, "Unsupported property type")
+			return nil, err
 		}
 
 		predicates = append(predicates, propPredict)
@@ -128,7 +135,9 @@ func ParseProps(
 	var props ent.Properties
 	propTypes, err := resourceType.QueryPropertyTypes().All(ctx)
 	if err != nil {
-		return nil, errors.Wrapf(err, "Unable to determine property types for \"%s\"", resourceType)
+		err := errors.Wrapf(err, "Unable to determine property types for \"%s\"", resourceType)
+		log.Error(ctx, err, "Unable to determine property types")
+		return nil, err
 	}
 
 	for _, pt := range propTypes {
@@ -136,7 +145,9 @@ func ParseProps(
 
 		if pt.Mandatory {
 			if pv == nil {
-				return nil, errors.Errorf("Missing mandatory property \"%s\"", pt.Name)
+				err := errors.Errorf("Missing mandatory property \"%s\"", pt.Name)
+				log.Error(ctx, err, "Missing mandatory property")
+				return nil, err
 			}
 		} else {
 			if pv == nil {
@@ -153,7 +164,9 @@ func ParseProps(
 			// Parse the int from string to be sure
 			atoi, err := strconv.Atoi(fmt.Sprintf("%v", pv))
 			if err != nil {
-				return nil, errors.Wrapf(err, "Unable to parse int value from \"%s\"", pv)
+				err := errors.Wrapf(err, "Unable to parse int value from \"%s\"", pv)
+				log.Error(ctx, err, "Unable to parse int value")
+				return nil, err
 			}
 			ppBuilder.SetIntVal(atoi)
 		case "string":
@@ -162,22 +175,30 @@ func ParseProps(
 			// Parse the float from string to be sure
 			parsedFloat, err := strconv.ParseFloat(fmt.Sprintf("%v", pv), 64)
 			if err != nil {
-				return nil, errors.Wrapf(err, "Unable to parse float value from \"%s\"", pv)
+				err := errors.Wrapf(err, "Unable to parse float value from \"%s\"", pv)
+				log.Error(ctx, err, "Unable to parse float value")
+				return nil, err
 			}
 			ppBuilder.SetFloatVal(parsedFloat)
 		case "bool":
 			parsedBool, err := strconv.ParseBool(fmt.Sprintf("%v", pv))
 			if err != nil {
-				return nil, errors.Wrapf(err, "Unable to parse bool value from \"%s\"", pv)
+				err := errors.Wrapf(err, "Unable to parse bool value from \"%s\"", pv)
+				log.Error(ctx, err, "Unable to parse bool value")
+				return nil, err
 			}
 			ppBuilder.SetBoolVal(parsedBool)
 		default:
-			return nil, errors.Errorf("Unsupported property type \"%s\"", pt.Type)
+			err := errors.Errorf("Unsupported property type \"%s\"", pt.Type)
+			log.Error(ctx, err, "Unsupported property type")
+			return nil, err
 		}
 
 		pp, err := ppBuilder.Save(ctx)
 		if err != nil {
-			return nil, errors.Wrapf(err, "Unable to instantiate property of type \"%s\"", pt.Type)
+			err := errors.Wrapf(err, "Unable to instantiate property of type \"%s\"", pt.Type)
+			log.Error(ctx, err, "Unable to instantiate property")
+			return nil, err
 		}
 		props = append(props, pp)
 	}

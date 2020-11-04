@@ -8,6 +8,7 @@ COPY . .
 RUN ./build_strategies.sh
 
 FROM golang:1.14.6-stretch
+ARG RM_LOG_FILE
 WORKDIR /resMgr
 
 # Copy RM
@@ -23,4 +24,9 @@ RUN ./.wasmer/bin/wasmer ./wasm/quickjs/quickjs.wasm -- --std -e 'console.log("W
 
 RUN ./build.sh
 RUN go get github.com/go-delve/delve/cmd/dlv
+
+# Add log rotation
+RUN apt-get update && apt-get --yes install logrotate
+RUN echo "${RM_LOG_FILE} { \n rotate 5 \n weekly \n copytruncate \n compress \n missingok \n notifempty \n } \n " > /etc/logrotate.d/rm
+
 CMD ./run.sh

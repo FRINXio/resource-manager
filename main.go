@@ -8,6 +8,7 @@ import (
 	"context"
 	"github.com/alecthomas/kong"
 	"github.com/net-auto/resourceManager/ent/schema"
+	logger "github.com/net-auto/resourceManager/logging"
 	stdlog "log"
 	"os"
 	"syscall"
@@ -31,6 +32,9 @@ type cliFlags struct {
 	TelemetryConfig    telemetry.Config  `embed:""`
 	TenancyConfig      viewer.Config     `embed:""`
 	RbacConfig         schema.RbacConfig `embed:""`
+	LogPath 		   string            `name:"logPath" env:"RM_LOG_PATH" default:"./rm.log" help:"Path to logfile." type:"path"`
+	LogLevel 		   string            `name:"loglevel" env:"RM_LOG_LEVEL" default:"info" help:"Logging level - fatal, error, warning, info, debug or trace." type:"string"`
+	LogWithColors 	   bool              `name:"logWithColors" default:"false" help:"Force colors in log." type:"bool"`
 }
 
 func main() {
@@ -50,12 +54,16 @@ func main() {
 	}
 	defer cleanup()
 
-	app.Info("initializing RBAC with", zap.Reflect("rbacConfig", cf.RbacConfig))
+	logger.Init(cf.LogPath, cf.LogLevel, cf.LogWithColors)
+	defer logger.Close()
+
+	logger.Info(ctx,"initializing RBAC with %+v", zap.Reflect("rbacConfig", cf.RbacConfig))
 	initializeRbacSettings(cf)
 
-	app.Info("starting application", zap.String("httpEndpoint", cf.HTTPAddr))
+	logger.Info(ctx,"starting application %+v", zap.String("httpEndpoint", cf.HTTPAddr))
+
 	err = app.run(ctx)
-	app.Info("terminating application", zap.Error(err))
+	logger.Info(ctx,"terminating application %+v", zap.Error(err))
 }
 
 // initializeRbacSettings configures which roles and groups grant users admin access ... globally

@@ -5,6 +5,8 @@ import (
 	"github.com/net-auto/resourceManager/ent/resource"
 	"github.com/pkg/errors"
 
+	log "github.com/net-auto/resourceManager/logging"
+
 	"github.com/net-auto/resourceManager/ent"
 	resourcePool "github.com/net-auto/resourceManager/ent/resourcepool"
 	"github.com/net-auto/resourceManager/ent/schema"
@@ -35,6 +37,7 @@ func NewSingletonPoolWithMeta(
 		poolName, description, resourcePool.PoolTypeSingleton, schema.ResourcePoolDealocationImmediately)
 
 	if err != nil {
+		log.Error(ctx, err, "Unable to create pool")
 		return nil, nil, err
 	}
 
@@ -48,6 +51,7 @@ func (pool SingletonPool) ClaimResource(userInput map[string]interface{}) (*ent.
 		Save(pool.ctx)
 
 	if err != nil {
+		log.Error(pool.ctx, err, "Unable to claim resource in pool ID %d", pool.ID)
 		return nil, err
 	}
 
@@ -66,6 +70,7 @@ func (pool SingletonPool) Capacity() (float64, float64, error) {
 	claimedResources, err := pool.QueryResources()
 
 	if err != nil {
+		log.Error(pool.ctx, err, "Unable to retrieve resources in pool ID %d", pool.ID)
 		return 0, 0, err
 	}
 
@@ -77,6 +82,7 @@ func (pool SingletonPool) QueryResource(raw RawResourceProps) (*ent.Resource, er
 	resources, err := pool.QueryResources()
 
 	if err != nil {
+		log.Error(pool.ctx, err, "Unable to retrieve resources in pool ID %d", pool.ID)
 		return nil, err
 	}
 
@@ -84,20 +90,28 @@ func (pool SingletonPool) QueryResource(raw RawResourceProps) (*ent.Resource, er
 }
 
 func (pool SingletonPool) QueryResources() (ent.Resources, error) {
-	return pool.client.Resource.Query().Where(
+	all, err := pool.client.Resource.Query().Where(
 		resource.And(
 			resource.HasPoolWith(resourcePool.ID(pool.ID)),
 			resource.StatusIn(resource.StatusBench, resource.StatusClaimed))).All(pool.ctx)
+
+	if err != nil {
+		log.Error(pool.ctx, err,  "Unable retrieve resources for pool ID %d", pool.ID)
+	}
+
+	return all, err
 }
 
 func (pool SingletonPool) Destroy() error {
 	claims, errQr := pool.QueryResources()
 
 	if errQr != nil {
+		log.Error(pool.ctx, errQr, "Unable to retrieve resources in pool ID %d", pool.ID)
 		return errQr
 	}
 
 	if len(claims) > 0 {
+		log.Warn(pool.ctx,  "Unable to delete pool ID %d there are claimed resources", pool.ID)
 		return errors.Errorf("Unable to destroy pool \"%s\", there are claimed resources",
 			pool.Name)
 	}

@@ -4,7 +4,7 @@ import (
 	"context"
 	"github.com/net-auto/resourceManager/ent/predicate"
 	"time"
-
+	log "github.com/net-auto/resourceManager/logging"
 	"github.com/net-auto/resourceManager/ent"
 	resource "github.com/net-auto/resourceManager/ent/resource"
 	resourcePool "github.com/net-auto/resourceManager/ent/resourcepool"
@@ -41,6 +41,7 @@ func NewSetPoolWithMeta(
 		poolName, description, resourcePool.PoolTypeSet, poolDealocationSafetyPeriod)
 
 	if err != nil {
+		log.Error(ctx, err, "Unable to create set-pool")
 		return nil, nil, err
 	}
 
@@ -52,10 +53,12 @@ func (pool SetPool) Destroy() error {
 	// Check if there are no more claims
 	claims, err := pool.QueryResources()
 	if err != nil {
+		log.Error(pool.ctx, err, "Unable to retrieve allocated resources")
 		return err
 	}
 
 	if len(claims) > 0 {
+		log.Warn(pool.ctx, "Unable to destroy pool \"%s\", there are claimed resources", pool.Name)
 		return errors.Errorf("Unable to destroy pool \"%s\", there are claimed resources",
 			pool.Name)
 	}
@@ -63,31 +66,32 @@ func (pool SetPool) Destroy() error {
 	// Delete props
 	resources, err := pool.findResources().All(pool.ctx)
 	if err != nil {
+		log.Error(pool.ctx, err, "Cannot find resources for pool \"%s\"", pool.Name)
 		return errors.Wrapf(err, "Cannot destroy pool \"%s\". Unable to cleanup resoruces", pool.Name)
 	}
 	for _, res := range resources {
 		props, err := res.QueryProperties().All(pool.ctx)
 		if err != nil {
-			return errors.Wrapf(err, "Cannot destroy pool \"%s\". Unable to cleanup resoruces", pool.Name)
+			log.Error(pool.ctx, err, "Cannot find properties for pool \"%s\"", pool.Name)
+			return errors.Wrapf(err, "Cannot destroy pool \"%s\". Unable to cleanup resources", pool.Name)
 		}
 
 		for _, prop := range props {
-			pool.client.Property.DeleteOne(prop).Exec(pool.ctx)
-		}
-		if err != nil {
-			return errors.Wrapf(err, "Cannot destroy pool \"%s\". Unable to cleanup resoruces", pool.Name)
+			pool.client.Property.DeleteOne(prop).Exec(pool.ctx) //TODO missing error handling
 		}
 	}
 
 	// Delete resources
 	_, err = pool.client.Resource.Delete().Where(resource.HasPoolWith(resourcePool.ID(pool.ID))).Exec(pool.ctx)
 	if err != nil {
+		log.Error(pool.ctx, err, "Cannot resources of pool with ID %d", pool.ID)
 		return errors.Wrapf(err, "Cannot destroy pool \"%s\". Unable to cleanup resoruces", pool.Name)
 	}
 
 	// Delete pool itself
 	err = pool.client.ResourcePool.DeleteOne(pool.ResourcePool).Exec(pool.ctx)
 	if err != nil {
+		log.Error(pool.ctx, err, "Cannot delete pool with ID %d", pool.ID)
 		return errors.Wrapf(err, "Cannot destroy pool \"%s\"", pool.Name)
 	}
 
@@ -105,7 +109,9 @@ func (pool SetPool) ClaimResource(userInput map[string]interface{}) (*ent.Resour
 
 	err = pool.client.Resource.UpdateOne(unclaimedRes).SetStatus(resource.StatusClaimed).Exec(pool.ctx)
 	if err != nil {
-		return nil, errors.Wrapf(err, "Unable to claim a resource in pool \"%s\"", pool.Name)
+		err := errors.Wrapf(err, "Unable to claim a resource in pool \"%s\"", pool.Name)
+		log.Error(pool.ctx, err, "Unable to claim a resource")
+		return nil, err
 	}
 	return unclaimedRes, err
 }
@@ -114,12 +120,14 @@ func (pool SetPool) Capacity() (float64, float64, error) {
 	claimedResources, err := pool.QueryResources()
 
 	if err != nil {
+		log.Error(pool.ctx, err, "Unable to retrieve resources for pool ID %d", pool.ID)
 		return 0, 0, err
 	}
 
 	resources, err := pool.client.Resource.Query().Where(resource.HasPoolWith(resourcePool.ID(pool.ID))).All(pool.ctx)
 
 	if err != nil {
+		log.Error(pool.ctx, err, "Unable to retrieve resources for pool ID %d", pool.ID)
 		return 0, 0, err
 	}
 
@@ -138,27 +146,35 @@ func (pool SetPool) freeResourceInner(raw RawResourceProps,
 ) error {
 	query, err := pool.findResource(raw)
 	if err != nil {
-		return errors.Wrapf(err, "Unable to find resource in pool: \"%s\"", pool.Name)
+		err := errors.Wrapf(err, "Unable to find resource in pool: \"%s\"", pool.Name)
+		log.Error(pool.ctx, err, "Unable to find resource")
+		return err
 	}
 	res, err := query.
 		WithProperties().
 		Only(pool.ctx)
 
 	if err != nil {
-		return errors.Wrapf(err, "Unable to free a resource in pool \"%s\". Unable to find resource", pool.Name)
+		err := errors.Wrapf(err, "Unable to free a resource in pool \"%s\". Unable to find resource", pool.Name)
+		log.Error(pool.ctx, err, "Unable to free a resource in pool")
+		return err
 	}
 
 	if res.Status != resource.StatusClaimed {
+		log.Warn(pool.ctx, "Unable to free a resource in pool \"%s\". It has not been claimed", pool.Name)
 		return errors.Wrapf(err, "Unable to free a resource in pool \"%s\". It has not been claimed", pool.Name)
 	}
 
 	// Make sure there are no nested pools attached
 	if nestedPool, err := res.QueryNestedPool().First(pool.ctx); err != nil && !ent.IsNotFound(err) {
+		log.Error(pool.ctx, err, "Unable to free a resource in pool ID %d", pool.ID)
 		return errors.Wrapf(err, "Unable to free a resource in pool \"%s\". " +
 			"Unable to check nested pools", pool.Name)
 	} else if nestedPool != nil {
-		return errors.Errorf("Unable to free a resource in pool \"%s\". " +
+		err := errors.Errorf("Unable to free a resource in pool \"%s\". "+
 			"There is a nested pool attached to it \"%v\"", pool.Name, nestedPool.ID)
+		log.Error(pool.ctx, err, "Unable to free a resource in pool ID %d", pool.ID)
+		return err
 	}
 
 	switch pool.ResourcePool.DealocationSafetyPeriod {
@@ -171,7 +187,9 @@ func (pool SetPool) freeResourceInner(raw RawResourceProps,
 	}
 
 	if err != nil {
-		return errors.Wrapf(err, "Unable to free a resource in pool \"%s\". Unable to unclaim", pool.Name)
+		err := errors.Wrapf(err, "Unable to free a resource in pool \"%s\". Unable to unclaim", pool.Name)
+		log.Error(pool.ctx, err, "Unable to free a resource in pool")
+		return err
 	}
 
 	return nil
@@ -192,7 +210,9 @@ func (pool SetPool) retireResource(res *ent.Resource) error {
 func (pool SetPool) findResource(raw RawResourceProps) (*ent.ResourceQuery, error) {
 	propComparator, err := CompareProps(pool.ctx, pool.QueryResourceType().OnlyX(pool.ctx), raw)
 	if err != nil {
-		return nil, errors.Wrapf(err, "Unable to find resource in pool: \"%s\"", pool.Name)
+		err := errors.Wrapf(err, "Unable to find resource in pool: \"%s\"", pool.Name)
+		log.Error(pool.ctx, err, "Unable to find resource in pool")
+		return nil, err
 	}
 
 	resources := pool.findResources()
@@ -208,11 +228,18 @@ func (pool SetPool) findResource(raw RawResourceProps) (*ent.ResourceQuery, erro
 func (pool SetPool) QueryResource(raw RawResourceProps) (*ent.Resource, error) {
 	query, err := pool.findResource(raw)
 	if err != nil {
+		log.Error(pool.ctx, err, "Unable to find resource %+v in pool %d", raw, pool.ID)
 		return nil, err
 	}
-	return query.
+	only, err2 := query.
 		Where(resource.StatusEQ(resource.StatusClaimed)).
 		Only(pool.ctx)
+
+	if err2 != nil {
+		log.Error(pool.ctx, err,  "Unable retrieve resources for pool ID %d", pool.ID)
+	}
+
+	return only, err2
 }
 
 // load eagerly with some edges, ready to be copied
@@ -232,7 +259,9 @@ func (pool SetPool) queryUnclaimedResourceEager() (*ent.Resource, error) {
 
 	// No more benched, its over
 	if ent.IsNotFound(err) {
-		return nil, errors.Wrapf(err, "No more free resources in the pool: \"%s\"", pool.Name)
+		err := errors.Wrapf(err, "No more free resources in the pool: \"%s\"", pool.Name)
+		log.Error(pool.ctx, err, "No free resources in pool ID %d", pool.ID)
+		return nil, err
 	}
 
 	return res, err
@@ -248,6 +277,10 @@ func (pool SetPool) QueryResources() (ent.Resources, error) {
 	res, err := pool.findResources().
 		Where(resource.StatusEQ(resource.StatusClaimed)).
 		All(pool.ctx)
+
+	if err != nil {
+		log.Error(pool.ctx, err,  "Unable retrieve resources for pool ID %d", pool.ID)
+	}
 
 	return res, err
 }

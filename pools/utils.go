@@ -4,6 +4,8 @@ import (
 	"context"
 	"fmt"
 
+	log "github.com/net-auto/resourceManager/logging"
+
 	"github.com/net-auto/resourceManager/ent"
 	"github.com/net-auto/resourceManager/ent/propertytype"
 	"github.com/net-auto/resourceManager/ent/resource"
@@ -13,9 +15,16 @@ import (
 func GetResourceFromPool (
 	ctx context.Context, obj *ent.ResourcePool) ([]*ent.Resource, error) {
 	if es, err := obj.Edges.ClaimsOrErr(); !ent.IsNotLoaded(err) {
+		log.Error(ctx, err, "Loading resources for resource pool %d failed", obj.ID)
 		return es, err
 	}
-	return obj.QueryClaims().All(ctx)
+	resources, err := obj.QueryClaims().All(ctx)
+
+	if err != nil {
+		log.Error(ctx, err, "Loading resources for resource pool %d failed", obj.ID)
+	}
+
+	return resources, err
 }
 
 func CreatePropertyType(
@@ -27,7 +36,9 @@ func CreatePropertyType(
 	propertyTypeNameString := fmt.Sprintf("%v", typeName)
 	propertyTypeName := propertytype.Type(propertyTypeNameString)
 	if err := propertytype.TypeValidator(propertyTypeName); err != nil {
-		return nil, errors.Wrapf(err, "Unknown property type: %s", typeName)
+		err := errors.Wrapf(err, "Unknown property type: %s", typeName)
+		log.Error(ctx, err, "Unknown property type")
+		return nil, err
 	}
 
 	return client.PropertyType.Create().
@@ -64,7 +75,7 @@ func PreCreateResources(ctx context.Context,
 		created = append(created, resource)
 
 		if err != nil {
-			//TODO logging
+			log.Error(ctx, err, "Error creating resource")
 			return nil, errors.Wrapf(err, "Error creating resource")
 		}
 	}

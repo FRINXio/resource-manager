@@ -7,6 +7,7 @@
 package viewer
 
 import (
+	logger "github.com/net-auto/resourceManager/logging"
 	"encoding/json"
 	"github.com/facebookincubator/symphony/pkg/log"
 	fb_viewer "github.com/facebookincubator/symphony/pkg/viewer"
@@ -29,20 +30,18 @@ const (
 )
 
 // TenancyHandler adds viewer / tenancy into incoming requests.
-func TenancyHandler(h http.Handler, tenancy Tenancy, logger log.Logger) http.Handler {
+func TenancyHandler(h http.Handler, tenancy Tenancy, _ log.Logger) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		logger := logger.For(r.Context())
-
 		tenant := r.Header.Get(TenantHeader)
 		if tenant == "" {
-			logger.Warn("request missing tenant header")
+			logger.Warn(r.Context(),"request missing tenant header")
 			http.Error(w, "missing tenant header", http.StatusBadRequest)
 			return
 		}
 
 		user := r.Header.Get(UserHeader)
 		if user == "" {
-			logger.Warn("request missing user header")
+			logger.Warn(r.Context(),"request missing user header")
 			http.Error(w, "missing user header", http.StatusBadRequest)
 			return
 		}
@@ -50,12 +49,12 @@ func TenancyHandler(h http.Handler, tenancy Tenancy, logger log.Logger) http.Han
 		roles := r.Header.Get(RoleHeader)
 		groups := r.Header.Get(GroupHeader)
 
-		logger.Info("getting tenancy client for %s", zap.String("tenant", tenant));
+		logger.Debug(r.Context(),"getting tenancy client for %+v", zap.String("tenant", tenant))
 
 		client, err := tenancy.ClientFor(r.Context(), tenant)
 		if err != nil {
 			const msg = "cannot get tenancy client"
-			logger.Warn(msg, zap.Error(err))
+			logger.Warn(r.Context(), msg + "error: %+v", zap.Error(err))
 			http.Error(w, msg, http.StatusServiceUnavailable)
 			return
 		}
@@ -66,7 +65,7 @@ func TenancyHandler(h http.Handler, tenancy Tenancy, logger log.Logger) http.Han
 		identity, _ := schema.GetIdentity(ctx)
 		marshal, err := json.Marshal(identity)
 		if err != nil {
-			logger.Warn("cannot marshall identity", zap.Error(err))
+			logger.Warn(r.Context(),"Cannot marshall identity %+v", zap.Error(err))
 			http.Error(w, "marshalling identity", http.StatusServiceUnavailable)
 			return
 		}

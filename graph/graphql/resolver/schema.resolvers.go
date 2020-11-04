@@ -5,6 +5,7 @@ package resolver
 
 import (
 	"context"
+	log "github.com/net-auto/resourceManager/logging"
 	"github.com/net-auto/resourceManager/ent"
 	"github.com/net-auto/resourceManager/ent/allocationstrategy"
 	"github.com/net-auto/resourceManager/ent/predicate"
@@ -24,6 +25,7 @@ func (r *mutationResolver) CreateTag(ctx context.Context, input model.CreateTagI
 	tagEnt, err := client.Tag.Create().SetTag(input.TagText).Save(ctx)
 
 	if err != nil {
+		log.Error(ctx, err, "Unable to create new tag")
 		return &model.CreateTagPayload{Tag: nil}, gqlerror.Errorf("Unable to create tag: %v", err)
 	}
 
@@ -34,6 +36,7 @@ func (r *mutationResolver) UpdateTag(ctx context.Context, input model.UpdateTagI
 	var client = r.ClientFrom(ctx)
 	tagEnt, err := client.Tag.UpdateOneID(input.TagID).SetTag(input.TagText).Save(ctx)
 	if err != nil {
+		log.Error(ctx, err, "Unable to update tag ID %d", input.TagID)
 		return &model.UpdateTagPayload{Tag: nil}, gqlerror.Errorf("Unable to update tag: %v", err)
 	}
 	return &model.UpdateTagPayload{Tag: tagEnt}, nil
@@ -43,6 +46,7 @@ func (r *mutationResolver) DeleteTag(ctx context.Context, input model.DeleteTagI
 	var client = r.ClientFrom(ctx)
 	err := client.Tag.DeleteOneID(input.TagID).Exec(ctx)
 	if err != nil {
+		log.Error(ctx, err, "Unable to delete tag ID %d", input.TagID)
 		return &model.DeleteTagPayload{TagID: input.TagID}, gqlerror.Errorf("Unable to delete tag: %v", err)
 	}
 
@@ -53,6 +57,7 @@ func (r *mutationResolver) TagPool(ctx context.Context, input model.TagPoolInput
 	var client = r.ClientFrom(ctx)
 	tag, err := client.Tag.UpdateOneID(input.TagID).AddPoolIDs(input.PoolID).Save(ctx)
 	if err != nil {
+		log.Error(ctx, err, "Unable to tag pool ID %d", input.PoolID)
 		return &model.TagPoolPayload{Tag: nil}, gqlerror.Errorf("Unable to tag pool: %v", err)
 	}
 	return &model.TagPoolPayload{Tag: tag}, nil
@@ -62,6 +67,7 @@ func (r *mutationResolver) UntagPool(ctx context.Context, input model.UntagPoolI
 	var client = r.ClientFrom(ctx)
 	tag, err := client.Tag.UpdateOneID(input.TagID).RemovePoolIDs(input.PoolID).Save(ctx)
 	if err != nil {
+		log.Error(ctx, err, "Unable to un-tag pool ID %d", input.PoolID)
 		return &model.UntagPoolPayload{Tag: nil}, gqlerror.Errorf("Unable to un-tag pool: %v", err)
 	}
 	return &model.UntagPoolPayload{Tag: tag}, nil
@@ -76,6 +82,7 @@ func (r *mutationResolver) CreateAllocationStrategy(ctx context.Context, input *
 		SetLang(input.Lang).
 		Save(ctx)
 	if err != nil {
+		log.Error(ctx, err, "Unable create a new allocation strategy")
 		return &model.CreateAllocationStrategyPayload{Strategy: nil}, gqlerror.Errorf("Unable to create strategy: %v", err)
 	}
 
@@ -89,14 +96,17 @@ func (r *mutationResolver) DeleteAllocationStrategy(ctx context.Context, input *
 		Where(allocationstrategy.ID(input.AllocationStrategyID)).
 		WithPools().
 		Only(ctx); err != nil {
+		log.Error(ctx, err, "Unable to find allocation strategy ID %d", input.AllocationStrategyID)
 		return &emptyRetVal, gqlerror.Errorf("Unable to delete strategy: %v", err)
 	} else {
 
 		if len(strat.Edges.Pools) > 0 {
+			log.Error(ctx, err, "Unable to delete allocation strategy ID %d because it is used by %d pool(s)", input.AllocationStrategyID, len(strat.Edges.Pools))
 			return &emptyRetVal, gqlerror.Errorf("Unable to delete, Allocation strategy is still in use")
 		}
 
 		if err := client.AllocationStrategy.DeleteOneID(input.AllocationStrategyID).Exec(ctx); err != nil {
+			log.Error(ctx, err, "Unable to delete allocation strategy ID %d", input.AllocationStrategyID)
 			return &emptyRetVal, err
 		}
 
@@ -110,11 +120,13 @@ func (r *mutationResolver) TestAllocationStrategy(ctx context.Context, allocatio
 		Where(allocationstrategy.ID(allocationStrategyID)).
 		Only(ctx)
 	if err != nil {
+		log.Error(ctx, err, "Unable to find allocation strategy %d", allocationStrategyID)
 		return nil, gqlerror.Errorf("Unable to get strategy: %v", err)
 	}
 	// TODO keep just single instance
 	wasmer, err := p.NewWasmerUsingEnvVars()
 	if err != nil {
+		log.Error(ctx, err, "Unable to create a scripting engine (wasmer)")
 		return nil, gqlerror.Errorf("Unable to create scripting engine: %v", err)
 	}
 
@@ -133,6 +145,7 @@ func (r *mutationResolver) TestAllocationStrategy(ctx context.Context, allocatio
 
 	parsedOutputFromStrat, stdErr, err := p.InvokeAllocationStrategy(wasmer, strat, userInput, resourcePool, currentResources, poolPropertiesMaps, functionName)
 	if err != nil {
+		log.Error(ctx, err, "Error while running script on pool \"%s\" strategy ID %d", resourcePool.ResourcePoolName, allocationStrategyID)
 		return nil, gqlerror.Errorf("Error while running the script: %v", err)
 	}
 	result := make(map[string]interface{})
@@ -164,6 +177,7 @@ func (r *mutationResolver) FreeResource(ctx context.Context, input map[string]in
 		return "Resource freed successfully", nil
 	}
 
+	log.Error(ctx, err, "Unable to free resource on pool ID %d with properties %+v", poolID, input)
 	return "", gqlerror.Errorf("Unable to free resource: %v", err)
 }
 
@@ -172,6 +186,7 @@ func (r *mutationResolver) CreateSetPool(ctx context.Context, input model.Create
 
 	resType, err := client.ResourceType.Get(ctx, input.ResourceTypeID)
 	if err != nil {
+		log.Error(ctx, err, "Unable to retrieve resource type for the set-pool (resource type ID: %d)", input.ResourceTypeID)
 		return &model.CreateSetPoolPayload{Pool: nil}, gqlerror.Errorf("Unable to create pool: %v", err)
 	}
 	_, rp, err := p.NewSetPoolWithMeta(ctx, client, resType, p.ToRawTypes(input.PoolValues),
@@ -207,7 +222,12 @@ func (r *mutationResolver) CreateNestedSetPool(ctx context.Context, input model.
 func (r *mutationResolver) CreateSingletonPool(ctx context.Context, input *model.CreateSingletonPoolInput) (*model.CreateSingletonPoolPayload, error) {
 	var client = r.ClientFrom(ctx)
 
-	resType, _ := client.ResourceType.Get(ctx, input.ResourceTypeID)
+	resType, err := client.ResourceType.Get(ctx, input.ResourceTypeID)
+
+	if err != nil {
+		log.Error(ctx, err, "Unable to retrieve resource type for the set-pool (resource type ID: %d)", input.ResourceTypeID)
+	}
+
 	if len(input.PoolValues) == 1 {
 		_, rp, err := p.NewSingletonPoolWithMeta(ctx, client, resType, p.ToRawTypes(input.PoolValues)[0],
 			input.PoolName, input.Description)
@@ -258,6 +278,7 @@ func (r *mutationResolver) CreateAllocatingPool(ctx context.Context, input *mode
 		})
 
 		if err2 != nil || rp == nil || rp.ResourceType == nil {
+			log.Error(ctx, err2, "Unable to create a resource-type for a root pool \"%s\"", input.PoolName)
 			return &emptyRetVal, gqlerror.Errorf("Unable to create pool: %v", err2)
 		}
 
@@ -270,6 +291,7 @@ func (r *mutationResolver) CreateAllocatingPool(ctx context.Context, input *mode
 	if resPropertyType != nil {
 		pp, err := p.CreatePoolProperties(ctx, client, []map[string]interface{}{input.PoolProperties}, resPropertyType)
 		if err != nil {
+			log.Error(ctx, err, "Unable to create pool properties for a root pool \"%s\"", input.PoolName)
 			return &emptyRetVal, gqlerror.Errorf("Unable to create pool properties: %v", err)
 		}
 		poolProperties = pp
@@ -277,10 +299,12 @@ func (r *mutationResolver) CreateAllocatingPool(ctx context.Context, input *mode
 
 	resType, errRes := client.ResourceType.Get(ctx, input.ResourceTypeID)
 	if errRes != nil {
+		log.Error(ctx, errRes, "Unable to retrieve resource type for pool (resource type ID: %d)", input.ResourceTypeID)
 		return &emptyRetVal, gqlerror.Errorf("Unable to create pool: %v", errRes)
 	}
 	allocationStrat, errAlloc := client.AllocationStrategy.Get(ctx, input.AllocationStrategyID)
 	if errAlloc != nil {
+		log.Error(ctx, errAlloc, "Unable to retrieve allocation strategy for pool (strategy ID: %d)", input.AllocationStrategyID)
 		return &emptyRetVal, gqlerror.Errorf("Unable to create pool: %v", errAlloc)
 	}
 
@@ -351,6 +375,7 @@ func (r *mutationResolver) CreateResourceType(ctx context.Context, input model.C
 		AddPropertyTypes(propertyTypes...).
 		Save(ctx)
 	if err2 != nil {
+		log.Error(ctx, err2, "Unable to create a new resource type")
 		return &model.CreateResourceTypePayload{ResourceType: nil}, gqlerror.Errorf("Unable to create resource type: %v", err2)
 	}
 
@@ -362,22 +387,26 @@ func (r *mutationResolver) DeleteResourceType(ctx context.Context, input model.D
 	resourceType, err := client.ResourceType.Get(ctx, input.ResourceTypeID)
 	retValue := &model.DeleteResourceTypePayload{ResourceTypeID: input.ResourceTypeID}
 	if err != nil {
+		log.Error(ctx, err, "Unable to retrieve resource type ID %d", input.ResourceTypeID)
 		return retValue, gqlerror.Errorf("Unable to delete resource type - cannot find by ID %d: %v", input.ResourceTypeID, err)
 	}
 
 	pools, err := client.ResourceType.QueryPools(resourceType).All(ctx)
 
 	if err != nil {
+		log.Error(ctx, err, "Unable to retrieve pools associated with resource type ID %d", input.ResourceTypeID)
 		return retValue, gqlerror.Errorf("Unable to delete resource type - error obtaining pools: %v", err)
 	}
 
 	if len(pools) > 0 {
+		log.Warn(ctx, "Unable delete resource type ID %d - there are %d pool(s) associated with it", input.ResourceTypeID, len(pools))
 		return retValue, gqlerror.Errorf("Unable to delete resource type, there are pools attached to it")
 	}
 
 	// delete property types
 	_, err = client.PropertyType.Delete().Where(propertytype.HasResourceTypeWith(resourcetype.ID(resourceType.ID))).Exec(ctx)
 	if err != nil {
+		log.Error(ctx, err,  "Unable delete resource type ID %d", input.ResourceTypeID)
 		return retValue, gqlerror.Errorf("Unable to delete resource type - error deleting property types: %v", err)
 	}
 
@@ -385,6 +414,7 @@ func (r *mutationResolver) DeleteResourceType(ctx context.Context, input model.D
 	if err := client.ResourceType.DeleteOneID(input.ResourceTypeID).Exec(ctx); err == nil {
 		return &model.DeleteResourceTypePayload{ResourceTypeID: input.ResourceTypeID}, nil
 	} else {
+		log.Error(ctx, err,  "Unable delete resource type ID %d", input.ResourceTypeID)
 		return retValue, gqlerror.Errorf("Unable to delete resource type: %v", err)
 	}
 }
@@ -393,6 +423,7 @@ func (r *mutationResolver) UpdateResourceTypeName(ctx context.Context, input mod
 	var client = r.ClientFrom(ctx)
 	retValue := &model.UpdateResourceTypeNamePayload{ResourceTypeID: input.ResourceTypeID}
 	if _, err := client.ResourceType.UpdateOneID(input.ResourceTypeID).SetName(input.ResourceName).Save(ctx); err != nil {
+		log.Error(ctx, err,  "Unable to update resource type ID %d", input.ResourceTypeID)
 		return retValue, gqlerror.Errorf("Unable to update resource type: %v", err)
 	} else {
 		return retValue, nil
@@ -455,6 +486,7 @@ func (r *queryResolver) QueryResources(ctx context.Context, poolID int) ([]*ent.
 func (r *queryResolver) QueryAllocationStrategy(ctx context.Context, allocationStrategyID int) (*ent.AllocationStrategy, error) {
 	client := r.ClientFrom(ctx)
 	if strats, err := client.AllocationStrategy.Query().Where(allocationstrategy.ID(allocationStrategyID)).Only(ctx); err != nil {
+		log.Error(ctx, err,  "Unable to retrieve allocation strategy ID %d", allocationStrategyID)
 		return nil, gqlerror.Errorf("Unable to query strategy: %v", err)
 	} else {
 		return strats, nil
@@ -464,6 +496,7 @@ func (r *queryResolver) QueryAllocationStrategy(ctx context.Context, allocationS
 func (r *queryResolver) QueryAllocationStrategies(ctx context.Context) ([]*ent.AllocationStrategy, error) {
 	client := r.ClientFrom(ctx)
 	if strats, err := client.AllocationStrategy.Query().All(ctx); err != nil {
+		log.Error(ctx, err,  "Unable to retrieve allocation strategies")
 		return nil, gqlerror.Errorf("Unable to query strategies: %v", err)
 	} else {
 		return strats, nil
@@ -473,6 +506,7 @@ func (r *queryResolver) QueryAllocationStrategies(ctx context.Context) ([]*ent.A
 func (r *queryResolver) QueryResourceTypes(ctx context.Context) ([]*ent.ResourceType, error) {
 	client := r.ClientFrom(ctx)
 	if resourceTypes, err := client.ResourceType.Query().All(ctx); err != nil {
+		log.Error(ctx, err,  "Unable to retrieve resource types")
 		return nil, gqlerror.Errorf("Unable to query resource types: %v", err)
 	} else {
 		return resourceTypes, nil
@@ -480,7 +514,13 @@ func (r *queryResolver) QueryResourceTypes(ctx context.Context) ([]*ent.Resource
 }
 
 func (r *queryResolver) QueryResourcePool(ctx context.Context, poolID int) (*ent.ResourcePool, error) {
-	return r.ClientFrom(ctx).ResourcePool.Get(ctx, poolID)
+	rp, err := r.ClientFrom(ctx).ResourcePool.Get(ctx, poolID)
+
+	if err != nil {
+		log.Error(ctx, err,  "Unable to retrieve resource pool")
+	}
+
+	return rp, err
 }
 
 func (r *queryResolver) QueryResourcePools(ctx context.Context, resourceTypeID *int) ([]*ent.ResourcePool, error) {
@@ -492,6 +532,7 @@ func (r *queryResolver) QueryResourcePools(ctx context.Context, resourceTypeID *
 	}
 
 	if resourcePools, err := query.All(ctx); err != nil {
+		log.Error(ctx, err,  "Unable to retrieve resource pools")
 		return nil, gqlerror.Errorf("Unable to query resource pools: %v", err)
 	} else {
 		return resourcePools, nil
@@ -509,6 +550,7 @@ func (r *queryResolver) QueryRootResourcePools(ctx context.Context, resourceType
 	}
 
 	if resourcePools, err := query.All(ctx); err != nil {
+		log.Error(ctx, err,  "Unable to retrieve root resource pools")
 		return nil, gqlerror.Errorf("Unable to query resource pools: %v", err)
 	} else {
 		return resourcePools, nil
@@ -527,6 +569,7 @@ func (r *queryResolver) QueryLeafResourcePools(ctx context.Context, resourceType
 	}
 
 	if resourcePools, err := query.All(ctx); err != nil {
+		log.Error(ctx, err,  "Unable to retrieve leaf resource pools")
 		return nil, gqlerror.Errorf("Unable to query resource pools: %v", err)
 	} else {
 		return resourcePools, nil
@@ -557,6 +600,7 @@ func (r *queryResolver) SearchPoolsByTags(ctx context.Context, tags *model.TagOr
 
 	matchedPools, err := client.ResourcePool.Query().Where(predicateOr).All(ctx)
 	if err != nil {
+		log.Error(ctx, err,  "Unable to retrieve pools by tags")
 		return nil, gqlerror.Errorf("Unable to query pools: %v", err)
 	}
 	return matchedPools, nil
@@ -566,6 +610,7 @@ func (r *queryResolver) QueryTags(ctx context.Context) ([]*ent.Tag, error) {
 	var client = r.ClientFrom(ctx)
 	tags, err := client.Tag.Query().All(ctx)
 	if err != nil {
+		log.Error(ctx, err,  "Unable to retrieve tags")
 		return nil, gqlerror.Errorf("Unable to query tags: %v", err)
 	}
 	return tags, nil
@@ -573,16 +618,24 @@ func (r *queryResolver) QueryTags(ctx context.Context) ([]*ent.Tag, error) {
 
 func (r *queryResolver) Node(ctx context.Context, id int) (ent.Noder, error) {
 	var client = r.ClientFrom(ctx)
-	return client.Noder(ctx, id)
+	node, err := client.Noder(ctx, id)
+
+	if err != nil {
+		log.Error(ctx, err,  "Unable to retrieve node with ID %d", id)
+	}
+
+	return node, err
 }
 
 func (r *resourceResolver) Properties(ctx context.Context, obj *ent.Resource) (map[string]interface{}, error) {
 	props, err := obj.QueryProperties().WithType().All(ctx)
 	if err != nil {
+		log.Error(ctx, err,  "Unable to retrieve properties for resource with ID %d", obj.ID)
 		return nil, gqlerror.Errorf("Unable to query properties: %v", err)
 	}
 
 	if props, err := p.PropertiesToMap(props); err != nil {
+		log.Error(ctx, err,  "Unable to process properties for resource with ID %d", obj.ID)
 		return nil, gqlerror.Errorf("Unable to query properties: %v", err)
 	} else {
 		return props, nil
@@ -591,26 +644,42 @@ func (r *resourceResolver) Properties(ctx context.Context, obj *ent.Resource) (m
 
 func (r *resourceResolver) NestedPool(ctx context.Context, obj *ent.Resource) (*ent.ResourcePool, error) {
 	if es, err := obj.Edges.NestedPoolOrErr(); !ent.IsNotLoaded(err) {
+		log.Error(ctx, err,  "Unable to retrieve nested pool for resource with ID %d", obj.ID)
 		return es, err
 	}
 	if pool, err := obj.QueryNestedPool().First(ctx); ent.IsNotFound(err) {
+		log.Warn(ctx, "No nested resource pool found for resource with ID %d", obj.ID)
 		return nil, nil
 	} else if err == nil {
 		return pool, nil
 	} else {
+		log.Error(ctx, err, "Unable to retrieve nested pool for resource with ID %d", obj.ID)
 		return nil, gqlerror.Errorf("Unable to query nested pool: %v", err)
 	}
 }
 
 func (r *resourcePoolResolver) ResourceType(ctx context.Context, obj *ent.ResourcePool) (*ent.ResourceType, error) {
 	if es, err := obj.Edges.ResourceTypeOrErr(); !ent.IsNotLoaded(err) {
+		log.Error(ctx, err, "Unable to retrieve resource type for pool with ID %d", obj.ID)
 		return es, err
 	}
-	return obj.QueryResourceType().Only(ctx)
+	rt, err := obj.QueryResourceType().Only(ctx)
+
+	if err != nil {
+		log.Error(ctx, err, "Unable to retrieve resource type for pool with ID %d", obj.ID)
+	}
+
+	return rt, err
 }
 
 func (r *resourcePoolResolver) Resources(ctx context.Context, obj *ent.ResourcePool) ([]*ent.Resource, error) {
-	return p.GetResourceFromPool(ctx, obj)
+	resources, err := p.GetResourceFromPool(ctx, obj)
+
+	if err != nil {
+		log.Error(ctx, err, "Unable to retrieve resources for pool with ID %d", obj.ID)
+	}
+
+	return resources, err
 }
 
 func (r *resourcePoolResolver) AllocatedResources(ctx context.Context, obj *ent.ResourcePool, first *int, last *int, before *string, after *string) (*ent.ResourceConnection, error) {
@@ -623,32 +692,56 @@ func (r *resourcePoolResolver) AllocatedResources(ctx context.Context, obj *ent.
 
 	afterCursor, errA := decodeCursor(after)
 	if errA != nil {
+		log.Error(ctx, errA, "Unable to decode after value (\"%s\") for pagination", *after)
 		return nil, errA
 	}
 
 	beforeCursor, errB := decodeCursor(before)
 	if errB != nil {
+		log.Error(ctx, errB, "Unable to decode before value (\"%s\") for pagination", *before)
 		return nil, errB
 	}
 
-	return r.ClientFrom(ctx).Resource.Query().Paginate(ctx, afterCursor, first, beforeCursor, last, ent.WithResourceFilter(onlyForPool))
+	resourceConnection, err := r.ClientFrom(ctx).Resource.Query().Paginate(ctx, afterCursor, first, beforeCursor, last, ent.WithResourceFilter(onlyForPool))
+
+	if err != nil {
+		log.Error(ctx, errB, "Loading resources for a pagination query for pool ID %d failed", obj.ID)
+	}
+
+	return resourceConnection, err
 }
 
 func (r *resourcePoolResolver) Tags(ctx context.Context, obj *ent.ResourcePool) ([]*ent.Tag, error) {
 	if es, err := obj.Edges.TagsOrErr(); !ent.IsNotLoaded(err) {
+		log.Error(ctx, err, "Loading tags for pool ID %d failed", obj.ID)
 		return es, err
 	}
-	return obj.QueryTags().All(ctx)
+
+	tags, err := obj.QueryTags().All(ctx)
+
+	if err != nil {
+		log.Error(ctx, err, "Loading tags for pool ID %d failed", obj.ID)
+	}
+
+	return tags, err
 }
 
 func (r *resourcePoolResolver) AllocationStrategy(ctx context.Context, obj *ent.ResourcePool) (*ent.AllocationStrategy, error) {
 	if obj.PoolType != resourcePool.PoolTypeAllocating {
+		log.Warn(ctx, "Pool with ID %d does not have an allocation strategy", obj.ID)
 		return nil, nil
 	}
 	if es, err := obj.Edges.AllocationStrategyOrErr(); !ent.IsNotLoaded(err) {
+		log.Error(ctx, err, "Loading allocation strategy for pool ID %d failed", obj.ID)
 		return es, err
 	}
-	return obj.QueryAllocationStrategy().Only(ctx)
+	strategy, err := obj.QueryAllocationStrategy().Only(ctx)
+
+	if err != nil {
+		log.Error(ctx, err, "Loading allocation strategy for pool ID %d failed", obj.ID)
+	}
+
+	return strategy, err
 }
 
 func (r *resourceTypeResolver) PropertyTypes(ctx context.Context, obj *ent.ResourceType) ([]*ent.PropertyType, error) {
@@ -660,16 +753,31 @@ func (r *resourceTypeResolver) PropertyTypes(ctx context.Context, obj *ent.Resou
 
 func (r *resourceTypeResolver) Pools(ctx context.Context, obj *ent.ResourceType) ([]*ent.ResourcePool, error) {
 	if es, err := obj.Edges.PoolsOrErr(); !ent.IsNotLoaded(err) {
+		log.Error(ctx, err, "Loading resource pools for resource type %d failed", obj.ID)
 		return es, err
 	}
-	return obj.QueryPools().All(ctx)
+	pools, err := obj.QueryPools().All(ctx)
+
+	if err != nil {
+		log.Error(ctx, err, "Loading resource pools for resource type %d failed", obj.ID)
+	}
+
+    return pools, err
 }
 
 func (r *tagResolver) Pools(ctx context.Context, obj *ent.Tag) ([]*ent.ResourcePool, error) {
 	if es, err := obj.Edges.PoolsOrErr(); !ent.IsNotLoaded(err) {
+		log.Error(ctx, err, "Loading resource pools for tag ID %d failed", obj.ID)
 		return es, err
 	}
-	return obj.QueryPools().All(ctx)
+
+	pools, err := obj.QueryPools().All(ctx)
+
+	if err != nil {
+		log.Error(ctx, err, "Loading resource pools for tag ID %d failed", obj.ID)
+	}
+
+	return pools, err
 }
 
 // Mutation returns generated.MutationResolver implementation.
