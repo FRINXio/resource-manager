@@ -30,7 +30,7 @@ func create(tx *sql.DB, ctx context.Context, name string) (string, error) {
 		return "", errors.Errorf("tenant %q exists", name)
 	}
 
-	if _, err := tx.ExecContext(ctx, fmt.Sprintf("CREATE DATABASE %s ENCODING 'UTF8' LC_COLLATE 'en_US.utf8' LC_CTYPE 'en_US.utf8'", DBName(name))); err != nil {
+	if _, err := tx.ExecContext(ctx, fmt.Sprintf("CREATE DATABASE %s", DBName(name))); err != nil {
 		return "", err
 	}
 	return name, nil
