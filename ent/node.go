@@ -570,7 +570,7 @@ func (rt *ResourceType) Node(ctx context.Context) (node *Node, err error) {
 		ID:     rt.ID,
 		Type:   "ResourceType",
 		Fields: make([]*Field, 1),
-		Edges:  make([]*Edge, 2),
+		Edges:  make([]*Edge, 3),
 	}
 	var buf []byte
 	if buf, err = json.Marshal(rt.Name); err != nil {
@@ -597,6 +597,16 @@ func (rt *ResourceType) Node(ctx context.Context) (node *Node, err error) {
 	}
 	node.Edges[1].IDs, err = rt.QueryPools().
 		Select(resourcepool.FieldID).
+		Ints(ctx)
+	if err != nil {
+		return nil, err
+	}
+	node.Edges[2] = &Edge{
+		Type: "PoolProperties",
+		Name: "pool_properties",
+	}
+	node.Edges[2].IDs, err = rt.QueryPoolProperties().
+		Select(poolproperties.FieldID).
 		Ints(ctx)
 	if err != nil {
 		return nil, err

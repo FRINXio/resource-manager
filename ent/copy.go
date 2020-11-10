@@ -171,6 +171,10 @@ func (c *ResourceTypeClient) CreateFrom(rt *ResourceType) *ResourceTypeCreate {
 		createBuilder.AddPools(rt.Edges.Pools...)
 	}
 
+	if rt.Edges.PoolProperties != nil {
+		createBuilder.AddPoolProperties(rt.Edges.PoolProperties...)
+	}
+
 	return createBuilder
 }
 

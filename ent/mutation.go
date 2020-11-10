@@ -5529,20 +5529,23 @@ func (m *ResourcePoolMutation) ResetEdge(name string) error {
 // nodes in the graph.
 type ResourceTypeMutation struct {
 	config
-	op                    Op
-	typ                   string
-	id                    *int
-	name                  *string
-	clearedFields         map[string]struct{}
-	property_types        map[int]struct{}
-	removedproperty_types map[int]struct{}
-	clearedproperty_types bool
-	pools                 map[int]struct{}
-	removedpools          map[int]struct{}
-	clearedpools          bool
-	done                  bool
-	oldValue              func(context.Context) (*ResourceType, error)
-	predicates            []predicate.ResourceType
+	op                     Op
+	typ                    string
+	id                     *int
+	name                   *string
+	clearedFields          map[string]struct{}
+	property_types         map[int]struct{}
+	removedproperty_types  map[int]struct{}
+	clearedproperty_types  bool
+	pools                  map[int]struct{}
+	removedpools           map[int]struct{}
+	clearedpools           bool
+	pool_properties        map[int]struct{}
+	removedpool_properties map[int]struct{}
+	clearedpool_properties bool
+	done                   bool
+	oldValue               func(context.Context) (*ResourceType, error)
+	predicates             []predicate.ResourceType
 }
 
 var _ ent.Mutation = (*ResourceTypeMutation)(nil)
@@ -5767,6 +5770,59 @@ func (m *ResourceTypeMutation) ResetPools() {
 	m.removedpools = nil
 }
 
+// AddPoolPropertyIDs adds the pool_properties edge to PoolProperties by ids.
+func (m *ResourceTypeMutation) AddPoolPropertyIDs(ids ...int) {
+	if m.pool_properties == nil {
+		m.pool_properties = make(map[int]struct{})
+	}
+	for i := range ids {
+		m.pool_properties[ids[i]] = struct{}{}
+	}
+}
+
+// ClearPoolProperties clears the pool_properties edge to PoolProperties.
+func (m *ResourceTypeMutation) ClearPoolProperties() {
+	m.clearedpool_properties = true
+}
+
+// PoolPropertiesCleared returns if the edge pool_properties was cleared.
+func (m *ResourceTypeMutation) PoolPropertiesCleared() bool {
+	return m.clearedpool_properties
+}
+
+// RemovePoolPropertyIDs removes the pool_properties edge to PoolProperties by ids.
+func (m *ResourceTypeMutation) RemovePoolPropertyIDs(ids ...int) {
+	if m.removedpool_properties == nil {
+		m.removedpool_properties = make(map[int]struct{})
+	}
+	for i := range ids {
+		m.removedpool_properties[ids[i]] = struct{}{}
+	}
+}
+
+// RemovedPoolProperties returns the removed ids of pool_properties.
+func (m *ResourceTypeMutation) RemovedPoolPropertiesIDs() (ids []int) {
+	for id := range m.removedpool_properties {
+		ids = append(ids, id)
+	}
+	return
+}
+
+// PoolPropertiesIDs returns the pool_properties ids in the mutation.
+func (m *ResourceTypeMutation) PoolPropertiesIDs() (ids []int) {
+	for id := range m.pool_properties {
+		ids = append(ids, id)
+	}
+	return
+}
+
+// ResetPoolProperties reset all changes of the "pool_properties" edge.
+func (m *ResourceTypeMutation) ResetPoolProperties() {
+	m.pool_properties = nil
+	m.clearedpool_properties = false
+	m.removedpool_properties = nil
+}
+
 // Op returns the operation name.
 func (m *ResourceTypeMutation) Op() Op {
 	return m.op
@@ -5882,12 +5938,15 @@ func (m *ResourceTypeMutation) ResetField(name string) error {
 // AddedEdges returns all edge names that were set/added in this
 // mutation.
 func (m *ResourceTypeMutation) AddedEdges() []string {
-	edges := make([]string, 0, 2)
+	edges := make([]string, 0, 3)
 	if m.property_types != nil {
 		edges = append(edges, resourcetype.EdgePropertyTypes)
 	}
 	if m.pools != nil {
 		edges = append(edges, resourcetype.EdgePools)
+	}
+	if m.pool_properties != nil {
+		edges = append(edges, resourcetype.EdgePoolProperties)
 	}
 	return edges
 }
@@ -5908,6 +5967,12 @@ func (m *ResourceTypeMutation) AddedIDs(name string) []ent.Value {
 			ids = append(ids, id)
 		}
 		return ids
+	case resourcetype.EdgePoolProperties:
+		ids := make([]ent.Value, 0, len(m.pool_properties))
+		for id := range m.pool_properties {
+			ids = append(ids, id)
+		}
+		return ids
 	}
 	return nil
 }
@@ -5915,12 +5980,15 @@ func (m *ResourceTypeMutation) AddedIDs(name string) []ent.Value {
 // RemovedEdges returns all edge names that were removed in this
 // mutation.
 func (m *ResourceTypeMutation) RemovedEdges() []string {
-	edges := make([]string, 0, 2)
+	edges := make([]string, 0, 3)
 	if m.removedproperty_types != nil {
 		edges = append(edges, resourcetype.EdgePropertyTypes)
 	}
 	if m.removedpools != nil {
 		edges = append(edges, resourcetype.EdgePools)
+	}
+	if m.removedpool_properties != nil {
+		edges = append(edges, resourcetype.EdgePoolProperties)
 	}
 	return edges
 }
@@ -5941,6 +6009,12 @@ func (m *ResourceTypeMutation) RemovedIDs(name string) []ent.Value {
 			ids = append(ids, id)
 		}
 		return ids
+	case resourcetype.EdgePoolProperties:
+		ids := make([]ent.Value, 0, len(m.removedpool_properties))
+		for id := range m.removedpool_properties {
+			ids = append(ids, id)
+		}
+		return ids
 	}
 	return nil
 }
@@ -5948,12 +6022,15 @@ func (m *ResourceTypeMutation) RemovedIDs(name string) []ent.Value {
 // ClearedEdges returns all edge names that were cleared in this
 // mutation.
 func (m *ResourceTypeMutation) ClearedEdges() []string {
-	edges := make([]string, 0, 2)
+	edges := make([]string, 0, 3)
 	if m.clearedproperty_types {
 		edges = append(edges, resourcetype.EdgePropertyTypes)
 	}
 	if m.clearedpools {
 		edges = append(edges, resourcetype.EdgePools)
+	}
+	if m.clearedpool_properties {
+		edges = append(edges, resourcetype.EdgePoolProperties)
 	}
 	return edges
 }
@@ -5966,6 +6043,8 @@ func (m *ResourceTypeMutation) EdgeCleared(name string) bool {
 		return m.clearedproperty_types
 	case resourcetype.EdgePools:
 		return m.clearedpools
+	case resourcetype.EdgePoolProperties:
+		return m.clearedpool_properties
 	}
 	return false
 }
@@ -5988,6 +6067,9 @@ func (m *ResourceTypeMutation) ResetEdge(name string) error {
 		return nil
 	case resourcetype.EdgePools:
 		m.ResetPools()
+		return nil
+	case resourcetype.EdgePoolProperties:
+		m.ResetPoolProperties()
 		return nil
 	}
 	return fmt.Errorf("unknown ResourceType edge %s", name)

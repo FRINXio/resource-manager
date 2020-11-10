@@ -265,6 +265,34 @@ func HasPoolsWith(preds ...predicate.ResourcePool) predicate.ResourceType {
 	})
 }
 
+// HasPoolProperties applies the HasEdge predicate on the "pool_properties" edge.
+func HasPoolProperties() predicate.ResourceType {
+	return predicate.ResourceType(func(s *sql.Selector) {
+		step := sqlgraph.NewStep(
+			sqlgraph.From(Table, FieldID),
+			sqlgraph.To(PoolPropertiesTable, FieldID),
+			sqlgraph.Edge(sqlgraph.M2M, true, PoolPropertiesTable, PoolPropertiesPrimaryKey...),
+		)
+		sqlgraph.HasNeighbors(s, step)
+	})
+}
+
+// HasPoolPropertiesWith applies the HasEdge predicate on the "pool_properties" edge with a given conditions (other predicates).
+func HasPoolPropertiesWith(preds ...predicate.PoolProperties) predicate.ResourceType {
+	return predicate.ResourceType(func(s *sql.Selector) {
+		step := sqlgraph.NewStep(
+			sqlgraph.From(Table, FieldID),
+			sqlgraph.To(PoolPropertiesInverseTable, FieldID),
+			sqlgraph.Edge(sqlgraph.M2M, true, PoolPropertiesTable, PoolPropertiesPrimaryKey...),
+		)
+		sqlgraph.HasNeighborsWith(s, step, func(s *sql.Selector) {
+			for _, p := range preds {
+				p(s)
+			}
+		})
+	})
+}
+
 // And groups list of predicates with the AND operator between them.
 func And(predicates ...predicate.ResourceType) predicate.ResourceType {
 	return predicate.ResourceType(func(s *sql.Selector) {

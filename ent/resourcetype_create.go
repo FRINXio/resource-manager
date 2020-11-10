@@ -9,6 +9,7 @@ import (
 
 	"github.com/facebook/ent/dialect/sql/sqlgraph"
 	"github.com/facebook/ent/schema/field"
+	"github.com/net-auto/resourceManager/ent/poolproperties"
 	"github.com/net-auto/resourceManager/ent/propertytype"
 	"github.com/net-auto/resourceManager/ent/resourcepool"
 	"github.com/net-auto/resourceManager/ent/resourcetype"
@@ -55,6 +56,21 @@ func (rtc *ResourceTypeCreate) AddPools(r ...*ResourcePool) *ResourceTypeCreate 
 		ids[i] = r[i].ID
 	}
 	return rtc.AddPoolIDs(ids...)
+}
+
+// AddPoolPropertyIDs adds the pool_properties edge to PoolProperties by ids.
+func (rtc *ResourceTypeCreate) AddPoolPropertyIDs(ids ...int) *ResourceTypeCreate {
+	rtc.mutation.AddPoolPropertyIDs(ids...)
+	return rtc
+}
+
+// AddPoolProperties adds the pool_properties edges to PoolProperties.
+func (rtc *ResourceTypeCreate) AddPoolProperties(p ...*PoolProperties) *ResourceTypeCreate {
+	ids := make([]int, len(p))
+	for i := range p {
+		ids[i] = p[i].ID
+	}
+	return rtc.AddPoolPropertyIDs(ids...)
 }
 
 // Mutation returns the ResourceTypeMutation object of the builder.
@@ -181,6 +197,25 @@ func (rtc *ResourceTypeCreate) createSpec() (*ResourceType, *sqlgraph.CreateSpec
 				IDSpec: &sqlgraph.FieldSpec{
 					Type:   field.TypeInt,
 					Column: resourcepool.FieldID,
+				},
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges = append(_spec.Edges, edge)
+	}
+	if nodes := rtc.mutation.PoolPropertiesIDs(); len(nodes) > 0 {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.M2M,
+			Inverse: true,
+			Table:   resourcetype.PoolPropertiesTable,
+			Columns: resourcetype.PoolPropertiesPrimaryKey,
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: &sqlgraph.FieldSpec{
+					Type:   field.TypeInt,
+					Column: poolproperties.FieldID,
 				},
 			},
 		}

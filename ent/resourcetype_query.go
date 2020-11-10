@@ -12,6 +12,7 @@ import (
 	"github.com/facebook/ent/dialect/sql"
 	"github.com/facebook/ent/dialect/sql/sqlgraph"
 	"github.com/facebook/ent/schema/field"
+	"github.com/net-auto/resourceManager/ent/poolproperties"
 	"github.com/net-auto/resourceManager/ent/predicate"
 	"github.com/net-auto/resourceManager/ent/propertytype"
 	"github.com/net-auto/resourceManager/ent/resourcepool"
@@ -27,9 +28,9 @@ type ResourceTypeQuery struct {
 	unique     []string
 	predicates []predicate.ResourceType
 	// eager-loading edges.
-	withPropertyTypes *PropertyTypeQuery
-	withPools         *ResourcePoolQuery
-	withFKs           bool
+	withPropertyTypes  *PropertyTypeQuery
+	withPools          *ResourcePoolQuery
+	withPoolProperties *PoolPropertiesQuery
 	// intermediate query (i.e. traversal path).
 	sql  *sql.Selector
 	path func(context.Context) (*sql.Selector, error)
@@ -96,6 +97,28 @@ func (rtq *ResourceTypeQuery) QueryPools() *ResourcePoolQuery {
 			sqlgraph.From(resourcetype.Table, resourcetype.FieldID, selector),
 			sqlgraph.To(resourcepool.Table, resourcepool.FieldID),
 			sqlgraph.Edge(sqlgraph.O2M, false, resourcetype.PoolsTable, resourcetype.PoolsColumn),
+		)
+		fromU = sqlgraph.SetNeighbors(rtq.driver.Dialect(), step)
+		return fromU, nil
+	}
+	return query
+}
+
+// QueryPoolProperties chains the current query on the pool_properties edge.
+func (rtq *ResourceTypeQuery) QueryPoolProperties() *PoolPropertiesQuery {
+	query := &PoolPropertiesQuery{config: rtq.config}
+	query.path = func(ctx context.Context) (fromU *sql.Selector, err error) {
+		if err := rtq.prepareQuery(ctx); err != nil {
+			return nil, err
+		}
+		selector := rtq.sqlQuery()
+		if err := selector.Err(); err != nil {
+			return nil, err
+		}
+		step := sqlgraph.NewStep(
+			sqlgraph.From(resourcetype.Table, resourcetype.FieldID, selector),
+			sqlgraph.To(poolproperties.Table, poolproperties.FieldID),
+			sqlgraph.Edge(sqlgraph.M2M, true, resourcetype.PoolPropertiesTable, resourcetype.PoolPropertiesPrimaryKey...),
 		)
 		fromU = sqlgraph.SetNeighbors(rtq.driver.Dialect(), step)
 		return fromU, nil
@@ -304,6 +327,17 @@ func (rtq *ResourceTypeQuery) WithPools(opts ...func(*ResourcePoolQuery)) *Resou
 	return rtq
 }
 
+//  WithPoolProperties tells the query-builder to eager-loads the nodes that are connected to
+// the "pool_properties" edge. The optional arguments used to configure the query builder of the edge.
+func (rtq *ResourceTypeQuery) WithPoolProperties(opts ...func(*PoolPropertiesQuery)) *ResourceTypeQuery {
+	query := &PoolPropertiesQuery{config: rtq.config}
+	for _, opt := range opts {
+		opt(query)
+	}
+	rtq.withPoolProperties = query
+	return rtq
+}
+
 // GroupBy used to group vertices by one or more fields/columns.
 // It is often used with aggregate functions, like: count, max, mean, min, sum.
 //
@@ -372,23 +406,17 @@ func (rtq *ResourceTypeQuery) prepareQuery(ctx context.Context) error {
 func (rtq *ResourceTypeQuery) sqlAll(ctx context.Context) ([]*ResourceType, error) {
 	var (
 		nodes       = []*ResourceType{}
-		withFKs     = rtq.withFKs
 		_spec       = rtq.querySpec()
-		loadedTypes = [2]bool{
+		loadedTypes = [3]bool{
 			rtq.withPropertyTypes != nil,
 			rtq.withPools != nil,
+			rtq.withPoolProperties != nil,
 		}
 	)
-	if withFKs {
-		_spec.Node.Columns = append(_spec.Node.Columns, resourcetype.ForeignKeys...)
-	}
 	_spec.ScanValues = func() []interface{} {
 		node := &ResourceType{config: rtq.config}
 		nodes = append(nodes, node)
 		values := node.scanValues()
-		if withFKs {
-			values = append(values, node.fkValues()...)
-		}
 		return values
 	}
 	_spec.Assign = func(values ...interface{}) error {
@@ -461,6 +489,70 @@ func (rtq *ResourceTypeQuery) sqlAll(ctx context.Context) ([]*ResourceType, erro
 				return nil, fmt.Errorf(`unexpected foreign-key "resource_type_pools" returned %v for node %v`, *fk, n.ID)
 			}
 			node.Edges.Pools = append(node.Edges.Pools, n)
+		}
+	}
+
+	if query := rtq.withPoolProperties; query != nil {
+		fks := make([]driver.Value, 0, len(nodes))
+		ids := make(map[int]*ResourceType, len(nodes))
+		for _, node := range nodes {
+			ids[node.ID] = node
+			fks = append(fks, node.ID)
+			node.Edges.PoolProperties = []*PoolProperties{}
+		}
+		var (
+			edgeids []int
+			edges   = make(map[int][]*ResourceType)
+		)
+		_spec := &sqlgraph.EdgeQuerySpec{
+			Edge: &sqlgraph.EdgeSpec{
+				Inverse: true,
+				Table:   resourcetype.PoolPropertiesTable,
+				Columns: resourcetype.PoolPropertiesPrimaryKey,
+			},
+			Predicate: func(s *sql.Selector) {
+				s.Where(sql.InValues(resourcetype.PoolPropertiesPrimaryKey[1], fks...))
+			},
+
+			ScanValues: func() [2]interface{} {
+				return [2]interface{}{&sql.NullInt64{}, &sql.NullInt64{}}
+			},
+			Assign: func(out, in interface{}) error {
+				eout, ok := out.(*sql.NullInt64)
+				if !ok || eout == nil {
+					return fmt.Errorf("unexpected id value for edge-out")
+				}
+				ein, ok := in.(*sql.NullInt64)
+				if !ok || ein == nil {
+					return fmt.Errorf("unexpected id value for edge-in")
+				}
+				outValue := int(eout.Int64)
+				inValue := int(ein.Int64)
+				node, ok := ids[outValue]
+				if !ok {
+					return fmt.Errorf("unexpected node id in edges: %v", outValue)
+				}
+				edgeids = append(edgeids, inValue)
+				edges[inValue] = append(edges[inValue], node)
+				return nil
+			},
+		}
+		if err := sqlgraph.QueryEdges(ctx, rtq.driver, _spec); err != nil {
+			return nil, fmt.Errorf(`query edges "pool_properties": %v`, err)
+		}
+		query.Where(poolproperties.IDIn(edgeids...))
+		neighbors, err := query.All(ctx)
+		if err != nil {
+			return nil, err
+		}
+		for _, n := range neighbors {
+			nodes, ok := edges[n.ID]
+			if !ok {
+				return nil, fmt.Errorf(`unexpected "pool_properties" node returned %v`, n.ID)
+			}
+			for i := range nodes {
+				nodes[i].Edges.PoolProperties = append(nodes[i].Edges.PoolProperties, n)
+			}
 		}
 	}
 

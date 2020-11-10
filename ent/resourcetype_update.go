@@ -9,6 +9,7 @@ import (
 	"github.com/facebook/ent/dialect/sql"
 	"github.com/facebook/ent/dialect/sql/sqlgraph"
 	"github.com/facebook/ent/schema/field"
+	"github.com/net-auto/resourceManager/ent/poolproperties"
 	"github.com/net-auto/resourceManager/ent/predicate"
 	"github.com/net-auto/resourceManager/ent/propertytype"
 	"github.com/net-auto/resourceManager/ent/resourcepool"
@@ -64,6 +65,21 @@ func (rtu *ResourceTypeUpdate) AddPools(r ...*ResourcePool) *ResourceTypeUpdate 
 	return rtu.AddPoolIDs(ids...)
 }
 
+// AddPoolPropertyIDs adds the pool_properties edge to PoolProperties by ids.
+func (rtu *ResourceTypeUpdate) AddPoolPropertyIDs(ids ...int) *ResourceTypeUpdate {
+	rtu.mutation.AddPoolPropertyIDs(ids...)
+	return rtu
+}
+
+// AddPoolProperties adds the pool_properties edges to PoolProperties.
+func (rtu *ResourceTypeUpdate) AddPoolProperties(p ...*PoolProperties) *ResourceTypeUpdate {
+	ids := make([]int, len(p))
+	for i := range p {
+		ids[i] = p[i].ID
+	}
+	return rtu.AddPoolPropertyIDs(ids...)
+}
+
 // Mutation returns the ResourceTypeMutation object of the builder.
 func (rtu *ResourceTypeUpdate) Mutation() *ResourceTypeMutation {
 	return rtu.mutation
@@ -109,6 +125,27 @@ func (rtu *ResourceTypeUpdate) RemovePools(r ...*ResourcePool) *ResourceTypeUpda
 		ids[i] = r[i].ID
 	}
 	return rtu.RemovePoolIDs(ids...)
+}
+
+// ClearPoolProperties clears all "pool_properties" edges to type PoolProperties.
+func (rtu *ResourceTypeUpdate) ClearPoolProperties() *ResourceTypeUpdate {
+	rtu.mutation.ClearPoolProperties()
+	return rtu
+}
+
+// RemovePoolPropertyIDs removes the pool_properties edge to PoolProperties by ids.
+func (rtu *ResourceTypeUpdate) RemovePoolPropertyIDs(ids ...int) *ResourceTypeUpdate {
+	rtu.mutation.RemovePoolPropertyIDs(ids...)
+	return rtu
+}
+
+// RemovePoolProperties removes pool_properties edges to PoolProperties.
+func (rtu *ResourceTypeUpdate) RemovePoolProperties(p ...*PoolProperties) *ResourceTypeUpdate {
+	ids := make([]int, len(p))
+	for i := range p {
+		ids[i] = p[i].ID
+	}
+	return rtu.RemovePoolPropertyIDs(ids...)
 }
 
 // Save executes the query and returns the number of rows/vertices matched by this operation.
@@ -311,6 +348,60 @@ func (rtu *ResourceTypeUpdate) sqlSave(ctx context.Context) (n int, err error) {
 		}
 		_spec.Edges.Add = append(_spec.Edges.Add, edge)
 	}
+	if rtu.mutation.PoolPropertiesCleared() {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.M2M,
+			Inverse: true,
+			Table:   resourcetype.PoolPropertiesTable,
+			Columns: resourcetype.PoolPropertiesPrimaryKey,
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: &sqlgraph.FieldSpec{
+					Type:   field.TypeInt,
+					Column: poolproperties.FieldID,
+				},
+			},
+		}
+		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
+	}
+	if nodes := rtu.mutation.RemovedPoolPropertiesIDs(); len(nodes) > 0 && !rtu.mutation.PoolPropertiesCleared() {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.M2M,
+			Inverse: true,
+			Table:   resourcetype.PoolPropertiesTable,
+			Columns: resourcetype.PoolPropertiesPrimaryKey,
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: &sqlgraph.FieldSpec{
+					Type:   field.TypeInt,
+					Column: poolproperties.FieldID,
+				},
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
+	}
+	if nodes := rtu.mutation.PoolPropertiesIDs(); len(nodes) > 0 {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.M2M,
+			Inverse: true,
+			Table:   resourcetype.PoolPropertiesTable,
+			Columns: resourcetype.PoolPropertiesPrimaryKey,
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: &sqlgraph.FieldSpec{
+					Type:   field.TypeInt,
+					Column: poolproperties.FieldID,
+				},
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges.Add = append(_spec.Edges.Add, edge)
+	}
 	if n, err = sqlgraph.UpdateNodes(ctx, rtu.driver, _spec); err != nil {
 		if _, ok := err.(*sqlgraph.NotFoundError); ok {
 			err = &NotFoundError{resourcetype.Label}
@@ -365,6 +456,21 @@ func (rtuo *ResourceTypeUpdateOne) AddPools(r ...*ResourcePool) *ResourceTypeUpd
 	return rtuo.AddPoolIDs(ids...)
 }
 
+// AddPoolPropertyIDs adds the pool_properties edge to PoolProperties by ids.
+func (rtuo *ResourceTypeUpdateOne) AddPoolPropertyIDs(ids ...int) *ResourceTypeUpdateOne {
+	rtuo.mutation.AddPoolPropertyIDs(ids...)
+	return rtuo
+}
+
+// AddPoolProperties adds the pool_properties edges to PoolProperties.
+func (rtuo *ResourceTypeUpdateOne) AddPoolProperties(p ...*PoolProperties) *ResourceTypeUpdateOne {
+	ids := make([]int, len(p))
+	for i := range p {
+		ids[i] = p[i].ID
+	}
+	return rtuo.AddPoolPropertyIDs(ids...)
+}
+
 // Mutation returns the ResourceTypeMutation object of the builder.
 func (rtuo *ResourceTypeUpdateOne) Mutation() *ResourceTypeMutation {
 	return rtuo.mutation
@@ -410,6 +516,27 @@ func (rtuo *ResourceTypeUpdateOne) RemovePools(r ...*ResourcePool) *ResourceType
 		ids[i] = r[i].ID
 	}
 	return rtuo.RemovePoolIDs(ids...)
+}
+
+// ClearPoolProperties clears all "pool_properties" edges to type PoolProperties.
+func (rtuo *ResourceTypeUpdateOne) ClearPoolProperties() *ResourceTypeUpdateOne {
+	rtuo.mutation.ClearPoolProperties()
+	return rtuo
+}
+
+// RemovePoolPropertyIDs removes the pool_properties edge to PoolProperties by ids.
+func (rtuo *ResourceTypeUpdateOne) RemovePoolPropertyIDs(ids ...int) *ResourceTypeUpdateOne {
+	rtuo.mutation.RemovePoolPropertyIDs(ids...)
+	return rtuo
+}
+
+// RemovePoolProperties removes pool_properties edges to PoolProperties.
+func (rtuo *ResourceTypeUpdateOne) RemovePoolProperties(p ...*PoolProperties) *ResourceTypeUpdateOne {
+	ids := make([]int, len(p))
+	for i := range p {
+		ids[i] = p[i].ID
+	}
+	return rtuo.RemovePoolPropertyIDs(ids...)
 }
 
 // Save executes the query and returns the updated entity.
@@ -602,6 +729,60 @@ func (rtuo *ResourceTypeUpdateOne) sqlSave(ctx context.Context) (_node *Resource
 				IDSpec: &sqlgraph.FieldSpec{
 					Type:   field.TypeInt,
 					Column: resourcepool.FieldID,
+				},
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges.Add = append(_spec.Edges.Add, edge)
+	}
+	if rtuo.mutation.PoolPropertiesCleared() {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.M2M,
+			Inverse: true,
+			Table:   resourcetype.PoolPropertiesTable,
+			Columns: resourcetype.PoolPropertiesPrimaryKey,
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: &sqlgraph.FieldSpec{
+					Type:   field.TypeInt,
+					Column: poolproperties.FieldID,
+				},
+			},
+		}
+		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
+	}
+	if nodes := rtuo.mutation.RemovedPoolPropertiesIDs(); len(nodes) > 0 && !rtuo.mutation.PoolPropertiesCleared() {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.M2M,
+			Inverse: true,
+			Table:   resourcetype.PoolPropertiesTable,
+			Columns: resourcetype.PoolPropertiesPrimaryKey,
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: &sqlgraph.FieldSpec{
+					Type:   field.TypeInt,
+					Column: poolproperties.FieldID,
+				},
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
+	}
+	if nodes := rtuo.mutation.PoolPropertiesIDs(); len(nodes) > 0 {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.M2M,
+			Inverse: true,
+			Table:   resourcetype.PoolPropertiesTable,
+			Columns: resourcetype.PoolPropertiesPrimaryKey,
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: &sqlgraph.FieldSpec{
+					Type:   field.TypeInt,
+					Column: poolproperties.FieldID,
 				},
 			},
 		}

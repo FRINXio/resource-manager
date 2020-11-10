@@ -19,8 +19,7 @@ type ResourceType struct {
 	Name string `json:"name,omitempty"`
 	// Edges holds the relations/edges for other nodes in the graph.
 	// The values are being populated by the ResourceTypeQuery when eager-loading is set.
-	Edges                         ResourceTypeEdges `json:"edges"`
-	pool_properties_resource_type *int
+	Edges ResourceTypeEdges `json:"edges"`
 }
 
 // ResourceTypeEdges holds the relations/edges for other nodes in the graph.
@@ -29,9 +28,11 @@ type ResourceTypeEdges struct {
 	PropertyTypes []*PropertyType
 	// Pools holds the value of the pools edge.
 	Pools []*ResourcePool
+	// PoolProperties holds the value of the pool_properties edge.
+	PoolProperties []*PoolProperties
 	// loadedTypes holds the information for reporting if a
 	// type was loaded (or requested) in eager-loading or not.
-	loadedTypes [2]bool
+	loadedTypes [3]bool
 }
 
 // PropertyTypesOrErr returns the PropertyTypes value or an error if the edge
@@ -52,18 +53,20 @@ func (e ResourceTypeEdges) PoolsOrErr() ([]*ResourcePool, error) {
 	return nil, &NotLoadedError{edge: "pools"}
 }
 
+// PoolPropertiesOrErr returns the PoolProperties value or an error if the edge
+// was not loaded in eager-loading.
+func (e ResourceTypeEdges) PoolPropertiesOrErr() ([]*PoolProperties, error) {
+	if e.loadedTypes[2] {
+		return e.PoolProperties, nil
+	}
+	return nil, &NotLoadedError{edge: "pool_properties"}
+}
+
 // scanValues returns the types for scanning values from sql.Rows.
 func (*ResourceType) scanValues() []interface{} {
 	return []interface{}{
 		&sql.NullInt64{},  // id
 		&sql.NullString{}, // name
-	}
-}
-
-// fkValues returns the types for scanning foreign-keys values from sql.Rows.
-func (*ResourceType) fkValues() []interface{} {
-	return []interface{}{
-		&sql.NullInt64{}, // pool_properties_resource_type
 	}
 }
 
@@ -84,15 +87,6 @@ func (rt *ResourceType) assignValues(values ...interface{}) error {
 	} else if value.Valid {
 		rt.Name = value.String
 	}
-	values = values[1:]
-	if len(values) == len(resourcetype.ForeignKeys) {
-		if value, ok := values[0].(*sql.NullInt64); !ok {
-			return fmt.Errorf("unexpected type %T for edge-field pool_properties_resource_type", value)
-		} else if value.Valid {
-			rt.pool_properties_resource_type = new(int)
-			*rt.pool_properties_resource_type = int(value.Int64)
-		}
-	}
 	return nil
 }
 
@@ -104,6 +98,11 @@ func (rt *ResourceType) QueryPropertyTypes() *PropertyTypeQuery {
 // QueryPools queries the pools edge of the ResourceType.
 func (rt *ResourceType) QueryPools() *ResourcePoolQuery {
 	return (&ResourceTypeClient{config: rt.config}).QueryPools(rt)
+}
+
+// QueryPoolProperties queries the pool_properties edge of the ResourceType.
+func (rt *ResourceType) QueryPoolProperties() *PoolPropertiesQuery {
+	return (&ResourceTypeClient{config: rt.config}).QueryPoolProperties(rt)
 }
 
 // Update returns a builder for updating this ResourceType.

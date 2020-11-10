@@ -5,6 +5,7 @@ package resolver
 
 import (
 	"context"
+
 	"github.com/net-auto/resourceManager/ent"
 	"github.com/net-auto/resourceManager/ent/allocationstrategy"
 	"github.com/net-auto/resourceManager/ent/predicate"
@@ -505,7 +506,11 @@ func (r *queryResolver) QueryAllocationStrategies(ctx context.Context) ([]*ent.A
 
 func (r *queryResolver) QueryResourceTypes(ctx context.Context) ([]*ent.ResourceType, error) {
 	client := r.ClientFrom(ctx)
-	if resourceTypes, err := client.ResourceType.Query().All(ctx); err != nil {
+	if resourceTypes, err := client.ResourceType.
+		Query().
+		// Filter out pool properties that are stored in resource type table
+		Where(resourcetype.Not(resourcetype.HasPoolProperties())).
+		All(ctx); err != nil {
 		log.Error(ctx, err, "Unable to retrieve resource types")
 		return nil, gqlerror.Errorf("Unable to query resource types: %v", err)
 	} else {
@@ -559,21 +564,6 @@ func (r *queryResolver) QueryResourcePoolHierarchyPath(ctx context.Context, pool
 	}
 
 	return hierarchy, nil
-}
-
-func hasParent(currentPool *ent.ResourcePool) bool {
-	return currentPool != nil &&
-		currentPool.Edges.ParentResource != nil &&
-		currentPool.Edges.ParentResource.Edges.Pool != nil
-}
-
-func queryPoolWithParent(ctx context.Context, poolID int, client *ent.Client) (*ent.ResourcePool, error) {
-	return client.ResourcePool.
-		Query().
-		Where(resourcePool.ID(poolID)).
-		WithParentResource(func(query *ent.ResourceQuery) {
-			query.WithPool()
-		}).Only(ctx)
 }
 
 func (r *queryResolver) QueryRootResourcePools(ctx context.Context, resourceTypeID *int) ([]*ent.ResourcePool, error) {

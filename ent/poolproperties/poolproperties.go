@@ -28,13 +28,11 @@ const (
 	PoolInverseTable = "resource_pools"
 	// PoolColumn is the table column denoting the pool relation/edge.
 	PoolColumn = "resource_pool_pool_properties"
-	// ResourceTypeTable is the table the holds the resourceType relation/edge.
-	ResourceTypeTable = "resource_types"
+	// ResourceTypeTable is the table the holds the resourceType relation/edge. The primary key declared below.
+	ResourceTypeTable = "pool_properties_resourceType"
 	// ResourceTypeInverseTable is the table name for the ResourceType entity.
 	// It exists in this package in order to avoid circular dependency with the "resourcetype" package.
 	ResourceTypeInverseTable = "resource_types"
-	// ResourceTypeColumn is the table column denoting the resourceType relation/edge.
-	ResourceTypeColumn = "pool_properties_resource_type"
 	// PropertiesTable is the table the holds the properties relation/edge.
 	PropertiesTable = "properties"
 	// PropertiesInverseTable is the table name for the Property entity.
@@ -53,6 +51,12 @@ var Columns = []string{
 var ForeignKeys = []string{
 	"resource_pool_pool_properties",
 }
+
+var (
+	// ResourceTypePrimaryKey and ResourceTypeColumn2 are the table columns denoting the
+	// primary key for the resourceType relation (M2M).
+	ResourceTypePrimaryKey = []string{"pool_properties_id", "resource_type_id"}
+)
 
 // ValidColumn reports if the column name is valid (part of the table columns).
 func ValidColumn(column string) bool {

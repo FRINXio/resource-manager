@@ -380,7 +380,7 @@ func (c *PoolPropertiesClient) QueryResourceType(pp *PoolProperties) *ResourceTy
 		step := sqlgraph.NewStep(
 			sqlgraph.From(poolproperties.Table, poolproperties.FieldID, id),
 			sqlgraph.To(resourcetype.Table, resourcetype.FieldID),
-			sqlgraph.Edge(sqlgraph.O2M, false, poolproperties.ResourceTypeTable, poolproperties.ResourceTypeColumn),
+			sqlgraph.Edge(sqlgraph.M2M, false, poolproperties.ResourceTypeTable, poolproperties.ResourceTypePrimaryKey...),
 		)
 		fromV = sqlgraph.Neighbors(pp.driver.Dialect(), step)
 		return fromV, nil
@@ -1066,6 +1066,22 @@ func (c *ResourceTypeClient) QueryPools(rt *ResourceType) *ResourcePoolQuery {
 			sqlgraph.From(resourcetype.Table, resourcetype.FieldID, id),
 			sqlgraph.To(resourcepool.Table, resourcepool.FieldID),
 			sqlgraph.Edge(sqlgraph.O2M, false, resourcetype.PoolsTable, resourcetype.PoolsColumn),
+		)
+		fromV = sqlgraph.Neighbors(rt.driver.Dialect(), step)
+		return fromV, nil
+	}
+	return query
+}
+
+// QueryPoolProperties queries the pool_properties edge of a ResourceType.
+func (c *ResourceTypeClient) QueryPoolProperties(rt *ResourceType) *PoolPropertiesQuery {
+	query := &PoolPropertiesQuery{config: c.config}
+	query.path = func(ctx context.Context) (fromV *sql.Selector, _ error) {
+		id := rt.ID
+		step := sqlgraph.NewStep(
+			sqlgraph.From(resourcetype.Table, resourcetype.FieldID, id),
+			sqlgraph.To(poolproperties.Table, poolproperties.FieldID),
+			sqlgraph.Edge(sqlgraph.M2M, true, resourcetype.PoolPropertiesTable, resourcetype.PoolPropertiesPrimaryKey...),
 		)
 		fromV = sqlgraph.Neighbors(rt.driver.Dialect(), step)
 		return fromV, nil

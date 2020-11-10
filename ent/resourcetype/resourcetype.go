@@ -18,6 +18,8 @@ const (
 	EdgePropertyTypes = "property_types"
 	// EdgePools holds the string denoting the pools edge name in mutations.
 	EdgePools = "pools"
+	// EdgePoolProperties holds the string denoting the pool_properties edge name in mutations.
+	EdgePoolProperties = "pool_properties"
 
 	// Table holds the table name of the resourcetype in the database.
 	Table = "resource_types"
@@ -35,6 +37,11 @@ const (
 	PoolsInverseTable = "resource_pools"
 	// PoolsColumn is the table column denoting the pools relation/edge.
 	PoolsColumn = "resource_type_pools"
+	// PoolPropertiesTable is the table the holds the pool_properties relation/edge. The primary key declared below.
+	PoolPropertiesTable = "pool_properties_resourceType"
+	// PoolPropertiesInverseTable is the table name for the PoolProperties entity.
+	// It exists in this package in order to avoid circular dependency with the "poolproperties" package.
+	PoolPropertiesInverseTable = "pool_properties"
 )
 
 // Columns holds all SQL columns for resourcetype fields.
@@ -43,20 +50,16 @@ var Columns = []string{
 	FieldName,
 }
 
-// ForeignKeys holds the SQL foreign-keys that are owned by the ResourceType type.
-var ForeignKeys = []string{
-	"pool_properties_resource_type",
-}
+var (
+	// PoolPropertiesPrimaryKey and PoolPropertiesColumn2 are the table columns denoting the
+	// primary key for the pool_properties relation (M2M).
+	PoolPropertiesPrimaryKey = []string{"pool_properties_id", "resource_type_id"}
+)
 
 // ValidColumn reports if the column name is valid (part of the table columns).
 func ValidColumn(column string) bool {
 	for i := range Columns {
 		if column == Columns[i] {
-			return true
-		}
-	}
-	for i := range ForeignKeys {
-		if column == ForeignKeys[i] {
 			return true
 		}
 	}

@@ -169,10 +169,10 @@ func (ppc *PoolPropertiesCreate) createSpec() (*PoolProperties, *sqlgraph.Create
 	}
 	if nodes := ppc.mutation.ResourceTypeIDs(); len(nodes) > 0 {
 		edge := &sqlgraph.EdgeSpec{
-			Rel:     sqlgraph.O2M,
+			Rel:     sqlgraph.M2M,
 			Inverse: false,
 			Table:   poolproperties.ResourceTypeTable,
-			Columns: []string{poolproperties.ResourceTypeColumn},
+			Columns: poolproperties.ResourceTypePrimaryKey,
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
 				IDSpec: &sqlgraph.FieldSpec{

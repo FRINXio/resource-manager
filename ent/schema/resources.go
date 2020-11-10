@@ -37,6 +37,8 @@ func (ResourceType) Edges() []ent.Edge {
 			Annotations(entgql.Bind()),
 		edge.To("pools", ResourcePool.Type).
 			Annotations(entgql.Bind()),
+		edge.From("pool_properties", PoolProperties.Type).
+			Ref("resourceType"),
 	}
 }
 

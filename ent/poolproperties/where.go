@@ -125,7 +125,7 @@ func HasResourceType() predicate.PoolProperties {
 		step := sqlgraph.NewStep(
 			sqlgraph.From(Table, FieldID),
 			sqlgraph.To(ResourceTypeTable, FieldID),
-			sqlgraph.Edge(sqlgraph.O2M, false, ResourceTypeTable, ResourceTypeColumn),
+			sqlgraph.Edge(sqlgraph.M2M, false, ResourceTypeTable, ResourceTypePrimaryKey...),
 		)
 		sqlgraph.HasNeighbors(s, step)
 	})
@@ -137,7 +137,7 @@ func HasResourceTypeWith(preds ...predicate.ResourceType) predicate.PoolProperti
 		step := sqlgraph.NewStep(
 			sqlgraph.From(Table, FieldID),
 			sqlgraph.To(ResourceTypeInverseTable, FieldID),
-			sqlgraph.Edge(sqlgraph.O2M, false, ResourceTypeTable, ResourceTypeColumn),
+			sqlgraph.Edge(sqlgraph.M2M, false, ResourceTypeTable, ResourceTypePrimaryKey...),
 		)
 		sqlgraph.HasNeighborsWith(s, step, func(s *sql.Selector) {
 			for _, p := range preds {

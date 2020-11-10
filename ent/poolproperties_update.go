@@ -237,10 +237,10 @@ func (ppu *PoolPropertiesUpdate) sqlSave(ctx context.Context) (n int, err error)
 	}
 	if ppu.mutation.ResourceTypeCleared() {
 		edge := &sqlgraph.EdgeSpec{
-			Rel:     sqlgraph.O2M,
+			Rel:     sqlgraph.M2M,
 			Inverse: false,
 			Table:   poolproperties.ResourceTypeTable,
-			Columns: []string{poolproperties.ResourceTypeColumn},
+			Columns: poolproperties.ResourceTypePrimaryKey,
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
 				IDSpec: &sqlgraph.FieldSpec{
@@ -253,10 +253,10 @@ func (ppu *PoolPropertiesUpdate) sqlSave(ctx context.Context) (n int, err error)
 	}
 	if nodes := ppu.mutation.RemovedResourceTypeIDs(); len(nodes) > 0 && !ppu.mutation.ResourceTypeCleared() {
 		edge := &sqlgraph.EdgeSpec{
-			Rel:     sqlgraph.O2M,
+			Rel:     sqlgraph.M2M,
 			Inverse: false,
 			Table:   poolproperties.ResourceTypeTable,
-			Columns: []string{poolproperties.ResourceTypeColumn},
+			Columns: poolproperties.ResourceTypePrimaryKey,
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
 				IDSpec: &sqlgraph.FieldSpec{
@@ -272,10 +272,10 @@ func (ppu *PoolPropertiesUpdate) sqlSave(ctx context.Context) (n int, err error)
 	}
 	if nodes := ppu.mutation.ResourceTypeIDs(); len(nodes) > 0 {
 		edge := &sqlgraph.EdgeSpec{
-			Rel:     sqlgraph.O2M,
+			Rel:     sqlgraph.M2M,
 			Inverse: false,
 			Table:   poolproperties.ResourceTypeTable,
-			Columns: []string{poolproperties.ResourceTypeColumn},
+			Columns: poolproperties.ResourceTypePrimaryKey,
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
 				IDSpec: &sqlgraph.FieldSpec{
@@ -567,10 +567,10 @@ func (ppuo *PoolPropertiesUpdateOne) sqlSave(ctx context.Context) (_node *PoolPr
 	}
 	if ppuo.mutation.ResourceTypeCleared() {
 		edge := &sqlgraph.EdgeSpec{
-			Rel:     sqlgraph.O2M,
+			Rel:     sqlgraph.M2M,
 			Inverse: false,
 			Table:   poolproperties.ResourceTypeTable,
-			Columns: []string{poolproperties.ResourceTypeColumn},
+			Columns: poolproperties.ResourceTypePrimaryKey,
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
 				IDSpec: &sqlgraph.FieldSpec{
@@ -583,10 +583,10 @@ func (ppuo *PoolPropertiesUpdateOne) sqlSave(ctx context.Context) (_node *PoolPr
 	}
 	if nodes := ppuo.mutation.RemovedResourceTypeIDs(); len(nodes) > 0 && !ppuo.mutation.ResourceTypeCleared() {
 		edge := &sqlgraph.EdgeSpec{
-			Rel:     sqlgraph.O2M,
+			Rel:     sqlgraph.M2M,
 			Inverse: false,
 			Table:   poolproperties.ResourceTypeTable,
-			Columns: []string{poolproperties.ResourceTypeColumn},
+			Columns: poolproperties.ResourceTypePrimaryKey,
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
 				IDSpec: &sqlgraph.FieldSpec{
@@ -602,10 +602,10 @@ func (ppuo *PoolPropertiesUpdateOne) sqlSave(ctx context.Context) (_node *PoolPr
 	}
 	if nodes := ppuo.mutation.ResourceTypeIDs(); len(nodes) > 0 {
 		edge := &sqlgraph.EdgeSpec{
-			Rel:     sqlgraph.O2M,
+			Rel:     sqlgraph.M2M,
 			Inverse: false,
 			Table:   poolproperties.ResourceTypeTable,
-			Columns: []string{poolproperties.ResourceTypeColumn},
+			Columns: poolproperties.ResourceTypePrimaryKey,
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
 				IDSpec: &sqlgraph.FieldSpec{

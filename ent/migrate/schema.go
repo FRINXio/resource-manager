@@ -191,22 +191,13 @@ var (
 	ResourceTypesColumns = []*schema.Column{
 		{Name: "id", Type: field.TypeInt, Increment: true},
 		{Name: "name", Type: field.TypeString},
-		{Name: "pool_properties_resource_type", Type: field.TypeInt, Nullable: true},
 	}
 	// ResourceTypesTable holds the schema information for the "resource_types" table.
 	ResourceTypesTable = &schema.Table{
-		Name:       "resource_types",
-		Columns:    ResourceTypesColumns,
-		PrimaryKey: []*schema.Column{ResourceTypesColumns[0]},
-		ForeignKeys: []*schema.ForeignKey{
-			{
-				Symbol:  "resource_types_pool_properties_resourceType",
-				Columns: []*schema.Column{ResourceTypesColumns[2]},
-
-				RefColumns: []*schema.Column{PoolPropertiesColumns[0]},
-				OnDelete:   schema.SetNull,
-			},
-		},
+		Name:        "resource_types",
+		Columns:     ResourceTypesColumns,
+		PrimaryKey:  []*schema.Column{ResourceTypesColumns[0]},
+		ForeignKeys: []*schema.ForeignKey{},
 	}
 	// TagsColumns holds the columns for the "tags" table.
 	TagsColumns = []*schema.Column{
@@ -219,6 +210,33 @@ var (
 		Columns:     TagsColumns,
 		PrimaryKey:  []*schema.Column{TagsColumns[0]},
 		ForeignKeys: []*schema.ForeignKey{},
+	}
+	// PoolPropertiesResourceTypeColumns holds the columns for the "pool_properties_resourceType" table.
+	PoolPropertiesResourceTypeColumns = []*schema.Column{
+		{Name: "pool_properties_id", Type: field.TypeInt},
+		{Name: "resource_type_id", Type: field.TypeInt},
+	}
+	// PoolPropertiesResourceTypeTable holds the schema information for the "pool_properties_resourceType" table.
+	PoolPropertiesResourceTypeTable = &schema.Table{
+		Name:       "pool_properties_resourceType",
+		Columns:    PoolPropertiesResourceTypeColumns,
+		PrimaryKey: []*schema.Column{PoolPropertiesResourceTypeColumns[0], PoolPropertiesResourceTypeColumns[1]},
+		ForeignKeys: []*schema.ForeignKey{
+			{
+				Symbol:  "pool_properties_resourceType_pool_properties_id",
+				Columns: []*schema.Column{PoolPropertiesResourceTypeColumns[0]},
+
+				RefColumns: []*schema.Column{PoolPropertiesColumns[0]},
+				OnDelete:   schema.Cascade,
+			},
+			{
+				Symbol:  "pool_properties_resourceType_resource_type_id",
+				Columns: []*schema.Column{PoolPropertiesResourceTypeColumns[1]},
+
+				RefColumns: []*schema.Column{ResourceTypesColumns[0]},
+				OnDelete:   schema.Cascade,
+			},
+		},
 	}
 	// TagPoolsColumns holds the columns for the "tag_pools" table.
 	TagPoolsColumns = []*schema.Column{
@@ -257,6 +275,7 @@ var (
 		ResourcePoolsTable,
 		ResourceTypesTable,
 		TagsTable,
+		PoolPropertiesResourceTypeTable,
 		TagPoolsTable,
 	}
 )
@@ -271,7 +290,8 @@ func init() {
 	ResourcePoolsTable.ForeignKeys[0].RefTable = ResourcesTable
 	ResourcePoolsTable.ForeignKeys[1].RefTable = AllocationStrategiesTable
 	ResourcePoolsTable.ForeignKeys[2].RefTable = ResourceTypesTable
-	ResourceTypesTable.ForeignKeys[0].RefTable = PoolPropertiesTable
+	PoolPropertiesResourceTypeTable.ForeignKeys[0].RefTable = PoolPropertiesTable
+	PoolPropertiesResourceTypeTable.ForeignKeys[1].RefTable = ResourceTypesTable
 	TagPoolsTable.ForeignKeys[0].RefTable = TagsTable
 	TagPoolsTable.ForeignKeys[1].RefTable = ResourcePoolsTable
 }
