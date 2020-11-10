@@ -117,6 +117,12 @@ export async function getResourcePool(poolId, before, after, first, last) {
                            hasPreviousPage
                        }
                    }
+                   ParentResource {
+                       id
+                       ParentPool {
+                           id
+                       }
+                   } 
                 }
             }
         `,
@@ -169,6 +175,24 @@ export async function searchPoolsByTags(searchExpression){
         }
     })
     .then(result => result.data.SearchPoolsByTags)
+    .catch(error => console.log(error));
+}
+
+export async function getPoolHierarchyPath(poolId){
+    return client.query({
+        query: gql`
+            query QueryPoolHierarchyPath($poolId: ID!) {
+                QueryResourcePoolHierarchyPath(poolId: $poolId) {
+                    id
+                    Name
+                }
+            }
+        `,
+        variables: {
+            poolId: poolId,
+        }
+    })
+    .then(result => result.data.QueryResourcePoolHierarchyPath)
     .catch(error => console.log(error));
 }
 

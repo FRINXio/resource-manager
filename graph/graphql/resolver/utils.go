@@ -4,6 +4,7 @@ import (
 	"context"
 	"github.com/net-auto/resourceManager/ent"
 	"github.com/net-auto/resourceManager/ent/resourcepool"
+	resourcePool "github.com/net-auto/resourceManager/ent/resourcepool"
 	"github.com/vektah/gqlparser/v2/gqlerror"
 )
 
@@ -19,6 +20,20 @@ func decodeCursor(cursorAsString * string) (*ent.Cursor, error) {
 		err := result.UnmarshalGQL(*cursorAsString)
 
 		return result, err
+}
+
+func hasParent(currentPool *ent.ResourcePool) bool {
+	return currentPool != nil &&
+		currentPool.Edges.ParentResource != nil &&
+		currentPool.Edges.ParentResource.Edges.Pool != nil
+}
+func queryPoolWithParent(ctx context.Context, poolID int, client *ent.Client) (*ent.ResourcePool, error) {
+	return client.ResourcePool.
+		Query().
+		Where(resourcePool.ID(poolID)).
+		WithParentResource(func(query *ent.ResourceQuery) {
+			query.WithPool()
+		}).Only(ctx)
 }
 
 func createNestedPool(ctx context.Context,

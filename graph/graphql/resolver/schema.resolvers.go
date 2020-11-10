@@ -5,7 +5,6 @@ package resolver
 
 import (
 	"context"
-
 	"github.com/net-auto/resourceManager/ent"
 	"github.com/net-auto/resourceManager/ent/allocationstrategy"
 	"github.com/net-auto/resourceManager/ent/predicate"
@@ -540,6 +539,43 @@ func (r *queryResolver) QueryResourcePools(ctx context.Context, resourceTypeID *
 	}
 }
 
+func (r *queryResolver) QueryResourcePoolHierarchyPath(ctx context.Context, poolID int) ([]*ent.ResourcePool, error) {
+	client := r.ClientFrom(ctx)
+	currentPool, err := queryPoolWithParent(ctx, poolID, client)
+	if err != nil {
+		log.Error(ctx, err, "Unable to find pool")
+		return nil, gqlerror.Errorf("Unable to find pool: %v", err)
+	}
+
+	var hierarchy []*ent.ResourcePool
+
+	for hasParent(currentPool) {
+		parentPool := currentPool.Edges.ParentResource.Edges.Pool
+		hierarchy = append([]*ent.ResourcePool{parentPool}, hierarchy...)
+		if currentPool, err = queryPoolWithParent(ctx, parentPool.ID, client); err != nil {
+			log.Error(ctx, err, "Unable to find pool")
+			return nil, gqlerror.Errorf("Unable to find pool: %v", err)
+		}
+	}
+
+	return hierarchy, nil
+}
+
+func hasParent(currentPool *ent.ResourcePool) bool {
+	return currentPool != nil &&
+		currentPool.Edges.ParentResource != nil &&
+		currentPool.Edges.ParentResource.Edges.Pool != nil
+}
+
+func queryPoolWithParent(ctx context.Context, poolID int, client *ent.Client) (*ent.ResourcePool, error) {
+	return client.ResourcePool.
+		Query().
+		Where(resourcePool.ID(poolID)).
+		WithParentResource(func(query *ent.ResourceQuery) {
+			query.WithPool()
+		}).Only(ctx)
+}
+
 func (r *queryResolver) QueryRootResourcePools(ctx context.Context, resourceTypeID *int) ([]*ent.ResourcePool, error) {
 	client := r.ClientFrom(ctx)
 	query := client.ResourcePool.
@@ -643,6 +679,19 @@ func (r *resourceResolver) Properties(ctx context.Context, obj *ent.Resource) (m
 	}
 }
 
+func (r *resourceResolver) ParentPool(ctx context.Context, obj *ent.Resource) (*ent.ResourcePool, error) {
+	if es, err := obj.Edges.PoolOrErr(); !ent.IsNotLoaded(err) {
+		log.Error(ctx, err, "Unable to retrieve pool for resource with ID %d", obj.ID)
+		return es, err
+	}
+	if pool, err := obj.QueryPool().Only(ctx); err == nil {
+		return pool, nil
+	} else {
+		log.Error(ctx, err, "Unable to retrieve parent pool for resource with ID %d", obj.ID)
+		return nil, gqlerror.Errorf("Unable to query parent pool: %v", err)
+	}
+}
+
 func (r *resourceResolver) NestedPool(ctx context.Context, obj *ent.Resource) (*ent.ResourcePool, error) {
 	if es, err := obj.Edges.NestedPoolOrErr(); !ent.IsNotLoaded(err) {
 		log.Error(ctx, err, "Unable to retrieve nested pool for resource with ID %d", obj.ID)
@@ -681,6 +730,20 @@ func (r *resourcePoolResolver) Resources(ctx context.Context, obj *ent.ResourceP
 	}
 
 	return resources, err
+}
+
+func (r *resourcePoolResolver) ParentResource(ctx context.Context, obj *ent.ResourcePool) (*ent.Resource, error) {
+	if es, err := obj.Edges.ParentResourceOrErr(); !ent.IsNotLoaded(err) {
+		log.Error(ctx, err, "Loading parent resource for pool ID %d failed", obj.ID)
+		return es, err
+	}
+
+	if pr, err := obj.QueryParentResource().Only(ctx); err != nil {
+		log.Error(ctx, err, "Loading parent resource for pool ID %d failed", obj.ID)
+		return nil, err
+	} else {
+		return pr, err
+	}
 }
 
 func (r *resourcePoolResolver) AllocatedResources(ctx context.Context, obj *ent.ResourcePool, first *int, last *int, before *string, after *string) (*ent.ResourceConnection, error) {

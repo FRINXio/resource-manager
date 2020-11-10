@@ -63,6 +63,7 @@ type ResourcePool implements Node
     PoolType: PoolType!
     ResourceType: ResourceType!
     Resources: [Resource!]!
+    ParentResource: Resource
     allocatedResources(first: Int, last: Int, before: String, after: String): ResourceConnection
     Tags: [Tag!]!
     AllocationStrategy: AllocationStrategy
@@ -85,6 +86,7 @@ type Resource implements Node
 {
     id: ID!
     Properties: Map!
+    ParentPool: ResourcePool!
     NestedPool: ResourcePool
 }
 
@@ -234,6 +236,7 @@ type Query {
     QueryResourcePool(poolId: ID!): ResourcePool!
 
     QueryResourcePools(resourceTypeId: ID): [ResourcePool!]!
+    QueryResourcePoolHierarchyPath(poolId: ID!): [ResourcePool!]!
     QueryRootResourcePools(resourceTypeId: ID): [ResourcePool!]!
     QueryLeafResourcePools(resourceTypeId: ID): [ResourcePool!]!
     SearchPoolsByTags(tags: TagOr): [ResourcePool!]!

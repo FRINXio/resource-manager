@@ -1,4 +1,4 @@
-import {claimResource} from '../graphql-queries';
+import { claimResource, getResourcePool, getPoolHierarchyPath } from '../graphql-queries';
 import {createIpv4PrefixRootPool, createIpv4PrefixNestedPool, createSingletonIpv4PrefixNestedPool,
 createIpv4NestedPool, get2ChildrenIds} from '../test-helpers';
 
@@ -88,4 +88,21 @@ test('create ipv4 hierarchy', async () => {
     expect(resource32.Properties.address).toBe('10.64.0.0');
     expect(resource33.Properties.address).toBe('10.128.0.0');
     expect(resource34.Properties.address).toBe('10.192.0.0');
+
+    // assert hierarchy queries
+    const pool34Queried = await getResourcePool(pool34Id)
+    expect(pool34Queried.ParentResource.id).toBe(resource22Id)
+    expect(pool34Queried.ParentResource.ParentPool.id).toBe(pool22Id)
+
+    const hierarchyPath34 = await getPoolHierarchyPath(pool34Id)
+    expect(hierarchyPath34.length).toBe(2)
+    expect(hierarchyPath34[0].id).toBe(rootPoolId)
+    expect(hierarchyPath34[1].id).toBe(pool22Id)
+
+    const hierarchyPathRoot = await getPoolHierarchyPath(rootPoolId)
+    expect(hierarchyPathRoot.length).toBe(0)
+
+    const hierarchyPath21 = await getPoolHierarchyPath(pool21Id)
+    expect(hierarchyPath21.length).toBe(1)
+    expect(hierarchyPath21[0].id).toBe(rootPoolId)
 });
