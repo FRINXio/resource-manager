@@ -494,9 +494,15 @@ func (r *queryResolver) QueryAllocationStrategy(ctx context.Context, allocationS
 	}
 }
 
-func (r *queryResolver) QueryAllocationStrategies(ctx context.Context) ([]*ent.AllocationStrategy, error) {
+func (r *queryResolver) QueryAllocationStrategies(ctx context.Context, byName *string) ([]*ent.AllocationStrategy, error) {
 	client := r.ClientFrom(ctx)
-	if strats, err := client.AllocationStrategy.Query().All(ctx); err != nil {
+	query := client.AllocationStrategy.Query()
+
+	if byName != nil {
+		query = query.Where(allocationstrategy.Name(*byName))
+	}
+
+	if strats, err := query.All(ctx); err != nil {
 		log.Error(ctx, err, "Unable to retrieve allocation strategies")
 		return nil, gqlerror.Errorf("Unable to query strategies: %v", err)
 	} else {
@@ -504,13 +510,18 @@ func (r *queryResolver) QueryAllocationStrategies(ctx context.Context) ([]*ent.A
 	}
 }
 
-func (r *queryResolver) QueryResourceTypes(ctx context.Context) ([]*ent.ResourceType, error) {
+func (r *queryResolver) QueryResourceTypes(ctx context.Context, byName *string) ([]*ent.ResourceType, error) {
 	client := r.ClientFrom(ctx)
-	if resourceTypes, err := client.ResourceType.
-		Query().
-		// Filter out pool properties that are stored in resource type table
-		Where(resourcetype.Not(resourcetype.HasPoolProperties())).
-		All(ctx); err != nil {
+	query := client.ResourceType.Query()
+
+	// Filter out pool properties that are stored in resource type table
+	query = query.Where(resourcetype.Not(resourcetype.HasPoolProperties()))
+
+	if byName != nil {
+		query = query.Where(resourcetype.Name(*byName))
+	}
+
+	if resourceTypes, err := query.All(ctx); err != nil {
 		log.Error(ctx, err, "Unable to retrieve resource types")
 		return nil, gqlerror.Errorf("Unable to query resource types: %v", err)
 	} else {

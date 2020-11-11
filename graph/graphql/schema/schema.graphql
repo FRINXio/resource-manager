@@ -231,8 +231,8 @@ type Query {
     QueryResource(input: Map!, poolId: ID!): Resource!
     QueryResources(poolId: ID!): [Resource!]!
     QueryAllocationStrategy(allocationStrategyId: ID!): AllocationStrategy!
-    QueryAllocationStrategies: [AllocationStrategy!]!
-    QueryResourceTypes: [ResourceType!]!
+    QueryAllocationStrategies(byName: String): [AllocationStrategy!]!
+    QueryResourceTypes(byName: String): [ResourceType!]!
 
     QueryResourcePool(poolId: ID!): ResourcePool!
 

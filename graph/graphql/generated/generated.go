@@ -164,7 +164,7 @@ type ComplexityRoot struct {
 
 	Query struct {
 		Node                           func(childComplexity int, id int) int
-		QueryAllocationStrategies      func(childComplexity int) int
+		QueryAllocationStrategies      func(childComplexity int, byName *string) int
 		QueryAllocationStrategy        func(childComplexity int, allocationStrategyID int) int
 		QueryLeafResourcePools         func(childComplexity int, resourceTypeID *int) int
 		QueryPoolCapacity              func(childComplexity int, poolID int) int
@@ -173,7 +173,7 @@ type ComplexityRoot struct {
 		QueryResourcePool              func(childComplexity int, poolID int) int
 		QueryResourcePoolHierarchyPath func(childComplexity int, poolID int) int
 		QueryResourcePools             func(childComplexity int, resourceTypeID *int) int
-		QueryResourceTypes             func(childComplexity int) int
+		QueryResourceTypes             func(childComplexity int, byName *string) int
 		QueryResources                 func(childComplexity int, poolID int) int
 		QueryRootResourcePools         func(childComplexity int, resourceTypeID *int) int
 		QueryTags                      func(childComplexity int) int
@@ -275,8 +275,8 @@ type QueryResolver interface {
 	QueryResource(ctx context.Context, input map[string]interface{}, poolID int) (*ent.Resource, error)
 	QueryResources(ctx context.Context, poolID int) ([]*ent.Resource, error)
 	QueryAllocationStrategy(ctx context.Context, allocationStrategyID int) (*ent.AllocationStrategy, error)
-	QueryAllocationStrategies(ctx context.Context) ([]*ent.AllocationStrategy, error)
-	QueryResourceTypes(ctx context.Context) ([]*ent.ResourceType, error)
+	QueryAllocationStrategies(ctx context.Context, byName *string) ([]*ent.AllocationStrategy, error)
+	QueryResourceTypes(ctx context.Context, byName *string) ([]*ent.ResourceType, error)
 	QueryResourcePool(ctx context.Context, poolID int) (*ent.ResourcePool, error)
 	QueryResourcePools(ctx context.Context, resourceTypeID *int) ([]*ent.ResourcePool, error)
 	QueryResourcePoolHierarchyPath(ctx context.Context, poolID int) ([]*ent.ResourcePool, error)
@@ -803,7 +803,12 @@ func (e *executableSchema) Complexity(typeName, field string, childComplexity in
 			break
 		}
 
-		return e.complexity.Query.QueryAllocationStrategies(childComplexity), true
+		args, err := ec.field_Query_QueryAllocationStrategies_args(context.TODO(), rawArgs)
+		if err != nil {
+			return 0, false
+		}
+
+		return e.complexity.Query.QueryAllocationStrategies(childComplexity, args["byName"].(*string)), true
 
 	case "Query.QueryAllocationStrategy":
 		if e.complexity.Query.QueryAllocationStrategy == nil {
@@ -901,7 +906,12 @@ func (e *executableSchema) Complexity(typeName, field string, childComplexity in
 			break
 		}
 
-		return e.complexity.Query.QueryResourceTypes(childComplexity), true
+		args, err := ec.field_Query_QueryResourceTypes_args(context.TODO(), rawArgs)
+		if err != nil {
+			return 0, false
+		}
+
+		return e.complexity.Query.QueryResourceTypes(childComplexity, args["byName"].(*string)), true
 
 	case "Query.QueryResources":
 		if e.complexity.Query.QueryResources == nil {
@@ -1458,8 +1468,8 @@ type Query {
     QueryResource(input: Map!, poolId: ID!): Resource!
     QueryResources(poolId: ID!): [Resource!]!
     QueryAllocationStrategy(allocationStrategyId: ID!): AllocationStrategy!
-    QueryAllocationStrategies: [AllocationStrategy!]!
-    QueryResourceTypes: [ResourceType!]!
+    QueryAllocationStrategies(byName: String): [AllocationStrategy!]!
+    QueryResourceTypes(byName: String): [ResourceType!]!
 
     QueryResourcePool(poolId: ID!): ResourcePool!
 
@@ -1959,6 +1969,21 @@ func (ec *executionContext) field_Mutation_UpdateTag_args(ctx context.Context, r
 	return args, nil
 }
 
+func (ec *executionContext) field_Query_QueryAllocationStrategies_args(ctx context.Context, rawArgs map[string]interface{}) (map[string]interface{}, error) {
+	var err error
+	args := map[string]interface{}{}
+	var arg0 *string
+	if tmp, ok := rawArgs["byName"]; ok {
+		ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("byName"))
+		arg0, err = ec.unmarshalOString2ᚖstring(ctx, tmp)
+		if err != nil {
+			return nil, err
+		}
+	}
+	args["byName"] = arg0
+	return args, nil
+}
+
 func (ec *executionContext) field_Query_QueryAllocationStrategy_args(ctx context.Context, rawArgs map[string]interface{}) (map[string]interface{}, error) {
 	var err error
 	args := map[string]interface{}{}
@@ -2046,6 +2071,21 @@ func (ec *executionContext) field_Query_QueryResourcePools_args(ctx context.Cont
 		}
 	}
 	args["resourceTypeId"] = arg0
+	return args, nil
+}
+
+func (ec *executionContext) field_Query_QueryResourceTypes_args(ctx context.Context, rawArgs map[string]interface{}) (map[string]interface{}, error) {
+	var err error
+	args := map[string]interface{}{}
+	var arg0 *string
+	if tmp, ok := rawArgs["byName"]; ok {
+		ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("byName"))
+		arg0, err = ec.unmarshalOString2ᚖstring(ctx, tmp)
+		if err != nil {
+			return nil, err
+		}
+	}
+	args["byName"] = arg0
 	return args, nil
 }
 
@@ -4377,9 +4417,16 @@ func (ec *executionContext) _Query_QueryAllocationStrategies(ctx context.Context
 	}
 
 	ctx = graphql.WithFieldContext(ctx, fc)
+	rawArgs := field.ArgumentMap(ec.Variables)
+	args, err := ec.field_Query_QueryAllocationStrategies_args(ctx, rawArgs)
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	fc.Args = args
 	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
 		ctx = rctx // use context from middleware stack in children
-		return ec.resolvers.Query().QueryAllocationStrategies(rctx)
+		return ec.resolvers.Query().QueryAllocationStrategies(rctx, args["byName"].(*string))
 	})
 	if err != nil {
 		ec.Error(ctx, err)
@@ -4412,9 +4459,16 @@ func (ec *executionContext) _Query_QueryResourceTypes(ctx context.Context, field
 	}
 
 	ctx = graphql.WithFieldContext(ctx, fc)
+	rawArgs := field.ArgumentMap(ec.Variables)
+	args, err := ec.field_Query_QueryResourceTypes_args(ctx, rawArgs)
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	fc.Args = args
 	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
 		ctx = rctx // use context from middleware stack in children
-		return ec.resolvers.Query().QueryResourceTypes(rctx)
+		return ec.resolvers.Query().QueryResourceTypes(rctx, args["byName"].(*string))
 	})
 	if err != nil {
 		ec.Error(ctx, err)
