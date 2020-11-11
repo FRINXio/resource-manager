@@ -2,14 +2,14 @@ package pools
 
 import (
 	"context"
-	"github.com/net-auto/resourceManager/ent/predicate"
-	"time"
-	log "github.com/net-auto/resourceManager/logging"
 	"github.com/net-auto/resourceManager/ent"
+	"github.com/net-auto/resourceManager/ent/predicate"
 	resource "github.com/net-auto/resourceManager/ent/resource"
 	resourcePool "github.com/net-auto/resourceManager/ent/resourcepool"
 	"github.com/net-auto/resourceManager/ent/schema"
+	log "github.com/net-auto/resourceManager/logging"
 	"github.com/pkg/errors"
+	"time"
 )
 
 // NewSetPool creates a brand new pool allocating DB entities in the process
@@ -99,7 +99,7 @@ func (pool SetPool) Destroy() error {
 }
 
 // ClaimResource allocates the next available resource
-func (pool SetPool) ClaimResource(userInput map[string]interface{}) (*ent.Resource, error) {
+func (pool SetPool) ClaimResource(userInput map[string]interface{}, description *string) (*ent.Resource, error) {
 	// Allocate new resource for this tag
 	unclaimedRes, err := pool.queryUnclaimedResourceEager()
 	if err != nil {
@@ -107,7 +107,12 @@ func (pool SetPool) ClaimResource(userInput map[string]interface{}) (*ent.Resour
 			pool.Name)
 	}
 
-	err = pool.client.Resource.UpdateOne(unclaimedRes).SetStatus(resource.StatusClaimed).Exec(pool.ctx)
+	err = pool.client.Resource.
+		UpdateOne(unclaimedRes).
+		SetStatus(resource.StatusClaimed).
+		SetNillableDescription(description).
+		Exec(pool.ctx)
+
 	if err != nil {
 		err := errors.Wrapf(err, "Unable to claim a resource in pool \"%s\"", pool.Name)
 		log.Error(pool.ctx, err, "Unable to claim a resource")

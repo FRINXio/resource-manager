@@ -155,13 +155,13 @@ func (r *mutationResolver) TestAllocationStrategy(ctx context.Context, allocatio
 	return result, nil
 }
 
-func (r *mutationResolver) ClaimResource(ctx context.Context, poolID int, userInput map[string]interface{}) (*ent.Resource, error) {
+func (r *mutationResolver) ClaimResource(ctx context.Context, poolID int, description *string, userInput map[string]interface{}) (*ent.Resource, error) {
 	pool, err := p.ExistingPoolFromId(ctx, r.ClientFrom(ctx), poolID)
 	if err != nil {
 		return nil, gqlerror.Errorf("Unable to claim resource: %v", err)
 	}
 
-	if res, err := pool.ClaimResource(userInput); err != nil {
+	if res, err := pool.ClaimResource(userInput, description); err != nil {
 		return nil, gqlerror.Errorf("Unable to claim resource: %v", err)
 	} else {
 		return res, nil

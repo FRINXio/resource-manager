@@ -44,7 +44,7 @@ func NewSingletonPoolWithMeta(
 	return &SingletonPool{SetPool{poolBase{pool, ctx, client}}}, pool, nil
 }
 
-func (pool SingletonPool) ClaimResource(userInput map[string]interface{}) (*ent.Resource, error) {
+func (pool SingletonPool) ClaimResource(userInput map[string]interface{}, description *string) (*ent.Resource, error) {
 	_, err := pool.client.Resource.Update().
 		SetStatus(resource.StatusClaimed).
 		Where(resource.HasPoolWith(resourcePool.ID(pool.ID))).
@@ -53,6 +53,10 @@ func (pool SingletonPool) ClaimResource(userInput map[string]interface{}) (*ent.
 	if err != nil {
 		log.Error(pool.ctx, err, "Unable to claim resource in pool ID %d", pool.ID)
 		return nil, err
+	}
+
+	if description != nil {
+		log.Warn(pool.ctx, "Description for a resource from singleton pool will be ignored")
 	}
 
 	return pool.client.Resource.Query().Where(resource.HasPoolWith(resourcePool.ID(pool.ID))).Only(pool.ctx)

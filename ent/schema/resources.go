@@ -159,6 +159,9 @@ func (Resource) Fields() []ent.Field {
 	return []ent.Field{
 		field.Enum("status").
 			Values("free", "claimed", "retired", "bench"),
+		field.Text("description").
+			Optional().
+			Nillable(),
 		field.Time("updated_at").
 			Default(time.Now).
 			UpdateDefault(time.Now),

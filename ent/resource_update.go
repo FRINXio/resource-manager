@@ -35,6 +35,26 @@ func (ru *ResourceUpdate) SetStatus(r resource.Status) *ResourceUpdate {
 	return ru
 }
 
+// SetDescription sets the description field.
+func (ru *ResourceUpdate) SetDescription(s string) *ResourceUpdate {
+	ru.mutation.SetDescription(s)
+	return ru
+}
+
+// SetNillableDescription sets the description field if the given value is not nil.
+func (ru *ResourceUpdate) SetNillableDescription(s *string) *ResourceUpdate {
+	if s != nil {
+		ru.SetDescription(*s)
+	}
+	return ru
+}
+
+// ClearDescription clears the value of description.
+func (ru *ResourceUpdate) ClearDescription() *ResourceUpdate {
+	ru.mutation.ClearDescription()
+	return ru
+}
+
 // SetUpdatedAt sets the updated_at field.
 func (ru *ResourceUpdate) SetUpdatedAt(t time.Time) *ResourceUpdate {
 	ru.mutation.SetUpdatedAt(t)
@@ -233,6 +253,19 @@ func (ru *ResourceUpdate) sqlSave(ctx context.Context) (n int, err error) {
 			Column: resource.FieldStatus,
 		})
 	}
+	if value, ok := ru.mutation.Description(); ok {
+		_spec.Fields.Set = append(_spec.Fields.Set, &sqlgraph.FieldSpec{
+			Type:   field.TypeString,
+			Value:  value,
+			Column: resource.FieldDescription,
+		})
+	}
+	if ru.mutation.DescriptionCleared() {
+		_spec.Fields.Clear = append(_spec.Fields.Clear, &sqlgraph.FieldSpec{
+			Type:   field.TypeString,
+			Column: resource.FieldDescription,
+		})
+	}
 	if value, ok := ru.mutation.UpdatedAt(); ok {
 		_spec.Fields.Set = append(_spec.Fields.Set, &sqlgraph.FieldSpec{
 			Type:   field.TypeTime,
@@ -385,6 +418,26 @@ type ResourceUpdateOne struct {
 // SetStatus sets the status field.
 func (ruo *ResourceUpdateOne) SetStatus(r resource.Status) *ResourceUpdateOne {
 	ruo.mutation.SetStatus(r)
+	return ruo
+}
+
+// SetDescription sets the description field.
+func (ruo *ResourceUpdateOne) SetDescription(s string) *ResourceUpdateOne {
+	ruo.mutation.SetDescription(s)
+	return ruo
+}
+
+// SetNillableDescription sets the description field if the given value is not nil.
+func (ruo *ResourceUpdateOne) SetNillableDescription(s *string) *ResourceUpdateOne {
+	if s != nil {
+		ruo.SetDescription(*s)
+	}
+	return ruo
+}
+
+// ClearDescription clears the value of description.
+func (ruo *ResourceUpdateOne) ClearDescription() *ResourceUpdateOne {
+	ruo.mutation.ClearDescription()
 	return ruo
 }
 
@@ -582,6 +635,19 @@ func (ruo *ResourceUpdateOne) sqlSave(ctx context.Context) (_node *Resource, err
 			Type:   field.TypeEnum,
 			Value:  value,
 			Column: resource.FieldStatus,
+		})
+	}
+	if value, ok := ruo.mutation.Description(); ok {
+		_spec.Fields.Set = append(_spec.Fields.Set, &sqlgraph.FieldSpec{
+			Type:   field.TypeString,
+			Value:  value,
+			Column: resource.FieldDescription,
+		})
+	}
+	if ruo.mutation.DescriptionCleared() {
+		_spec.Fields.Clear = append(_spec.Fields.Clear, &sqlgraph.FieldSpec{
+			Type:   field.TypeString,
+			Column: resource.FieldDescription,
 		})
 	}
 	if value, ok := ruo.mutation.UpdatedAt(); ok {

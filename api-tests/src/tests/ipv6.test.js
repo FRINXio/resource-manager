@@ -1,5 +1,5 @@
-import {claimResource} from '../graphql-queries';
-import {createIpv6PrefixRootPool, createIpv6NestedPool, get2ChildrenIds} from '../test-helpers';
+import { claimResource, queryResource } from '../graphql-queries';
+import { createIpv6NestedPool, createIpv6PrefixRootPool, get2ChildrenIds } from '../test-helpers';
 
 test('create ipv6 root pool', async () => {
     expect(await createIpv6PrefixRootPool()).toBeTruthy();
@@ -7,10 +7,10 @@ test('create ipv6 root pool', async () => {
 
 test('create ipv6 hierarchy', async () => {
     let rootPoolId = await createIpv6PrefixRootPool();
-    let firstParentResourceId = (await claimResource(rootPoolId, {desiredSize: 128})).id;
-    let secondParentResourceId = (await claimResource(rootPoolId, {desiredSize: 128})).id;
-    let nestedPool1Id = await createIpv6NestedPool(firstParentResourceId);
-    let nestedPool2Id = await createIpv6NestedPool(secondParentResourceId);
+    let firstResource = await claimResource(rootPoolId, {desiredSize: 128}, "first");
+    let secondResource = await claimResource(rootPoolId, {desiredSize: 128});
+    let nestedPool1Id = await createIpv6NestedPool(firstResource.id);
+    let nestedPool2Id = await createIpv6NestedPool(secondResource.id);
 
     const children = await get2ChildrenIds(rootPoolId);
     expect(children).toHaveLength(2);
@@ -22,4 +22,8 @@ test('create ipv6 hierarchy', async () => {
 
     expect(resource1.Properties.address).toBe('dead::');
     expect(resource2.Properties.address).toBe('dead::80');
+
+    // assert resource query
+    expect((await queryResource(rootPoolId, firstResource.Properties)).Description).toBe("first")
+    expect((await queryResource(rootPoolId, secondResource.Properties)).Description).toBeNull()
 });

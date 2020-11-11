@@ -85,6 +85,7 @@ type Resource implements Node
 @goModel(model: "github.com/net-auto/resourceManager/ent.Resource")
 {
     id: ID!
+    Description: String
     Properties: Map!
     ParentPool: ResourcePool!
     NestedPool: ResourcePool
@@ -351,7 +352,7 @@ type Mutation {
         currentResources: [ResourceInput!]!, userInput: Map!): Map!
 
     # managing resources via pools
-    ClaimResource(poolId: ID!, userInput: Map!): Resource!
+    ClaimResource(poolId: ID!, description: String, userInput: Map!): Resource!
     FreeResource(input: Map!, poolId: ID!): String!
 
     # create/update/delete resource pool

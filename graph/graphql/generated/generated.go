@@ -114,7 +114,7 @@ type ComplexityRoot struct {
 	}
 
 	Mutation struct {
-		ClaimResource              func(childComplexity int, poolID int, userInput map[string]interface{}) int
+		ClaimResource              func(childComplexity int, poolID int, description *string, userInput map[string]interface{}) int
 		CreateAllocatingPool       func(childComplexity int, input *model.CreateAllocatingPoolInput) int
 		CreateAllocationStrategy   func(childComplexity int, input *model.CreateAllocationStrategyInput) int
 		CreateNestedAllocatingPool func(childComplexity int, input model.CreateNestedAllocatingPoolInput) int
@@ -181,10 +181,11 @@ type ComplexityRoot struct {
 	}
 
 	Resource struct {
-		ID         func(childComplexity int) int
-		NestedPool func(childComplexity int) int
-		ParentPool func(childComplexity int) int
-		Properties func(childComplexity int) int
+		Description func(childComplexity int) int
+		ID          func(childComplexity int) int
+		NestedPool  func(childComplexity int) int
+		ParentPool  func(childComplexity int) int
+		Properties  func(childComplexity int) int
 	}
 
 	ResourceConnection struct {
@@ -249,7 +250,7 @@ type MutationResolver interface {
 	CreateAllocationStrategy(ctx context.Context, input *model.CreateAllocationStrategyInput) (*model.CreateAllocationStrategyPayload, error)
 	DeleteAllocationStrategy(ctx context.Context, input *model.DeleteAllocationStrategyInput) (*model.DeleteAllocationStrategyPayload, error)
 	TestAllocationStrategy(ctx context.Context, allocationStrategyID int, resourcePool model.ResourcePoolInput, currentResources []*model.ResourceInput, userInput map[string]interface{}) (map[string]interface{}, error)
-	ClaimResource(ctx context.Context, poolID int, userInput map[string]interface{}) (*ent.Resource, error)
+	ClaimResource(ctx context.Context, poolID int, description *string, userInput map[string]interface{}) (*ent.Resource, error)
 	FreeResource(ctx context.Context, input map[string]interface{}, poolID int) (string, error)
 	CreateSetPool(ctx context.Context, input model.CreateSetPoolInput) (*model.CreateSetPoolPayload, error)
 	CreateNestedSetPool(ctx context.Context, input model.CreateNestedSetPoolInput) (*model.CreateNestedSetPoolPayload, error)
@@ -457,7 +458,7 @@ func (e *executableSchema) Complexity(typeName, field string, childComplexity in
 			return 0, false
 		}
 
-		return e.complexity.Mutation.ClaimResource(childComplexity, args["poolId"].(int), args["userInput"].(map[string]interface{})), true
+		return e.complexity.Mutation.ClaimResource(childComplexity, args["poolId"].(int), args["description"].(*string), args["userInput"].(map[string]interface{})), true
 
 	case "Mutation.CreateAllocatingPool":
 		if e.complexity.Mutation.CreateAllocatingPool == nil {
@@ -945,6 +946,13 @@ func (e *executableSchema) Complexity(typeName, field string, childComplexity in
 
 		return e.complexity.Query.SearchPoolsByTags(childComplexity, args["tags"].(*model.TagOr)), true
 
+	case "Resource.Description":
+		if e.complexity.Resource.Description == nil {
+			break
+		}
+
+		return e.complexity.Resource.Description(childComplexity), true
+
 	case "Resource.id":
 		if e.complexity.Resource.ID == nil {
 			break
@@ -1304,6 +1312,7 @@ type Resource implements Node
 @goModel(model: "github.com/net-auto/resourceManager/ent.Resource")
 {
     id: ID!
+    Description: String
     Properties: Map!
     ParentPool: ResourcePool!
     NestedPool: ResourcePool
@@ -1570,7 +1579,7 @@ type Mutation {
         currentResources: [ResourceInput!]!, userInput: Map!): Map!
 
     # managing resources via pools
-    ClaimResource(poolId: ID!, userInput: Map!): Resource!
+    ClaimResource(poolId: ID!, description: String, userInput: Map!): Resource!
     FreeResource(input: Map!, poolId: ID!): String!
 
     # create/update/delete resource pool
@@ -1608,15 +1617,24 @@ func (ec *executionContext) field_Mutation_ClaimResource_args(ctx context.Contex
 		}
 	}
 	args["poolId"] = arg0
-	var arg1 map[string]interface{}
-	if tmp, ok := rawArgs["userInput"]; ok {
-		ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("userInput"))
-		arg1, err = ec.unmarshalNMap2map(ctx, tmp)
+	var arg1 *string
+	if tmp, ok := rawArgs["description"]; ok {
+		ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("description"))
+		arg1, err = ec.unmarshalOString2ᚖstring(ctx, tmp)
 		if err != nil {
 			return nil, err
 		}
 	}
-	args["userInput"] = arg1
+	args["description"] = arg1
+	var arg2 map[string]interface{}
+	if tmp, ok := rawArgs["userInput"]; ok {
+		ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("userInput"))
+		arg2, err = ec.unmarshalNMap2map(ctx, tmp)
+		if err != nil {
+			return nil, err
+		}
+	}
+	args["userInput"] = arg2
 	return args, nil
 }
 
@@ -3171,7 +3189,7 @@ func (ec *executionContext) _Mutation_ClaimResource(ctx context.Context, field g
 	fc.Args = args
 	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
 		ctx = rctx // use context from middleware stack in children
-		return ec.resolvers.Mutation().ClaimResource(rctx, args["poolId"].(int), args["userInput"].(map[string]interface{}))
+		return ec.resolvers.Mutation().ClaimResource(rctx, args["poolId"].(int), args["description"].(*string), args["userInput"].(map[string]interface{}))
 	})
 	if err != nil {
 		ec.Error(ctx, err)
@@ -4843,6 +4861,38 @@ func (ec *executionContext) _Resource_id(ctx context.Context, field graphql.Coll
 	res := resTmp.(int)
 	fc.Result = res
 	return ec.marshalNID2int(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) _Resource_Description(ctx context.Context, field graphql.CollectedField, obj *ent.Resource) (ret graphql.Marshaler) {
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	fc := &graphql.FieldContext{
+		Object:     "Resource",
+		Field:      field,
+		Args:       nil,
+		IsMethod:   false,
+		IsResolver: false,
+	}
+
+	ctx = graphql.WithFieldContext(ctx, fc)
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.Description, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		return graphql.Null
+	}
+	res := resTmp.(*string)
+	fc.Result = res
+	return ec.marshalOString2ᚖstring(ctx, field.Selections, res)
 }
 
 func (ec *executionContext) _Resource_Properties(ctx context.Context, field graphql.CollectedField, obj *ent.Resource) (ret graphql.Marshaler) {
@@ -8589,6 +8639,8 @@ func (ec *executionContext) _Resource(ctx context.Context, sel ast.SelectionSet,
 			if out.Values[i] == graphql.Null {
 				atomic.AddUint32(&invalids, 1)
 			}
+		case "Description":
+			out.Values[i] = ec._Resource_Description(ctx, field, obj)
 		case "Properties":
 			field := field
 			out.Concurrently(i, func() (res graphql.Marshaler) {

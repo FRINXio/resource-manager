@@ -18,9 +18,9 @@ func TestNewSingletonPool(t *testing.T) {
 		"vlan": 44,
 	}, "singleton", nil)
 	assertDb(ctx, client, t, 1, 1, 1, 1, 1)
-	r, _ := pool.ClaimResource(map[string]interface{}{})
-	pool.ClaimResource(map[string]interface{}{})
-	pool.ClaimResource(map[string]interface{}{})
+	r, _ := pool.ClaimResource(map[string]interface{}{}, nil)
+	pool.ClaimResource(map[string]interface{}{}, nil)
+	pool.ClaimResource(map[string]interface{}{}, nil)
 	assertDb(ctx, client, t, 1, 1, 1, 1, 1)
 	toMap, _ := PropertiesToMap(r.Edges.Properties)
 	pool.FreeResource(toMap)

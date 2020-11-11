@@ -28,6 +28,20 @@ func (rc *ResourceCreate) SetStatus(r resource.Status) *ResourceCreate {
 	return rc
 }
 
+// SetDescription sets the description field.
+func (rc *ResourceCreate) SetDescription(s string) *ResourceCreate {
+	rc.mutation.SetDescription(s)
+	return rc
+}
+
+// SetNillableDescription sets the description field if the given value is not nil.
+func (rc *ResourceCreate) SetNillableDescription(s *string) *ResourceCreate {
+	if s != nil {
+		rc.SetDescription(*s)
+	}
+	return rc
+}
+
 // SetUpdatedAt sets the updated_at field.
 func (rc *ResourceCreate) SetUpdatedAt(t time.Time) *ResourceCreate {
 	rc.mutation.SetUpdatedAt(t)
@@ -200,6 +214,14 @@ func (rc *ResourceCreate) createSpec() (*Resource, *sqlgraph.CreateSpec) {
 			Column: resource.FieldStatus,
 		})
 		_node.Status = value
+	}
+	if value, ok := rc.mutation.Description(); ok {
+		_spec.Fields = append(_spec.Fields, &sqlgraph.FieldSpec{
+			Type:   field.TypeString,
+			Value:  value,
+			Column: resource.FieldDescription,
+		})
+		_node.Description = &value
 	}
 	if value, ok := rc.mutation.UpdatedAt(); ok {
 		_spec.Fields = append(_spec.Fields, &sqlgraph.FieldSpec{

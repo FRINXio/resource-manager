@@ -218,7 +218,7 @@ func (pool AllocatingPool) Capacity() (float64, float64, error) {
 }
 
 // ClaimResource allocates the next available resource
-func (pool AllocatingPool) ClaimResource(userInput map[string]interface{}) (*ent.Resource, error) {
+func (pool AllocatingPool) ClaimResource(userInput map[string]interface{}, description *string) (*ent.Resource, error) {
 
 	strat, err := pool.AllocationStrategy()
 	if err != nil {
@@ -294,7 +294,7 @@ func (pool AllocatingPool) ClaimResource(userInput map[string]interface{}) (*ent
 	if len(foundResources) == 0 {
 		// 3a. Nothing found - create new resource
 		created, err := PreCreateResources(pool.ctx, pool.client, []RawResourceProps{resourceProperties},
-			pool.ResourcePool, resourceType, resource.StatusClaimed)
+			pool.ResourcePool, resourceType, resource.StatusClaimed, description)
 		if err != nil {
 			log.Error(pool.ctx, err, "Unable to create resource in pool %d", pool.ID)
 			return nil, errors.Wrapf(err, "Unable to create resource in pool #%d", pool.ID)
@@ -327,7 +327,11 @@ func (pool AllocatingPool) ClaimResource(userInput map[string]interface{}) (*ent
 		}
 	}
 	res.Status = resource.StatusClaimed
-	err = pool.client.Resource.UpdateOne(res).SetStatus(res.Status).Exec(pool.ctx)
+	err = pool.client.Resource.
+		UpdateOne(res).
+		SetStatus(res.Status).
+		SetNillableDescription(description).
+		Exec(pool.ctx)
 
 	//TODO what does this mean? should we somehow rollback everything that transpired until this point??
 	if err != nil {

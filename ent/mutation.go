@@ -4047,6 +4047,7 @@ type ResourceMutation struct {
 	typ                string
 	id                 *int
 	status             *resource.Status
+	description        *string
 	updated_at         *time.Time
 	clearedFields      map[string]struct{}
 	pool               *int
@@ -4175,6 +4176,56 @@ func (m *ResourceMutation) OldStatus(ctx context.Context) (v resource.Status, er
 // ResetStatus reset all changes of the "status" field.
 func (m *ResourceMutation) ResetStatus() {
 	m.status = nil
+}
+
+// SetDescription sets the description field.
+func (m *ResourceMutation) SetDescription(s string) {
+	m.description = &s
+}
+
+// Description returns the description value in the mutation.
+func (m *ResourceMutation) Description() (r string, exists bool) {
+	v := m.description
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldDescription returns the old description value of the Resource.
+// If the Resource object wasn't provided to the builder, the object is fetched
+// from the database.
+// An error is returned if the mutation operation is not UpdateOne, or database query fails.
+func (m *ResourceMutation) OldDescription(ctx context.Context) (v *string, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, fmt.Errorf("OldDescription is allowed only on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, fmt.Errorf("OldDescription requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldDescription: %w", err)
+	}
+	return oldValue.Description, nil
+}
+
+// ClearDescription clears the value of description.
+func (m *ResourceMutation) ClearDescription() {
+	m.description = nil
+	m.clearedFields[resource.FieldDescription] = struct{}{}
+}
+
+// DescriptionCleared returns if the field description was cleared in this mutation.
+func (m *ResourceMutation) DescriptionCleared() bool {
+	_, ok := m.clearedFields[resource.FieldDescription]
+	return ok
+}
+
+// ResetDescription reset all changes of the "description" field.
+func (m *ResourceMutation) ResetDescription() {
+	m.description = nil
+	delete(m.clearedFields, resource.FieldDescription)
 }
 
 // SetUpdatedAt sets the updated_at field.
@@ -4359,9 +4410,12 @@ func (m *ResourceMutation) Type() string {
 // this mutation. Note that, in order to get all numeric
 // fields that were in/decremented, call AddedFields().
 func (m *ResourceMutation) Fields() []string {
-	fields := make([]string, 0, 2)
+	fields := make([]string, 0, 3)
 	if m.status != nil {
 		fields = append(fields, resource.FieldStatus)
+	}
+	if m.description != nil {
+		fields = append(fields, resource.FieldDescription)
 	}
 	if m.updated_at != nil {
 		fields = append(fields, resource.FieldUpdatedAt)
@@ -4376,6 +4430,8 @@ func (m *ResourceMutation) Field(name string) (ent.Value, bool) {
 	switch name {
 	case resource.FieldStatus:
 		return m.Status()
+	case resource.FieldDescription:
+		return m.Description()
 	case resource.FieldUpdatedAt:
 		return m.UpdatedAt()
 	}
@@ -4389,6 +4445,8 @@ func (m *ResourceMutation) OldField(ctx context.Context, name string) (ent.Value
 	switch name {
 	case resource.FieldStatus:
 		return m.OldStatus(ctx)
+	case resource.FieldDescription:
+		return m.OldDescription(ctx)
 	case resource.FieldUpdatedAt:
 		return m.OldUpdatedAt(ctx)
 	}
@@ -4406,6 +4464,13 @@ func (m *ResourceMutation) SetField(name string, value ent.Value) error {
 			return fmt.Errorf("unexpected type %T for field %s", value, name)
 		}
 		m.SetStatus(v)
+		return nil
+	case resource.FieldDescription:
+		v, ok := value.(string)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetDescription(v)
 		return nil
 	case resource.FieldUpdatedAt:
 		v, ok := value.(time.Time)
@@ -4443,7 +4508,11 @@ func (m *ResourceMutation) AddField(name string, value ent.Value) error {
 // ClearedFields returns all nullable fields that were cleared
 // during this mutation.
 func (m *ResourceMutation) ClearedFields() []string {
-	return nil
+	var fields []string
+	if m.FieldCleared(resource.FieldDescription) {
+		fields = append(fields, resource.FieldDescription)
+	}
+	return fields
 }
 
 // FieldCleared returns a boolean indicates if this field was
@@ -4456,6 +4525,11 @@ func (m *ResourceMutation) FieldCleared(name string) bool {
 // ClearField clears the value for the given name. It returns an
 // error if the field is not defined in the schema.
 func (m *ResourceMutation) ClearField(name string) error {
+	switch name {
+	case resource.FieldDescription:
+		m.ClearDescription()
+		return nil
+	}
 	return fmt.Errorf("unknown Resource nullable field %s", name)
 }
 
@@ -4466,6 +4540,9 @@ func (m *ResourceMutation) ResetField(name string) error {
 	switch name {
 	case resource.FieldStatus:
 		m.ResetStatus()
+		return nil
+	case resource.FieldDescription:
+		m.ResetDescription()
 		return nil
 	case resource.FieldUpdatedAt:
 		m.ResetUpdatedAt()

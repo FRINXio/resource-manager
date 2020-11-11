@@ -48,12 +48,7 @@ func CreatePropertyType(
 		Save(ctx)
 }
 
-func PreCreateResources(ctx context.Context,
-	client *ent.Client,
-	propertyValues []RawResourceProps,
-	pool *ent.ResourcePool,
-	resourceType *ent.ResourceType,
-	claimed resource.Status) ([]*ent.Resource, error) {
+func PreCreateResources(ctx context.Context, client *ent.Client, propertyValues []RawResourceProps, pool *ent.ResourcePool, resourceType *ent.ResourceType, claimed resource.Status, description *string) ([]*ent.Resource, error) {
 
 	var created []*ent.Resource
 	for _, rawResourceProps := range propertyValues {
@@ -69,6 +64,7 @@ func PreCreateResources(ctx context.Context,
 		var resource *ent.Resource
 		resource, err = client.Resource.Create().
 			SetPool(pool).
+			SetNillableDescription(description).
 			SetStatus(claimed).
 			AddProperties(props...).
 			Save(ctx)
