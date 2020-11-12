@@ -13,6 +13,7 @@ import (
 	"github.com/net-auto/resourceManager/ent/predicate"
 	"github.com/net-auto/resourceManager/ent/property"
 	"github.com/net-auto/resourceManager/ent/propertytype"
+	"github.com/net-auto/resourceManager/ent/resource"
 )
 
 // PropertyUpdate is the builder for updating Property entities.
@@ -241,6 +242,25 @@ func (pu *PropertyUpdate) SetType(p *PropertyType) *PropertyUpdate {
 	return pu.SetTypeID(p.ID)
 }
 
+// SetResourcesID sets the resources edge to Resource by id.
+func (pu *PropertyUpdate) SetResourcesID(id int) *PropertyUpdate {
+	pu.mutation.SetResourcesID(id)
+	return pu
+}
+
+// SetNillableResourcesID sets the resources edge to Resource by id if the given value is not nil.
+func (pu *PropertyUpdate) SetNillableResourcesID(id *int) *PropertyUpdate {
+	if id != nil {
+		pu = pu.SetResourcesID(*id)
+	}
+	return pu
+}
+
+// SetResources sets the resources edge to Resource.
+func (pu *PropertyUpdate) SetResources(r *Resource) *PropertyUpdate {
+	return pu.SetResourcesID(r.ID)
+}
+
 // Mutation returns the PropertyMutation object of the builder.
 func (pu *PropertyUpdate) Mutation() *PropertyMutation {
 	return pu.mutation
@@ -249,6 +269,12 @@ func (pu *PropertyUpdate) Mutation() *PropertyMutation {
 // ClearType clears the "type" edge to type PropertyType.
 func (pu *PropertyUpdate) ClearType() *PropertyUpdate {
 	pu.mutation.ClearType()
+	return pu
+}
+
+// ClearResources clears the "resources" edge to type Resource.
+func (pu *PropertyUpdate) ClearResources() *PropertyUpdate {
+	pu.mutation.ClearResources()
 	return pu
 }
 
@@ -516,6 +542,41 @@ func (pu *PropertyUpdate) sqlSave(ctx context.Context) (n int, err error) {
 		}
 		_spec.Edges.Add = append(_spec.Edges.Add, edge)
 	}
+	if pu.mutation.ResourcesCleared() {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.M2O,
+			Inverse: true,
+			Table:   property.ResourcesTable,
+			Columns: []string{property.ResourcesColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: &sqlgraph.FieldSpec{
+					Type:   field.TypeInt,
+					Column: resource.FieldID,
+				},
+			},
+		}
+		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
+	}
+	if nodes := pu.mutation.ResourcesIDs(); len(nodes) > 0 {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.M2O,
+			Inverse: true,
+			Table:   property.ResourcesTable,
+			Columns: []string{property.ResourcesColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: &sqlgraph.FieldSpec{
+					Type:   field.TypeInt,
+					Column: resource.FieldID,
+				},
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges.Add = append(_spec.Edges.Add, edge)
+	}
 	if n, err = sqlgraph.UpdateNodes(ctx, pu.driver, _spec); err != nil {
 		if _, ok := err.(*sqlgraph.NotFoundError); ok {
 			err = &NotFoundError{property.Label}
@@ -747,6 +808,25 @@ func (puo *PropertyUpdateOne) SetType(p *PropertyType) *PropertyUpdateOne {
 	return puo.SetTypeID(p.ID)
 }
 
+// SetResourcesID sets the resources edge to Resource by id.
+func (puo *PropertyUpdateOne) SetResourcesID(id int) *PropertyUpdateOne {
+	puo.mutation.SetResourcesID(id)
+	return puo
+}
+
+// SetNillableResourcesID sets the resources edge to Resource by id if the given value is not nil.
+func (puo *PropertyUpdateOne) SetNillableResourcesID(id *int) *PropertyUpdateOne {
+	if id != nil {
+		puo = puo.SetResourcesID(*id)
+	}
+	return puo
+}
+
+// SetResources sets the resources edge to Resource.
+func (puo *PropertyUpdateOne) SetResources(r *Resource) *PropertyUpdateOne {
+	return puo.SetResourcesID(r.ID)
+}
+
 // Mutation returns the PropertyMutation object of the builder.
 func (puo *PropertyUpdateOne) Mutation() *PropertyMutation {
 	return puo.mutation
@@ -755,6 +835,12 @@ func (puo *PropertyUpdateOne) Mutation() *PropertyMutation {
 // ClearType clears the "type" edge to type PropertyType.
 func (puo *PropertyUpdateOne) ClearType() *PropertyUpdateOne {
 	puo.mutation.ClearType()
+	return puo
+}
+
+// ClearResources clears the "resources" edge to type Resource.
+func (puo *PropertyUpdateOne) ClearResources() *PropertyUpdateOne {
+	puo.mutation.ClearResources()
 	return puo
 }
 
@@ -1012,6 +1098,41 @@ func (puo *PropertyUpdateOne) sqlSave(ctx context.Context) (_node *Property, err
 				IDSpec: &sqlgraph.FieldSpec{
 					Type:   field.TypeInt,
 					Column: propertytype.FieldID,
+				},
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges.Add = append(_spec.Edges.Add, edge)
+	}
+	if puo.mutation.ResourcesCleared() {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.M2O,
+			Inverse: true,
+			Table:   property.ResourcesTable,
+			Columns: []string{property.ResourcesColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: &sqlgraph.FieldSpec{
+					Type:   field.TypeInt,
+					Column: resource.FieldID,
+				},
+			},
+		}
+		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
+	}
+	if nodes := puo.mutation.ResourcesIDs(); len(nodes) > 0 {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.M2O,
+			Inverse: true,
+			Table:   property.ResourcesTable,
+			Columns: []string{property.ResourcesColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: &sqlgraph.FieldSpec{
+					Type:   field.TypeInt,
+					Column: resource.FieldID,
 				},
 			},
 		}

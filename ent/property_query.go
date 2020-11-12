@@ -14,6 +14,7 @@ import (
 	"github.com/net-auto/resourceManager/ent/predicate"
 	"github.com/net-auto/resourceManager/ent/property"
 	"github.com/net-auto/resourceManager/ent/propertytype"
+	"github.com/net-auto/resourceManager/ent/resource"
 )
 
 // PropertyQuery is the builder for querying Property entities.
@@ -25,8 +26,9 @@ type PropertyQuery struct {
 	unique     []string
 	predicates []predicate.Property
 	// eager-loading edges.
-	withType *PropertyTypeQuery
-	withFKs  bool
+	withType      *PropertyTypeQuery
+	withResources *ResourceQuery
+	withFKs       bool
 	// intermediate query (i.e. traversal path).
 	sql  *sql.Selector
 	path func(context.Context) (*sql.Selector, error)
@@ -71,6 +73,28 @@ func (pq *PropertyQuery) QueryType() *PropertyTypeQuery {
 			sqlgraph.From(property.Table, property.FieldID, selector),
 			sqlgraph.To(propertytype.Table, propertytype.FieldID),
 			sqlgraph.Edge(sqlgraph.M2O, false, property.TypeTable, property.TypeColumn),
+		)
+		fromU = sqlgraph.SetNeighbors(pq.driver.Dialect(), step)
+		return fromU, nil
+	}
+	return query
+}
+
+// QueryResources chains the current query on the resources edge.
+func (pq *PropertyQuery) QueryResources() *ResourceQuery {
+	query := &ResourceQuery{config: pq.config}
+	query.path = func(ctx context.Context) (fromU *sql.Selector, err error) {
+		if err := pq.prepareQuery(ctx); err != nil {
+			return nil, err
+		}
+		selector := pq.sqlQuery()
+		if err := selector.Err(); err != nil {
+			return nil, err
+		}
+		step := sqlgraph.NewStep(
+			sqlgraph.From(property.Table, property.FieldID, selector),
+			sqlgraph.To(resource.Table, resource.FieldID),
+			sqlgraph.Edge(sqlgraph.M2O, true, property.ResourcesTable, property.ResourcesColumn),
 		)
 		fromU = sqlgraph.SetNeighbors(pq.driver.Dialect(), step)
 		return fromU, nil
@@ -268,6 +292,17 @@ func (pq *PropertyQuery) WithType(opts ...func(*PropertyTypeQuery)) *PropertyQue
 	return pq
 }
 
+//  WithResources tells the query-builder to eager-loads the nodes that are connected to
+// the "resources" edge. The optional arguments used to configure the query builder of the edge.
+func (pq *PropertyQuery) WithResources(opts ...func(*ResourceQuery)) *PropertyQuery {
+	query := &ResourceQuery{config: pq.config}
+	for _, opt := range opts {
+		opt(query)
+	}
+	pq.withResources = query
+	return pq
+}
+
 // GroupBy used to group vertices by one or more fields/columns.
 // It is often used with aggregate functions, like: count, max, mean, min, sum.
 //
@@ -338,11 +373,12 @@ func (pq *PropertyQuery) sqlAll(ctx context.Context) ([]*Property, error) {
 		nodes       = []*Property{}
 		withFKs     = pq.withFKs
 		_spec       = pq.querySpec()
-		loadedTypes = [1]bool{
+		loadedTypes = [2]bool{
 			pq.withType != nil,
+			pq.withResources != nil,
 		}
 	)
-	if pq.withType != nil {
+	if pq.withType != nil || pq.withResources != nil {
 		withFKs = true
 	}
 	if withFKs {
@@ -393,6 +429,31 @@ func (pq *PropertyQuery) sqlAll(ctx context.Context) ([]*Property, error) {
 			}
 			for i := range nodes {
 				nodes[i].Edges.Type = n
+			}
+		}
+	}
+
+	if query := pq.withResources; query != nil {
+		ids := make([]int, 0, len(nodes))
+		nodeids := make(map[int][]*Property)
+		for i := range nodes {
+			if fk := nodes[i].resource_properties; fk != nil {
+				ids = append(ids, *fk)
+				nodeids[*fk] = append(nodeids[*fk], nodes[i])
+			}
+		}
+		query.Where(resource.IDIn(ids...))
+		neighbors, err := query.All(ctx)
+		if err != nil {
+			return nil, err
+		}
+		for _, n := range neighbors {
+			nodes, ok := nodeids[n.ID]
+			if !ok {
+				return nil, fmt.Errorf(`unexpected foreign-key "resource_properties" returned %v`, n.ID)
+			}
+			for i := range nodes {
+				nodes[i].Edges.Resources = n
 			}
 		}
 	}

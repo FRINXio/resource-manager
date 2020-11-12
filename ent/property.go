@@ -9,6 +9,7 @@ import (
 	"github.com/facebook/ent/dialect/sql"
 	"github.com/net-auto/resourceManager/ent/property"
 	"github.com/net-auto/resourceManager/ent/propertytype"
+	"github.com/net-auto/resourceManager/ent/resource"
 )
 
 // Property is the model entity for the Property schema.
@@ -44,9 +45,11 @@ type Property struct {
 type PropertyEdges struct {
 	// Type holds the value of the type edge.
 	Type *PropertyType `gqlgen:"propertyType"`
+	// Resources holds the value of the resources edge.
+	Resources *Resource
 	// loadedTypes holds the information for reporting if a
 	// type was loaded (or requested) in eager-loading or not.
-	loadedTypes [1]bool
+	loadedTypes [2]bool
 }
 
 // TypeOrErr returns the Type value or an error if the edge
@@ -61,6 +64,20 @@ func (e PropertyEdges) TypeOrErr() (*PropertyType, error) {
 		return e.Type, nil
 	}
 	return nil, &NotLoadedError{edge: "type"}
+}
+
+// ResourcesOrErr returns the Resources value or an error if the edge
+// was not loaded in eager-loading, or loaded but was not found.
+func (e PropertyEdges) ResourcesOrErr() (*Resource, error) {
+	if e.loadedTypes[1] {
+		if e.Resources == nil {
+			// The edge resources was loaded in eager-loading,
+			// but was not found.
+			return nil, &NotFoundError{label: resource.Label}
+		}
+		return e.Resources, nil
+	}
+	return nil, &NotLoadedError{edge: "resources"}
 }
 
 // scanValues returns the types for scanning values from sql.Rows.
@@ -174,6 +191,11 @@ func (pr *Property) assignValues(values ...interface{}) error {
 // QueryType queries the type edge of the Property.
 func (pr *Property) QueryType() *PropertyTypeQuery {
 	return (&PropertyClient{config: pr.config}).QueryType(pr)
+}
+
+// QueryResources queries the resources edge of the Property.
+func (pr *Property) QueryResources() *ResourceQuery {
+	return (&PropertyClient{config: pr.config}).QueryResources(pr)
 }
 
 // Update returns a builder for updating this Property.

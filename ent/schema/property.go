@@ -10,6 +10,7 @@ import (
 	"github.com/facebook/ent"
 	"github.com/facebook/ent/schema/edge"
 	"github.com/facebook/ent/schema/field"
+	"github.com/facebook/ent/schema/index"
 	"github.com/facebookincubator/ent-contrib/entgql"
 )
 
@@ -157,6 +158,16 @@ func (Property) Edges() []ent.Edge {
 			Required().
 			Annotations(entgql.Bind()).
 			StructTag(`gqlgen:"propertyType"`),
+		edge.From("resources", Resource.Type).Ref("properties").Unique(),
+	}
+}
+
+func (Property) Indexes() []ent.Index {
+	return []ent.Index{
+		index.
+			Edges("resources"),
+		index.
+			Edges("type"),
 	}
 }
 

@@ -1101,6 +1101,8 @@ type PropertyMutation struct {
 	clearedFields     map[string]struct{}
 	_type             *int
 	cleared_type      bool
+	resources         *int
+	clearedresources  bool
 	done              bool
 	oldValue          func(context.Context) (*Property, error)
 	predicates        []predicate.Property
@@ -1750,6 +1752,45 @@ func (m *PropertyMutation) ResetType() {
 	m.cleared_type = false
 }
 
+// SetResourcesID sets the resources edge to Resource by id.
+func (m *PropertyMutation) SetResourcesID(id int) {
+	m.resources = &id
+}
+
+// ClearResources clears the resources edge to Resource.
+func (m *PropertyMutation) ClearResources() {
+	m.clearedresources = true
+}
+
+// ResourcesCleared returns if the edge resources was cleared.
+func (m *PropertyMutation) ResourcesCleared() bool {
+	return m.clearedresources
+}
+
+// ResourcesID returns the resources id in the mutation.
+func (m *PropertyMutation) ResourcesID() (id int, exists bool) {
+	if m.resources != nil {
+		return *m.resources, true
+	}
+	return
+}
+
+// ResourcesIDs returns the resources ids in the mutation.
+// Note that ids always returns len(ids) <= 1 for unique edges, and you should use
+// ResourcesID instead. It exists only for internal usage by the builders.
+func (m *PropertyMutation) ResourcesIDs() (ids []int) {
+	if id := m.resources; id != nil {
+		ids = append(ids, *id)
+	}
+	return
+}
+
+// ResetResources reset all changes of the "resources" edge.
+func (m *PropertyMutation) ResetResources() {
+	m.resources = nil
+	m.clearedresources = false
+}
+
 // Op returns the operation name.
 func (m *PropertyMutation) Op() Op {
 	return m.op
@@ -2110,9 +2151,12 @@ func (m *PropertyMutation) ResetField(name string) error {
 // AddedEdges returns all edge names that were set/added in this
 // mutation.
 func (m *PropertyMutation) AddedEdges() []string {
-	edges := make([]string, 0, 1)
+	edges := make([]string, 0, 2)
 	if m._type != nil {
 		edges = append(edges, property.EdgeType)
+	}
+	if m.resources != nil {
+		edges = append(edges, property.EdgeResources)
 	}
 	return edges
 }
@@ -2125,6 +2169,10 @@ func (m *PropertyMutation) AddedIDs(name string) []ent.Value {
 		if id := m._type; id != nil {
 			return []ent.Value{*id}
 		}
+	case property.EdgeResources:
+		if id := m.resources; id != nil {
+			return []ent.Value{*id}
+		}
 	}
 	return nil
 }
@@ -2132,7 +2180,7 @@ func (m *PropertyMutation) AddedIDs(name string) []ent.Value {
 // RemovedEdges returns all edge names that were removed in this
 // mutation.
 func (m *PropertyMutation) RemovedEdges() []string {
-	edges := make([]string, 0, 1)
+	edges := make([]string, 0, 2)
 	return edges
 }
 
@@ -2147,9 +2195,12 @@ func (m *PropertyMutation) RemovedIDs(name string) []ent.Value {
 // ClearedEdges returns all edge names that were cleared in this
 // mutation.
 func (m *PropertyMutation) ClearedEdges() []string {
-	edges := make([]string, 0, 1)
+	edges := make([]string, 0, 2)
 	if m.cleared_type {
 		edges = append(edges, property.EdgeType)
+	}
+	if m.clearedresources {
+		edges = append(edges, property.EdgeResources)
 	}
 	return edges
 }
@@ -2160,6 +2211,8 @@ func (m *PropertyMutation) EdgeCleared(name string) bool {
 	switch name {
 	case property.EdgeType:
 		return m.cleared_type
+	case property.EdgeResources:
+		return m.clearedresources
 	}
 	return false
 }
@@ -2170,6 +2223,9 @@ func (m *PropertyMutation) ClearEdge(name string) error {
 	switch name {
 	case property.EdgeType:
 		m.ClearType()
+		return nil
+	case property.EdgeResources:
+		m.ClearResources()
 		return nil
 	}
 	return fmt.Errorf("unknown Property unique edge %s", name)
@@ -2182,6 +2238,9 @@ func (m *PropertyMutation) ResetEdge(name string) error {
 	switch name {
 	case property.EdgeType:
 		m.ResetType()
+		return nil
+	case property.EdgeResources:
+		m.ResetResources()
 		return nil
 	}
 	return fmt.Errorf("unknown Property edge %s", name)

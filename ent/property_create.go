@@ -11,6 +11,7 @@ import (
 	"github.com/facebook/ent/schema/field"
 	"github.com/net-auto/resourceManager/ent/property"
 	"github.com/net-auto/resourceManager/ent/propertytype"
+	"github.com/net-auto/resourceManager/ent/resource"
 )
 
 // PropertyCreate is the builder for creating a Property entity.
@@ -141,6 +142,25 @@ func (pc *PropertyCreate) SetTypeID(id int) *PropertyCreate {
 // SetType sets the type edge to PropertyType.
 func (pc *PropertyCreate) SetType(p *PropertyType) *PropertyCreate {
 	return pc.SetTypeID(p.ID)
+}
+
+// SetResourcesID sets the resources edge to Resource by id.
+func (pc *PropertyCreate) SetResourcesID(id int) *PropertyCreate {
+	pc.mutation.SetResourcesID(id)
+	return pc
+}
+
+// SetNillableResourcesID sets the resources edge to Resource by id if the given value is not nil.
+func (pc *PropertyCreate) SetNillableResourcesID(id *int) *PropertyCreate {
+	if id != nil {
+		pc = pc.SetResourcesID(*id)
+	}
+	return pc
+}
+
+// SetResources sets the resources edge to Resource.
+func (pc *PropertyCreate) SetResources(r *Resource) *PropertyCreate {
+	return pc.SetResourcesID(r.ID)
 }
 
 // Mutation returns the PropertyMutation object of the builder.
@@ -299,6 +319,25 @@ func (pc *PropertyCreate) createSpec() (*Property, *sqlgraph.CreateSpec) {
 				IDSpec: &sqlgraph.FieldSpec{
 					Type:   field.TypeInt,
 					Column: propertytype.FieldID,
+				},
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges = append(_spec.Edges, edge)
+	}
+	if nodes := pc.mutation.ResourcesIDs(); len(nodes) > 0 {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.M2O,
+			Inverse: true,
+			Table:   property.ResourcesTable,
+			Columns: []string{property.ResourcesColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: &sqlgraph.FieldSpec{
+					Type:   field.TypeInt,
+					Column: resource.FieldID,
 				},
 			},
 		}

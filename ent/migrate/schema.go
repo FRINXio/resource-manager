@@ -42,6 +42,13 @@ var (
 				OnDelete:   schema.SetNull,
 			},
 		},
+		Indexes: []*schema.Index{
+			{
+				Name:    "poolproperties_resource_pool_pool_properties",
+				Unique:  false,
+				Columns: []*schema.Column{PoolPropertiesColumns[1]},
+			},
+		},
 	}
 	// PropertiesColumns holds the columns for the "properties" table.
 	PropertiesColumns = []*schema.Column{
@@ -84,6 +91,18 @@ var (
 
 				RefColumns: []*schema.Column{ResourcesColumns[0]},
 				OnDelete:   schema.SetNull,
+			},
+		},
+		Indexes: []*schema.Index{
+			{
+				Name:    "property_resource_properties",
+				Unique:  false,
+				Columns: []*schema.Column{PropertiesColumns[11]},
+			},
+			{
+				Name:    "property_property_type",
+				Unique:  false,
+				Columns: []*schema.Column{PropertiesColumns[10]},
 			},
 		},
 	}
@@ -147,6 +166,13 @@ var (
 				OnDelete:   schema.SetNull,
 			},
 		},
+		Indexes: []*schema.Index{
+			{
+				Name:    "resource_resource_pool_claims",
+				Unique:  false,
+				Columns: []*schema.Column{ResourcesColumns[4]},
+			},
+		},
 	}
 	// ResourcePoolsColumns holds the columns for the "resource_pools" table.
 	ResourcePoolsColumns = []*schema.Column{
@@ -185,6 +211,13 @@ var (
 
 				RefColumns: []*schema.Column{ResourceTypesColumns[0]},
 				OnDelete:   schema.SetNull,
+			},
+		},
+		Indexes: []*schema.Index{
+			{
+				Name:    "resourcepool_resource_pool_allocation_strategy",
+				Unique:  false,
+				Columns: []*schema.Column{ResourcePoolsColumns[6]},
 			},
 		},
 	}

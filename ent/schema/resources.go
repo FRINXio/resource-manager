@@ -5,6 +5,7 @@
 package schema
 
 import (
+	"github.com/facebook/ent/schema/index"
 	"github.com/facebookincubator/ent-contrib/entgql"
 	"time"
 
@@ -145,6 +146,13 @@ func (ResourcePool) Edges() []ent.Edge {
 	}
 }
 
+func (ResourcePool) Indexes() []ent.Index {
+	return []ent.Index{
+		index.
+			Edges("allocation_strategy"),
+	}
+}
+
 func (ResourcePool) Policy() ent.Policy {
 	return RBAC;
 }
@@ -183,6 +191,13 @@ func (Resource) Edges() []ent.Edge {
 	}
 }
 
+func (Resource) Indexes() []ent.Index {
+	return []ent.Index{
+		index.
+			Edges("pool"),
+	}
+}
+
 func (Resource) Policy() ent.Policy {
 	return ALWAYS_ALLOWED;
 }
@@ -202,6 +217,13 @@ func (PoolProperties) Edges() []ent.Edge {
 			Annotations(entgql.Bind()),
 		edge.To("properties", Property.Type).
 			Annotations(entgql.Bind()),
+	}
+}
+
+func (PoolProperties) Indexes() []ent.Index {
+	return []ent.Index{
+		index.
+			Edges("pool"),
 	}
 }
 
