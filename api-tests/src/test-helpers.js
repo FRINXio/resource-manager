@@ -139,7 +139,7 @@ export async function createVlanRangeRootPool(){
         {from: 0, to: 4095},)
 }
 
-export async function createVlanRootPool(){
+export async function createVlanRootPool(tags = null){
     let resourceTypeId = await findResourceTypeId('vlan');
     let strategyId = await findAllocationStrategyId('vlan');
     return await createAllocationPool(
@@ -147,17 +147,19 @@ export async function createVlanRootPool(){
         resourceTypeId,
         strategyId,
         { from: "int", to: "int"},
-        {from: 0, to: 4095},)
+        {from: 0, to: 4095},
+        tags)
 }
 
-export async function createVlanNestedPool(parentResourceId){
+export async function createVlanNestedPool(parentResourceId, tags = null){
     let resourceTypeId = await findResourceTypeId('vlan');
     let strategyId = await findAllocationStrategyId('vlan');
     return await createNestedAllocationPool(
         getUniqueName('nested'),
         resourceTypeId,
         strategyId,
-        parentResourceId)
+        parentResourceId,
+        tags)
 }
 
 export function getUniqueName(prefix){

@@ -1,5 +1,10 @@
 import {deleteTag, untagPool, tagPool, createTag, searchPoolsByTags} from '../graphql-queries';
-import {getTag, createVlanRangeRootPool, getUniqueName} from '../test-helpers';
+import {
+    getTag,
+    createVlanRangeRootPool,
+    getUniqueName,
+    createVlanRootPool
+} from '../test-helpers';
 
 
 test('create and delete tag', async () => {
@@ -46,4 +51,12 @@ test('searching pools via tags', async () => {
     matchedPools = await searchPoolsByTags({matchesAny: [{matchesAll: [tagName2]}]});
     expect(matchedPools[0].id).toBe(poolId);
     expect(matchedPools).toHaveLength(1);
+
+    // test createPool and tag in a single operation
+    const taggedPoolId = await createVlanRootPool(["tag1", "tag2"]);
+    matchedPools = await searchPoolsByTags({matchesAny: [{matchesAll: ["tag1", "tag2"]}]});
+    expect(matchedPools[0].id).toBe(taggedPoolId);
+    expect(matchedPools).toHaveLength(1);
+
+
 });

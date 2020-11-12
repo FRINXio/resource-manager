@@ -197,10 +197,10 @@ export async function getPoolHierarchyPath(poolId){
 }
 
 
-export async function createNestedAllocationPool(poolName, resourceTypeId, strategyId, parentResourceId){
+export async function createNestedAllocationPool(poolName, resourceTypeId, strategyId, parentResourceId, tags = null){
     return client.mutate({
         mutation: gql`
-            mutation createNestedAllocPool($poolName: String!, $resourceTypeId: ID!, $strategyId: ID!, $parentResourceId: ID!) {
+            mutation createNestedAllocPool($poolName: String!, $resourceTypeId: ID!, $strategyId: ID!, $parentResourceId: ID!, $tags: [String!]) {
                 CreateNestedAllocatingPool( input:  {
                     resourceTypeId: $resourceTypeId
                     poolName: $poolName
@@ -208,6 +208,7 @@ export async function createNestedAllocationPool(poolName, resourceTypeId, strat
                     allocationStrategyId: $strategyId
                     poolDealocationSafetyPeriod: 0
                     parentResourceId: $parentResourceId
+                    tags: $tags
                 }){
                     pool
                     {
@@ -221,6 +222,7 @@ export async function createNestedAllocationPool(poolName, resourceTypeId, strat
             resourceTypeId: resourceTypeId,
             strategyId: strategyId,
             parentResourceId: parentResourceId,
+            tags: tags,
 
         }
     })
@@ -538,10 +540,10 @@ export async function createSetPool(poolName, resourceTypeId, poolValues){
     .catch(error => console.log(error));
 }
 
-export async function createAllocationPool(poolName, resourceTypeId, strategyId, poolPropertyTypes, poolProperties){
+export async function createAllocationPool(poolName, resourceTypeId, strategyId, poolPropertyTypes, poolProperties, tags = null){
     return client.mutate({
         mutation: gql`
-            mutation createAllocPool($poolName: String!, $resourceTypeId: ID!, $strategyId: ID!, $poolProperties: Map!, $poolPropertyTypes: Map!) { 
+            mutation createAllocPool($poolName: String!, $resourceTypeId: ID!, $strategyId: ID!, $poolProperties: Map!, $poolPropertyTypes: Map!, $tags: [String!]) { 
                 CreateAllocatingPool( input:  {
                     resourceTypeId: $resourceTypeId
                     poolName: $poolName
@@ -549,6 +551,7 @@ export async function createAllocationPool(poolName, resourceTypeId, strategyId,
                     poolDealocationSafetyPeriod: 0
                     poolPropertyTypes: $poolPropertyTypes
                     poolProperties: $poolProperties
+                    tags: $tags
                     }){ 
                 pool 
                     { 
@@ -563,6 +566,7 @@ export async function createAllocationPool(poolName, resourceTypeId, strategyId,
             strategyId: strategyId,
             poolProperties: poolProperties,
             poolPropertyTypes: poolPropertyTypes,
+            tags: tags,
 
         }
     })

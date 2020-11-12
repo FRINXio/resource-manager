@@ -15,6 +15,7 @@ type CreateAllocatingPoolInput struct {
 	PoolDealocationSafetyPeriod int                    `json:"poolDealocationSafetyPeriod"`
 	PoolProperties              map[string]interface{} `json:"poolProperties"`
 	PoolPropertyTypes           map[string]interface{} `json:"poolPropertyTypes"`
+	Tags                        []string               `json:"tags"`
 }
 
 type CreateAllocatingPoolPayload struct {
@@ -33,12 +34,13 @@ type CreateAllocationStrategyPayload struct {
 }
 
 type CreateNestedAllocatingPoolInput struct {
-	ResourceTypeID              int     `json:"resourceTypeId"`
-	PoolName                    string  `json:"poolName"`
-	Description                 *string `json:"description"`
-	AllocationStrategyID        int     `json:"allocationStrategyId"`
-	PoolDealocationSafetyPeriod int     `json:"poolDealocationSafetyPeriod"`
-	ParentResourceID            int     `json:"parentResourceId"`
+	ResourceTypeID              int      `json:"resourceTypeId"`
+	PoolName                    string   `json:"poolName"`
+	Description                 *string  `json:"description"`
+	AllocationStrategyID        int      `json:"allocationStrategyId"`
+	PoolDealocationSafetyPeriod int      `json:"poolDealocationSafetyPeriod"`
+	ParentResourceID            int      `json:"parentResourceId"`
+	Tags                        []string `json:"tags"`
 }
 
 type CreateNestedAllocatingPoolPayload struct {
@@ -52,6 +54,7 @@ type CreateNestedSetPoolInput struct {
 	PoolDealocationSafetyPeriod int                      `json:"poolDealocationSafetyPeriod"`
 	PoolValues                  []map[string]interface{} `json:"poolValues"`
 	ParentResourceID            int                      `json:"parentResourceId"`
+	Tags                        []string                 `json:"tags"`
 }
 
 type CreateNestedSetPoolPayload struct {
@@ -64,6 +67,7 @@ type CreateNestedSingletonPoolInput struct {
 	Description      *string                  `json:"description"`
 	PoolValues       []map[string]interface{} `json:"poolValues"`
 	ParentResourceID int                      `json:"parentResourceId"`
+	Tags             []string                 `json:"tags"`
 }
 
 type CreateNestedSingletonPoolPayload struct {
@@ -85,6 +89,7 @@ type CreateSetPoolInput struct {
 	Description                 *string                  `json:"description"`
 	PoolDealocationSafetyPeriod int                      `json:"poolDealocationSafetyPeriod"`
 	PoolValues                  []map[string]interface{} `json:"poolValues"`
+	Tags                        []string                 `json:"tags"`
 }
 
 type CreateSetPoolPayload struct {
@@ -96,6 +101,7 @@ type CreateSingletonPoolInput struct {
 	PoolName       string                   `json:"poolName"`
 	Description    *string                  `json:"description"`
 	PoolValues     []map[string]interface{} `json:"poolValues"`
+	Tags           []string                 `json:"tags"`
 }
 
 type CreateSingletonPoolPayload struct {

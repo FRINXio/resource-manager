@@ -166,16 +166,16 @@ type ComplexityRoot struct {
 		Node                           func(childComplexity int, id int) int
 		QueryAllocationStrategies      func(childComplexity int, byName *string) int
 		QueryAllocationStrategy        func(childComplexity int, allocationStrategyID int) int
-		QueryLeafResourcePools         func(childComplexity int, resourceTypeID *int) int
+		QueryLeafResourcePools         func(childComplexity int, resourceTypeID *int, tags *model.TagOr) int
 		QueryPoolCapacity              func(childComplexity int, poolID int) int
 		QueryPoolTypes                 func(childComplexity int) int
 		QueryResource                  func(childComplexity int, input map[string]interface{}, poolID int) int
 		QueryResourcePool              func(childComplexity int, poolID int) int
 		QueryResourcePoolHierarchyPath func(childComplexity int, poolID int) int
-		QueryResourcePools             func(childComplexity int, resourceTypeID *int) int
+		QueryResourcePools             func(childComplexity int, resourceTypeID *int, tags *model.TagOr) int
 		QueryResourceTypes             func(childComplexity int, byName *string) int
 		QueryResources                 func(childComplexity int, poolID int) int
-		QueryRootResourcePools         func(childComplexity int, resourceTypeID *int) int
+		QueryRootResourcePools         func(childComplexity int, resourceTypeID *int, tags *model.TagOr) int
 		QueryTags                      func(childComplexity int) int
 		SearchPoolsByTags              func(childComplexity int, tags *model.TagOr) int
 	}
@@ -202,6 +202,7 @@ type ComplexityRoot struct {
 	ResourcePool struct {
 		AllocatedResources func(childComplexity int, first *int, last *int, before *string, after *string) int
 		AllocationStrategy func(childComplexity int) int
+		Capacity           func(childComplexity int) int
 		ID                 func(childComplexity int) int
 		Name               func(childComplexity int) int
 		ParentResource     func(childComplexity int) int
@@ -278,10 +279,10 @@ type QueryResolver interface {
 	QueryAllocationStrategies(ctx context.Context, byName *string) ([]*ent.AllocationStrategy, error)
 	QueryResourceTypes(ctx context.Context, byName *string) ([]*ent.ResourceType, error)
 	QueryResourcePool(ctx context.Context, poolID int) (*ent.ResourcePool, error)
-	QueryResourcePools(ctx context.Context, resourceTypeID *int) ([]*ent.ResourcePool, error)
+	QueryResourcePools(ctx context.Context, resourceTypeID *int, tags *model.TagOr) ([]*ent.ResourcePool, error)
 	QueryResourcePoolHierarchyPath(ctx context.Context, poolID int) ([]*ent.ResourcePool, error)
-	QueryRootResourcePools(ctx context.Context, resourceTypeID *int) ([]*ent.ResourcePool, error)
-	QueryLeafResourcePools(ctx context.Context, resourceTypeID *int) ([]*ent.ResourcePool, error)
+	QueryRootResourcePools(ctx context.Context, resourceTypeID *int, tags *model.TagOr) ([]*ent.ResourcePool, error)
+	QueryLeafResourcePools(ctx context.Context, resourceTypeID *int, tags *model.TagOr) ([]*ent.ResourcePool, error)
 	SearchPoolsByTags(ctx context.Context, tags *model.TagOr) ([]*ent.ResourcePool, error)
 	QueryTags(ctx context.Context) ([]*ent.Tag, error)
 	Node(ctx context.Context, id int) (ent.Noder, error)
@@ -298,6 +299,7 @@ type ResourcePoolResolver interface {
 	AllocatedResources(ctx context.Context, obj *ent.ResourcePool, first *int, last *int, before *string, after *string) (*ent.ResourceConnection, error)
 	Tags(ctx context.Context, obj *ent.ResourcePool) ([]*ent.Tag, error)
 	AllocationStrategy(ctx context.Context, obj *ent.ResourcePool) (*ent.AllocationStrategy, error)
+	Capacity(ctx context.Context, obj *ent.ResourcePool) (*model.PoolCapacityPayload, error)
 }
 type ResourceTypeResolver interface {
 	PropertyTypes(ctx context.Context, obj *ent.ResourceType) ([]*ent.PropertyType, error)
@@ -832,7 +834,7 @@ func (e *executableSchema) Complexity(typeName, field string, childComplexity in
 			return 0, false
 		}
 
-		return e.complexity.Query.QueryLeafResourcePools(childComplexity, args["resourceTypeId"].(*int)), true
+		return e.complexity.Query.QueryLeafResourcePools(childComplexity, args["resourceTypeId"].(*int), args["tags"].(*model.TagOr)), true
 
 	case "Query.QueryPoolCapacity":
 		if e.complexity.Query.QueryPoolCapacity == nil {
@@ -899,7 +901,7 @@ func (e *executableSchema) Complexity(typeName, field string, childComplexity in
 			return 0, false
 		}
 
-		return e.complexity.Query.QueryResourcePools(childComplexity, args["resourceTypeId"].(*int)), true
+		return e.complexity.Query.QueryResourcePools(childComplexity, args["resourceTypeId"].(*int), args["tags"].(*model.TagOr)), true
 
 	case "Query.QueryResourceTypes":
 		if e.complexity.Query.QueryResourceTypes == nil {
@@ -935,7 +937,7 @@ func (e *executableSchema) Complexity(typeName, field string, childComplexity in
 			return 0, false
 		}
 
-		return e.complexity.Query.QueryRootResourcePools(childComplexity, args["resourceTypeId"].(*int)), true
+		return e.complexity.Query.QueryRootResourcePools(childComplexity, args["resourceTypeId"].(*int), args["tags"].(*model.TagOr)), true
 
 	case "Query.QueryTags":
 		if e.complexity.Query.QueryTags == nil {
@@ -1044,6 +1046,13 @@ func (e *executableSchema) Complexity(typeName, field string, childComplexity in
 		}
 
 		return e.complexity.ResourcePool.AllocationStrategy(childComplexity), true
+
+	case "ResourcePool.Capacity":
+		if e.complexity.ResourcePool.Capacity == nil {
+			break
+		}
+
+		return e.complexity.ResourcePool.Capacity(childComplexity), true
 
 	case "ResourcePool.id":
 		if e.complexity.ResourcePool.ID == nil {
@@ -1304,6 +1313,7 @@ type ResourcePool implements Node
     allocatedResources(first: Int, last: Int, before: String, after: String): ResourceConnection
     Tags: [Tag!]!
     AllocationStrategy: AllocationStrategy
+    Capacity: PoolCapacityPayload
 }
 
 enum PoolType
@@ -1379,6 +1389,7 @@ input CreateSetPoolInput {
     description: String
     poolDealocationSafetyPeriod: Int!
     poolValues: [Map!]!
+    tags: [String!]
 }
 
 type CreateSetPoolPayload {
@@ -1392,6 +1403,7 @@ input CreateNestedSetPoolInput {
     poolDealocationSafetyPeriod: Int!
     poolValues: [Map]!
     parentResourceId: ID!
+    tags: [String!]
 }
 
 type CreateNestedSetPoolPayload {
@@ -1404,6 +1416,7 @@ input CreateNestedSingletonPoolInput {
     description: String
     poolValues: [Map]!
     parentResourceId: ID!
+    tags: [String!]
 }
 
 type CreateNestedSingletonPoolPayload {
@@ -1418,12 +1431,12 @@ type DeleteResourcePoolPayload {
     resourcePoolId: ID!
 }
 
-
 input CreateSingletonPoolInput {
     resourceTypeId: ID!
     poolName: String!
     description: String
     poolValues: [Map!]!
+    tags: [String!]
 }
 
 type CreateSingletonPoolPayload {
@@ -1438,6 +1451,7 @@ input CreateAllocatingPoolInput {
     poolDealocationSafetyPeriod: Int!
     poolProperties: Map!
     poolPropertyTypes: Map!
+    tags: [String!]
 }
 
 type CreateAllocatingPoolPayload {
@@ -1451,6 +1465,7 @@ input CreateNestedAllocatingPoolInput {
     allocationStrategyId: ID!
     poolDealocationSafetyPeriod: Int!
     parentResourceId: ID!
+    tags: [String!]
 }
 
 type CreateNestedAllocatingPoolPayload {
@@ -1473,10 +1488,10 @@ type Query {
 
     QueryResourcePool(poolId: ID!): ResourcePool!
 
-    QueryResourcePools(resourceTypeId: ID): [ResourcePool!]!
+    QueryResourcePools(resourceTypeId: ID, tags: TagOr): [ResourcePool!]!
     QueryResourcePoolHierarchyPath(poolId: ID!): [ResourcePool!]!
-    QueryRootResourcePools(resourceTypeId: ID): [ResourcePool!]!
-    QueryLeafResourcePools(resourceTypeId: ID): [ResourcePool!]!
+    QueryRootResourcePools(resourceTypeId: ID, tags: TagOr): [ResourcePool!]!
+    QueryLeafResourcePools(resourceTypeId: ID, tags: TagOr): [ResourcePool!]!
     SearchPoolsByTags(tags: TagOr): [ResourcePool!]!
 
     QueryTags: [Tag!]!
@@ -2011,6 +2026,15 @@ func (ec *executionContext) field_Query_QueryLeafResourcePools_args(ctx context.
 		}
 	}
 	args["resourceTypeId"] = arg0
+	var arg1 *model.TagOr
+	if tmp, ok := rawArgs["tags"]; ok {
+		ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("tags"))
+		arg1, err = ec.unmarshalOTagOr2ᚖgithubᚗcomᚋnetᚑautoᚋresourceManagerᚋgraphᚋgraphqlᚋmodelᚐTagOr(ctx, tmp)
+		if err != nil {
+			return nil, err
+		}
+	}
+	args["tags"] = arg1
 	return args, nil
 }
 
@@ -2071,6 +2095,15 @@ func (ec *executionContext) field_Query_QueryResourcePools_args(ctx context.Cont
 		}
 	}
 	args["resourceTypeId"] = arg0
+	var arg1 *model.TagOr
+	if tmp, ok := rawArgs["tags"]; ok {
+		ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("tags"))
+		arg1, err = ec.unmarshalOTagOr2ᚖgithubᚗcomᚋnetᚑautoᚋresourceManagerᚋgraphᚋgraphqlᚋmodelᚐTagOr(ctx, tmp)
+		if err != nil {
+			return nil, err
+		}
+	}
+	args["tags"] = arg1
 	return args, nil
 }
 
@@ -2140,6 +2173,15 @@ func (ec *executionContext) field_Query_QueryRootResourcePools_args(ctx context.
 		}
 	}
 	args["resourceTypeId"] = arg0
+	var arg1 *model.TagOr
+	if tmp, ok := rawArgs["tags"]; ok {
+		ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("tags"))
+		arg1, err = ec.unmarshalOTagOr2ᚖgithubᚗcomᚋnetᚑautoᚋresourceManagerᚋgraphᚋgraphqlᚋmodelᚐTagOr(ctx, tmp)
+		if err != nil {
+			return nil, err
+		}
+	}
+	args["tags"] = arg1
 	return args, nil
 }
 
@@ -4552,7 +4594,7 @@ func (ec *executionContext) _Query_QueryResourcePools(ctx context.Context, field
 	fc.Args = args
 	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
 		ctx = rctx // use context from middleware stack in children
-		return ec.resolvers.Query().QueryResourcePools(rctx, args["resourceTypeId"].(*int))
+		return ec.resolvers.Query().QueryResourcePools(rctx, args["resourceTypeId"].(*int), args["tags"].(*model.TagOr))
 	})
 	if err != nil {
 		ec.Error(ctx, err)
@@ -4636,7 +4678,7 @@ func (ec *executionContext) _Query_QueryRootResourcePools(ctx context.Context, f
 	fc.Args = args
 	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
 		ctx = rctx // use context from middleware stack in children
-		return ec.resolvers.Query().QueryRootResourcePools(rctx, args["resourceTypeId"].(*int))
+		return ec.resolvers.Query().QueryRootResourcePools(rctx, args["resourceTypeId"].(*int), args["tags"].(*model.TagOr))
 	})
 	if err != nil {
 		ec.Error(ctx, err)
@@ -4678,7 +4720,7 @@ func (ec *executionContext) _Query_QueryLeafResourcePools(ctx context.Context, f
 	fc.Args = args
 	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
 		ctx = rctx // use context from middleware stack in children
-		return ec.resolvers.Query().QueryLeafResourcePools(rctx, args["resourceTypeId"].(*int))
+		return ec.resolvers.Query().QueryLeafResourcePools(rctx, args["resourceTypeId"].(*int), args["tags"].(*model.TagOr))
 	})
 	if err != nil {
 		ec.Error(ctx, err)
@@ -5537,6 +5579,38 @@ func (ec *executionContext) _ResourcePool_AllocationStrategy(ctx context.Context
 	res := resTmp.(*ent.AllocationStrategy)
 	fc.Result = res
 	return ec.marshalOAllocationStrategy2ᚖgithubᚗcomᚋnetᚑautoᚋresourceManagerᚋentᚐAllocationStrategy(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) _ResourcePool_Capacity(ctx context.Context, field graphql.CollectedField, obj *ent.ResourcePool) (ret graphql.Marshaler) {
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	fc := &graphql.FieldContext{
+		Object:     "ResourcePool",
+		Field:      field,
+		Args:       nil,
+		IsMethod:   true,
+		IsResolver: true,
+	}
+
+	ctx = graphql.WithFieldContext(ctx, fc)
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return ec.resolvers.ResourcePool().Capacity(rctx, obj)
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		return graphql.Null
+	}
+	res := resTmp.(*model.PoolCapacityPayload)
+	fc.Result = res
+	return ec.marshalOPoolCapacityPayload2ᚖgithubᚗcomᚋnetᚑautoᚋresourceManagerᚋgraphᚋgraphqlᚋmodelᚐPoolCapacityPayload(ctx, field.Selections, res)
 }
 
 func (ec *executionContext) _ResourceType_id(ctx context.Context, field graphql.CollectedField, obj *ent.ResourceType) (ret graphql.Marshaler) {
@@ -7061,6 +7135,14 @@ func (ec *executionContext) unmarshalInputCreateAllocatingPoolInput(ctx context.
 			if err != nil {
 				return it, err
 			}
+		case "tags":
+			var err error
+
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("tags"))
+			it.Tags, err = ec.unmarshalOString2ᚕstringᚄ(ctx, v)
+			if err != nil {
+				return it, err
+			}
 		}
 	}
 
@@ -7165,6 +7247,14 @@ func (ec *executionContext) unmarshalInputCreateNestedAllocatingPoolInput(ctx co
 			if err != nil {
 				return it, err
 			}
+		case "tags":
+			var err error
+
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("tags"))
+			it.Tags, err = ec.unmarshalOString2ᚕstringᚄ(ctx, v)
+			if err != nil {
+				return it, err
+			}
 		}
 	}
 
@@ -7225,6 +7315,14 @@ func (ec *executionContext) unmarshalInputCreateNestedSetPoolInput(ctx context.C
 			if err != nil {
 				return it, err
 			}
+		case "tags":
+			var err error
+
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("tags"))
+			it.Tags, err = ec.unmarshalOString2ᚕstringᚄ(ctx, v)
+			if err != nil {
+				return it, err
+			}
 		}
 	}
 
@@ -7274,6 +7372,14 @@ func (ec *executionContext) unmarshalInputCreateNestedSingletonPoolInput(ctx con
 
 			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("parentResourceId"))
 			it.ParentResourceID, err = ec.unmarshalNID2int(ctx, v)
+			if err != nil {
+				return it, err
+			}
+		case "tags":
+			var err error
+
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("tags"))
+			it.Tags, err = ec.unmarshalOString2ᚕstringᚄ(ctx, v)
 			if err != nil {
 				return it, err
 			}
@@ -7357,6 +7463,14 @@ func (ec *executionContext) unmarshalInputCreateSetPoolInput(ctx context.Context
 			if err != nil {
 				return it, err
 			}
+		case "tags":
+			var err error
+
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("tags"))
+			it.Tags, err = ec.unmarshalOString2ᚕstringᚄ(ctx, v)
+			if err != nil {
+				return it, err
+			}
 		}
 	}
 
@@ -7398,6 +7512,14 @@ func (ec *executionContext) unmarshalInputCreateSingletonPoolInput(ctx context.C
 
 			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("poolValues"))
 			it.PoolValues, err = ec.unmarshalNMap2ᚕmapᚄ(ctx, v)
+			if err != nil {
+				return it, err
+			}
+		case "tags":
+			var err error
+
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("tags"))
+			it.Tags, err = ec.unmarshalOString2ᚕstringᚄ(ctx, v)
 			if err != nil {
 				return it, err
 			}
@@ -8913,6 +9035,17 @@ func (ec *executionContext) _ResourcePool(ctx context.Context, sel ast.Selection
 					}
 				}()
 				res = ec._ResourcePool_AllocationStrategy(ctx, field, obj)
+				return res
+			})
+		case "Capacity":
+			field := field
+			out.Concurrently(i, func() (res graphql.Marshaler) {
+				defer func() {
+					if r := recover(); r != nil {
+						ec.Error(ctx, ec.Recover(ctx, r))
+					}
+				}()
+				res = ec._ResourcePool_Capacity(ctx, field, obj)
 				return res
 			})
 		default:
@@ -10769,6 +10902,13 @@ func (ec *executionContext) marshalONode2githubᚗcomᚋnetᚑautoᚋresourceMan
 		return graphql.Null
 	}
 	return ec._Node(ctx, sel, v)
+}
+
+func (ec *executionContext) marshalOPoolCapacityPayload2ᚖgithubᚗcomᚋnetᚑautoᚋresourceManagerᚋgraphᚋgraphqlᚋmodelᚐPoolCapacityPayload(ctx context.Context, sel ast.SelectionSet, v *model.PoolCapacityPayload) graphql.Marshaler {
+	if v == nil {
+		return graphql.Null
+	}
+	return ec._PoolCapacityPayload(ctx, sel, v)
 }
 
 func (ec *executionContext) marshalOResource2ᚖgithubᚗcomᚋnetᚑautoᚋresourceManagerᚋentᚐResource(ctx context.Context, sel ast.SelectionSet, v *ent.Resource) graphql.Marshaler {

@@ -5,7 +5,6 @@ package resolver
 
 import (
 	"context"
-
 	"github.com/net-auto/resourceManager/ent"
 	"github.com/net-auto/resourceManager/ent/allocationstrategy"
 	"github.com/net-auto/resourceManager/ent/predicate"
@@ -13,7 +12,6 @@ import (
 	"github.com/net-auto/resourceManager/ent/resource"
 	resourcePool "github.com/net-auto/resourceManager/ent/resourcepool"
 	"github.com/net-auto/resourceManager/ent/resourcetype"
-	tagWhere "github.com/net-auto/resourceManager/ent/tag"
 	"github.com/net-auto/resourceManager/graph/graphql/generated"
 	"github.com/net-auto/resourceManager/graph/graphql/model"
 	log "github.com/net-auto/resourceManager/logging"
@@ -23,7 +21,7 @@ import (
 
 func (r *mutationResolver) CreateTag(ctx context.Context, input model.CreateTagInput) (*model.CreateTagPayload, error) {
 	var client = r.ClientFrom(ctx)
-	tagEnt, err := client.Tag.Create().SetTag(input.TagText).Save(ctx)
+	tagEnt, err := createTag(ctx, client, input.TagText)
 
 	if err != nil {
 		log.Error(ctx, err, "Unable to create new tag")
@@ -192,6 +190,12 @@ func (r *mutationResolver) CreateSetPool(ctx context.Context, input model.Create
 	}
 	_, rp, err := p.NewSetPoolWithMeta(ctx, client, resType, p.ToRawTypes(input.PoolValues),
 		input.PoolName, input.Description, input.PoolDealocationSafetyPeriod)
+
+	if err := createTagsAndTagPool(ctx, client, rp, input.Tags); err != nil {
+		log.Error(ctx, err, "Unable to tag the pool with tags: %v", input.Tags)
+		return nil, err
+	}
+
 	if err != nil {
 		return &model.CreateSetPoolPayload{Pool: nil}, gqlerror.Errorf("Unable to create pool: %v", err)
 	}
@@ -208,6 +212,7 @@ func (r *mutationResolver) CreateNestedSetPool(ctx context.Context, input model.
 			Description:                 input.Description,
 			PoolDealocationSafetyPeriod: input.PoolDealocationSafetyPeriod,
 			PoolValues:                  input.PoolValues,
+			Tags:                        input.Tags,
 		}
 		createSetPoolPayload, err := r.CreateSetPool(ctx, poolInput)
 		if createSetPoolPayload != nil {
@@ -232,6 +237,12 @@ func (r *mutationResolver) CreateSingletonPool(ctx context.Context, input *model
 	if len(input.PoolValues) == 1 {
 		_, rp, err := p.NewSingletonPoolWithMeta(ctx, client, resType, p.ToRawTypes(input.PoolValues)[0],
 			input.PoolName, input.Description)
+
+		if err := createTagsAndTagPool(ctx, client, rp, input.Tags); err != nil {
+			log.Error(ctx, err, "Unable to tag the pool with tags: %v", input.Tags)
+			return nil, err
+		}
+
 		retVal := model.CreateSingletonPoolPayload{Pool: rp}
 		if err != nil {
 			return &retVal, gqlerror.Errorf("Cannot create singleton pool: %v", err)
@@ -252,6 +263,7 @@ func (r *mutationResolver) CreateNestedSingletonPool(ctx context.Context, input 
 			PoolName:       input.PoolName,
 			Description:    input.Description,
 			PoolValues:     input.PoolValues,
+			Tags:           input.Tags,
 		}
 		payload, err := r.CreateSingletonPool(ctx, &poolInput)
 		if payload != nil {
@@ -311,6 +323,12 @@ func (r *mutationResolver) CreateAllocatingPool(ctx context.Context, input *mode
 
 	_, rp, err := p.NewAllocatingPoolWithMeta(ctx, client, resType, allocationStrat,
 		input.PoolName, input.Description, input.PoolDealocationSafetyPeriod, poolProperties)
+
+	if err := createTagsAndTagPool(ctx, client, rp, input.Tags); err != nil {
+		log.Error(ctx, err, "Unable to tag the pool with tags: %v", input.Tags)
+		return nil, err
+	}
+
 	if err != nil {
 		return &emptyRetVal, gqlerror.Errorf("Unable to create pool: %v", err)
 	}
@@ -328,6 +346,7 @@ func (r *mutationResolver) CreateNestedAllocatingPool(ctx context.Context, input
 			Description:                 input.Description,
 			AllocationStrategyID:        input.AllocationStrategyID,
 			PoolDealocationSafetyPeriod: input.PoolDealocationSafetyPeriod,
+			Tags:                        input.Tags,
 		}
 		poolPayload, err := r.CreateAllocatingPool(ctx, &poolInput)
 		if poolPayload != nil {
@@ -539,12 +558,17 @@ func (r *queryResolver) QueryResourcePool(ctx context.Context, poolID int) (*ent
 	return rp, err
 }
 
-func (r *queryResolver) QueryResourcePools(ctx context.Context, resourceTypeID *int) ([]*ent.ResourcePool, error) {
+func (r *queryResolver) QueryResourcePools(ctx context.Context, resourceTypeID *int, tags *model.TagOr) ([]*ent.ResourcePool, error) {
 	client := r.ClientFrom(ctx)
 	query := client.ResourcePool.Query()
 
 	if resourceTypeID != nil {
 		query.Where(resourcePool.HasResourceTypeWith(resourcetype.ID(*resourceTypeID)))
+	}
+
+	if tags != nil {
+		// TODO make sure all tags exist
+		query.Where(resourcePoolTagPredicate(tags))
 	}
 
 	if resourcePools, err := query.All(ctx); err != nil {
@@ -577,7 +601,7 @@ func (r *queryResolver) QueryResourcePoolHierarchyPath(ctx context.Context, pool
 	return hierarchy, nil
 }
 
-func (r *queryResolver) QueryRootResourcePools(ctx context.Context, resourceTypeID *int) ([]*ent.ResourcePool, error) {
+func (r *queryResolver) QueryRootResourcePools(ctx context.Context, resourceTypeID *int, tags *model.TagOr) ([]*ent.ResourcePool, error) {
 	client := r.ClientFrom(ctx)
 	query := client.ResourcePool.
 		Query().
@@ -585,6 +609,11 @@ func (r *queryResolver) QueryRootResourcePools(ctx context.Context, resourceType
 
 	if resourceTypeID != nil {
 		query.Where(resourcePool.HasResourceTypeWith(resourcetype.ID(*resourceTypeID)))
+	}
+
+	if tags != nil {
+		// TODO make sure all tags exist
+		query.Where(resourcePoolTagPredicate(tags))
 	}
 
 	if resourcePools, err := query.All(ctx); err != nil {
@@ -595,7 +624,7 @@ func (r *queryResolver) QueryRootResourcePools(ctx context.Context, resourceType
 	}
 }
 
-func (r *queryResolver) QueryLeafResourcePools(ctx context.Context, resourceTypeID *int) ([]*ent.ResourcePool, error) {
+func (r *queryResolver) QueryLeafResourcePools(ctx context.Context, resourceTypeID *int, tags *model.TagOr) ([]*ent.ResourcePool, error) {
 	client := r.ClientFrom(ctx)
 	query := client.ResourcePool.
 		Query().
@@ -604,6 +633,11 @@ func (r *queryResolver) QueryLeafResourcePools(ctx context.Context, resourceType
 
 	if resourceTypeID != nil {
 		query.Where(resourcePool.HasResourceTypeWith(resourcetype.ID(*resourceTypeID)))
+	}
+
+	if tags != nil {
+		// TODO make sure all tags exist
+		query.Where(resourcePoolTagPredicate(tags))
 	}
 
 	if resourcePools, err := query.All(ctx); err != nil {
@@ -616,27 +650,24 @@ func (r *queryResolver) QueryLeafResourcePools(ctx context.Context, resourceType
 
 func (r *queryResolver) SearchPoolsByTags(ctx context.Context, tags *model.TagOr) ([]*ent.ResourcePool, error) {
 	var client = r.ClientFrom(ctx)
-	var predicateOr predicate.ResourcePool
 
-	// TODO make sure all tags exist
+	var condition predicate.ResourcePool
 
-	for _, tagOr := range tags.MatchesAny {
-		// Join queries where tag equals to input by AND operation
-		predicateAnd := resourcePool.HasTags()
-		for _, tagAnd := range tagOr.MatchesAll {
-			predicateAnd = resourcePool.And(predicateAnd, resourcePool.HasTagsWith(tagWhere.Tag(tagAnd)))
-		}
-
-		// Join multiple AND tag queries with OR
-		if predicateOr == nil {
-			// If this is the first AND query, use the AND query as a starting point
-			predicateOr = predicateAnd
-		} else {
-			predicateOr = resourcePool.Or(predicateOr, predicateAnd)
-		}
+	if tags != nil {
+		// TODO make sure all tags exist
+		condition = resourcePoolTagPredicate(tags)
 	}
 
-	matchedPools, err := client.ResourcePool.Query().Where(predicateOr).All(ctx)
+	var (
+		matchedPools []*ent.ResourcePool
+		err          error
+	)
+	if condition == nil {
+		matchedPools, err = client.ResourcePool.Query().All(ctx)
+	} else {
+		matchedPools, err = client.ResourcePool.Query().Where(condition).All(ctx)
+	}
+
 	if err != nil {
 		log.Error(ctx, err, "Unable to retrieve pools by tags")
 		return nil, gqlerror.Errorf("Unable to query pools: %v", err)
@@ -807,6 +838,10 @@ func (r *resourcePoolResolver) AllocationStrategy(ctx context.Context, obj *ent.
 	}
 
 	return strategy, err
+}
+
+func (r *resourcePoolResolver) Capacity(ctx context.Context, obj *ent.ResourcePool) (*model.PoolCapacityPayload, error) {
+	return r.Query().QueryPoolCapacity(ctx, obj.ID)
 }
 
 func (r *resourceTypeResolver) PropertyTypes(ctx context.Context, obj *ent.ResourceType) ([]*ent.PropertyType, error) {
