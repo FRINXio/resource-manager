@@ -52,15 +52,23 @@ spec:
             {{- toYaml .Values.resources | nindent 12 }}
           env:
             - name: "PSQL_USERNAME"
+              {{ if .Values.env.PSQL_USERNAME }}
+              value: "{{ .Values.env.PSQL_USERNAME }}"
+              {{ else }}
               valueFrom:
                 secretKeyRef:
                   name: {{ .Values.env.PSQL_CREDENTIAL_SECRET }}
                   key: username
+              {{ end }}
             - name: "PSQL_PASSWORD"
+              {{ if .Values.env.PSQL_PASSWORD }}
+              value: "{{ .Values.env.PSQL_PASSWORD }}"
+              {{ else }}
               valueFrom:
                 secretKeyRef:
                   name: {{ .Values.env.PSQL_CREDENTIAL_SECRET }}
                   key: password
+              {{ end }}
             - name: "PSQL_HOSTNAME"
               value: "{{ .Values.env.PSQL_HOSTNAME }}"
             - name: "PSQL_PORT"
