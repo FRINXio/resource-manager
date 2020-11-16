@@ -1,0 +1,359 @@
+query poolTypes {
+    QueryPoolTypes
+}
+
+mutation createNewResourceType {
+    CreateResourceType( input: {
+        resourceName: "vlan",
+        resourceProperties: {
+            vlan: "int"
+        }
+     } ) {
+         resourceType {
+             id
+         }
+    }
+}
+
+mutation createComplexResourceType {
+    CreateResourceType( input: {
+        resourceName: "complex",
+        resourceProperties: {
+            a: "int",
+            b: "string"
+        }
+    } ) {
+        resourceType {
+            id
+        }
+    }
+}
+
+query queryResourceTypes {
+    QueryResourceTypes{
+        id
+        Name
+        PropertyTypes {
+            Name
+            Type
+        }
+        Pools {
+            id
+            Name
+        }
+    }
+}
+
+# Root pool
+mutation CreateRootPool_allocating {
+    CreateAllocatingPool(input: {
+        resourceTypeId: 25769803779,
+        poolName: "vlantest",
+        allocationStrategyId: 1,
+        poolDealocationSafetyPeriod: 0,
+        poolPropertyTypes: {
+            aa: "int",
+            bb: "string"
+        },
+        poolProperties: [{aa: 13, bb: "test123bb"},]
+    }
+    ){
+        pool {
+            id
+        }
+    }
+}
+
+
+
+mutation deleteResourceTypes {
+    DeleteResourceType (input: {resourceTypeId: 21474836481}) {
+        resourceTypeId
+    }
+}
+
+mutation createSetPool {
+    CreateSetPool(input: {
+        resourceTypeId: 21474836480,
+        poolName: "vlan_test4",
+        poolValues: [{vlan: 13}, {vlan: 14},],
+        poolDealocationSafetyPeriod: 0}
+    ){
+        pool {
+            id
+            PoolType
+            Name
+        }
+    }
+}
+
+mutation createAllocationStratJs {
+    CreateAllocationStrategy(input:{
+        name: "jstest",
+        script: "function invoke() {log(JSON.stringify({respool: resourcePool.ResourcePoolName, currentRes: currentResources}));return {vlan: userInput.desiredVlan};}",
+        lang: js
+    }
+    ){
+       strategy {
+           id
+           Name
+           Lang
+           Script
+       }
+    }
+}
+
+mutation createAllocationStratPy {
+    CreateAllocationStrategy(input:{
+        name: "pytest",
+        script: "log(json.dumps({ \"respool\": resourcePool[\"ResourcePoolName\"], \"currentRes\": currentResources }))\nreturn {\"vlan\": userInput[\"desiredVlan\"]}"
+        lang: py
+    }){
+       strategy{
+           id
+           Name
+           Lang
+           Script
+       }
+    }
+}
+
+query queryAllocationStrategies {
+    QueryAllocationStrategies {
+        id
+        Lang
+        Name
+        Script
+    }
+}
+
+mutation deleteAllocationStrategy {
+    DeleteAllocationStrategy(input:{allocationStrategyId: 0}){
+        strategy {
+            id
+            Name
+        }
+    }
+}
+
+mutation TestAllocationStrategyJs {
+    TestAllocationStrategy(
+        allocationStrategyId: 1,
+        resourcePool: { ResourcePoolName: "testpool"},
+        currentResources: [
+            {Properties: { vlan: 1},
+                Status: "claimed",
+                UpdatedAt: "2020-08-18 11:38:48.0 +0200 CEST"
+            }, {Properties: { vlan: 2},
+                Status: "claimed",
+                UpdatedAt: "2020-08-18 11:38:48.0 +0200 CEST"
+            }],
+        userInput: {desiredVlan: 11})
+}
+
+mutation TestAllocationStrategyPy {
+    TestAllocationStrategy(
+        allocationStrategyId: 2,
+        resourcePool: { ResourcePoolName: "testpool"},
+        currentResources: [
+            {Properties: { vlan: 1},
+                Status: "claimed",
+                UpdatedAt: "2020-08-18 11:38:48.0 +0200 CEST"
+            }, {Properties: { vlan: 1},
+                Status: "claimed",
+                UpdatedAt: "2020-08-18 11:38:48.0 +0200 CEST"
+            }],
+        userInput: {desiredVlan: 11})
+}
+
+mutation createAllocationPool {
+    CreateAllocatingPool(input: {
+        resourceTypeId: 21474836480,
+        poolName: "vlan_allocating",
+        allocationStrategyId: 1,
+        poolDealocationSafetyPeriod: 0}
+    ){
+       pool {
+           id
+           PoolType
+           Name
+       }
+    }
+}
+
+query QueryAllPools {
+    QueryResourcePools{
+        id
+        Name
+        PoolType
+        Tags {
+            Tag
+        }
+        AllocationStrategy {
+            Name
+        }
+        ResourceType {
+            Name
+        }
+    }
+}
+
+mutation ClaimResource {
+    ClaimResource(poolId:17179869184, userInput: {}) {
+        id
+        Properties
+    }
+}
+
+mutation ClaimResourceFromAllocatingPool {
+    ClaimResource(poolId:17179869185, userInput: {desiredVlan: 14}) {
+        id
+        Properties
+    }
+}
+
+query QueryResources {
+    QueryResources(poolId:17179869185){
+        id
+        Properties
+    }
+}
+
+mutation freeResource {
+    FreeResource(
+        poolId: 17179869185,
+        input: {vlan: 14}
+    )
+}
+
+mutation CreateTag {
+    CreateTag(input: { tagText: "fb-connectivity"}) {
+        tag {
+            id
+        }
+    }
+}
+
+mutation CreateTag {
+    CreateTag(input: { tagText: "tip"}) {
+        tag {
+            id
+        }
+    }
+}
+
+query Tags {
+    QueryTags {
+        id
+        Tag
+        Pools {
+            id
+            Name
+        }
+    }
+}
+
+mutation TagSetPoolWithFb {
+    TagPool(input:{tagId: 25769803776, poolId: 17179869184}) {
+        tag {
+            id
+        }
+    }
+}
+
+mutation TagSetPoolWithTip {
+    TagPool(input:{tagId: 25769803777, poolId: 17179869184}) {
+        tag {
+            id
+        }
+    }
+}
+
+mutation UpdateTagTip {
+    UpdateTag(input: {tagId: 25769803777, tagText: "tipIsTheBest"} ) {
+        tag {
+            id
+        }
+    }
+}
+
+mutation TagAllocatingPoolWithTip {
+    TagPool(input: {tagId: 25769803777, poolId: 17179869185}) {
+        tag {
+            id
+        }
+    }
+}
+
+query searchPoolsByBothTags {
+    SearchPoolsByTags(tags: {matchesAny: [{matchesAll: ["fb-connectivity", "tipIsTheBest"]}]}) {
+        id
+        Name
+    }
+}
+
+query searchPoolsByOneOrTheOtherTag {
+    SearchPoolsByTags(tags: {matchesAny: [{matchesAll: ["fb-connectivity"]}, {matchesAll: ["tipIsTheBest"]}]}) {
+        id
+        Name
+    }
+}
+
+query searchPoolsByTipTag {
+    SearchPoolsByTags(tags: {matchesAny: [{matchesAll: ["tipIsTheBest"]}]}) {
+        id
+        Name
+    }
+}
+
+query searchPoolsByFbTag {
+    SearchPoolsByTags(tags: {matchesAny: [{matchesAll: ["fb-connectivity"]}]}) {
+        id
+        Name
+    }
+}
+
+query deepQuery {
+    QueryResourceTypes{
+        id
+        Name
+        PropertyTypes {
+            Name
+            Type
+        }
+        Pools {
+            id
+            Name
+            AllocationStrategy {
+                id
+                Lang
+                Name
+            }
+            PoolType
+            Tags {
+                id
+                Tag
+            }
+            Resources {
+                id
+                Properties
+            }
+        }
+    }
+}
+
+mutation deleteResourcePool {
+    DeleteResourcePool(input: {resourcePoolId:21474836481}) {
+        resourcePoolId
+    }
+}
+
+mutation deleteAllocationStrat {
+    DeleteAllocationStrategy(input: {allocationStrategyId: 1}
+    ){
+       strategy{
+           id
+           Name
+       }
+    }
+}

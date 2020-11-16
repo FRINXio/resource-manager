@@ -1,0 +1,32 @@
+
+schema:
+  - schema/*.graphql
+
+exec:
+  filename: generated/generated.go
+  package: generated
+
+model:
+  filename: model/models_gen.go
+  package: model
+
+resolver:
+  layout: follow-schema
+  dir: resolver
+  package: resolver
+
+# FIXME validation is disabled since it fails with:
+# validation failed: packages.Load: -: no matching versions for query "latest"
+# exit status 1
+# graph/graphql/generate.go:5: running "go": exit status 1
+# ... related to https://github.com/99designs/gqlgen/issues/1044 ?
+
+skip_validation: true
+
+autobind:
+  - "github.com/net-auto/resourceManager/ent/model"
+
+models:
+  ID:
+    model:
+      - github.com/99designs/gqlgen/graphql.IntID

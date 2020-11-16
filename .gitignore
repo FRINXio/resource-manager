@@ -1,0 +1,8 @@
+.history
+.vscode
+resourceManager
+entCmd
+.idea
+.wasmer
+wasm
+*.iml

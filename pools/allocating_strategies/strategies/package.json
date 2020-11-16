@@ -1,0 +1,40 @@
+{
+  "name": "strategies",
+  "version": "1.0.0",
+  "license": "BSD-3-Clause",
+  "description": "",
+  "scripts": {
+    "test": "jest --reporters=jest-silent-reporter",
+    "generate": "./node_modules/.bin/rollup -c -i ",
+    "generate:all": "npm-run-all --sequential ipv4-prefix ipv4 ipv6-prefix ipv6 random_S_int32 rd vlan-range vlan replace",
+    "replace": "./node_modules/.bin/replace-in-file --configFile=./replace.config.js",
+    "ipv4-prefix": "yarn generate src/ipv4_prefix_strategy.js",
+    "ipv4": "yarn generate src/ipv4_strategy.js",
+    "ipv6-prefix": "yarn generate src/ipv6_prefix_strategy.js",
+    "ipv6": "yarn generate src/ipv6_strategy.js",
+    "random_S_int32": "yarn generate src/random_s_int32_strategy.js",
+    "rd": "yarn generate src/route_distinguisher_strategy.js",
+    "vlan-range": "yarn generate src/vlan_range_strategy.js",
+    "vlan": "yarn generate src/vlan_strategy.js"
+  },
+  "dependencies": {
+    "@babel/core": "^7.10.2",
+    "@babel/plugin-proposal-class-properties": "^7.10.1",
+    "@babel/plugin-proposal-nullish-coalescing-operator": "^7.10.4",
+    "@babel/plugin-proposal-optional-chaining": "^7.10.4",
+    "@babel/plugin-transform-runtime": "^7.9.0",
+    "@babel/preset-env": "^7.10.2",
+    "@babel/preset-flow": "^7.0.0",
+    "@babel/register": "^7.10.1",
+    "@babel/runtime": "^7.3.4",
+    "dotenv": "^8.2.0",
+    "replace-in-file": "^6.1.0"
+  },
+  "devDependencies": {
+    "jest": "^26.4.2",
+    "jest-silent-reporter": "^0.2.1",
+    "nodemon": "^2.0.4",
+    "npm-run-all": "^4.1.5",
+    "rollup": "^2.32.0"
+  }
+}
