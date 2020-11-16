@@ -1,0 +1,771 @@
+{
+	"info": {
+		"_postman_id": "d3f315ab-0fc5-4e12-b5e1-8b892a67d894",
+		"name": "RM: VRF",
+		"schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+	},
+	"item": [
+		{
+			"name": "create  /vrf [ipv4_prefix] pool",
+			"item": [
+				{
+					"name": "Query IPv4 Prefix ResourceType",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"id": "3c7efb6c-e02d-473e-b313-57bcd6d47583",
+								"exec": [
+									"console.log(pm.response.json().data.QueryResourceTypes[0].id)",
+									"pm.globals.set(\"ipv4_prefix_rt_id\", pm.response.json().data.QueryResourceTypes[0].id);",
+									"",
+									"console.log(pm.response.json().data.QueryAllocationStrategies[0].id)",
+									"pm.globals.set(\"ipv4_prefix_strat_id\", pm.response.json().data.QueryAllocationStrategies[0].id);"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [],
+						"body": {
+							"mode": "graphql",
+							"graphql": {
+								"query": "query QueryRT($resource: String) {\n    QueryResourceTypes(byName: $resource) {\n        id        \n    }\n    QueryAllocationStrategies(byName: $resource) {\n        id\n    }\n}",
+								"variables": "{\n    \"resource\": \"{{ipv4_prefix_rt_name}}\"\n}"
+							}
+						},
+						"url": {
+							"raw": "http://{{host}}:{{port}}/query",
+							"protocol": "http",
+							"host": [
+								"{{host}}"
+							],
+							"port": "{{port}}",
+							"path": [
+								"query"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Create root VRF ipv4 pool",
+					"event": [
+						{
+							"listen": "prerequest",
+							"script": {
+								"id": "cd1058d2-0967-4078-a06a-78c59935bd6e",
+								"exec": [
+									""
+								],
+								"type": "text/javascript"
+							}
+						},
+						{
+							"listen": "test",
+							"script": {
+								"id": "75dc177c-59b0-40f4-88a5-190e8c809816",
+								"exec": [
+									"console.log(pm.response.json().data.CreateAllocatingPool.pool.id)",
+									"pm.globals.set(\"vrf_root_pool_id\", pm.response.json().data.CreateAllocatingPool.pool.id);"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [],
+						"body": {
+							"mode": "graphql",
+							"graphql": {
+								"query": "mutation CreatePEVrfPool(\n    $pool_name: String!,\n    $ipv4_prefix_rt_id: ID!,\n    $ipv4_prefix_strat_id: ID!,\n    $address: String!,\n    $prefix: Int!,\n    $vrf: String!) {\n    CreateAllocatingPool(\n        input: {\n            resourceTypeId: $ipv4_prefix_rt_id,\n            poolName: $pool_name,\n            allocationStrategyId: $ipv4_prefix_strat_id,\n            poolDealocationSafetyPeriod: 120,\n            poolPropertyTypes: {\n                address: \"string\",\n                prefix: \"int\"\n            },\n            poolProperties: {\n                address: $address,\n                prefix: $prefix\n            },\n            tags: [$vrf],\n        }\n    ) {\n        pool { id }\n    }\n}\n",
+								"variables": "{\n    \"pool_name\": \"{{vrf_name}}\",\n    \"address\": \"10.0.0.0\",\n    \"prefix\": 16,\n    \"ipv4_prefix_rt_id\": \"{{ipv4_prefix_rt_id}}\",\n    \"ipv4_prefix_strat_id\": \"{{ipv4_prefix_strat_id}}\",\n    \"vrf\": \"{{vrf_name}}\"\n}"
+							}
+						},
+						"url": {
+							"raw": "http://{{host}}:{{port}}/query",
+							"protocol": "http",
+							"host": [
+								"{{host}}"
+							],
+							"port": "{{port}}",
+							"path": [
+								"query"
+							]
+						}
+					},
+					"response": []
+				}
+			],
+			"protocolProfileBehavior": {}
+		},
+		{
+			"name": "create /vrf/pe [ipv4_prefix] pool",
+			"item": [
+				{
+					"name": "Query IPv4 Prefix ResourceType",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"id": "e0571adf-a7b6-4dd2-a9df-818d72a30651",
+								"exec": [
+									"console.log(pm.response.json().data.QueryResourceTypes[0].id)",
+									"pm.globals.set(\"ipv4_prefix_rt_id\", pm.response.json().data.QueryResourceTypes[0].id);",
+									"",
+									"console.log(pm.response.json().data.QueryAllocationStrategies[0].id)",
+									"pm.globals.set(\"ipv4_prefix_strat_id\", pm.response.json().data.QueryAllocationStrategies[0].id);"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [],
+						"body": {
+							"mode": "graphql",
+							"graphql": {
+								"query": "query QueryRT($resource: String) {\n    QueryResourceTypes(byName: $resource) {\n        id        \n    }\n    QueryAllocationStrategies(byName: $resource) {\n        id\n    }\n}",
+								"variables": "{\n    \"resource\": \"{{ipv4_prefix_rt_name}}\"\n}"
+							}
+						},
+						"url": {
+							"raw": "http://{{host}}:{{port}}/query",
+							"protocol": "http",
+							"host": [
+								"{{host}}"
+							],
+							"port": "{{port}}",
+							"path": [
+								"query"
+							]
+						},
+						"description": "Find proper IDs for the type of resource used : ipv4_prefix"
+					},
+					"response": []
+				},
+				{
+					"name": "Find root VRF pool by tag",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"id": "1c0b27a5-86e9-4a11-a788-dbd15fc1d043",
+								"exec": [
+									"console.log(pm.response.json().data.QueryRootResourcePools[0].id)",
+									"pm.globals.set(\"vrf_root_pool_id\", pm.response.json().data.QueryRootResourcePools[0].id);"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [],
+						"body": {
+							"mode": "graphql",
+							"graphql": {
+								"query": "query FindRootPoolForVrf($vrf: String!, $ipv4_prefix_rt_id: ID!) {\n    QueryRootResourcePools(\n        resourceTypeId: $ipv4_prefix_rt_id,\n        tags: { matchesAny: [{matchesAll: [$vrf]}]}\n        ) {\n        id\n    }\n}",
+								"variables": "{\n    \"vrf\": \"{{vrf_name}}\",\n    \"ipv4_prefix_rt_id\": \"{{ipv4_prefix_rt_id}}\"\n}"
+							}
+						},
+						"url": {
+							"raw": "http://{{host}}:{{port}}/query",
+							"protocol": "http",
+							"host": [
+								"{{host}}"
+							],
+							"port": "{{port}}",
+							"path": [
+								"query"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Claim sub-prefix for PE",
+					"event": [
+						{
+							"listen": "prerequest",
+							"script": {
+								"id": "f13d928b-1a6e-4283-b8eb-271d88dda5d2",
+								"exec": [
+									""
+								],
+								"type": "text/javascript"
+							}
+						},
+						{
+							"listen": "test",
+							"script": {
+								"id": "7026a700-8476-4287-bb88-def4483909c8",
+								"exec": [
+									"console.log(pm.response.json().data.ClaimResource.Properties.address)",
+									"pm.globals.set(\"pe_subnet_address\", pm.response.json().data.ClaimResource.Properties.address);",
+									"",
+									"console.log(pm.response.json().data.ClaimResource.Properties.prefix)",
+									"pm.globals.set(\"pe_subnet_prefix\", pm.response.json().data.ClaimResource.Properties.prefix);",
+									"",
+									"console.log(pm.response.json().data.ClaimResource.id)",
+									"pm.globals.set(\"pe_subnet_id\", pm.response.json().data.ClaimResource.id);"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [],
+						"body": {
+							"mode": "graphql",
+							"graphql": {
+								"query": "mutation ClaimResource($root_pool_id: ID!, $pe_name: String!, $prefix_size: Int!) {\n    ClaimResource(\n        poolId: $root_pool_id,\n        description: $pe_name,\n        userInput: { desiredSize: $prefix_size })\n    {\n        id\n        Properties\n    }\n}",
+								"variables": "{\n    \"root_pool_id\": {{vrf_root_pool_id}},\n    \"pe_name\": \"{{pe_name}}\",\n    \"prefix_size\": 256\n}"
+							}
+						},
+						"url": {
+							"raw": "http://{{host}}:{{port}}/query",
+							"protocol": "http",
+							"host": [
+								"{{host}}"
+							],
+							"port": "{{port}}",
+							"path": [
+								"query"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Create nested PE ipv4 preifx pool",
+					"event": [
+						{
+							"listen": "prerequest",
+							"script": {
+								"id": "875459c5-38d0-43c4-8266-cade1a9c1bed",
+								"exec": [
+									""
+								],
+								"type": "text/javascript"
+							}
+						},
+						{
+							"listen": "test",
+							"script": {
+								"id": "89f00082-e5b5-4b8a-a198-e645aa21a4f5",
+								"exec": [
+									"console.log(pm.response.json().data.CreateNestedAllocatingPool.pool.id)",
+									"pm.globals.set(\"vrf_pe_pool_id\", pm.response.json().data.CreateNestedAllocatingPool.pool.id);"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [],
+						"body": {
+							"mode": "graphql",
+							"graphql": {
+								"query": "mutation CreatePEVrfPool(\n    $pool_name: String!,\n    $ipv4_prefix_rt_id: ID!,\n    $ipv4_prefix_strat_id: ID!,\n    $subnet_id: ID!,\n    $vrf: String!,\n    $pe: String!) {\n    CreateNestedAllocatingPool(\n        input: {\n            resourceTypeId: $ipv4_prefix_rt_id,\n            poolName: $pool_name,\n            allocationStrategyId: $ipv4_prefix_strat_id,\n            poolDealocationSafetyPeriod: 120,\n            parentResourceId: $subnet_id,\n            tags: [$vrf, $pe],\n        }\n    ) {\n        pool { id }\n    }\n}\n",
+								"variables": "{\n    \"pool_name\": \"{{vrf_name}}/{{pe_name}}\",\n    \"vrf\": \"{{vrf_name}}\",\n    \"pe\": \"{{pe_name}}\",\n    \"subnet_id\": {{pe_subnet_id}},\n    \"ipv4_prefix_rt_id\": \"{{ipv4_prefix_rt_id}}\",\n    \"ipv4_prefix_strat_id\": \"{{ipv4_prefix_strat_id}}\"\n}"
+							}
+						},
+						"url": {
+							"raw": "http://{{host}}:{{port}}/query",
+							"protocol": "http",
+							"host": [
+								"{{host}}"
+							],
+							"port": "{{port}}",
+							"path": [
+								"query"
+							]
+						}
+					},
+					"response": []
+				}
+			],
+			"protocolProfileBehavior": {}
+		},
+		{
+			"name": "create /vrf/pe/interface [ipv4] pool",
+			"item": [
+				{
+					"name": "Query IPv4 ResourceType",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"id": "acf72949-4976-4ecc-8a9a-44aaecffff88",
+								"exec": [
+									"console.log(pm.response.json().data.QueryResourceTypes[0].id)",
+									"pm.globals.set(\"ipv4_rt_id\", pm.response.json().data.QueryResourceTypes[0].id);",
+									"",
+									"console.log(pm.response.json().data.QueryAllocationStrategies[0].id)",
+									"pm.globals.set(\"ipv4_strat_id\", pm.response.json().data.QueryAllocationStrategies[0].id);"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [],
+						"body": {
+							"mode": "graphql",
+							"graphql": {
+								"query": "query QueryRT($resource: String) {\n    QueryResourceTypes(byName: $resource) {\n        id        \n    }\n    QueryAllocationStrategies(byName: $resource) {\n        id\n    }\n}",
+								"variables": "{\n    \"resource\": \"{{ipv4_rt_name}}\"\n}"
+							}
+						},
+						"url": {
+							"raw": "http://{{host}}:{{port}}/query",
+							"protocol": "http",
+							"host": [
+								"{{host}}"
+							],
+							"port": "{{port}}",
+							"path": [
+								"query"
+							]
+						},
+						"description": "Find proper IDs for the type of resource used : ipv4_prefix"
+					},
+					"response": []
+				},
+				{
+					"name": "Find PE pool by tag",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"id": "1020a608-cd8b-4956-8945-ac30eb72847a",
+								"exec": [
+									"console.log(pm.response.json().data.QueryResourcePools[0].id)",
+									"pm.globals.set(\"vrf_pe_pool_id\", pm.response.json().data.QueryResourcePools[0].id);"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [],
+						"body": {
+							"mode": "graphql",
+							"graphql": {
+								"query": "query FindPoolForPE($vrf: String!, $pe: String!, $ipv4_prefix_rt_id: ID!) {\n    QueryResourcePools(\n        tags: { matchesAny: [\n            { matchesAll: [$vrf, $pe] }\n            ]\n        },\n        resourceTypeId: $ipv4_prefix_rt_id)\n    {\n        id\n    }\n}",
+								"variables": "{\n    \"vrf\": \"{{vrf_name}}\",\n    \"pe\": \"{{pe_name}}\",\n    \"ipv4_prefix_rt_id\": \"{{ipv4_prefix_rt_id}}\"\n}"
+							}
+						},
+						"url": {
+							"raw": "http://{{host}}:{{port}}/query",
+							"protocol": "http",
+							"host": [
+								"{{host}}"
+							],
+							"port": "{{port}}",
+							"path": [
+								"query"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Claim sub-prefix for Interface",
+					"event": [
+						{
+							"listen": "prerequest",
+							"script": {
+								"id": "ba892b5a-d434-4dcf-b09c-f4ddf7ea5547",
+								"exec": [
+									""
+								],
+								"type": "text/javascript"
+							}
+						},
+						{
+							"listen": "test",
+							"script": {
+								"id": "4fa9aee9-5d92-41b6-913c-fed198384442",
+								"exec": [
+									"console.log(pm.response.json().data.ClaimResource.Properties.address)",
+									"pm.globals.set(\"pe_interface_subnet_address\", pm.response.json().data.ClaimResource.Properties.address);",
+									"",
+									"console.log(pm.response.json().data.ClaimResource.Properties.prefix)",
+									"pm.globals.set(\"pe_interface_subnet_prefix\", pm.response.json().data.ClaimResource.Properties.prefix);",
+									"",
+									"console.log(pm.response.json().data.ClaimResource.id)",
+									"pm.globals.set(\"pe_interface_subnet_id\", pm.response.json().data.ClaimResource.id);"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [],
+						"body": {
+							"mode": "graphql",
+							"graphql": {
+								"query": "mutation ClaimResource($pe_pool_id: ID!, $pe_interface_name: String!, $prefix_size: Int!) {\n    ClaimResource(\n        poolId: $pe_pool_id,\n        description: $pe_interface_name,\n        userInput: { desiredSize: $prefix_size })\n    {\n        id\n        Properties\n    }\n}",
+								"variables": "{\n    \"pe_pool_id\": {{vrf_pe_pool_id}},\n    \"pe_interface_name\": \"{{pe_interface_name}}\",\n    \"prefix_size\": 4\n}"
+							}
+						},
+						"url": {
+							"raw": "http://{{host}}:{{port}}/query",
+							"protocol": "http",
+							"host": [
+								"{{host}}"
+							],
+							"port": "{{port}}",
+							"path": [
+								"query"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Create nested interface ipv4 pool",
+					"event": [
+						{
+							"listen": "prerequest",
+							"script": {
+								"id": "a3e76ecb-3f52-4388-bb83-13a86bc5bad3",
+								"exec": [
+									""
+								],
+								"type": "text/javascript"
+							}
+						},
+						{
+							"listen": "test",
+							"script": {
+								"id": "dccb0314-bb7d-478b-ac15-33f5e5531e91",
+								"exec": [
+									"console.log(pm.response.json().data.CreateNestedAllocatingPool.pool.id)",
+									"pm.globals.set(\"vrf_pe_pool_id\", pm.response.json().data.CreateNestedAllocatingPool.pool.id);"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [],
+						"body": {
+							"mode": "graphql",
+							"graphql": {
+								"query": "mutation CreatePEVrfPool(\n    $pool_name: String!,\n    $ipv4_rt_id: ID!,\n    $ipv4_strat_id: ID!,\n    $pe_interface_subnet_id: ID!,\n    $vrf: String!,\n    $pe: String!,\n    $interface: String!) {\n    CreateNestedAllocatingPool(\n        input: {\n            resourceTypeId: $ipv4_rt_id,\n            poolName: $pool_name,\n            allocationStrategyId: $ipv4_strat_id,\n            poolDealocationSafetyPeriod: 120,\n            parentResourceId: $pe_interface_subnet_id,\n            tags: [$vrf, $pe, $interface],\n        }\n    ) {\n        pool { id }\n    }\n}\n",
+								"variables": "{\n    \"pool_name\": \"{{vrf_name}}/{{pe_name}}/{{pe_interface_name}}\",\n    \"vrf\": \"{{vrf_name}}\",\n    \"pe\": \"{{pe_name}}\",\n    \"interface\": \"{{pe_interface_name}}\",\n    \"pe_interface_subnet_id\": {{pe_interface_subnet_id}},\n    \"ipv4_rt_id\": \"{{ipv4_rt_id}}\",\n    \"ipv4_strat_id\": \"{{ipv4_strat_id}}\"\n}"
+							}
+						},
+						"url": {
+							"raw": "http://{{host}}:{{port}}/query",
+							"protocol": "http",
+							"host": [
+								"{{host}}"
+							],
+							"port": "{{port}}",
+							"path": [
+								"query"
+							]
+						}
+					},
+					"response": []
+				}
+			],
+			"protocolProfileBehavior": {}
+		},
+		{
+			"name": "claim PE/CE ips",
+			"item": [
+				{
+					"name": "Find interface pool by tag",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"id": "d324dd70-40ca-4bd6-9441-2752774a7f91",
+								"exec": [
+									"console.log(pm.response.json().data.QueryResourcePools[0].id)",
+									"pm.globals.set(\"vrf_pe_interface_pool_id\", pm.response.json().data.QueryResourcePools[0].id);"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [],
+						"body": {
+							"mode": "graphql",
+							"graphql": {
+								"query": "query FindPoolForPE($vrf: String!, $pe: String!, $interface: String!, $ipv4_rt_id: ID!) {\n    QueryResourcePools(\n        tags: { matchesAny: [\n            { matchesAll: [$vrf, $pe, $interface] }\n            ]\n        },\n        resourceTypeId: $ipv4_rt_id)\n    {\n        id\n    }\n}",
+								"variables": "{\n    \"vrf\": \"{{vrf_name}}\",\n    \"pe\": \"{{pe_name}}\",\n    \"interface\": \"{{pe_interface_name}}\",\n    \"ipv4_rt_id\": \"{{ipv4_rt_id}}\"\n}"
+							}
+						},
+						"url": {
+							"raw": "http://{{host}}:{{port}}/query",
+							"protocol": "http",
+							"host": [
+								"{{host}}"
+							],
+							"port": "{{port}}",
+							"path": [
+								"query"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Claim PE address for Interface",
+					"event": [
+						{
+							"listen": "prerequest",
+							"script": {
+								"id": "c3a82ef8-db49-4ca3-aa63-83e03ddb1eb1",
+								"exec": [
+									""
+								],
+								"type": "text/javascript"
+							}
+						},
+						{
+							"listen": "test",
+							"script": {
+								"id": "a2aefee2-1fe5-4875-a08f-cba92c53e59f",
+								"exec": [
+									"console.log(pm.response.json().data.ClaimResource.Properties.address)",
+									"pm.globals.set(\"pe_interface_subnet_address\", pm.response.json().data.ClaimResource.Properties.address);",
+									"",
+									"console.log(pm.response.json().data.ClaimResource.Properties.prefix)",
+									"pm.globals.set(\"pe_interface_subnet_prefix\", pm.response.json().data.ClaimResource.Properties.prefix);",
+									"",
+									"console.log(pm.response.json().data.ClaimResource.id)",
+									"pm.globals.set(\"pe_interface_subnet_id\", pm.response.json().data.ClaimResource.id);"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [],
+						"body": {
+							"mode": "graphql",
+							"graphql": {
+								"query": "mutation ClaimResource($pe_interface_pool_id: ID!, $description: String!) {\n    ClaimResource(\n        poolId: $pe_interface_pool_id,\n        description: $description,\n        userInput: { subnet: true })\n    {\n        id\n        Properties\n    }\n}",
+								"variables": "{\n    \"pe_interface_pool_id\": {{vrf_pe_interface_pool_id}},\n    \"description\": \"PE_{{pe_interface_name}}\"\n}"
+							}
+						},
+						"url": {
+							"raw": "http://{{host}}:{{port}}/query",
+							"protocol": "http",
+							"host": [
+								"{{host}}"
+							],
+							"port": "{{port}}",
+							"path": [
+								"query"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Claim CE address for Interface",
+					"event": [
+						{
+							"listen": "prerequest",
+							"script": {
+								"id": "dcf0ade2-5d52-4d47-987f-6af48419f311",
+								"exec": [
+									""
+								],
+								"type": "text/javascript"
+							}
+						},
+						{
+							"listen": "test",
+							"script": {
+								"id": "df39cd38-db3b-4566-8a7e-fd9cc8276870",
+								"exec": [
+									"console.log(pm.response.json().data.ClaimResource.Properties.address)",
+									"pm.globals.set(\"pe_interface_subnet_address\", pm.response.json().data.ClaimResource.Properties.address);",
+									"",
+									"console.log(pm.response.json().data.ClaimResource.Properties.prefix)",
+									"pm.globals.set(\"pe_interface_subnet_prefix\", pm.response.json().data.ClaimResource.Properties.prefix);",
+									"",
+									"console.log(pm.response.json().data.ClaimResource.id)",
+									"pm.globals.set(\"pe_interface_subnet_id\", pm.response.json().data.ClaimResource.id);"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [],
+						"body": {
+							"mode": "graphql",
+							"graphql": {
+								"query": "mutation ClaimResource($pe_interface_pool_id: ID!, $description: String!) {\n    ClaimResource(\n        poolId: $pe_interface_pool_id,\n        description: $description,\n        userInput: { subnet: true })\n    {\n        id\n        Properties\n    }\n}",
+								"variables": "{\n    \"pe_interface_pool_id\": {{vrf_pe_interface_pool_id}},\n    \"description\": \"CE_{{pe_interface_name}}\"\n}"
+							}
+						},
+						"url": {
+							"raw": "http://{{host}}:{{port}}/query",
+							"protocol": "http",
+							"host": [
+								"{{host}}"
+							],
+							"port": "{{port}}",
+							"path": [
+								"query"
+							]
+						}
+					},
+					"response": []
+				}
+			],
+			"protocolProfileBehavior": {}
+		},
+		{
+			"name": "lookup",
+			"item": [
+				{
+					"name": "Read entire poll hierarchy for a VRF",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"id": "34edb090-966b-445c-92c5-f67c488133ad",
+								"exec": [
+									""
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [],
+						"body": {
+							"mode": "graphql",
+							"graphql": {
+								"query": "query FindRootPoolForVrf($vrf: String!, $ipv4_prefix_rt_id: ID!) {\n    QueryRootResourcePools(\n        tags: { matchesAny: [{matchesAll: [$vrf]}]}\n        resourceTypeId: $ipv4_prefix_rt_id) {\n\n        # This is root pool (VRF)\n        id\n        Name\n        Capacity {\n            freeCapacity\n            utilizedCapacity\n        }\n        Tags {\n            Tag\n        }\n        Resources {\n            Properties\n            Description\n            NestedPool {\n\n                # This is subpool (VRF -> PE)\n                id\n                Name\n                Capacity {\n                    freeCapacity\n                    utilizedCapacity\n                }\n                Tags {\n                    Tag\n                }\n                Resources {\n                    Properties\n                    Description\n                    NestedPool {\n\n                        # This is 3rd level pool (VRF -> PE -> Interface)\n                        id\n                        Name\n                        Capacity {\n                            freeCapacity\n                            utilizedCapacity\n                        }\n                        Tags {\n                            Tag\n                        }\n                        Resources {\n                            Properties\n                            Description\n                        }\n                    }\n                }\n            }\n        }\n    }\n}",
+								"variables": "{\n    \"vrf\": \"{{vrf_name}}\",\n    \"ipv4_prefix_rt_id\": \"{{ipv4_prefix_rt_id}}\"\n}"
+							}
+						},
+						"url": {
+							"raw": "http://{{host}}:{{port}}/query",
+							"protocol": "http",
+							"host": [
+								"{{host}}"
+							],
+							"port": "{{port}}",
+							"path": [
+								"query"
+							]
+						}
+					},
+					"response": []
+				}
+			],
+			"protocolProfileBehavior": {}
+		},
+		{
+			"name": "cleanup",
+			"item": [],
+			"protocolProfileBehavior": {}
+		}
+	],
+	"event": [
+		{
+			"listen": "prerequest",
+			"script": {
+				"id": "b7c13e72-8db5-4cee-8d22-dc541e7ecb72",
+				"type": "text/javascript",
+				"exec": [
+					"pm.request.headers.add({key: 'from', value: pm.variables.get(\"user\") })",
+					"pm.request.headers.add({key: 'x-tenant-id', value: pm.variables.get(\"tenant\") })",
+					"pm.request.headers.add({key: 'x-auth-user-roles', value: pm.variables.get(\"roles\") })"
+				]
+			}
+		},
+		{
+			"listen": "test",
+			"script": {
+				"id": "c40c6560-657d-4396-b1a2-b7ce1115c88f",
+				"type": "text/javascript",
+				"exec": [
+					""
+				]
+			}
+		}
+	],
+	"variable": [
+		{
+			"id": "613cc89b-4572-4f88-9748-29cd6a92dbf1",
+			"key": "host",
+			"value": "localhost"
+		},
+		{
+			"id": "ac5e134a-de3d-43ef-92b7-9f4b60d46a1d",
+			"key": "port",
+			"value": "8884"
+		},
+		{
+			"id": "6aaff663-df48-42ff-9cee-7f0eb3fea51f",
+			"key": "user",
+			"value": "fb-user"
+		},
+		{
+			"id": "72325c1f-c125-41d9-b2b1-a4f8ecd5f282",
+			"key": "tenant",
+			"value": "fb"
+		},
+		{
+			"id": "16991cfd-9bd3-40e7-b611-7949c8138b3a",
+			"key": "roles",
+			"value": "OWNER"
+		},
+		{
+			"id": "e7f300d5-2c54-40c0-b6cc-265d9428f6dc",
+			"key": "ipv4_prefix_rt_name",
+			"value": "ipv4_prefix"
+		},
+		{
+			"id": "e6622cbb-0802-4d3b-a4d6-23e246993107",
+			"key": "ipv4_rt_name",
+			"value": "ipv4"
+		},
+		{
+			"id": "22cc630b-1c4a-4580-b6c2-4ed6c5a2baac",
+			"key": "vrf_name",
+			"value": "vrf74"
+		},
+		{
+			"id": "fd2744bb-2400-432e-98d5-205769d3622a",
+			"key": "pe_name",
+			"value": "pe21"
+		},
+		{
+			"id": "bf0d745c-a36c-4028-a04c-581324dbfe9a",
+			"key": "pe_interface_name",
+			"value": "eth1"
+		}
+	],
+	"protocolProfileBehavior": {}
+}

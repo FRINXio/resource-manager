@@ -1,0 +1,24 @@
+version: "3.8"
+
+services:
+
+  postgresql:
+    ports:
+      - 5432:5432
+    networks:
+      - public
+
+  resource_manager_frontend:
+    volumes:
+      - ${RESOURCE_MANAGER_DIR}/resource-manager-frontend/src:/resource-manager-frontend/src
+      - ${RESOURCE_MANAGER_DIR}/resource-manager-frontend/.env:/resource-manager-frontend/.env
+    command: yarn run start:dev
+
+  resource_manager:
+    ports:
+      - 2345:2345 # Debug
+      - ${RM_API_PORT}:${RM_API_PORT} # HTTP API
+    environment:
+      - DEBUG=true
+    networks:
+      - public

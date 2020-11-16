@@ -1,0 +1,9 @@
+# Ignore all generated files by ent.go except those listed below
+
+**/*.go -diff -merge linguist-generated=true
+*.go -diff -merge linguist-generated=true
+
+schema/*.go diff=go text
+template/* diff text
+generate.go diff=go text
+.gitattributes diff text

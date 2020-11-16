@@ -1,0 +1,91 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ include "resource-manager.fullname" . }}
+  labels:
+    {{- include "resource-manager.labels" . | nindent 4 }}
+spec:
+{{- if not .Values.autoscaling.enabled }}
+  replicas: {{ .Values.replicaCount }}
+{{- end }}
+  selector:
+    matchLabels:
+      {{- include "resource-manager.selectorLabels" . | nindent 6 }}
+  template:
+    metadata:
+    {{- with .Values.podAnnotations }}
+      annotations:
+        {{- toYaml . | nindent 8 }}
+    {{- end }}
+      labels:
+        {{- include "resource-manager.selectorLabels" . | nindent 8 }}
+    spec:
+      {{- with .Values.imagePullSecrets }}
+      imagePullSecrets:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      serviceAccountName: {{ include "resource-manager.serviceAccountName" . }}
+      securityContext:
+        {{- toYaml .Values.podSecurityContext | nindent 8 }}
+      restartPolicy: Always
+      containers:
+        - name: {{ .Chart.Name }}
+          securityContext:
+            {{- toYaml .Values.securityContext | nindent 12 }}
+          image: "{{ .Values.REGISTRY }}/{{ .Values.image.name }}:{{ .Values.image.tag | default .Chart.AppVersion }}"
+          imagePullPolicy: {{ .Values.image.pullPolicy }}
+          ports:
+            - name: http
+              containerPort: {{ .Values.env.RM_API_PORT }}
+              protocol: TCP
+          livenessProbe:
+            httpGet:
+              path: healthz/liveness
+              port: http
+            initialDelaySeconds: 30
+          readinessProbe:
+            httpGet:
+              path: healthz/readiness
+              port: http
+            initialDelaySeconds: 30
+          resources:
+            {{- toYaml .Values.resources | nindent 12 }}
+          env:
+            - name: "PSQL_USERNAME"
+              valueFrom:
+                secretKeyRef:
+                  name: {{ .Values.env.PSQL_CREDENTIAL_SECRET }}
+                  key: username
+            - name: "PSQL_PASSWORD"
+              valueFrom:
+                secretKeyRef:
+                  name: {{ .Values.env.PSQL_CREDENTIAL_SECRET }}
+                  key: password
+            - name: "PSQL_HOSTNAME"
+              value: "{{ .Values.env.PSQL_HOSTNAME }}"
+            - name: "PSQL_PORT"
+              value: "{{ .Values.env.PSQL_PORT }}"
+            - name: "RM_DB_CONNECTION_STRING"
+              value: "{{ printf "postgres://$(PSQL_USERNAME):$(PSQL_PASSWORD)@$(PSQL_HOSTNAME):$(PSQL_PORT)/postgres" }}"
+            - name: "RM_API_PORT"
+              value: "{{ .Values.env.RM_API_PORT }}"
+            - name: "RM_ADMIN_ROLES"
+              value: {{ .Values.env.RM_ADMIN_ROLES }}
+            - name: "RM_ADMIN_GROUPS"
+              value: {{ .Values.env.RM_ADMIN_GROUPS }}
+            - name: "RM_LOG_PATH"
+              value: {{ .Values.env.RM_LOG_PATH }}
+            - name: "RM_LOG_LEVEL"
+              value: {{ .Values.env.RM_LOG_LEVEL }}
+      {{- with .Values.nodeSelector }}
+      nodeSelector:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with .Values.affinity }}
+      affinity:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with .Values.tolerations }}
+      tolerations:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}

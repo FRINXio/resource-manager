@@ -1,0 +1,6 @@
+# Ignore generated files by wire from diffs
+
+wire_gen.go -diff -merge linguist-generated=true
+*.go diff=go text
+
+.symphony/** -diff -merge linguist-generated=true

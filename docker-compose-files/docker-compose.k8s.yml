@@ -1,0 +1,17 @@
+# # Build:
+# docker-compose -f docker-compose.yml -f docker-compose.k8s.yml build
+# # Push (if using external image registry)
+# docker images | grep $REGISTRY | cut -f 1 -d ' ' | xargs -n 1 docker push
+# # Run:
+# helmfile -f helmfile-workflow_small.yaml -e local sync
+# # Add port forwarding
+# kubectl port-forward svc/keycloak-http 8080:80
+# kubectl port-forward svc/api-gateway 5000
+version: "3.8"
+
+services:
+  resource_manager:
+    image: $REGISTRY/resource_manager
+
+  resource_manager_frontend:
+    image: $REGISTRY/resource_manager_frontend

@@ -1,0 +1,51 @@
+version: "3.8"
+
+services:
+
+  # postgresql container matches the psql container in workflows/integration
+  postgresql:
+    image: postgres:13
+    container_name: postgresql
+    environment:
+      - POSTGRES_PASSWORD=${MYSQL_ROOT_PASSWORD}
+      - LC_COLLATE=en_US.UTF-8
+      - LC_CTYPE=en_US.UTF-8
+    restart: always
+    networks:
+      - private
+
+  resource_manager:
+    container_name: resource-manager
+    build:
+      context: ${RESOURCE_MANAGER_DIR}/backend
+      dockerfile: ${RESOURCE_MANAGER_DIR}/backend/Dockerfile
+      args:
+        - RM_LOG_FILE=${RM_LOG_PATH}
+    environment:
+      - RM_DB_CONNECTION_STRING=${RM_DB_CONNECTION_STRING}
+      - RM_API_PORT=${RM_API_PORT}
+      - RM_ADMIN_ROLES=${RM_ADMIN_ROLES}
+      - RM_ADMIN_GROUPS=${RM_ADMIN_GROUPS}
+      - RM_LOG_PATH=${RM_LOG_PATH}
+      - RM_LOG_LEVEL=${RM_LOG_LEVEL}
+    networks:
+      - private
+      - public
+    depends_on:
+      - postgresql
+    restart: on-failure
+
+  resource_manager_frontend:
+    container_name: resource-manager-frontend
+    command: yarn run start:dev
+    build:
+      context: ${RESOURCE_MANAGER_DIR}
+      dockerfile: ${RESOURCE_MANAGER_DIR}/resource-manager-frontend/Dockerfile
+    networks:
+      - private
+      - public
+
+networks:
+  public:
+  private:
+    internal: true
