@@ -2,7 +2,8 @@
 
 set -xe
 
-GITHUB_TOKEN=$(grep GITHUB_TOKEN .env | cut -d '=' -f2)
+GITHUB_TOKEN_FILE=$(grep GITHUB_TOKEN .env | cut -d '=' -f2)
+GITHUB_TOKEN=${GITHUB_TOKEN_EXTERNAL:-${GITHUB_TOKEN_FILE}}
 
 # symphony is a private repo, you need a github access token to access it
 export GOPRIVATE="github.com/facebookincubator"
