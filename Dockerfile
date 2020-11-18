@@ -1,4 +1,4 @@
-FROM integration_wasm-worker as wasmer
+FROM frinx/wasm-worker as wasmer
 #FROM facebookconnectivity-hub-docker.jfrog.io/wasm-worker as wasmer
 
 FROM node:12 as node
