@@ -5,3 +5,4 @@ entCmd
 .idea
 .wasmer
 wasm
+.env

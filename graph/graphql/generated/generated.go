@@ -1478,6 +1478,7 @@ type PoolCapacityPayload {
 }
 
 type Query {
+    # Deprecated, use capacity object inside the Resource pool
     QueryPoolCapacity(poolId: ID!): PoolCapacityPayload!
     QueryPoolTypes: [PoolType!]!
     QueryResource(input: Map!, poolId: ID!): Resource!

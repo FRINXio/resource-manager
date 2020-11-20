@@ -31,8 +31,8 @@ require (
 	github.com/niemeyer/pretty v0.0.0-20200227124842-a10e7caefd8e // indirect
 	github.com/pkg/errors v0.9.1
 	github.com/prometheus/client_golang v1.7.1 // indirect
-	github.com/sirupsen/logrus v1.6.0
 	github.com/shopspring/decimal v1.2.0 // indirect
+	github.com/sirupsen/logrus v1.6.0
 	github.com/stretchr/testify v1.6.1
 	github.com/ugorji/go/codec v1.1.7 // indirect
 	github.com/urfave/cli/v2 v2.2.0 // indirect
@@ -47,3 +47,5 @@ require (
 	golang.org/x/text v0.3.3 // indirect
 	gopkg.in/check.v1 v1.0.0-20200227125254-8fa46927fb4f // indirect
 )
+
+replace github.com/facebookincubator/symphony v0.0.0-20201029142040-3dd67baee7b6 => github.com/FRINXio/symphony v0.0.0-20201029142040-3dd67baee7b6
