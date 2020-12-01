@@ -6,3 +6,4 @@ entCmd
 .wasmer
 wasm
 .env
+rm.log

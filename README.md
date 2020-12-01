@@ -24,7 +24,7 @@ go test -v -short ./pools/...
 Requirements: wasmer, quickjs and python packages available.
 Example execution:
 ```sh
-export WASMER_BIN=~/.wasmer/wasmer
+export WASMER_BIN=~/.wasmer/bin/wasmer
 export WASMER_JS=~/.wasmer/globals/wapm_packages/_/quickjs@0.0.3/build/qjs.wasm
 export WASMER_PY=~/.wasmer/globals/wapm_packages/_/python@0.1.0/bin/python.wasm
 export WASMER_PY_LIB=~/.wasmer/globals/wapm_packages/_/python@0.1.0/lib/

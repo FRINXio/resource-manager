@@ -53,10 +53,12 @@ test('searching pools via tags', async () => {
     expect(matchedPools).toHaveLength(1);
 
     // test createPool and tag in a single operation
-    const taggedPoolId = await createVlanRootPool(["tag1", "tag2"]);
-    matchedPools = await searchPoolsByTags({matchesAny: [{matchesAll: ["tag1", "tag2"]}]});
-    expect(matchedPools[0].id).toBe(taggedPoolId);
+    const tag1 = getUniqueName("tag1")
+    const tag2 = getUniqueName("tag2")
+    const taggedPoolId = await createVlanRootPool([tag1, tag2]);
+    matchedPools = await searchPoolsByTags({matchesAny: [{matchesAll: [tag1, tag2]}]});
     expect(matchedPools).toHaveLength(1);
+    expect(matchedPools[0].id).toBe(taggedPoolId);
 
 
 });
