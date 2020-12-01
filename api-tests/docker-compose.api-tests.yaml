@@ -1,0 +1,24 @@
+version: "3.8"
+
+services:
+
+  postgresql:
+    container_name: postgresql
+    image: postgres:13
+    environment:
+      - POSTGRES_PASSWORD=postgres
+      - LC_COLLATE=en_US.UTF-8
+      - LC_CTYPE=en_US.UTF-8
+
+  resource_manager:
+    container_name: resource-manager
+    image: frinx/resource-manager
+    environment:
+      - RM_DB_CONNECTION_STRING=postgres://postgres:postgres@postgresql:5432/postgres?sslmode=disable
+      - RM_API_PORT=8884
+      - RM_ADMIN_ROLES=OWNER
+      - RM_ADMIN_GROUPS=NETWORK-ADMIN
+      - RM_LOG_PATH=/var/log/rm.log
+      - RM_LOG_LEVEL=info
+    depends_on:
+      - postgresql

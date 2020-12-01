@@ -19,32 +19,44 @@ env:
 jobs:
   unit-test:
     runs-on: ubuntu-latest
-
     steps:
       - uses: actions/checkout@v2
-
-      - name: Run tests
+      - name: Run unit tests
         run: |
           export GITHUB_TOKEN_EXTERNAL=${{ secrets.TOKEN }}
           ./unit-test.sh
-  push:
-    # Ensure test job passes before pushing image.
+
+  api-test:
+    # Ensure unit-test job passes before pushing image.
     needs: unit-test
-
     runs-on: ubuntu-latest
-    if: github.event_name == 'push'
-
     steps:
       - uses: actions/checkout@v2
         with:
           fetch-depth: 0
-
+      - uses: actions/setup-node@v2-beta
+        with:
+          node-version: 12
+      - run: npm install -g yarn
       - name: Build image
         run: docker build --build-arg GITHUB_TOKEN_EXTERNAL_DOCKERFILE=${{ secrets.TOKEN }} --build-arg RM_LOG_FILE=rm.log . --file Dockerfile --tag $IMAGE_NAME
+      - name: Run api-tests
+        run: api-tests/test.sh
 
+  push:
+    # Ensure unit-test job passes before pushing image.
+    # FIXME depend on integration-test
+    needs: unit-test
+    runs-on: ubuntu-latest
+    if: github.event_name == 'push'
+    steps:
+      - uses: actions/checkout@v2
+        with:
+          fetch-depth: 0
+      - name: Build image
+        run: docker build --build-arg GITHUB_TOKEN_EXTERNAL_DOCKERFILE=${{ secrets.TOKEN }} --build-arg RM_LOG_FILE=rm.log . --file Dockerfile --tag $IMAGE_NAME
       - name: Log into docker hub
         run: echo "${{ secrets.DOCKER_HUB_PASSWORD }}" | docker login -u ${{ secrets.DOCKER_HUB_USERNAME }} --password-stdin
-
       - name: Push image
         run: |
           IMAGE_ID=$IMAGE_NAME
