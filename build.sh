@@ -17,8 +17,4 @@ echo ""
 echo "------> Building"
 go build -o ./resourceManager
 
-echo ""
-echo "------> Testing"
-go test -v -short ./pools/...
-
 echo "All OK"
