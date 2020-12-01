@@ -26,6 +26,22 @@ jobs:
           export GITHUB_TOKEN_EXTERNAL=${{ secrets.TOKEN }}
           ./unit-test.sh
 
+  integration-test:
+    # Ensure unit-test job passes before pushing image.
+    needs: unit-test
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v2
+        with:
+          fetch-depth: 0
+      - uses: actions/setup-go@v2
+        with:
+          go-version: '1.14.6'
+      - name: Build image
+        run: docker build --build-arg GITHUB_TOKEN_EXTERNAL_DOCKERFILE=${{ secrets.TOKEN }} --build-arg RM_LOG_FILE=rm.log . --file Dockerfile --tag $IMAGE_NAME
+      - name: Run integration-test
+        run: ./integration-test.sh
+
   api-test:
     # Ensure unit-test job passes before pushing image.
     needs: unit-test
