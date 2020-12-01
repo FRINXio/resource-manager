@@ -17,7 +17,7 @@ Note: .graphqlconfig can be used to point graphql client tools to the right dire
 
 ### Unit tests
 ```sh
-go test -v -short ./pools/...
+./unit-test.sh
 ```
 
 ### Integration tests
@@ -65,15 +65,15 @@ Database schema is derived/generated from ent.go schema definition. Ent.go hides
 done by adding the `--transaction-isolation=SERIALIZABLE ` starting parameter setting the isolation level on all sessions
  from clients. The reason for this is the currently implemented resource claiming algorithm running in a transaction.
  The algorithm has these steps:
- 
- 1. Prepare all necessary data (pool, strategy etc.) and prerequisite checks to claim a particular resource 
+
+ 1. Prepare all necessary data (pool, strategy etc.) and prerequisite checks to claim a particular resource
  2. Call a JS or Python script to generate a new resource
  3. Update the database with this particular resource
- 
+
  The problem is if multiple clients claim the resource at the same time. This causes the same resources to be computed
- in step 2 and both clients update the database with the same resource (e.g. the same IP address). We need to isolate 
- transactions from each other (i.e. run them serially not in parallel because we might get the same resources otherwise) 
- thus increasing the isolation level.  
+ in step 2 and both clients update the database with the same resource (e.g. the same IP address). We need to isolate
+ transactions from each other (i.e. run them serially not in parallel because we might get the same resources otherwise)
+ thus increasing the isolation level.
 
 
 ### Model driven graphql server
