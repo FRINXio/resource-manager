@@ -7,4 +7,5 @@ docker run --rm -it \
     -e WASMER_JS=$WASMER_JS \
     -e WASMER_PY=$WASMER_PY \
     -e WASMER_PY_LIB=$WASMER_PY_LIB \
+    -e WASMER_MAX_TIMEOUT_MILLIS=15000 \
     frinx/resource-manager go test -run Integration ./pools/...
