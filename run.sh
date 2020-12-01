@@ -2,8 +2,10 @@
 
 set -x
 
-if [ $DEBUG = "true" ]
-then
+if [ $SKIP_BUILD = "true" ]; then
+  # noop
+  CMD="./resourceManager"
+elif [ $DEBUG = "true" ]; then
   echo "Running in DEBUG mode"
   go build -gcflags \"all=-N\" -o ./resourceManager
   CMD="dlv --continue --listen=:2345 --headless=true --api-version=2 --accept-multiclient exec ./resourceManager --"

@@ -32,5 +32,5 @@ RUN echo "${RM_LOG_FILE} { \n rotate 5 \n weekly \n copytruncate \n compress \n 
 ENV GITHUB_TOKEN_EXTERNAL=$GITHUB_TOKEN_EXTERNAL_DOCKERFILE
 RUN ./build.sh
 RUN go get github.com/go-delve/delve/cmd/dlv
-
+ENV SKIP_BUILD=true
 CMD ./run.sh

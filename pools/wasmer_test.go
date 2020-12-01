@@ -38,7 +38,7 @@ function invoke() {
 	now := time.Now()
 	currentResources := createCurrentResources(now)
 
-	actual, logString, err := wasmer.invokeJs(script, userInput, resourcePool, currentResources, nil, "script_fun()")
+	actual, logString, err := wasmer.invokeJs(script, userInput, resourcePool, currentResources, nil, "invoke()")
 	if err != nil {
 		t.Fatalf("Unable run - %s", err)
 	}
