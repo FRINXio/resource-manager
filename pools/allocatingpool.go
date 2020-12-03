@@ -214,7 +214,18 @@ func (pool AllocatingPool) Capacity() (float64, float64, error) {
 			"Unable to compute capacity pool #%d, allocation strategy \"%s\" failed", pool.ID, strat.Name)
 	}
 
-	return result["freeCapacity"].(float64), result["utilizedCapacity"].(float64), nil
+	var resultFreeCapacity float64 = 0
+	var resultUtilizedCapacity float64 = 0
+
+	if result["freeCapacity"] != nil {
+		resultFreeCapacity = result["freeCapacity"].(float64)
+	}
+
+	if result["utilizedCapacity"] != nil {
+		resultUtilizedCapacity = result["utilizedCapacity"].(float64)
+	}
+
+	return resultFreeCapacity, resultUtilizedCapacity, nil
 }
 
 // ClaimResource allocates the next available resource
