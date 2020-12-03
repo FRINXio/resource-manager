@@ -40,7 +40,6 @@ func Open(ctx context.Context, urlstr string) (*sql.DB, error) {
 func OpenURL(ctx context.Context, u *url.URL) (*sql.DB, error) {
 	db, err := defaultURLMux.OpenPostgresURL(ctx, u)
 	if db != nil {
-		db.SetConnMaxIdleTime(30 * time.Second)
 		db.SetConnMaxLifetime(5 * time.Minute)
 		db.SetMaxIdleConns(1)
 		db.SetMaxOpenConns(5)
