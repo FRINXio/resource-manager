@@ -38,7 +38,14 @@ func Open(ctx context.Context, urlstr string) (*sql.DB, error) {
 
 // OpenURL opens the database identified by the URL given.
 func OpenURL(ctx context.Context, u *url.URL) (*sql.DB, error) {
-	return defaultURLMux.OpenPostgresURL(ctx, u)
+	db, err := defaultURLMux.OpenPostgresURL(ctx, u)
+	if db != nil {
+		db.SetConnMaxIdleTime(30 * time.Second)
+		db.SetConnMaxLifetime(5 * time.Minute)
+		db.SetMaxIdleConns(1)
+		db.SetMaxOpenConns(5)
+	}
+	return db, err
 }
 
 // Provide is a wire provider that produces *sql.DB from url.
