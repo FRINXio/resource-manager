@@ -19,7 +19,8 @@ services:
       - RM_ADMIN_ROLES=OWNER
       - RM_ADMIN_GROUPS=NETWORK-ADMIN
       - RM_LOG_PATH=/var/log/rm.log
-      - RM_LOG_LEVEL=info
+      - RM_LOG_LEVEL=debug
+      - WASMER_MAX_TIMEOUT_MILLIS=10000
     depends_on:
       - postgresql
     ports:

@@ -12,6 +12,7 @@ test('create and call JS strategy', async () => {
 });
 
 test('create and call Py strategy', async () => {
+    jest.setTimeout(10000);
     let poolName = getUniqueName('testJSstrategy');
     let strategyId = await createAllocationStrategy(
         poolName,
