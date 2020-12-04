@@ -5,7 +5,7 @@ cd ${dirname}
 
 docker-compose -f docker-compose.api-tests.yaml up -d
 
-trap 'docker-compose -f docker-compose.api-tests.yaml down' err exit
+trap 'docker-compose -f docker-compose.api-tests.yaml logs resource-manager' err exit
 
 sleep 5
 cp .env-LOCAL-DEV-CONFIG .env
