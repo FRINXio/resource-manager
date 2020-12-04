@@ -10,7 +10,7 @@ services:
       - LC_COLLATE=en_US.UTF-8
       - LC_CTYPE=en_US.UTF-8
 
-  resource_manager:
+  resource-manager:
     container_name: resource-manager
     image: frinx/resource-manager
     environment:
@@ -22,3 +22,5 @@ services:
       - RM_LOG_LEVEL=info
     depends_on:
       - postgresql
+    ports:
+      - 8884:8884
