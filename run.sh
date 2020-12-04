@@ -2,17 +2,19 @@
 
 set -x
 
-if [ $SKIP_BUILD = "true" ]; then
-  # noop
-  CMD="./resourceManager"
-elif [ $DEBUG = "true" ]; then
+CMD="./resourceManager"
+if [ ${DEBUG} ]; then
   echo "Running in DEBUG mode"
   go build -gcflags \"all=-N\" -o ./resourceManager
   CMD="dlv --continue --listen=:2345 --headless=true --api-version=2 --accept-multiclient exec ./resourceManager --"
 else
   echo "Running in PROD mode, use DEBUG=true to start in debug mode"
-  go build -o ./resourceManager
-  CMD="./resourceManager"
+  if [ ${SKIP_BUILD} ]; then
+    # Do not run `go build` e.g. when starting the container
+    echo "Skipping build"
+  else
+    go build -o ./resourceManager
+  fi
 fi
 
 RM_DB_CONNECTION_STRING_DEFAULT="postgres://postgres:postgres@localhost:5432/postgres?sslmode=disable"
