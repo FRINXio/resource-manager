@@ -765,6 +765,43 @@ func (r *resourcePoolResolver) Resources(ctx context.Context, obj *ent.ResourceP
 	return resources, err
 }
 
+func (r *resourcePoolResolver) PoolProperties(ctx context.Context, obj *ent.ResourcePool) (map[string]interface{}, error) {
+	var (
+		props *ent.PoolProperties
+		err   error
+	)
+
+	props, err = obj.Edges.PoolPropertiesOrErr()
+
+	if err != nil && ent.IsNotLoaded(err) {
+
+		props, err = obj.
+			QueryPoolProperties().
+			WithProperties(func(query *ent.PropertyQuery) {
+				query.WithType()
+			}).First(ctx)
+
+		if ent.IsNotFound(err) {
+			return make(map[string]interface{}), nil
+		}
+		if err != nil {
+			log.Error(ctx, err, "Loading pool properties for pool ID %d failed", obj.ID)
+			return nil, err
+		}
+
+	} else if err != nil {
+		log.Error(ctx, err, "Loading pool properties for pool ID %d failed", obj.ID)
+		return nil, err
+	}
+
+	if props, err := p.PropertiesToMap(props.Edges.Properties); err != nil {
+		log.Error(ctx, err, "Unable to process properties for pool with ID %d", obj.ID)
+		return nil, gqlerror.Errorf("Unable to query properties: %v", err)
+	} else {
+		return props, nil
+	}
+}
+
 func (r *resourcePoolResolver) ParentResource(ctx context.Context, obj *ent.ResourcePool) (*ent.Resource, error) {
 	if es, err := obj.Edges.ParentResourceOrErr(); !ent.IsNotLoaded(err) {
 		log.Error(ctx, err, "Loading parent resource for pool ID %d failed", obj.ID)
