@@ -38,7 +38,7 @@ jobs:
         with:
           go-version: '1.14.6'
       - name: Build image
-        run: docker build --build-arg GITHUB_TOKEN_EXTERNAL_DOCKERFILE=${{ secrets.TOKEN }} --build-arg RM_LOG_FILE=rm.log . --file Dockerfile --tag $IMAGE_NAME
+        run: docker build --build-arg GITHUB_TOKEN_EXTERNAL_DOCKERFILE=${{ secrets.TOKEN }} . --file Dockerfile --tag $IMAGE_NAME
       - name: Run integration-test
         run: ./integration-test.sh
 
@@ -55,7 +55,7 @@ jobs:
           node-version: 12
       - run: npm install -g yarn
       - name: Build image
-        run: docker build --build-arg GITHUB_TOKEN_EXTERNAL_DOCKERFILE=${{ secrets.TOKEN }} --build-arg RM_LOG_FILE=rm.log . --file Dockerfile --tag $IMAGE_NAME
+        run: docker build --build-arg GITHUB_TOKEN_EXTERNAL_DOCKERFILE=${{ secrets.TOKEN }} . --file Dockerfile --tag $IMAGE_NAME
       - name: Run api-tests
         run: api-tests/test.sh
 
@@ -70,7 +70,7 @@ jobs:
         with:
           fetch-depth: 0
       - name: Build image
-        run: docker build --build-arg GITHUB_TOKEN_EXTERNAL_DOCKERFILE=${{ secrets.TOKEN }} --build-arg RM_LOG_FILE=rm.log . --file Dockerfile --tag $IMAGE_NAME
+        run: docker build --build-arg GITHUB_TOKEN_EXTERNAL_DOCKERFILE=${{ secrets.TOKEN }} . --file Dockerfile --tag $IMAGE_NAME
       - name: Log into docker hub
         run: echo "${{ secrets.DOCKER_HUB_PASSWORD }}" | docker login -u ${{ secrets.DOCKER_HUB_USERNAME }} --password-stdin
       - name: Push image
