@@ -4,12 +4,13 @@ FROM frinx/wasm-worker as wasmer
 FROM node:12 as node
 WORKDIR /resMgr
 # Copy RM
-COPY . .
+COPY pools/allocating_strategies/strategies pools/allocating_strategies/strategies
+COPY build_strategies.sh build_strategies.sh
 # Build allocating strats
 RUN ./build_strategies.sh
 
 FROM golang:1.14.6-stretch
-ARG RM_LOG_FILE
+ARG RM_LOG_FILE=rm.log
 ARG GITHUB_TOKEN_EXTERNAL_DOCKERFILE
 
 WORKDIR /resMgr
