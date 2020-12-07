@@ -556,6 +556,7 @@ export async function createAllocationPool(poolName, resourceTypeId, strategyId,
                 pool
                     {
                         id
+                        PoolProperties
                     }
             }
             }
@@ -570,7 +571,7 @@ export async function createAllocationPool(poolName, resourceTypeId, strategyId,
 
         }
     })
-    .then(result => result.data.CreateAllocatingPool.pool.id)
+    .then(result => result.data.CreateAllocatingPool.pool)
     .catch(error => console.log(error));
 }
 

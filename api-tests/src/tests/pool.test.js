@@ -180,7 +180,7 @@ test('capacity for random pool', async (t) => {
 });
 
 test('capacity for allocating ipv4-prefix pool', async (t) => {
-    const poolId = await createIpv4PrefixRootPool();
+    const poolId = (await createIpv4PrefixRootPool()).id;
 
     await claimResource(poolId, {desiredSize: 2});
     await claimResource(poolId, {desiredSize: 2});

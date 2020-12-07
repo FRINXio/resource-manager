@@ -17,36 +17,42 @@ export async function createRandomIntRootPool() {
     let resourceTypeId = await findResourceTypeId('random_signed_int32');
     let strategyId = await findAllocationStrategyId('random_signed_int32');
     let poolName = getUniqueName('root-random-int');
-    return await createAllocationPool(
+    const pool = await createAllocationPool(
         poolName,
         resourceTypeId,
         strategyId,
         { from: "int", to: "int"},
         {from: '1', to: 999},)
+
+    return pool.id;
 }
 
 export async function createIpv4RootPool(address, prefix) {
     let resourceTypeId = await findResourceTypeId('ipv4');
     let strategyId = await findAllocationStrategyId('ipv4');
     let poolName = getUniqueName('root-ipv4');
-    return await createAllocationPool(
+    const pool = await createAllocationPool(
         poolName,
         resourceTypeId,
         strategyId,
         { address: "string", prefix: "int"},
         {address: address, prefix: prefix},)
+
+    return pool.id
 }
 
 export async function createRdRootPool(){
     let resourceTypeId = await findResourceTypeId('route_distinguisher');
     let strategyId = await findAllocationStrategyId('route_distinguisher');
     let poolName = getUniqueName('root-rd');
-    return await createAllocationPool(
+    const pool = await createAllocationPool(
         poolName,
         resourceTypeId,
         strategyId,
         { rd: "int"},
         {rd: 0},)
+
+    return pool.id;
 }
 
 
@@ -54,24 +60,28 @@ export async function createIpv6RootPool(){
     let resourceTypeId = await findResourceTypeId('ipv6');
     let strategyId = await findAllocationStrategyId('ipv6');
     let poolName = getUniqueName('root-ipv6-range');
-    return await createAllocationPool(
+    const pool = await createAllocationPool(
         poolName,
         resourceTypeId,
         strategyId,
         { address: "string", prefix: "int"},
         {address: "dead::", prefix: 16},)
+
+    return pool.id;
 }
 
 export async function createIpv6PrefixRootPool(){
     let resourceTypeId = await findResourceTypeId('ipv6_prefix');
     let strategyId = await findAllocationStrategyId('ipv6_prefix');
     let poolName = getUniqueName('root-ipv6-range');
-    return await createAllocationPool(
+    const pool = await createAllocationPool(
         poolName,
         resourceTypeId,
         strategyId,
         { address: "string", prefix: "int"},
         {address: "dead::", prefix: 120},)
+
+    return pool.id;
 }
 
 
@@ -85,7 +95,7 @@ export async function createIpv6NestedPool(parentResourceId){
         parentResourceId);
 }
 
-export async function createIpv4PrefixRootPool(){
+export async function createIpv4PrefixRootPool() {
     let resourceTypeId = await findResourceTypeId('ipv4_prefix');
     let strategyId = await findAllocationStrategyId('ipv4_prefix');
     return await createAllocationPool(
@@ -133,24 +143,28 @@ export async function createSingletonIpv4PrefixNestedPool(parentResourceId){
 export async function createVlanRangeRootPool(){
     let resourceTypeId = await findResourceTypeId('vlan_range');
     let strategyId = await findAllocationStrategyId('vlan_range');
-    return await createAllocationPool(
+    const pool = await createAllocationPool(
         getUniqueName('root-vlan-range'),
         resourceTypeId,
         strategyId,
         { from: "int", to: "int"},
         {from: 0, to: 4095},)
+
+    return pool.id;
 }
 
 export async function createVlanRootPool(tags = null){
     let resourceTypeId = await findResourceTypeId('vlan');
     let strategyId = await findAllocationStrategyId('vlan');
-    return await createAllocationPool(
+    const pool = await createAllocationPool(
         getUniqueName('root-vlan'),
         resourceTypeId,
         strategyId,
         { from: "int", to: "int"},
         {from: 0, to: 4095},
         tags)
+
+    return pool.id;
 }
 
 export async function createVlanNestedPool(parentResourceId, tags = null){
@@ -169,7 +183,7 @@ export function getUniqueName(prefix){
 }
 
 export async function prepareIpv4Pool() {
-    let rootPoolId = await createIpv4PrefixRootPool();
+    let rootPoolId = (await createIpv4PrefixRootPool()).id;
     let resource12Id = (await claimResource(rootPoolId, { desiredSize: 4194304 })).id;
     return await createIpv4NestedPool(resource12Id);
 }
