@@ -3,7 +3,7 @@
 import {
     getAllTags, findResourceTypeId, createNestedSingletonPool,
     findAllocationStrategyId, createAllocationPool, createNestedAllocationPool, getResourcesForPool
-} from "./graphql-queries";
+} from "./graphql-queries.js";
 import _ from "underscore";
 
 export async function getTag(tagName) {

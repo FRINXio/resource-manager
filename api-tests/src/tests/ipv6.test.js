@@ -1,11 +1,14 @@
-import { claimResource, queryResource } from '../graphql-queries';
-import { createIpv6NestedPool, createIpv6PrefixRootPool, get2ChildrenIds } from '../test-helpers';
+import { claimResource, queryResource } from '../graphql-queries.js';
+import { createIpv6NestedPool, createIpv6PrefixRootPool, get2ChildrenIds } from '../test-helpers.js';
+import tap from 'tap';
+const test = tap.test;
 
-test('create ipv6 root pool', async () => {
-    expect(await createIpv6PrefixRootPool()).toBeTruthy();
+test('create ipv6 root pool', async (t) => {
+    t.ok(await createIpv6PrefixRootPool());
+    t.end();
 });
 
-test('create ipv6 hierarchy', async () => {
+test('create ipv6 hierarchy', async (t) => {
     let rootPoolId = await createIpv6PrefixRootPool();
     let firstResource = await claimResource(rootPoolId, {desiredSize: 128}, "first");
     let secondResource = await claimResource(rootPoolId, {desiredSize: 128});
@@ -13,17 +16,16 @@ test('create ipv6 hierarchy', async () => {
     let nestedPool2Id = await createIpv6NestedPool(secondResource.id);
 
     const children = await get2ChildrenIds(rootPoolId);
-    expect(children).toHaveLength(2);
-    expect(children).toContain(nestedPool1Id);
-    expect(children).toContain(nestedPool2Id);
+    t.deepEqual(children, [nestedPool1Id, nestedPool2Id]);
 
     let resource1 = await claimResource(nestedPool1Id, {});
     let resource2 = await claimResource(nestedPool2Id, {});
 
-    expect(resource1.Properties.address).toBe('dead::');
-    expect(resource2.Properties.address).toBe('dead::80');
+    t.equal(resource1.Properties.address, 'dead::');
+    t.equal(resource2.Properties.address, 'dead::80');
 
     // assert resource query
-    expect((await queryResource(rootPoolId, firstResource.Properties)).Description).toBe("first")
-    expect((await queryResource(rootPoolId, secondResource.Properties)).Description).toBeNull()
+    t.equal((await queryResource(rootPoolId, firstResource.Properties)).Description, "first");
+    t.equal((await queryResource(rootPoolId, secondResource.Properties)).Description, null);
+    t.end();
 });

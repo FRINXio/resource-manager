@@ -1,9 +1,12 @@
-import { claimResource, getResourcePool, getPoolHierarchyPath } from '../graphql-queries';
+import { claimResource, getResourcePool, getPoolHierarchyPath } from '../graphql-queries.js';
 import {createIpv4PrefixRootPool, createIpv4PrefixNestedPool, createSingletonIpv4PrefixNestedPool,
-createIpv4NestedPool, get2ChildrenIds} from '../test-helpers';
+createIpv4NestedPool, get2ChildrenIds} from '../test-helpers.js';
+import tap from 'tap';
+const test = tap.test;
 
-test('create ipv4 prefix root pool', async () => {
-    expect(await createIpv4PrefixRootPool()).toBeTruthy();
+test('create ipv4 prefix root pool', async (t) => {
+    t.ok(await createIpv4PrefixRootPool());
+    t.end();
 });
 
 //# Test pool hierarchies
@@ -44,7 +47,7 @@ test('create ipv4 prefix root pool', async () => {
 //#|         # Unused          |     |                           |       |                           |           |                           |
 //#+---------------------------+     +---------------------------+       +---------------------------+           +---------------------------+
 
-test('create ipv4 hierarchy', async () => {
+test('create ipv4 hierarchy', async (t) => {
     let rootPoolId = await createIpv4PrefixRootPool();
 
     let firstParentResourceId = (await claimResource(rootPoolId, {desiredSize: 8388608})).id;
@@ -55,9 +58,7 @@ test('create ipv4 hierarchy', async () => {
 
     const poolChildren = await get2ChildrenIds(rootPoolId);
 
-    expect(poolChildren).toHaveLength(2);
-    expect(poolChildren).toContain(pool21Id);
-    expect(poolChildren).toContain(pool22Id);
+    t.deepEqual(poolChildren, [pool21Id, pool22Id]);
 
     let resource11Id = (await claimResource(pool21Id, {desiredSize: 4194304})).id;
     let resource12Id = (await claimResource(pool21Id, {desiredSize: 4194304})).id;
@@ -70,39 +71,34 @@ test('create ipv4 hierarchy', async () => {
     const pool34Id = await createIpv4NestedPool(resource22Id);
 
     const pool21Children = await get2ChildrenIds(pool21Id);
-    expect(pool21Children).toHaveLength(2);
-    expect(pool21Children).toContain(pool31Id);
-    expect(pool21Children).toContain(pool32Id);
+    t.deepEqual(pool21Children, [pool31Id, pool32Id]);
 
     const pool22Children = await get2ChildrenIds(pool22Id);
-    expect(pool22Children).toHaveLength(2);
-    expect(pool22Children).toContain(pool33Id);
-    expect(pool22Children).toContain(pool34Id);
+    t.deepEqual(pool22Children, [pool33Id, pool34Id]);
 
     let resource31 = await claimResource(pool31Id, {});
     let resource32 = await claimResource(pool32Id, {});
     let resource33 = await claimResource(pool33Id, {});
     let resource34 = await claimResource(pool34Id, {});
 
-    expect(resource31.Properties.address).toBe('10.10.0.0');
-    expect(resource32.Properties.address).toBe('10.64.0.0');
-    expect(resource33.Properties.address).toBe('10.128.0.0');
-    expect(resource34.Properties.address).toBe('10.192.0.0');
+    t.equal(resource31.Properties.address, '10.10.0.0');
+    t.equal(resource32.Properties.address, '10.64.0.0');
+    t.equal(resource33.Properties.address, '10.128.0.0');
+    t.equal(resource34.Properties.address, '10.192.0.0');
 
     // assert hierarchy queries
-    const pool34Queried = await getResourcePool(pool34Id)
-    expect(pool34Queried.ParentResource.id).toBe(resource22Id)
-    expect(pool34Queried.ParentResource.ParentPool.id).toBe(pool22Id)
+    const pool34Queried = await getResourcePool(pool34Id);
+    t.equal(pool34Queried.ParentResource.id, resource22Id);
+    t.equal(pool34Queried.ParentResource.ParentPool.id, pool22Id);
 
-    const hierarchyPath34 = await getPoolHierarchyPath(pool34Id)
-    expect(hierarchyPath34.length).toBe(2)
-    expect(hierarchyPath34[0].id).toBe(rootPoolId)
-    expect(hierarchyPath34[1].id).toBe(pool22Id)
+    const hierarchyPath34 = await getPoolHierarchyPath(pool34Id);
+    t.deepEqual(hierarchyPath34.map(it => it.id), [rootPoolId, pool22Id]);
 
-    const hierarchyPathRoot = await getPoolHierarchyPath(rootPoolId)
-    expect(hierarchyPathRoot.length).toBe(0)
+    const hierarchyPathRoot = await getPoolHierarchyPath(rootPoolId);
+    t.equal(hierarchyPathRoot.length, 0);
 
-    const hierarchyPath21 = await getPoolHierarchyPath(pool21Id)
-    expect(hierarchyPath21.length).toBe(1)
-    expect(hierarchyPath21[0].id).toBe(rootPoolId)
+    const hierarchyPath21 = await getPoolHierarchyPath(pool21Id);
+    t.deepEqual(hierarchyPath21.map(it => it.id), [rootPoolId]);
+
+    t.end();
 });

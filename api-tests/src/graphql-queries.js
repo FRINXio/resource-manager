@@ -1,6 +1,6 @@
 // Contains graphQL queries and mutations
 
-import {client} from "./client";
+import {client} from "./client.js";
 import gql from 'graphql-tag';
 import _ from 'underscore';
 
@@ -10,7 +10,7 @@ export async function getAllTags(){
         query: gql`
             query { QueryTags{
                 id
-                Tag 
+                Tag
                 Pools {
                     id
                     Name
@@ -122,7 +122,7 @@ export async function getResourcePool(poolId, before, after, first, last) {
                        ParentPool {
                            id
                        }
-                   } 
+                   }
                 }
             }
         `,
@@ -236,7 +236,7 @@ export async function testStrategy(allocationStrategyId, poolProperties, poolNam
             mutation testStrategy(
                 $allocationStrategyId: ID!,
                 $poolProperties: Map!,
-                $poolName: String!, 
+                $poolName: String!,
                 $currentResources: [ResourceInput!]!,
                 $userInput: Map!) {
                 TestAllocationStrategy(
@@ -245,7 +245,7 @@ export async function testStrategy(allocationStrategyId, poolProperties, poolNam
                         poolProperties: $poolProperties
                         ResourcePoolName: $poolName
                     }
-                    currentResources: $currentResources 
+                    currentResources: $currentResources
                     userInput: $userInput
                 )
             }
@@ -543,7 +543,7 @@ export async function createSetPool(poolName, resourceTypeId, poolValues){
 export async function createAllocationPool(poolName, resourceTypeId, strategyId, poolPropertyTypes, poolProperties, tags = null){
     return client.mutate({
         mutation: gql`
-            mutation createAllocPool($poolName: String!, $resourceTypeId: ID!, $strategyId: ID!, $poolProperties: Map!, $poolPropertyTypes: Map!, $tags: [String!]) { 
+            mutation createAllocPool($poolName: String!, $resourceTypeId: ID!, $strategyId: ID!, $poolProperties: Map!, $poolPropertyTypes: Map!, $tags: [String!]) {
                 CreateAllocatingPool( input:  {
                     resourceTypeId: $resourceTypeId
                     poolName: $poolName
@@ -552,10 +552,10 @@ export async function createAllocationPool(poolName, resourceTypeId, strategyId,
                     poolPropertyTypes: $poolPropertyTypes
                     poolProperties: $poolProperties
                     tags: $tags
-                    }){ 
-                pool 
-                    { 
-                        id 
+                    }){
+                pool
+                    {
+                        id
                     }
             }
             }
