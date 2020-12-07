@@ -10,4 +10,4 @@ trap 'docker-compose -f docker-compose.api-tests.yaml logs resource-manager' err
 sleep 5
 cp .env-LOCAL-DEV-CONFIG .env
 yarn install
-yarn jest
+yarn test

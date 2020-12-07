@@ -1,7 +1,7 @@
 import dotenv from "dotenv";
 import fetch from "cross-fetch";
 import { ApolloClient, InMemoryCache, HttpLink } from '@apollo/client';
-import { setContext } from '@apollo/client/link/context';
+import { setContext } from '@apollo/client/link/context/context.cjs.js';
 
 dotenv.config();
 const config = process.env;

@@ -1,18 +1,20 @@
-import {deleteAllocationStrategy, testStrategy, createAllocationStrategy, findAllocationStrategyId} from '../graphql-queries';
-import {getUniqueName} from '../test-helpers';
+import {deleteAllocationStrategy, testStrategy, createAllocationStrategy, findAllocationStrategyId} from '../graphql-queries.js';
+import {getUniqueName} from '../test-helpers.js';
+import tap from 'tap';
+const test = tap.test;
 
-test('create and call JS strategy', async () => {
+test('create and call JS strategy', async (t) => {
     let poolName = getUniqueName('testJSstrategy');
     let strategyId = await createAllocationStrategy(
         poolName,
         'function invoke() {return {vlan: userInput.desiredVlan};}',
         'js');
     let strategyOutput = await testStrategy(strategyId, { ResourcePoolName: 'testpool'}, poolName, [], {desiredVlan: 85} );
-    expect(strategyOutput.stdout.vlan).toBe(85);
+    t.equal(strategyOutput.stdout.vlan, 85);
+    t.end();
 });
 
-test('create and call Py strategy', async () => {
-    jest.setTimeout(10000);
+test('create and call Py strategy', async (t) => {
     let poolName = getUniqueName('testJSstrategy');
     let strategyId = await createAllocationStrategy(
         poolName,
@@ -21,33 +23,36 @@ test('create and call Py strategy', async () => {
     let strategyOutput = await testStrategy(strategyId,
         { ResourcePoolName: poolName},
         poolName, [], {desiredVlan: 11} );
-    expect(strategyOutput.stdout.vlan).toBe(11);
+    t.equal(strategyOutput.stdout.vlan, 11);
+    t.end();
 });
 
-test('delete strategy', async () => {
+test('delete strategy', async (t) => {
     let poolName = getUniqueName('testJSstrategy');
     let strategyId = await createAllocationStrategy(
         poolName,
         'function invoke() {return {vlan: userInput.desiredVlan};}', 'js');
     let foundStrategyId = await findAllocationStrategyId(poolName);
-    expect(foundStrategyId).toBe(strategyId);
+    t.equal(foundStrategyId, strategyId);
     await deleteAllocationStrategy(strategyId);
     foundStrategyId = await findAllocationStrategyId(poolName);
-    expect(foundStrategyId).not.toBeTruthy();
+    t.notOk(foundStrategyId);
+    t.end();
 });
 
-test('simple ipv4 prefix strategy', async () => {
+test('simple ipv4 prefix strategy', async (t) => {
     let poolName = getUniqueName('testJSstrategy');
     let ipv4PrefixStrategyId = await findAllocationStrategyId('ipv4_prefix');
     let x = await testStrategy(ipv4PrefixStrategyId,
         {prefix: 8, address: '10.0.0.0'},
         poolName,
         [], {desiredSize: 8388608});
-    expect(x.stdout.address).toBe('10.0.0.0');
-    expect(x.stdout.prefix).toBe(9);
+    t.equal(x.stdout.address, '10.0.0.0');
+    t.equal(x.stdout.prefix, 9);
+    t.end();
 });
 
-test('ipv4 prefix strategy one resource already claimed', async () => {
+test('ipv4 prefix strategy one resource already claimed', async (t) => {
     let poolName = getUniqueName('testJSstrategy');
     let ipv4PrefixStrategyId = await findAllocationStrategyId('ipv4_prefix');
     let allocated = await testStrategy(ipv4PrefixStrategyId,
@@ -57,11 +62,12 @@ test('ipv4 prefix strategy one resource already claimed', async () => {
             Status: 'claimed',
             UpdatedAt: '2020-08-18 11:38:48.0 +0200 CEST'
         }], {desiredSize: 8388608});
-    expect(allocated.stdout.address).toBe('10.128.0.0');
-    expect(allocated.stdout.prefix).toBe(9);
+    t.equal(allocated.stdout.address, '10.128.0.0');
+    t.equal(allocated.stdout.prefix, 9);
+    t.end();
 });
 
-test('ipv4 prefix strategy pool has no capacity left', async () => {
+test('ipv4 prefix strategy pool has no capacity left', async (t) => {
     const poolName = getUniqueName('testJSstrategy');
     const allocatedResources = [
         {Properties: { prefix: 9, address: '10.0.0.0'},
@@ -76,41 +82,45 @@ test('ipv4 prefix strategy pool has no capacity left', async () => {
     let allocated = await testStrategy(ipv4PrefixStrategyId,
         {prefix: 8, address: '10.0.0.0'},
         poolName, allocatedResources, {desiredSize: 8388608});
-    expect(allocated).not.toBeTruthy();
+    t.notOk(allocated);
+    t.end();
 });
 
-test('ipv4 strategy just get an IP', async () => {
+test('ipv4 strategy just get an IP', async (t) => {
     const poolName = getUniqueName('testJSstrategy');
     let ipv4StrategyId = await findAllocationStrategyId('ipv4');
     let allocated = await testStrategy(ipv4StrategyId,
         {prefix: 8, address: '10.0.0.0'},
         poolName, [], {});
-    expect(allocated.stdout.address).toBe('10.0.0.0');
+    t.equal(allocated.stdout.address, '10.0.0.0');
+    t.end();
 });
 
 
-test('simple ipv6 prefix strategy', async () => {
+test('simple ipv6 prefix strategy', async (t) => {
     let poolName = getUniqueName('testJSstrategy');
     let ipv6PrefixStrategyId = await findAllocationStrategyId('ipv6_prefix');
     let allocated = await testStrategy(ipv6PrefixStrategyId,
         {prefix: 120, address: 'dead::'},
         poolName,
         [], {desiredSize: 101});
-    expect(allocated.stdout.address).toBe('dead::');
-    expect(allocated.stdout.prefix).toBe(121);
+    t.equal(allocated.stdout.address, 'dead::');
+    t.equal(allocated.stdout.prefix, 121);
+    t.end();
 });
 
-test('simple ipv6 strategy', async () => {
+test('simple ipv6 strategy', async (t) => {
     let poolName = getUniqueName('testJSstrategy');
     let ipv6StrategyId = await findAllocationStrategyId('ipv6');
     let allocated = await testStrategy(ipv6StrategyId,
         {prefix: 120, address: 'dead::'},
         poolName,
         [], {subnet: true});
-    expect(allocated.stdout.address).toBe('dead::1');
+    t.equal(allocated.stdout.address, 'dead::1');
+    t.end();
 });
 
-test('ipv4-rd strategy', async () => {
+test('ipv4-rd strategy', async (t) => {
     let poolName = getUniqueName('testJSstrategy');
     let strategyId = await findAllocationStrategyId('route_distinguisher');
     let allocated = await testStrategy(strategyId,
@@ -118,10 +128,11 @@ test('ipv4-rd strategy', async () => {
         poolName,
         [], {ipv4: '1.2.3.4', assignedNumber: 2});
 
-    expect(allocated.stdout.rd).toBe('1.2.3.4:2');
+    t.equal(allocated.stdout.rd, '1.2.3.4:2');
+    t.end();
 });
 
-test('ipv4-rd strategy duplicate already claimed', async () => {
+test('ipv4-rd strategy duplicate already claimed', async (t) => {
     let poolName = getUniqueName('testJSstrategy');
     const claimed = [{Properties: {rd: '1.2.3.4:2'},
         Status: 'claimed',
@@ -134,11 +145,12 @@ test('ipv4-rd strategy duplicate already claimed', async () => {
         poolName,
         claimed, {ipv4: '1.2.3.4', assignedNumber: 2});
 
-    expect(allocated).not.toBeTruthy();
+    t.notOk(allocated);
+    t.end();
 });
 
 
-test('as-rd strategy', async () => {
+test('as-rd strategy', async (t) => {
     let poolName = getUniqueName('testJSstrategy');
     let strategyId = await findAllocationStrategyId('route_distinguisher');
     let allocated = await testStrategy(strategyId,
@@ -146,10 +158,11 @@ test('as-rd strategy', async () => {
         poolName,
         [], {asNumber: 22, assignedNumber: 288});
 
-    expect(allocated.stdout.rd).toBe('22:288');
+    t.equal(allocated.stdout.rd, '22:288');
+    t.end();
 });
 
-test('vlan range strategy', async () => {
+test('vlan range strategy', async (t) => {
     let poolName = getUniqueName('testJSstrategy');
     let strategyId = await findAllocationStrategyId('vlan_range');
     let allocated = await testStrategy(strategyId,
@@ -157,10 +170,11 @@ test('vlan range strategy', async () => {
         poolName,
         [], {desiredSize: 101});
 
-    expect(allocated.stdout).toMatchObject({from: 0, to:100});
+    t.deepEqual(allocated.stdout, {from: 0, to:100});
+    t.end();
 });
 
-test('vlan range strategy range partly claimed', async () => {
+test('vlan range strategy range partly claimed', async (t) => {
     let poolName = getUniqueName('testJSstrategy');
     let strategyId = await findAllocationStrategyId('vlan_range');
     const claimed = [
@@ -175,10 +189,11 @@ test('vlan range strategy range partly claimed', async () => {
         poolName,
         claimed, {desiredSize: 101});
 
-    expect(allocated.stdout).toMatchObject({from: 1001, to:1101});
+    t.deepEqual(allocated.stdout, {from: 1001, to:1101});
+    t.end();
 });
 
-test('vlan strategy', async () => {
+test('vlan strategy', async (t) => {
     let poolName = getUniqueName('testJSstrategy');
     let strategyId = await findAllocationStrategyId('vlan');
     let allocated = await testStrategy(strategyId,
@@ -186,5 +201,6 @@ test('vlan strategy', async () => {
         poolName,
         [], {});
 
-    expect(allocated.stdout.vlan).toBe(0);
+    t.equal(allocated.stdout.vlan, 0);
+    t.end();
 });
