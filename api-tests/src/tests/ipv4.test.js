@@ -6,13 +6,14 @@ import {
     prepareIpv4Pool, allocateFromIPv4PoolSerially, allocateFromIPv4PoolParallelly, queryIPs
 } from '../test-helpers.js';
 
-
-
 import tap from 'tap';
 const test = tap.test;
 
 test('create ipv4 prefix root pool', async (t) => {
-    t.ok(await createIpv4PrefixRootPool());
+    const pool = await createIpv4PrefixRootPool()
+    t.ok(pool);
+    t.equal(pool.PoolProperties['address'], '10.0.0.0')
+    t.equal(pool.PoolProperties['prefix'], 8)
     t.end();
 });
 
@@ -55,7 +56,7 @@ test('create ipv4 prefix root pool', async (t) => {
 //#+---------------------------+     +---------------------------+       +---------------------------+           +---------------------------+
 
 test('create ipv4 hierarchy', async (t) => {
-    let rootPoolId = await createIpv4PrefixRootPool();
+    let rootPoolId = (await createIpv4PrefixRootPool()).id;
 
     let firstParentResourceId = (await claimResource(rootPoolId, { desiredSize: 8388608 })).id;
     let secondParentResourceId = (await claimResource(rootPoolId, { desiredSize: 8388608 })).id;
