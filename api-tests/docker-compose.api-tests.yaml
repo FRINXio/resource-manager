@@ -9,6 +9,8 @@ services:
       - POSTGRES_PASSWORD=postgres
       - LC_COLLATE=en_US.UTF-8
       - LC_CTYPE=en_US.UTF-8
+    ports:
+      - 5432:5432
 
   resource-manager:
     container_name: resource-manager

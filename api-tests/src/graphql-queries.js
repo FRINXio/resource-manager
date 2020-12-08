@@ -230,7 +230,7 @@ export async function createNestedAllocationPool(poolName, resourceTypeId, strat
     .catch(error => console.log(error));
 }
 
-export async function testStrategy(allocationStrategyId, poolProperties, poolName, currentResources, userInput) {
+export async function testStrategy(allocationStrategyId, poolProperties, poolName, currentResources, userInput, suppressErrors = false) {
     return client.mutate({
         mutation: gql`
             mutation testStrategy(
@@ -259,7 +259,7 @@ export async function testStrategy(allocationStrategyId, poolProperties, poolNam
         }
     })
     .then(result => result.data.TestAllocationStrategy)
-    .catch(error => console.log(error));
+    .catch(error => suppressErrors?null:console.log(error));
 }
 
 export async function createTag(tagText) {
@@ -574,7 +574,7 @@ export async function createAllocationPool(poolName, resourceTypeId, strategyId,
     .catch(error => console.log(error));
 }
 
-export async function claimResource(poolId, params, description = null){
+export async function claimResource(poolId, params, description = null, suppressErrors = false){
     return client.mutate({
         mutation: gql`
             mutation claimRes($poolId: ID!, $description: String, $userInput: Map!) {
@@ -591,7 +591,7 @@ export async function claimResource(poolId, params, description = null){
         }
     })
     .then(result => result.data.ClaimResource)
-    .catch(error => console.log(error));
+    .catch(error => suppressErrors?null:console.log(error));
 }
 
 export async function queryResource(poolId, params){
