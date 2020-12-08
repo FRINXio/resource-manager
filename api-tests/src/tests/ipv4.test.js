@@ -1,6 +1,13 @@
 import { claimResource, getResourcePool, getPoolHierarchyPath } from '../graphql-queries.js';
-import {createIpv4PrefixRootPool, createIpv4PrefixNestedPool, createSingletonIpv4PrefixNestedPool,
-createIpv4NestedPool, get2ChildrenIds} from '../test-helpers.js';
+import {
+    createIpv4PrefixRootPool, createIpv4PrefixNestedPool,
+    createSingletonIpv4PrefixNestedPool,
+    createIpv4NestedPool, get2ChildrenIds,
+    prepareIpv4Pool, allocateFromIPv4PoolSerially, allocateFromIPv4PoolParallelly, queryIPs
+} from '../test-helpers.js';
+
+
+
 import tap from 'tap';
 const test = tap.test;
 
@@ -50,8 +57,8 @@ test('create ipv4 prefix root pool', async (t) => {
 test('create ipv4 hierarchy', async (t) => {
     let rootPoolId = await createIpv4PrefixRootPool();
 
-    let firstParentResourceId = (await claimResource(rootPoolId, {desiredSize: 8388608})).id;
-    let secondParentResourceId = (await claimResource(rootPoolId, {desiredSize: 8388608})).id;
+    let firstParentResourceId = (await claimResource(rootPoolId, { desiredSize: 8388608 })).id;
+    let secondParentResourceId = (await claimResource(rootPoolId, { desiredSize: 8388608 })).id;
 
     let pool21Id = await createIpv4PrefixNestedPool(firstParentResourceId);
     let pool22Id = await createIpv4PrefixNestedPool(secondParentResourceId);
@@ -60,10 +67,10 @@ test('create ipv4 hierarchy', async (t) => {
 
     t.deepEqual(poolChildren, [pool21Id, pool22Id]);
 
-    let resource11Id = (await claimResource(pool21Id, {desiredSize: 4194304})).id;
-    let resource12Id = (await claimResource(pool21Id, {desiredSize: 4194304})).id;
-    let resource21Id = (await claimResource(pool22Id, {desiredSize: 4194304})).id;
-    let resource22Id = (await claimResource(pool22Id, {desiredSize: 4194304})).id;
+    let resource11Id = (await claimResource(pool21Id, { desiredSize: 4194304 })).id;
+    let resource12Id = (await claimResource(pool21Id, { desiredSize: 4194304 })).id;
+    let resource21Id = (await claimResource(pool22Id, { desiredSize: 4194304 })).id;
+    let resource22Id = (await claimResource(pool22Id, { desiredSize: 4194304 })).id;
 
     const pool31Id = await createSingletonIpv4PrefixNestedPool(resource11Id);
     const pool32Id = await createIpv4NestedPool(resource12Id);
@@ -100,5 +107,25 @@ test('create ipv4 hierarchy', async (t) => {
     const hierarchyPath21 = await getPoolHierarchyPath(pool21Id);
     t.deepEqual(hierarchyPath21.map(it => it.id), [rootPoolId]);
 
+    t.end();
+});
+
+test('ipv4_pool serially', async (t) => {
+    const count = 100;
+    const poolId = await prepareIpv4Pool();
+    const createdIPs = await allocateFromIPv4PoolSerially(poolId, count);
+    const queriedIPs = await queryIPs(poolId, count);
+    t.deepEqual(queriedIPs, createdIPs);
+    t.equal(queriedIPs.length, count);
+    t.end();
+});
+
+test('ipv4_pool parallelly', async (t) => {
+    const count = 100, retries = 1000;
+    const poolId = await prepareIpv4Pool();
+    const createdIPs = (await allocateFromIPv4PoolParallelly(poolId, count, retries)).sort();
+    const queriedIPs = (await queryIPs(poolId, count)).sort();
+    t.deepEqual(queriedIPs, createdIPs);
+    t.equal(queriedIPs.length, count);
     t.end();
 });

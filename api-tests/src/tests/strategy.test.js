@@ -81,7 +81,8 @@ test('ipv4 prefix strategy pool has no capacity left', async (t) => {
     let ipv4PrefixStrategyId = await findAllocationStrategyId('ipv4_prefix');
     let allocated = await testStrategy(ipv4PrefixStrategyId,
         {prefix: 8, address: '10.0.0.0'},
-        poolName, allocatedResources, {desiredSize: 8388608});
+        poolName, allocatedResources, {desiredSize: 8388608},
+        true);
     t.notOk(allocated);
     t.end();
 });
@@ -143,7 +144,8 @@ test('ipv4-rd strategy duplicate already claimed', async (t) => {
     let allocated = await testStrategy(strategyId,
         {},
         poolName,
-        claimed, {ipv4: '1.2.3.4', assignedNumber: 2});
+        claimed, {ipv4: '1.2.3.4', assignedNumber: 2},
+        true);
 
     t.notOk(allocated);
     t.end();
