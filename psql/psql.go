@@ -10,26 +10,16 @@ import (
 	"net/url"
 	"time"
 
-	"go.opencensus.io/trace"
 	"go.uber.org/zap"
 
 	"contrib.go.opencensus.io/integrations/ocsql"
 	cdkpsql "gocloud.dev/postgres"
-	"gocloud.dev/postgres/awspostgres" // FIXME Why is this here?
 )
 
 var defaultURLMux = cdkpsql.URLMux{}
 
 func init() {
-	traceOpts := []ocsql.TraceOption{
-		ocsql.WithDisableErrSkip(true),
-		ocsql.WithSampler(trace.NeverSample()),
-	}
 	defaultURLMux.RegisterPostgres(cdkpsql.Scheme, &cdkpsql.URLOpener{})
-
-	defaultURLMux.RegisterPostgres(awspostgres.Scheme, &awspostgres.URLOpener{
-		TraceOpts: traceOpts,
-	})
 }
 
 // Open opens the database identified by the URL string given.
