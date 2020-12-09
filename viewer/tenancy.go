@@ -10,15 +10,16 @@ import (
 	"context"
 	"database/sql"
 	"fmt"
+	"net/url"
+	"runtime"
+	"strings"
+	"sync"
+
 	"github.com/facebookincubator/symphony/pkg/log"
 	"github.com/net-auto/resourceManager/ent/migrate"
 	pools "github.com/net-auto/resourceManager/pools/allocating_strategies"
 	"github.com/net-auto/resourceManager/psql"
 	"go.uber.org/zap"
-	"net/url"
-	"runtime"
-	"strings"
-	"sync"
 
 	"github.com/facebook/ent/dialect"
 	entsql "github.com/facebook/ent/dialect/sql"
@@ -98,7 +99,7 @@ func (c *CacheTenancy) CheckHealth() error {
 	return nil
 }
 
-// MySQLTenancy provides logical database per tenant.
+// PsqlTenancy provides logical database per tenant.
 type PsqlTenancy struct {
 	health.Checker
 	url      url.URL
@@ -111,7 +112,7 @@ type PsqlTenancy struct {
 func NewPsqlTenancy(ctx context.Context, u *url.URL, maxConns int) (*PsqlTenancy, error) {
 	db, err := psql.OpenURL(ctx, u)
 	if err != nil {
-		return nil, fmt.Errorf("opening mysql database: %w", err)
+		return nil, fmt.Errorf("opening postgres database: %w", err)
 	}
 	checker := sqlhealth.New(db)
 	tenancy := &PsqlTenancy{
@@ -187,7 +188,7 @@ func (m *PsqlTenancy) createTenanDb(ctx context.Context, logger *zap.Logger, nam
 
 const dbPrefix = "rm_tenant_"
 
-// DBName returns the prefixed database name in order to avoid collision with MySQL internal databases.
+// DBName returns the prefixed database name in order to avoid collision with Postgres internal databases.
 func DBName(name string) string {
 	return dbPrefix + name
 }

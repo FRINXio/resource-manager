@@ -6,13 +6,16 @@ package graphql
 
 import (
 	"context"
+	"database/sql"
+	"database/sql/driver"
 	"errors"
+	"net/http"
+	"time"
+
 	"github.com/99designs/gqlgen/graphql/handler/extension"
 	"github.com/facebookincubator/ent-contrib/entgql"
 	"github.com/facebookincubator/symphony/graph/graphql/complexity"
 	"github.com/facebookincubator/symphony/pkg/gqlutil"
-	"net/http"
-	"time"
 
 	// "github.com/net-auto/resourceManager/graph/graphql/directive"
 	"github.com/facebookincubator/symphony/pkg/log"
@@ -56,6 +59,21 @@ func init() {
 	}
 }
 
+// Modified OpenTxFromContext from ent
+func OpenTxFromContext(ctx context.Context) (context.Context, driver.Tx, error) {
+	client := ent.FromContext(ctx)
+	if client == nil {
+		return nil, nil, errors.New("no client attached to context")
+	}
+	tx, err := client.BeginTx(ctx, &sql.TxOptions{Isolation: sql.LevelSerializable})
+	if err != nil {
+		return nil, nil, err
+	}
+	ctx = ent.NewTxContext(ctx, tx)
+	ctx = ent.NewContext(ctx, tx.Client())
+	return ctx, tx, nil
+}
+
 // NewHandler creates a graphql http handler.
 func NewHandler(cfg HandlerConfig) (http.Handler, error) {
 	rsv := resolver.New(
@@ -88,7 +106,7 @@ func NewHandler(cfg HandlerConfig) (http.Handler, error) {
 	)
 
 	srv.Use(entgql.Transactioner{
-		TxOpener: entgql.TxOpenerFunc(ent.OpenTxFromContext),
+		TxOpener: entgql.TxOpenerFunc(OpenTxFromContext),
 	})
 
 	srv.SetErrorPresenter(errorPresenter(cfg.Logger))

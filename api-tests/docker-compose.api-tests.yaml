@@ -23,7 +23,9 @@ services:
       - RM_LOG_PATH=/var/log/rm.log
       - RM_LOG_LEVEL=debug
       - WASMER_MAX_TIMEOUT_MILLIS=10000
+      - DEBUG=true
     depends_on:
       - postgresql
     ports:
       - 8884:8884
+      - 2345:2345

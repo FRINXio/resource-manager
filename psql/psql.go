@@ -7,14 +7,15 @@ package psql
 import (
 	"context"
 	"database/sql"
-	"go.opencensus.io/trace"
-	"go.uber.org/zap"
 	"net/url"
 	"time"
 
+	"go.opencensus.io/trace"
+	"go.uber.org/zap"
+
 	"contrib.go.opencensus.io/integrations/ocsql"
 	cdkpsql "gocloud.dev/postgres"
-	"gocloud.dev/postgres/awspostgres"
+	"gocloud.dev/postgres/awspostgres" // FIXME Why is this here?
 )
 
 var defaultURLMux = cdkpsql.URLMux{}

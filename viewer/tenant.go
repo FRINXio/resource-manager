@@ -10,6 +10,7 @@ import (
 	"context"
 	"database/sql"
 	"fmt"
+
 	"github.com/pkg/errors"
 )
 
@@ -18,24 +19,25 @@ func CreateTenantDb(ctx context.Context, name string, db *sql.DB) (tenant string
 	return create(db, ctx, name)
 }
 
-func create(tx *sql.DB, ctx context.Context, name string) (string, error) {
+func create(db *sql.DB, ctx context.Context, name string) (string, error) {
 	if name == "" {
 		return "", errors.Errorf("missing tenant name")
 	}
 
-	switch exist, err := ExistTenantDb(ctx, name, tx); {
+	switch exist, err := ExistTenantDb(ctx, name, db); {
 	case err != nil:
 		return "", err
 	case exist:
 		return "", errors.Errorf("tenant %q exists", name)
 	}
 
-	if _, err := tx.ExecContext(ctx, fmt.Sprintf("CREATE DATABASE %s", DBName(name))); err != nil {
+	if _, err := db.ExecContext(ctx, fmt.Sprintf("CREATE DATABASE %s", DBName(name))); err != nil {
 		return "", err
 	}
 	return name, nil
 }
 
+// FIXME: Who calls this?
 // Delete tenant by name.
 func DeleteTenantDb(ctx context.Context, name string, db *sql.DB) (err error) {
 	var tx *sql.Tx
