@@ -8,6 +8,6 @@ To run the tests:
 1. Start RM, e.g. using `docker-compose -f docker-compose.api-tests.yaml up -d`
 1. run `yarn install`
 1. create a `.env` file
-1. run `yarn test` which only shows failing tests or `yarn jest` for a verbose output
+1. run `yarn test`
 
-Alternatively, run `test.sh` that does all of it in a single step.
+Alternatively, run `test.sh yarn test` that does all of it in a single step.

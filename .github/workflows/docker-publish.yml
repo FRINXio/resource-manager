@@ -57,7 +57,7 @@ jobs:
       - name: Build image
         run: docker build --build-arg GITHUB_TOKEN_EXTERNAL_DOCKERFILE=${{ secrets.TOKEN }} . --file Dockerfile --tag $IMAGE_NAME
       - name: Run api-tests
-        run: api-tests/test.sh
+        run: api-tests/test.sh yarn test
 
   push:
     # Ensure unit-test job passes before pushing image.
@@ -102,3 +102,19 @@ jobs:
               docker push $IMAGE_ID:$VERSION
             fi
           fi
+
+  bench:
+    # Ensure benchmarks are not broken.
+    # Runs after push, so only on master to avoid slowing down PR checks.
+    needs: push
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v2
+        with:
+          fetch-depth: 0
+      - uses: actions/setup-node@v2-beta
+        with:
+          node-version: 14
+      - run: npm install -g yarn
+      - name: Run benchmarks
+        run: api-tests/test.sh yarn bench

@@ -1,6 +1,7 @@
 import Benchmark from 'benchmark';
 import hdr from 'hdr-histogram-js';
 import microtime from 'microtime';
+import tap from 'tap';
 
 // configuration
 const useWasmForHistograms = false
@@ -9,14 +10,8 @@ const outputHistogramsToPlotter = false
 // global state
 const globalCtx = {} // holds benchmark -> histograms mapping
 
-export async function executeBenchmark(name, histograms, fn) {
-    for (const word of process.argv.slice(2)) {
-        const pattern = new RegExp(word, 'i')
-        if (!name.match(pattern)) {
-            console.log(`Skipping '${name}'`)
-            return
-        }
-    }
+export async function executeBenchmark(t, histograms, fn) {
+    const name = t.name;
     console.log(`Starting '${name}'`)
     const suite = new Benchmark.Suite
     return new Promise(function (resolve, reject) {
@@ -28,6 +23,7 @@ export async function executeBenchmark(name, histograms, fn) {
             .on('cycle', (event) => {
                 finishBenchmark(name, event, histograms)
                 resolve();
+                t.end();
             })
             .run();
     })
@@ -87,4 +83,10 @@ export async function record(histograms, key, fn) {
     const result = await fn()
     histograms[key].recordValue((microtime.now() - start) / 1000)
     return result
+}
+
+export function bench(name, fnWithHistograms) {
+    tap.test(name, async (t) =>
+        await executeBenchmark(t, {}, fnWithHistograms)
+    )
 }
