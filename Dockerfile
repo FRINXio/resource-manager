@@ -13,10 +13,11 @@ FROM golang:1.14.6-stretch
 ARG RM_LOG_FILE=rm.log
 ARG GITHUB_TOKEN_EXTERNAL_DOCKERFILE
 
-WORKDIR /resMgr
+# Add log rotation
+RUN apt-get update && apt-get --yes install logrotate
+RUN echo "${RM_LOG_FILE} { \n rotate 5 \n weekly \n copytruncate \n compress \n missingok \n notifempty \n } \n " > /etc/logrotate.d/rm
 
-# Copy RM
-COPY . .
+WORKDIR /resMgr
 
 COPY --from=wasmer /app/wasm-worker/.wasmer ./.wasmer
 COPY --from=wasmer /app/wasm-worker/wasm ./wasm
@@ -26,9 +27,8 @@ COPY --from=node /resMgr/pools/allocating_strategies/strategies ./pools/allocati
 # Test wasmer
 RUN ./.wasmer/bin/wasmer ./wasm/quickjs/quickjs.wasm -- --std -e 'console.log("Wasmer works!")'
 
-# Add log rotation
-RUN apt-get update && apt-get --yes install logrotate
-RUN echo "${RM_LOG_FILE} { \n rotate 5 \n weekly \n copytruncate \n compress \n missingok \n notifempty \n } \n " > /etc/logrotate.d/rm
+# Copy RM
+COPY . .
 
 ENV GITHUB_TOKEN_EXTERNAL=$GITHUB_TOKEN_EXTERNAL_DOCKERFILE
 RUN ./build.sh
