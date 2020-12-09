@@ -188,10 +188,10 @@ export async function prepareIpv4Pool() {
     return await createIpv4NestedPool(resource12Id);
 }
 
-export async function allocateFromIPv4PoolSerially(poolId, count) {
+export async function allocateFromIPv4PoolSerially(poolId, count, claimResourceParams) {
     const result = [];
     for (let i = 0; i < count; i++) {
-        result.push(await claimResource(poolId, {}));
+        result.push(await claimResource(poolId, claimResourceParams));
     }
     const ips = result.filter(it => it != null).map(it => it.Properties.address);
     const uniqIPs = [...new Set(ips)];
@@ -202,10 +202,10 @@ export async function allocateFromIPv4PoolSerially(poolId, count) {
     return uniqIPs;
 }
 
-export async function allocateFromIPv4PoolParallelly(poolId, count, retries) {
+export async function allocateFromIPv4PoolParallelly(poolId, count, retries, claimResourceParams) {
     const promises = [];
     for (let i = 0; i < count; i++) {
-        promises.push(claimResource(poolId, {}, null, true));
+        promises.push(claimResource(poolId, claimResourceParams, null, true));
     }
     const result = await Promise.all(promises);
     const ips = result.filter(it => it != null).map(it => it.Properties.address);
@@ -214,7 +214,7 @@ export async function allocateFromIPv4PoolParallelly(poolId, count, retries) {
             throw new Error("Nothing alocated at " + JSON.stringify({count, retries}))
         } else if (retries-- > 0) {
             // call recursively
-            const moreIPs = await allocateFromIPv4PoolParallelly(poolId, count - ips.length, retries);
+            const moreIPs = await allocateFromIPv4PoolParallelly(poolId, count - ips.length, retries, claimResourceParams);
             ips.push(...moreIPs);
         } else {
             console.error({ result, ips });

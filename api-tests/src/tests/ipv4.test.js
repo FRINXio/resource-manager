@@ -111,11 +111,32 @@ test('create ipv4 hierarchy', async (t) => {
     t.end();
 });
 
+test('ipv4_prefix_pool serially', async (t) => {
+    const count = 100;
+    const poolId = (await createIpv4PrefixRootPool()).id;
+    const createdIPs = await allocateFromIPv4PoolSerially(poolId, count, { desiredSize: 2 });
+    const queriedIPs = await queryIPs(poolId, count);
+    t.deepEqual(queriedIPs, createdIPs);
+    t.equal(queriedIPs.length, count);
+    t.end();
+});
+
 test('ipv4_pool serially', async (t) => {
     const count = 100;
     const poolId = await prepareIpv4Pool();
-    const createdIPs = await allocateFromIPv4PoolSerially(poolId, count);
+    const createdIPs = await allocateFromIPv4PoolSerially(poolId, count, {});
     const queriedIPs = await queryIPs(poolId, count);
+    t.deepEqual(queriedIPs, createdIPs);
+    t.equal(queriedIPs.length, count);
+    t.end();
+});
+
+test('ipv4_prefix_pool parallelly', async (t) => {
+    const count = 100, retries = 1000;
+    const poolId = (await createIpv4PrefixRootPool()).id;
+    const createdIPs = (await allocateFromIPv4PoolParallelly(
+        poolId, count, retries, { desiredSize: 2 })).sort();
+    const queriedIPs = (await queryIPs(poolId, count)).sort();
     t.deepEqual(queriedIPs, createdIPs);
     t.equal(queriedIPs.length, count);
     t.end();
@@ -124,7 +145,8 @@ test('ipv4_pool serially', async (t) => {
 test('ipv4_pool parallelly', async (t) => {
     const count = 100, retries = 1000;
     const poolId = await prepareIpv4Pool();
-    const createdIPs = (await allocateFromIPv4PoolParallelly(poolId, count, retries)).sort();
+    const createdIPs = (await allocateFromIPv4PoolParallelly(
+        poolId, count, retries, {})).sort();
     const queriedIPs = (await queryIPs(poolId, count)).sort();
     t.deepEqual(queriedIPs, createdIPs);
     t.equal(queriedIPs.length, count);

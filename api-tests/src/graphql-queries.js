@@ -540,7 +540,7 @@ export async function createSetPool(poolName, resourceTypeId, poolValues){
     .catch(error => console.log(error));
 }
 
-export async function createAllocationPool(poolName, resourceTypeId, strategyId, poolPropertyTypes, poolProperties, tags = null){
+export async function createAllocationPool(poolName, resourceTypeId, strategyId, poolPropertyTypes, poolProperties, tags = null, suppressErrors = false){
     return client.mutate({
         mutation: gql`
             mutation createAllocPool($poolName: String!, $resourceTypeId: ID!, $strategyId: ID!, $poolProperties: Map!, $poolPropertyTypes: Map!, $tags: [String!]) {
@@ -572,7 +572,7 @@ export async function createAllocationPool(poolName, resourceTypeId, strategyId,
         }
     })
     .then(result => result.data.CreateAllocatingPool.pool)
-    .catch(error => console.log(error));
+    .catch(error => suppressErrors?null:console.log(error));
 }
 
 export async function claimResource(poolId, params, description = null, suppressErrors = false){
