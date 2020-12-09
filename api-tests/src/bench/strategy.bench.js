@@ -1,4 +1,4 @@
-import { executeBenchmark, record } from './util/bench.js';
+import { record, bench } from './util/bench.js';
 import { testStrategy, createAllocationStrategy } from '../graphql-queries.js';
 import { getUniqueName } from '../test-helpers.js';
 
@@ -39,37 +39,36 @@ async function executeInParallel(histograms, fn, iterations) {
     }
 }
 
-async function runAll() {
+bench('create and test simple JS strategy once',
+    async (histograms) => {
+        const fn = await initAndGetJsTestFunction(histograms);
+        let strategyOutput = await fn();
+        if (strategyOutput.stdout.vlan != 85) {
+            throw new Error('Unexpected vlan' + strategyOutput.stdout.vlan);
+        }
+    }
+);
 
-    await executeBenchmark('create and test simple JS strategy once', {},
-        async (histograms) => {
-            const fn = await initAndGetJsTestFunction(histograms);
-            let strategyOutput = await fn();
-            if (strategyOutput.stdout.vlan != 85) {
-                throw new Error('Unexpected vlan' + strategyOutput.stdout.vlan);
-            }
-        });
+bench('create and test simple PY strategy once',
+    async (histograms) => {
+        const fn = await initAndGetPyTestFunction(histograms);
+        let strategyOutput = await fn();
+        if (strategyOutput.stdout.vlan != 85) {
+            throw new Error('Unexpected vlan' + strategyOutput.stdout.vlan);
+        }
+    }
+);
 
-    await executeBenchmark('create and test simple PY strategy once', {},
-        async (histograms) => {
-            const fn = await initAndGetPyTestFunction(histograms);
-            let strategyOutput = await fn();
-            if (strategyOutput.stdout.vlan != 85) {
-                throw new Error('Unexpected vlan' + strategyOutput.stdout.vlan);
-            }
-        });
+bench('create and test simple JS strategy 100x',
+    async (histograms) => {
+        const fn = await initAndGetJsTestFunction(histograms);
+        await executeInParallel(histograms, fn, 100);
+    }
+);
 
-    await executeBenchmark('create and test simple JS strategy 100x', {},
-        async (histograms) => {
-            const fn = await initAndGetJsTestFunction(histograms);
-            await executeInParallel(histograms, fn, 100);
-        });
-
-    await executeBenchmark('create and test simple PY strategy 100x', {},
-        async (histograms) => {
-            const fn = await initAndGetPyTestFunction(histograms);
-            await executeInParallel(histograms, fn, 100);
-        });
-}
-
-runAll();
+bench('create and test simple PY strategy 100x',
+    async (histograms) => {
+        const fn = await initAndGetPyTestFunction(histograms);
+        await executeInParallel(histograms, fn, 100);
+    }
+);

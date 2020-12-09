@@ -5,7 +5,8 @@
   "description": "",
   "type": "module",
   "scripts": {
-    "test": "tap --no-esm  --no-timeout"
+    "test": "tap --no-esm  --no-timeout src/tests",
+    "bench": "tap --no-esm --no-timeout src/bench"
   },
   "dependencies": {
     "@apollo/client": "^3.2.1",
