@@ -5,7 +5,7 @@
   "description": "",
   "type": "module",
   "scripts": {
-    "test": "tap --no-esm"
+    "test": "tap --no-esm  --no-timeout"
   },
   "dependencies": {
     "@apollo/client": "^3.2.1",
