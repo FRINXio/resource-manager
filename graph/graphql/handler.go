@@ -31,6 +31,7 @@ import (
 	"github.com/NYTimes/gziphandler"
 	"github.com/gorilla/mux"
 	"github.com/gorilla/websocket"
+	"github.com/vektah/gqlparser/v2/ast"
 	"github.com/vektah/gqlparser/v2/gqlerror"
 	"go.opencensus.io/plugin/ochttp"
 	"go.uber.org/zap"
@@ -65,7 +66,22 @@ func OpenTxFromContext(ctx context.Context) (context.Context, driver.Tx, error) 
 	if client == nil {
 		return nil, nil, errors.New("no client attached to context")
 	}
-	tx, err := client.BeginTx(ctx, &sql.TxOptions{Isolation: sql.LevelSerializable})
+	txOptions := sql.TxOptions{}
+	opCtx := graphql.GetOperationContext(ctx)
+	if opCtx != nil && opCtx.Operation.Operation == ast.Mutation {
+		for i := 0; i < len(opCtx.Operation.SelectionSet); i++ {
+			field, ok := opCtx.Operation.SelectionSet[i].(*ast.Field)
+			if ok {
+				if field.Name == "ClaimResource" {
+					txOptions = sql.TxOptions{
+						Isolation: sql.LevelSerializable,
+					}
+					break
+				}
+			}
+		}
+	}
+	tx, err := client.BeginTx(ctx, &txOptions)
 	if err != nil {
 		return nil, nil, err
 	}

@@ -1,4 +1,5 @@
-set -x
+#!/bin/bash
+set -xe
 dirname="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
 cd ${dirname}
 
