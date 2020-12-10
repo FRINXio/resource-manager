@@ -2,4 +2,4 @@
 resourceManager
 rm.log
 api-tests
-Dockerfile
+Dockerfile*
