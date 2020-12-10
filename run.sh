@@ -9,10 +9,7 @@ if [ ${DEBUG} ]; then
   CMD="dlv --continue --listen=:2345 --headless=true --api-version=2 --accept-multiclient exec ./resourceManager --"
 else
   echo "Running in PROD mode, use DEBUG=true to start in debug mode"
-  if [ ${SKIP_BUILD} ]; then
-    # Do not run `go build` e.g. when starting the container
-    echo "Skipping build"
-  else
+  if [ "${BUILD}" = "true" ]; then
     go build -o ./resourceManager
   fi
 fi
