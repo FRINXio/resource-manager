@@ -3,7 +3,7 @@
 set -xe
 
 CMD="./resourceManager"
-if [ ${DEBUG} ]; then
+if [ "${DEBUG}" = "true" ]; then
   echo "Running in DEBUG mode"
   go build -gcflags \"all=-N\" -o ./resourceManager
   CMD="dlv --continue --listen=:2345 --headless=true --api-version=2 --accept-multiclient exec ./resourceManager --"
