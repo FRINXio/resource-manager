@@ -224,259 +224,259 @@ Compared to JS, this is 17x slower.
 ```
 
 ### ipv4.bench.js
-#### Create ipv4 prefix pool 100x serially x 0.76 ops/sec ±2.96% (8 runs sampled)
+#### Create ipv4 prefix pool 100x serially x 0.73 ops/sec ±2.04% (8 runs sampled)
 Measure insert a row into DB serially. One iteration is 100 mutations.
 ```
 {
   total: {
-    mean: 1310.375,
-    p50: 1300,
-    p75: 1320,
-    p90: 1370,
-    p97_5: 1370,
-    p99: 1370,
-    p99_9: 1370,
-    p99_99: 1370,
-    p99_999: 1370,
-    max: 1379.577,
+    mean: 1368,
+    p50: 1360,
+    p75: 1380,
+    p90: 1430,
+    p97_5: 1430,
+    p99: 1430,
+    p99_9: 1430,
+    p99_99: 1430,
+    p99_999: 1430,
+    max: 1433.152,
     totalCount: 8
   },
   setup: {
-    mean: 9.625,
-    p50: 7,
-    p75: 7,
-    p90: 31,
-    p97_5: 31,
-    p99: 31,
-    p99_9: 31,
-    p99_99: 31,
-    p99_999: 31,
-    max: 31.38,
+    mean: 16.375,
+    p50: 13,
+    p75: 14,
+    p90: 40,
+    p97_5: 40,
+    p99: 40,
+    p99_9: 40,
+    p99_99: 40,
+    p99_999: 40,
+    max: 40.281,
     totalCount: 8
   },
   createAllocationPool: {
-    mean: 1300,
-    p50: 1290,
-    p75: 1300,
-    p90: 1370,
-    p97_5: 1370,
-    p99: 1370,
-    p99_9: 1370,
-    p99_99: 1370,
-    p99_999: 1370,
-    max: 1372.01,
+    mean: 1350.75,
+    p50: 1340,
+    p75: 1360,
+    p90: 1390,
+    p97_5: 1390,
+    p99: 1390,
+    p99_9: 1390,
+    p99_99: 1390,
+    p99_999: 1390,
+    max: 1392.296,
     totalCount: 8
   }
 }
 ```
-#### Create ipv4 prefix pool 100x parallelly x 0.36 ops/sec ±4.24% (6 runs sampled)
+#### Create ipv4 prefix pool 100x parallelly x 2.42 ops/sec ±7.06% (16 runs sampled)
 Measure insert a row into DB parallelly. One iteration is 100 mutations.
 ```
 {
   total: {
-    mean: 2781.3333333333335,
-    p50: 2730,
-    p75: 2880,
-    p90: 2940,
-    p97_5: 2940,
-    p99: 2940,
-    p99_9: 2940,
-    p99_99: 2940,
-    p99_999: 2940,
-    max: 2944.977,
-    totalCount: 6
+    mean: 413.0625,
+    p50: 403,
+    p75: 421,
+    p90: 514,
+    p97_5: 516,
+    p99: 516,
+    p99_9: 516,
+    p99_99: 516,
+    p99_999: 516,
+    max: 516.215,
+    totalCount: 16
   },
   setup: {
-    mean: 7.166666666666667,
-    p50: 7,
-    p75: 8,
-    p90: 8,
-    p97_5: 8,
-    p99: 8,
-    p99_9: 8,
-    p99_99: 8,
-    p99_999: 8,
-    max: 8.741,
-    totalCount: 6
+    mean: 14.9375,
+    p50: 14,
+    p75: 16,
+    p90: 17,
+    p97_5: 18,
+    p99: 18,
+    p99_9: 18,
+    p99_99: 18,
+    p99_999: 18,
+    max: 18.253,
+    totalCount: 16
   }
 }
 ```
-#### allocate 100 ipv4_prefix_pool resources serially x 0.16 ops/sec ±1.46% (5 runs sampled)
+#### allocate 100 ipv4_prefix_pool resources serially x 0.15 ops/sec ±1.74% (5 runs sampled)
 Measure e2e performance of ipv4 prefix strategy. One iteration is 100 mutations.
 ```
 {
   total: {
-    mean: 6271.6,
-    p50: 6240,
-    p75: 6300,
-    p90: 6380,
-    p97_5: 6380,
-    p99: 6380,
-    p99_9: 6380,
-    p99_99: 6380,
-    p99_999: 6380,
-    max: 6386.231,
+    mean: 6877.2,
+    p50: 6830,
+    p75: 6930,
+    p90: 7010,
+    p97_5: 7010,
+    p99: 7010,
+    p99_9: 7010,
+    p99_99: 7010,
+    p99_999: 7010,
+    max: 7019.732,
     totalCount: 5
   },
   setup: {
-    mean: 21,
-    p50: 21,
-    p75: 22,
-    p90: 23,
-    p97_5: 23,
-    p99: 23,
-    p99_9: 23,
-    p99_99: 23,
-    p99_999: 23,
-    max: 23.478,
+    mean: 30.2,
+    p50: 31,
+    p75: 31,
+    p90: 33,
+    p97_5: 33,
+    p99: 33,
+    p99_9: 33,
+    p99_99: 33,
+    p99_999: 33,
+    max: 33.93,
     totalCount: 5
   },
   allocate: {
-    mean: 6250,
-    p50: 6210,
-    p75: 6280,
-    p90: 6360,
-    p97_5: 6360,
-    p99: 6360,
-    p99_9: 6360,
-    p99_99: 6360,
-    p99_999: 6360,
-    max: 6367.2,
+    mean: 6846.8,
+    p50: 6800,
+    p75: 6900,
+    p90: 6980,
+    p97_5: 6980,
+    p99: 6980,
+    p99_9: 6980,
+    p99_99: 6980,
+    p99_999: 6980,
+    max: 6985.26,
     totalCount: 5
   }
 }
 ```
-#### allocate 100 ipv4_prefix_pool resources parallelly x 0.07 ops/sec ±11.85% (5 runs sampled)
+#### allocate 100 ipv4_prefix_pool resources parallelly x 0.06 ops/sec ±6.36% (5 runs sampled)
 Measure e2e performance of ipv4 prefix strategy. One iteration is 100 mutations.
 ```
 {
   total: {
-    mean: 14260,
-    p50: 14000,
-    p75: 14900,
-    p90: 16100,
-    p97_5: 16100,
-    p99: 16100,
-    p99_9: 16100,
-    p99_99: 16100,
-    p99_999: 16100,
-    max: 16167.741,
+    mean: 16483.2,
+    p50: 16400,
+    p75: 17200,
+    p90: 17400,
+    p97_5: 17400,
+    p99: 17400,
+    p99_9: 17400,
+    p99_99: 17400,
+    p99_999: 17400,
+    max: 17399.918,
     totalCount: 5
   },
   setup: {
-    mean: 22.8,
-    p50: 22,
-    p75: 23,
-    p90: 27,
-    p97_5: 27,
-    p99: 27,
-    p99_9: 27,
-    p99_99: 27,
-    p99_999: 27,
-    max: 27.565,
+    mean: 32.4,
+    p50: 32,
+    p75: 32,
+    p90: 37,
+    p97_5: 37,
+    p99: 37,
+    p99_9: 37,
+    p99_99: 37,
+    p99_999: 37,
+    max: 37.646,
     totalCount: 5
   },
   awaitPromisses: {
-    mean: 14237.6,
-    p50: 14000,
-    p75: 14800,
-    p90: 16100,
-    p97_5: 16100,
-    p99: 16100,
-    p99_9: 16100,
-    p99_99: 16100,
-    p99_999: 16100,
-    max: 16145.263,
+    mean: 16452.8,
+    p50: 16400,
+    p75: 17200,
+    p90: 17300,
+    p97_5: 17300,
+    p99: 17300,
+    p99_9: 17300,
+    p99_99: 17300,
+    p99_999: 17300,
+    max: 17367.717,
     totalCount: 5
   }
 }
 ```
-#### allocate 100 ipv4_pool resources serially x 0.20 ops/sec ±1.27% (5 runs sampled)
+#### allocate 100 ipv4_pool resources serially x 0.18 ops/sec ±2.10% (5 runs sampled)
 Measure e2e performance of ipv4 strategy. One iteration is 100 mutations.
 ```
 {
   total: {
-    mean: 5046,
-    p50: 5040,
-    p75: 5060,
-    p90: 5120,
-    p97_5: 5120,
-    p99: 5120,
-    p99_9: 5120,
-    p99_99: 5120,
-    p99_999: 5120,
-    max: 5122.371,
+    mean: 5510,
+    p50: 5470,
+    p75: 5530,
+    p90: 5660,
+    p97_5: 5660,
+    p99: 5660,
+    p99_9: 5660,
+    p99_99: 5660,
+    p99_999: 5660,
+    max: 5660.634,
     totalCount: 5
   },
   setup: {
-    mean: 83.6,
-    p50: 83,
-    p75: 84,
-    p90: 87,
-    p97_5: 87,
-    p99: 87,
-    p99_9: 87,
-    p99_99: 87,
-    p99_999: 87,
-    max: 87.74,
+    mean: 113.2,
+    p50: 112,
+    p75: 112,
+    p90: 126,
+    p97_5: 126,
+    p99: 126,
+    p99_9: 126,
+    p99_99: 126,
+    p99_999: 126,
+    max: 126.921,
     totalCount: 5
   },
   allocate: {
-    mean: 4961.2,
-    p50: 4950,
-    p75: 4980,
-    p90: 5030,
-    p97_5: 5030,
-    p99: 5030,
-    p99_9: 5030,
-    p99_99: 5030,
-    p99_999: 5030,
-    max: 5034.225,
+    mean: 5395.6,
+    p50: 5350,
+    p75: 5420,
+    p90: 5550,
+    p97_5: 5550,
+    p99: 5550,
+    p99_9: 5550,
+    p99_99: 5550,
+    p99_999: 5550,
+    max: 5548.543,
     totalCount: 5
   }
 }
 ```
-#### allocate 100 ipv4_pool resources parallelly x 0.08 ops/sec ±3.27% (5 runs sampled)
+#### allocate 100 ipv4_pool resources parallelly x 0.07 ops/sec ±8.66% (5 runs sampled)
 Measure e2e performance of ipv4 strategy. One iteration is 100 mutations.
 ```
 {
   total: {
-    mean: 12258.4,
-    p50: 12100,
-    p75: 12500,
-    p90: 12500,
-    p97_5: 12500,
-    p99: 12500,
-    p99_9: 12500,
-    p99_99: 12500,
-    p99_999: 12500,
-    max: 12594.177,
+    mean: 13533.6,
+    p50: 12900,
+    p75: 14200,
+    p90: 14800,
+    p97_5: 14800,
+    p99: 14800,
+    p99_9: 14800,
+    p99_99: 14800,
+    p99_999: 14800,
+    max: 14820.072,
     totalCount: 5
   },
   setup: {
-    mean: 85.2,
-    p50: 83,
-    p75: 88,
-    p90: 90,
-    p97_5: 90,
-    p99: 90,
-    p99_9: 90,
-    p99_99: 90,
-    p99_999: 90,
-    max: 90.055,
+    mean: 108.4,
+    p50: 106,
+    p75: 110,
+    p90: 117,
+    p97_5: 117,
+    p99: 117,
+    p99_9: 117,
+    p99_99: 117,
+    p99_999: 117,
+    max: 117.434,
     totalCount: 5
   },
   awaitPromisses: {
-    mean: 12170.4,
-    p50: 12100,
-    p75: 12400,
-    p90: 12500,
-    p97_5: 12500,
-    p99: 12500,
-    p99_9: 12500,
-    p99_99: 12500,
-    p99_999: 12500,
-    max: 12510.955,
+    mean: 13424.8,
+    p50: 12800,
+    p75: 14100,
+    p90: 14700,
+    p97_5: 14700,
+    p99: 14700,
+    p99_9: 14700,
+    p99_99: 14700,
+    p99_999: 14700,
+    max: 14702.587,
     totalCount: 5
   }
 }
