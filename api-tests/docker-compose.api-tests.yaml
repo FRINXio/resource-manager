@@ -1,7 +1,6 @@
 version: "3.8"
 
 services:
-
   postgresql:
     container_name: postgresql
     image: postgres:13
@@ -13,7 +12,6 @@ services:
       - 5432:5432
 
   resource-manager:
-    container_name: resource-manager
     image: frinx/resource-manager
     environment:
       - RM_DB_CONNECTION_STRING=postgres://postgres:postgres@postgresql:5432/postgres?sslmode=disable
@@ -25,6 +23,12 @@ services:
       - WASMER_MAX_TIMEOUT_MILLIS=10000
     depends_on:
       - postgresql
+
+  nginx:
+    image: nginx:latest
+    volumes:
+      - ./nginx.conf:/etc/nginx/nginx.conf:ro
+    depends_on:
+      - resource-manager
     ports:
-      - 8884:8884
-      - 2345:2345
+      - "8884:8080"

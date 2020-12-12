@@ -53,7 +53,6 @@ One JS execution takes around 30-50ms.
   }
 }
 ```
-
 #### create and test simple PY strategy once x 1.90 ops/sec ±0.85% (14 runs sampled)
 One PY execution takes arund 500-800ms, so more than 10x slower than JS and with
 less predictable duration.
@@ -100,11 +99,51 @@ less predictable duration.
   }
 }
 ```
-
-
-#### create and test simple JS strategy 100x x 1.32 ops/sec ±1.27% (11 runs sampled)
-Running 100 JS executions in parallel. On averge, one execution takes 7,5ms (awaitPromisses.mean/100).
-
+#### create and test simple JS strategy 100x serially x 0.31 ops/sec ±0.26% (6 runs sampled)
+```
+{
+  total: {
+    mean: 3263.6666666666665,
+    p50: 3260,
+    p75: 3260,
+    p90: 3270,
+    p97_5: 3270,
+    p99: 3270,
+    p99_9: 3270,
+    p99_99: 3270,
+    p99_999: 3270,
+    max: 3279.026,
+    totalCount: 6
+  },
+  setup: {
+    mean: 6.833333333333333,
+    p50: 6,
+    p75: 7,
+    p90: 10,
+    p97_5: 10,
+    p99: 10,
+    p99_9: 10,
+    p99_99: 10,
+    p99_999: 10,
+    max: 10.508,
+    totalCount: 6
+  },
+  testStrategy: {
+    mean: 32.07833333333333,
+    p50: 32,
+    p75: 32,
+    p90: 33,
+    p97_5: 34,
+    p99: 35,
+    p99_9: 41,
+    p99_99: 41,
+    p99_999: 41,
+    max: 41.601,
+    totalCount: 600
+  }
+}
+```
+#### create and test simple JS strategy 100x parallelly x 1.32 ops/sec ±1.27% (11 runs sampled)
 ```
 {
   total: {
@@ -161,8 +200,51 @@ Running 100 JS executions in parallel. On averge, one execution takes 7,5ms (awa
   }
 }
 ```
-
-#### create and test simple PY strategy 100x x 0.08 ops/sec ±9.21% (5 runs sampled)
+#### create and test simple PY strategy 100x serially x 0.02 ops/sec ±0.44% (5 runs sampled)
+```
+{
+  total: {
+    mean: 53187.2,
+    p50: 53100,
+    p75: 53200,
+    p90: 53500,
+    p97_5: 53500,
+    p99: 53500,
+    p99_9: 53500,
+    p99_99: 53500,
+    p99_999: 53500,
+    max: 53477.657,
+    totalCount: 5
+  },
+  setup: {
+    mean: 5.8,
+    p50: 6,
+    p75: 6,
+    p90: 7,
+    p97_5: 7,
+    p99: 7,
+    p99_9: 7,
+    p99_99: 7,
+    p99_999: 7,
+    max: 7.552,
+    totalCount: 5
+  },
+  testStrategy: {
+    mean: 531.242,
+    p50: 530,
+    p75: 534,
+    p90: 538,
+    p97_5: 546,
+    p99: 556,
+    p99_9: 605,
+    p99_99: 605,
+    p99_999: 605,
+    max: 605.081,
+    totalCount: 500
+  }
+}
+```
+#### create and test simple PY strategy parallelly 100x x 0.08 ops/sec ±9.21% (5 runs sampled)
 Running 100 PY executions in parallel. On averge, one execution takes 129,72ms (awaitPromisses.mean/100).
 Compared to JS, this is 17x slower.
 
@@ -222,7 +304,6 @@ Compared to JS, this is 17x slower.
   }
 }
 ```
-
 ### ipv4.bench.js
 #### Create ipv4 prefix pool 100x serially x 0.73 ops/sec ±2.04% (8 runs sampled)
 Measure insert a row into DB serially. One iteration is 100 mutations.

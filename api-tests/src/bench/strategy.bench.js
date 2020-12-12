@@ -49,6 +49,25 @@ bench('create and test simple JS strategy once',
     }
 );
 
+bench('create and test simple JS strategy 100x serially',
+    async (histograms) => {
+        const fn = await initAndGetJsTestFunction(histograms);
+        for (let i = 0; i < 100; i++) {
+            let strategyOutput = await fn();
+            if (strategyOutput.stdout.vlan != 85) {
+                throw new Error('Unexpected vlan' + strategyOutput.stdout.vlan);
+            }
+        }
+    }
+);
+
+bench('create and test simple JS strategy 100x parallelly',
+    async (histograms) => {
+        const fn = await initAndGetJsTestFunction(histograms);
+        await executeInParallel(histograms, fn, 100);
+    }
+);
+
 bench('create and test simple PY strategy once',
     async (histograms) => {
         const fn = await initAndGetPyTestFunction(histograms);
@@ -59,14 +78,19 @@ bench('create and test simple PY strategy once',
     }
 );
 
-bench('create and test simple JS strategy 100x',
+bench('create and test simple PY strategy 100x serially',
     async (histograms) => {
-        const fn = await initAndGetJsTestFunction(histograms);
-        await executeInParallel(histograms, fn, 100);
+        const fn = await initAndGetPyTestFunction(histograms);
+        for (let i = 0; i < 100; i++) {
+            let strategyOutput = await fn();
+            if (strategyOutput.stdout.vlan != 85) {
+                throw new Error('Unexpected vlan' + strategyOutput.stdout.vlan);
+            }
+        }
     }
 );
 
-bench('create and test simple PY strategy 100x',
+bench('create and test simple PY strategy 100x parallelly',
     async (histograms) => {
         const fn = await initAndGetPyTestFunction(histograms);
         await executeInParallel(histograms, fn, 100);
