@@ -19,16 +19,9 @@ services:
       - RM_ADMIN_ROLES=OWNER
       - RM_ADMIN_GROUPS=NETWORK-ADMIN
       - RM_LOG_PATH=/var/log/rm.log
-      - RM_LOG_LEVEL=warn
+      - RM_LOG_LEVEL=debug
       - WASMER_MAX_TIMEOUT_MILLIS=10000
     depends_on:
       - postgresql
-
-  nginx:
-    image: nginx:latest
-    volumes:
-      - ./nginx.conf:/etc/nginx/nginx.conf:ro
-    depends_on:
-      - resource-manager
     ports:
-      - "8884:8080"
+      - "8884:8884"
