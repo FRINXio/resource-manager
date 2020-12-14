@@ -5,94 +5,133 @@ directive @goModel(model: String, models: [String!]) on OBJECT
     | INTERFACE
     | UNION
 
+"""
+Interface for entities needed by the relay-framework
+"""
 interface Node
 @goModel(model: "github.com/net-auto/resourceManager/ent.Noder") {
+    """
+    The ID of the entity
+    """
     id: ID!
 }
 
+"""
+Describes the properties of a resource
+"""
 type ResourceType implements Node
 @goModel(model: "github.com/net-auto/resourceManager/ent.ResourceType") {
-    id: ID!
     Name: String!
-    PropertyTypes: [PropertyType!]!
     Pools: [ResourcePool!]!
+    PropertyTypes: [PropertyType!]!
+    id: ID!
 }
 
+"""
+Defines the type of the property
+"""
 type PropertyType implements Node
 @goModel(model: "github.com/net-auto/resourceManager/ent.PropertyType"){
-    id: ID!
-    Name: String!
-    Type: String!,
-    IntVal: Int!,
-    StringVal: String!,
     FloatVal: Float!,
+    IntVal: Int!,
     Mandatory: Boolean!
+    Name: String!
+    StringVal: String!,
+    Type: String!,
+    id: ID!
 }
 
-
+"""
+Holds the string value for pagination
+"""
 type OutputCursor
 @goModel(model: "github.com/net-auto/resourceManager/ent.Cursor"){
     ID: String!
 }
 
+"""
+Holds information about the requested pagination page
+"""
 type PageInfo
 @goModel(model: "github.com/net-auto/resourceManager/ent.PageInfo"){
+    endCursor: OutputCursor!
     hasNextPage: Boolean!
     hasPreviousPage: Boolean!
     startCursor: OutputCursor!
-    endCursor: OutputCursor!
 }
 
+"""
+A Relay-specific entity that holds information about the requested pagination page
+"""
 type ResourceEdge
 @goModel(model: "github.com/net-auto/resourceManager/ent.ResourceEdge"){
-    node: Resource!
     cursor: OutputCursor!
+    node: Resource!
 }
 
+"""
+A Relay-specific entity holding information about pagination
+"""
 type ResourceConnection
 @goModel(model: "github.com/net-auto/resourceManager/ent.ResourceConnection"){
-    pageInfo:   PageInfo!
     edges: [ResourceEdge]!
+    pageInfo:   PageInfo!
     totalCount: Int!
 }
 
+"""
+A pool is an entity that contains allocated and free resources
+"""
 type ResourcePool implements Node
 @goModel(model: "github.com/net-auto/resourceManager/ent.ResourcePool"){
-    id: ID!
+    AllocationStrategy: AllocationStrategy
+    Capacity: PoolCapacityPayload
     Name: String!
+    ParentResource: Resource
+    PoolProperties: Map!
     PoolType: PoolType!
     ResourceType: ResourceType!
     Resources: [Resource!]!
-    PoolProperties: Map!
-    ParentResource: Resource
-    allocatedResources(first: Int, last: Int, before: String, after: String): ResourceConnection
     Tags: [Tag!]!
-    AllocationStrategy: AllocationStrategy
-    Capacity: PoolCapacityPayload
+    allocatedResources(first: Int, last: Int, before: String, after: String): ResourceConnection
+    id: ID!
 }
 
+"""
+Defines the type of pool
+"""
 enum PoolType
 @goModel(
     model: "github.com/net-auto/resourceManager/ent/resourcepool.PoolType"
 )
 {
+    allocating
     set
     singleton
-    allocating
 }
 
+"""
+Represents data-type where variable keys and values can be used
+"""
 scalar Map
 
+
+"""
+Represents an allocated resource
+"""
 type Resource implements Node
 @goModel(model: "github.com/net-auto/resourceManager/ent.Resource")
 {
-    id: ID!
     Description: String
-    Properties: Map!
-    ParentPool: ResourcePool!
     NestedPool: ResourcePool
+    ParentPool: ResourcePool!
+    Properties: Map!
+    id: ID!
 }
 
+"""
+Supported languages for allocation strategy scripts
+"""
 enum AllocationStrategyLang
 @goModel(
     model: "github.com/net-auto/resourceManager/ent/allocationstrategy.Lang"
@@ -102,131 +141,194 @@ enum AllocationStrategyLang
     py
 }
 
+"""
+Represents an allocation strategy
+"""
 type AllocationStrategy implements Node
 @goModel(model: "github.com/net-auto/resourceManager/ent.AllocationStrategy"){
-    id: ID!
-    Name: String!
     Description: String
     Lang: AllocationStrategyLang!
+    Name: String!
     Script: String!
+    id: ID!
 }
 
+"""
+Pools can be tagged for easier search
+"""
 type Tag implements Node
 @goModel(model: "github.com/net-auto/resourceManager/ent.Tag"){
-    id: ID!
-    Tag: String!
     Pools: [ResourcePool]
+    Tag: String!
+    id: ID!
 }
 
+"""
+Helper entities for tag search
+"""
 input TagAnd {
     matchesAll: [String!]!
 }
 
+"""
+Helper entities for tag search
+"""
 input TagOr {
     matchesAny: [TagAnd!]!
 }
 
+"""
+Convenience entity representing the identity of a pool in some calls
+"""
 input ResourcePoolInput {
-    poolProperties: Map!
     ResourcePoolName: String!
+    poolProperties: Map!
 }
 
+"""
+Alternative representation of identity of a resource (i.e. alternative to resource ID)
+"""
 input ResourceInput {
     Properties: Map!
-    UpdatedAt: String!
     # TODO replace with enum
     Status: String!
+    UpdatedAt: String!
 }
 
+"""
+Input parameters for creating a set pool
+"""
 input CreateSetPoolInput {
-    resourceTypeId: ID!
-    poolName: String!
     description: String
     poolDealocationSafetyPeriod: Int!
+    poolName: String!
     poolValues: [Map!]!
+    resourceTypeId: ID!
     tags: [String!]
 }
 
+"""
+Output of creating set pool
+"""
 type CreateSetPoolPayload {
     pool: ResourcePool
 }
 
+"""
+Input parameters for creating a nested set pool
+"""
 input CreateNestedSetPoolInput {
-    resourceTypeId: ID!
-    poolName: String!
     description: String
-    poolDealocationSafetyPeriod: Int!
-    poolValues: [Map]!
     parentResourceId: ID!
+    poolDealocationSafetyPeriod: Int!
+    poolName: String!
+    poolValues: [Map]!
+    resourceTypeId: ID!
     tags: [String!]
 }
 
+"""
+Output of creating a nested set pool
+"""
 type CreateNestedSetPoolPayload {
     pool: ResourcePool
 }
 
+"""
+Input parameters for creating a nested singleton pool
+"""
 input CreateNestedSingletonPoolInput {
-    resourceTypeId: ID!
-    poolName: String!
     description: String
-    poolValues: [Map]!
     parentResourceId: ID!
+    poolName: String!
+    poolValues: [Map]!
+    resourceTypeId: ID!
     tags: [String!]
 }
 
+"""
+Output of creating a nested singleton pool
+"""
 type CreateNestedSingletonPoolPayload {
     pool: ResourcePool
 }
 
+"""
+Input entity for deleting a pool
+"""
 input DeleteResourcePoolInput {
     resourcePoolId: ID!
 }
 
+"""
+Output entity for deleting a pool
+"""
 type DeleteResourcePoolPayload {
     resourcePoolId: ID!
 }
 
+"""
+Input parameters for creating a singleton pool
+"""
 input CreateSingletonPoolInput {
-    resourceTypeId: ID!
-    poolName: String!
     description: String
+    poolName: String!
     poolValues: [Map!]!
+    resourceTypeId: ID!
     tags: [String!]
 }
 
+"""
+Output of creating a singleton pool
+"""
 type CreateSingletonPoolPayload {
     pool: ResourcePool
 }
 
+"""
+Input parameters for creating an allocation pool
+"""
 input CreateAllocatingPoolInput {
-    resourceTypeId: ID!
-    poolName: String!
-    description: String
     allocationStrategyId: ID!
+    description: String
     poolDealocationSafetyPeriod: Int!
+    poolName: String!
     poolProperties: Map!
     poolPropertyTypes: Map!
+    resourceTypeId: ID!
     tags: [String!]
 }
 
+"""
+Output of creating an allocating pool
+"""
 type CreateAllocatingPoolPayload {
     pool: ResourcePool
 }
 
+"""
+Input parameters for creating a nested allocation pool
+"""
 input CreateNestedAllocatingPoolInput {
-    resourceTypeId: ID!
-    poolName: String!
-    description: String
     allocationStrategyId: ID!
-    poolDealocationSafetyPeriod: Int!
+    description: String
     parentResourceId: ID!
+    poolDealocationSafetyPeriod: Int!
+    poolName: String!
+    resourceTypeId: ID!
     tags: [String!]
 }
 
+"""
+Output of creating a nested allocating pool
+"""
 type CreateNestedAllocatingPoolPayload {
     pool: ResourcePool
 }
 
+"""
+Entity representing capacity of a pool
+"""
 type PoolCapacityPayload {
     freeCapacity: Float!
     utilizedCapacity: Float!
@@ -254,49 +356,82 @@ type Query {
     node(id: ID!): Node
 }
 
+"""
+Input parameters for creating a new tag
+"""
 input CreateTagInput {
     tagText: String!
 }
 
+"""
+Output of creating a tag
+"""
 type CreateTagPayload {
     tag: Tag
 }
 
+"""
+Input parameters for updating an existing tag
+"""
 input UpdateTagInput {
     tagId: ID!,
     tagText: String!
 }
 
+"""
+Output of updating a tag
+"""
 type UpdateTagPayload {
     tag: Tag
 }
 
+"""
+Input parameters for deleting an existing tag
+"""
 input DeleteTagInput {
     tagId: ID!
 }
 
+"""
+Output of deleting a tag
+"""
 type DeleteTagPayload {
     tagId: ID!
 }
 
+"""
+Input parameters for a call adding a tag to pool
+"""
 input TagPoolInput {
     tagId: ID!,
     poolId: ID!
 }
 
+"""
+Output of adding a specific tag to a pool
+"""
 type TagPoolPayload {
     tag: Tag
 }
 
+"""
+Input parameters for a call removing a tag from pool
+"""
 input UntagPoolInput {
     tagId: ID!,
     poolId: ID!
 }
 
+"""
+Output of removing a specific tag from a pool
+"""
 type UntagPoolPayload {
     tag: Tag
 }
 
+"""
+Input parameters for creating a new allocation strategy
+"""
 input CreateAllocationStrategyInput {
     name: String!,
     description: String,
@@ -304,43 +439,74 @@ input CreateAllocationStrategyInput {
     lang: AllocationStrategyLang!
 }
 
+"""
+Output of creating a new allocation strategy
+"""
 type CreateAllocationStrategyPayload {
     strategy: AllocationStrategy
 }
 
+"""
+Input parameters for deleting an existing allocation strategy
+"""
 input DeleteAllocationStrategyInput {
     allocationStrategyId: ID!
 }
 
+"""
+Output of deleting an existing allocation strategy
+"""
 type DeleteAllocationStrategyPayload {
     strategy: AllocationStrategy
 }
 
-## resourceName: String! - name of the resource type AND property type (should they be different?)
-## resourceProperties: Map! - for key "init" the value is the initial value of the property type (like 7)
-##                            for key "type" the value is the name of the type like "int"
+"""
+Creating a new resource-type
+"""
 input CreateResourceTypeInput {
+"""
+name of the resource type AND property type (should they be different?)
+"""
     resourceName: String!,
+"""
+resourceProperties: Map! - for key "init" the value is the initial value of the property type (like 7)
+                         - for key "type" the value is the name of the type like "int"
+"""
     resourceProperties: Map!
 }
 
+"""
+Output of creating a new resource-type
+"""
 type CreateResourceTypePayload {
     resourceType: ResourceType!
 }
 
+"""
+Input parameters for deleting an existing resource-type
+"""
 input DeleteResourceTypeInput {
     resourceTypeId: ID!
 }
 
+"""
+Output of deleting a resource-type
+"""
 type DeleteResourceTypePayload {
     resourceTypeId: ID!
 }
 
+"""
+Input parameters updating the name of a resource-type
+"""
 input UpdateResourceTypeNameInput {
     resourceTypeId: ID!,
     resourceName: String!
 }
 
+"""
+Output of updating the name of a resource-type
+"""
 type UpdateResourceTypeNamePayload {
     resourceTypeId: ID!
 }
