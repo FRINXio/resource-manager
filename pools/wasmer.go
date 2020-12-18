@@ -91,13 +91,13 @@ type ScriptInvoker interface {
 		currentResources []*model.ResourceInput,
 		poolPropertiesMaps map[string]interface{},
 		functionName string,
-	) (map[string]interface{}, string, error)
+	) ([]map[string]interface{}, string, error)
 	invokePy(strategyScript string, userInput map[string]interface{},
 		resourcePool model.ResourcePoolInput,
 		currentResources []*model.ResourceInput,
 		poolPropertiesMaps map[string]interface{},
 		functionName string,
-	) (map[string]interface{}, string, error)
+	) ([]map[string]interface{}, string, error)
 }
 
 func InvokeAllocationStrategy(
@@ -108,7 +108,7 @@ func InvokeAllocationStrategy(
 	currentResources []*model.ResourceInput,
 	poolPropertiesMaps map[string]interface{},
 	functionName string,
-) (map[string]interface{}, string, error) {
+) ([]map[string]interface{}, string, error) {
 
 	switch strat.Lang {
 	case allocationstrategy.LangJs:
@@ -139,7 +139,7 @@ func (wasmer Wasmer) invokeJs(
 	currentResources []*model.ResourceInput,
 	poolPropertiesMaps map[string]interface{},
 	functionName string,
-) (map[string]interface{}, string, error) {
+) ([]map[string]interface{}, string, error) {
 
 	// Append script to invoke the function, parse inputs and serialize outputs
 	header := `
@@ -196,7 +196,8 @@ if (result != null) {
 	return wasmer.invoke(wasmer.wasmerBinPath, wasmer.jsBinPath, "--", "--std", "-e", scriptWithInvoker)
 }
 
-func (wasmer Wasmer) invoke(name string, arg ...string) (map[string]interface{}, string, error) {
+func (wasmer Wasmer) invoke(name string, arg ...string) ([]map[string]interface{}, string, error) {
+	start := time.Now()
 	ctx, cancel := context.WithTimeout(context.Background(), wasmer.maxTimeout)
 	defer cancel()
 
@@ -209,6 +210,8 @@ func (wasmer Wasmer) invoke(name string, arg ...string) (map[string]interface{},
 	err := command.Run()
 	stdout := stdoutBuffer.Bytes()
 	stderr := string(stderrBuffer.Bytes())
+	elapsed := time.Now().Sub(start)
+	log.Debug(nil, "Execution duration: %v", elapsed)
 
 	if err != nil {
 		err := errors.Wrapf(err,
@@ -220,14 +223,22 @@ func (wasmer Wasmer) invoke(name string, arg ...string) (map[string]interface{},
 	log.Debug(nil, "Stdout: %s", string(stdout[:]))
 	log.Debug(nil, "Stderr: %s", stderr[:])
 
-	m := make(map[string]interface{})
-	if err := json.Unmarshal(stdout, &m); err != nil {
-		log.Error(nil, err, "Parsing error")
-		return nil, stderr, errors.Wrapf(err,
-			"Unable to parse allocation function output as flat JSON: \"%s\". " +
-			"Error output: \"%s\"", string(stdout), stderr)
+	var arrayResult []map[string]interface{}
+	err = json.Unmarshal(stdout, &arrayResult)
+	if err != nil {
+		// try to deserialize to a map - single resource
+		var singleResult map[string]interface{}
+		err = json.Unmarshal(stdout, &singleResult)
+
+		if err != nil {
+			log.Error(nil, err, "Parsing error")
+			return nil, stderr, errors.Wrapf(err,
+				"Unable to parse allocation function output as flat JSON: \"%s\". "+
+					"Error output: \"%s\"", string(stdout), stderr)
+		}
+		arrayResult = []map[string]interface{}{singleResult}
 	}
-	return m, stderr, nil
+	return arrayResult, stderr, nil
 }
 
 func prefixLines(str string, prefix string) string {
@@ -261,7 +272,7 @@ func (wasmer Wasmer) invokePy(
 	currentResources []*model.ResourceInput,
 	poolPropertiesMaps map[string]interface{},
 	functionName string,
-) (map[string]interface{}, string, error) {
+) ([]map[string]interface{}, string, error) {
 	header := `
 import sys,json
 def log(*args, **kwargs):

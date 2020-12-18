@@ -562,3 +562,25 @@ Measure e2e performance of ipv4 strategy. One iteration is 100 mutations.
   }
 }
 ```
+
+---
+# at once:
+                    1 IP              100 IPs
+wasmer              20ms              050ms
+claimResources      35ms              527ms
+
+
+Problems:
+1. Bug: whole table locking, two different pools cannot be acquired
+2. even when 1. is fixed, graphql allows arbitrary depth so whole db might get locked
+3. long running serializable tx
+4. allocate_resources(100) gets slower: 500ms vs 1000ms with 30k rows
+5. wasmer has no working go bindings
+
+Possible solutions:
+1. replace isolation level with version column, or fix parallel pool allocation
+2. add batching (claimResources, maybe at worker level)
+4. Use JSON(B) properties instead of separate table
+5. use multiline insert in claimResources
+6. use unique constraint instead of select to check that resource is not added twice
+. add more (wasmer) instances, explore faas

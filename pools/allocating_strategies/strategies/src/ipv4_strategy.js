@@ -83,33 +83,40 @@ function invoke() {
     // unwrap and sort currentResources
     let currentResourcesUnwrapped = currentResources.map(cR => cR.Properties)
     let currentResourcesSet = new Set(currentResourcesUnwrapped.map(ip => ip.address))
-
-    let firstPossibleAddr = 0
-    let lastPossibleAddr = 0
-    if (userInput.subnet === true) {
-        firstPossibleAddr = rootAddressNum + 1
-        lastPossibleAddr = rootAddressNum + rootCapacity - 1
-    } else {
-        firstPossibleAddr = rootAddressNum
-        lastPossibleAddr = rootAddressNum + rootCapacity
-    }
-
-    for (let i = firstPossibleAddr; i < lastPossibleAddr; i++) {
-        if (!currentResourcesSet.has(inet_ntoa(i))) {
-            // FIXME How to pass these stats ?
-            // logStats(inet_ntoa(i), rootPrefixParsed, userInput.subnet === true, currentResourcesUnwrapped)
-            return {
-                "address": inet_ntoa(i)
+    const resourceCount = userInput.resourceCount?userInput.resourceCount:1
+    const result = []
+    for (let resourceIdx = 0; resourceIdx < resourceCount; resourceIdx++) {
+        let firstPossibleAddr = 0
+        let lastPossibleAddr = 0
+        if (userInput.subnet === true) {
+            firstPossibleAddr = rootAddressNum + 1
+            lastPossibleAddr = rootAddressNum + rootCapacity - 1
+        } else {
+            firstPossibleAddr = rootAddressNum
+            lastPossibleAddr = rootAddressNum + rootCapacity
+        }
+        let found = false
+        for (let i = firstPossibleAddr; i < lastPossibleAddr && !found; i++) {
+            const ipInAscii = inet_ntoa(i)
+            if (!currentResourcesSet.has(ipInAscii)) {
+                // FIXME How to pass these stats ?
+                // logStats(inet_ntoa(i), rootPrefixParsed, userInput.subnet === true, currentResourcesUnwrapped)
+                result.push({"address": ipInAscii})
+                found = true
+                // add it to existing resources
+                currentResourcesSet.add(ipInAscii)
             }
         }
+        if (!found) {
+            // no suitable range found
+            console.error(`Unable to allocate Ipv4 address from: ${rootPrefixStr}. ` +
+                `Insufficient capacity to allocate ${resourceCount} new address(es)`)
+            console.error("Currently allocated addresses: " + addressesToStr(currentResourcesUnwrapped))
+            logStats(null, rootPrefixParsed, userInput.subnet === true, currentResourcesUnwrapped, "error")
+            return null
+        }
     }
-
-    // no suitable range found
-    console.error("Unable to allocate Ipv4 address from: " + rootPrefixStr +
-        ". Insufficient capacity to allocate a new address")
-    console.error("Currently allocated addresses: " + addressesToStr(currentResourcesUnwrapped))
-    logStats(null, rootPrefixParsed, userInput.subnet === true, currentResourcesUnwrapped, "error")
-    return null
+    return result
 }
 
 // STRATEGY_END

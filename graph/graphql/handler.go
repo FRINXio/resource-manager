@@ -72,7 +72,7 @@ func OpenTxFromContext(ctx context.Context) (context.Context, driver.Tx, error) 
 		for i := 0; i < len(opCtx.Operation.SelectionSet); i++ {
 			field, ok := opCtx.Operation.SelectionSet[i].(*ast.Field)
 			if ok {
-				if field.Name == "ClaimResource" {
+				if field.Name == "ClaimResources" {
 					txOptions = sql.TxOptions{
 						Isolation: sql.LevelSerializable,
 					}

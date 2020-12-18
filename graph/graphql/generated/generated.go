@@ -114,7 +114,7 @@ type ComplexityRoot struct {
 	}
 
 	Mutation struct {
-		ClaimResource              func(childComplexity int, poolID int, description *string, userInput map[string]interface{}) int
+		ClaimResources             func(childComplexity int, poolID int, description *string, userInput map[string]interface{}) int
 		CreateAllocatingPool       func(childComplexity int, input *model.CreateAllocatingPoolInput) int
 		CreateAllocationStrategy   func(childComplexity int, input *model.CreateAllocationStrategyInput) int
 		CreateNestedAllocatingPool func(childComplexity int, input model.CreateNestedAllocatingPoolInput) int
@@ -252,7 +252,7 @@ type MutationResolver interface {
 	CreateAllocationStrategy(ctx context.Context, input *model.CreateAllocationStrategyInput) (*model.CreateAllocationStrategyPayload, error)
 	DeleteAllocationStrategy(ctx context.Context, input *model.DeleteAllocationStrategyInput) (*model.DeleteAllocationStrategyPayload, error)
 	TestAllocationStrategy(ctx context.Context, allocationStrategyID int, resourcePool model.ResourcePoolInput, currentResources []*model.ResourceInput, userInput map[string]interface{}) (map[string]interface{}, error)
-	ClaimResource(ctx context.Context, poolID int, description *string, userInput map[string]interface{}) (*ent.Resource, error)
+	ClaimResources(ctx context.Context, poolID int, description *string, userInput map[string]interface{}) ([]*ent.Resource, error)
 	FreeResource(ctx context.Context, input map[string]interface{}, poolID int) (string, error)
 	CreateSetPool(ctx context.Context, input model.CreateSetPoolInput) (*model.CreateSetPoolPayload, error)
 	CreateNestedSetPool(ctx context.Context, input model.CreateNestedSetPoolInput) (*model.CreateNestedSetPoolPayload, error)
@@ -452,17 +452,17 @@ func (e *executableSchema) Complexity(typeName, field string, childComplexity in
 
 		return e.complexity.DeleteTagPayload.TagID(childComplexity), true
 
-	case "Mutation.ClaimResource":
-		if e.complexity.Mutation.ClaimResource == nil {
+	case "Mutation.ClaimResources":
+		if e.complexity.Mutation.ClaimResources == nil {
 			break
 		}
 
-		args, err := ec.field_Mutation_ClaimResource_args(context.TODO(), rawArgs)
+		args, err := ec.field_Mutation_ClaimResources_args(context.TODO(), rawArgs)
 		if err != nil {
 			return 0, false
 		}
 
-		return e.complexity.Mutation.ClaimResource(childComplexity, args["poolId"].(int), args["description"].(*string), args["userInput"].(map[string]interface{})), true
+		return e.complexity.Mutation.ClaimResources(childComplexity, args["poolId"].(int), args["description"].(*string), args["userInput"].(map[string]interface{})), true
 
 	case "Mutation.CreateAllocatingPool":
 		if e.complexity.Mutation.CreateAllocatingPool == nil {
@@ -1615,7 +1615,7 @@ type Mutation {
         currentResources: [ResourceInput!]!, userInput: Map!): Map!
 
     # managing resources via pools
-    ClaimResource(poolId: ID!, description: String, userInput: Map!): Resource!
+    ClaimResources(poolId: ID!, description: String, userInput: Map!): [Resource!]!
     FreeResource(input: Map!, poolId: ID!): String!
 
     # create/update/delete resource pool
@@ -1641,7 +1641,7 @@ var parsedSchema = gqlparser.MustLoadSchema(sources...)
 
 // region    ***************************** args.gotpl *****************************
 
-func (ec *executionContext) field_Mutation_ClaimResource_args(ctx context.Context, rawArgs map[string]interface{}) (map[string]interface{}, error) {
+func (ec *executionContext) field_Mutation_ClaimResources_args(ctx context.Context, rawArgs map[string]interface{}) (map[string]interface{}, error) {
 	var err error
 	args := map[string]interface{}{}
 	var arg0 int
@@ -3257,7 +3257,7 @@ func (ec *executionContext) _Mutation_TestAllocationStrategy(ctx context.Context
 	return ec.marshalNMap2map(ctx, field.Selections, res)
 }
 
-func (ec *executionContext) _Mutation_ClaimResource(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
+func (ec *executionContext) _Mutation_ClaimResources(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
 	defer func() {
 		if r := recover(); r != nil {
 			ec.Error(ctx, ec.Recover(ctx, r))
@@ -3274,7 +3274,7 @@ func (ec *executionContext) _Mutation_ClaimResource(ctx context.Context, field g
 
 	ctx = graphql.WithFieldContext(ctx, fc)
 	rawArgs := field.ArgumentMap(ec.Variables)
-	args, err := ec.field_Mutation_ClaimResource_args(ctx, rawArgs)
+	args, err := ec.field_Mutation_ClaimResources_args(ctx, rawArgs)
 	if err != nil {
 		ec.Error(ctx, err)
 		return graphql.Null
@@ -3282,7 +3282,7 @@ func (ec *executionContext) _Mutation_ClaimResource(ctx context.Context, field g
 	fc.Args = args
 	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
 		ctx = rctx // use context from middleware stack in children
-		return ec.resolvers.Mutation().ClaimResource(rctx, args["poolId"].(int), args["description"].(*string), args["userInput"].(map[string]interface{}))
+		return ec.resolvers.Mutation().ClaimResources(rctx, args["poolId"].(int), args["description"].(*string), args["userInput"].(map[string]interface{}))
 	})
 	if err != nil {
 		ec.Error(ctx, err)
@@ -3294,9 +3294,9 @@ func (ec *executionContext) _Mutation_ClaimResource(ctx context.Context, field g
 		}
 		return graphql.Null
 	}
-	res := resTmp.(*ent.Resource)
+	res := resTmp.([]*ent.Resource)
 	fc.Result = res
-	return ec.marshalNResource2ᚖgithubᚗcomᚋnetᚑautoᚋresourceManagerᚋentᚐResource(ctx, field.Selections, res)
+	return ec.marshalNResource2ᚕᚖgithubᚗcomᚋnetᚑautoᚋresourceManagerᚋentᚐResourceᚄ(ctx, field.Selections, res)
 }
 
 func (ec *executionContext) _Mutation_FreeResource(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
@@ -8361,8 +8361,8 @@ func (ec *executionContext) _Mutation(ctx context.Context, sel ast.SelectionSet)
 			if out.Values[i] == graphql.Null {
 				invalids++
 			}
-		case "ClaimResource":
-			out.Values[i] = ec._Mutation_ClaimResource(ctx, field)
+		case "ClaimResources":
+			out.Values[i] = ec._Mutation_ClaimResources(ctx, field)
 			if out.Values[i] == graphql.Null {
 				invalids++
 			}

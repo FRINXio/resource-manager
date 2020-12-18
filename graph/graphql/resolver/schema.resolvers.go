@@ -154,16 +154,21 @@ func (r *mutationResolver) TestAllocationStrategy(ctx context.Context, allocatio
 	return result, nil
 }
 
-func (r *mutationResolver) ClaimResource(ctx context.Context, poolID int, description *string, userInput map[string]interface{}) (*ent.Resource, error) {
+func (r *mutationResolver) ClaimResources(ctx context.Context, poolID int, description *string, userInput map[string]interface{}) ([]*ent.Resource, error) {
 	pool, err := p.ExistingPoolFromId(ctx, r.ClientFrom(ctx), poolID)
 	if err != nil {
 		return nil, gqlerror.Errorf("Unable to claim resource: %v", err)
 	}
 
-	if res, err := pool.ClaimResource(userInput, description); err != nil {
+	if res, err := pool.ClaimResources(userInput, description); err != nil {
 		return nil, gqlerror.Errorf("Unable to claim resource: %v", err)
 	} else {
-		return res, nil
+		// convert []ent.resource -> []*ent.Resource because of a buggy codegen
+		var res2 []*ent.Resource
+		for i := 0; i < len(res); i++ {
+			res2 = append(res2, &res[i])
+		}
+		return res2, nil
 	}
 }
 

@@ -4,7 +4,7 @@ import {
     getAllTags, findResourceTypeId, createNestedSingletonPool,
     findAllocationStrategyId, createAllocationPool,
     createNestedAllocationPool, getResourcesForPool,
-    claimResource, getResourcePool
+    claimResources, getResourcePool
 } from "./graphql-queries.js";
 import _ from "underscore";
 
@@ -184,14 +184,14 @@ export function getUniqueName(prefix){
 
 export async function prepareIpv4Pool() {
     let rootPoolId = (await createIpv4PrefixRootPool()).id;
-    let resource12Id = (await claimResource(rootPoolId, { desiredSize: 4194304 })).id;
+    let resource12Id = (await claimResources(rootPoolId, { desiredSize: 4194304 }))[0].id;
     return await createIpv4NestedPool(resource12Id);
 }
 
 export async function allocateFromIPv4PoolSerially(poolId, count, claimResourceParams) {
     const result = [];
     for (let i = 0; i < count; i++) {
-        result.push(await claimResource(poolId, claimResourceParams));
+        result.push(await claimResources(poolId, claimResourceParams));
     }
     const ips = result.filter(it => it != null).map(it => it.Properties.address);
     const uniqIPs = [...new Set(ips)];
@@ -205,7 +205,7 @@ export async function allocateFromIPv4PoolSerially(poolId, count, claimResourceP
 export async function allocateFromIPv4PoolParallelly(poolId, count, retries, claimResourceParams) {
     const promises = [];
     for (let i = 0; i < count; i++) {
-        promises.push(claimResource(poolId, claimResourceParams, null, true));
+        promises.push(claimResources(poolId, claimResourceParams, null, true));
     }
     const result = await Promise.all(promises);
     const ips = result.filter(it => it != null).map(it => it.Properties.address);

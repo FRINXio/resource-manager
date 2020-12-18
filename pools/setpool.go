@@ -2,6 +2,8 @@ package pools
 
 import (
 	"context"
+	"time"
+
 	"github.com/net-auto/resourceManager/ent"
 	"github.com/net-auto/resourceManager/ent/predicate"
 	resource "github.com/net-auto/resourceManager/ent/resource"
@@ -9,7 +11,6 @@ import (
 	"github.com/net-auto/resourceManager/ent/schema"
 	log "github.com/net-auto/resourceManager/logging"
 	"github.com/pkg/errors"
-	"time"
 )
 
 // NewSetPool creates a brand new pool allocating DB entities in the process
@@ -98,8 +99,8 @@ func (pool SetPool) Destroy() error {
 	return nil
 }
 
-// ClaimResource allocates the next available resource
-func (pool SetPool) ClaimResource(userInput map[string]interface{}, description *string) (*ent.Resource, error) {
+// ClaimResources allocates the next available resource
+func (pool SetPool) ClaimResources(userInput map[string]interface{}, description *string) ([]ent.Resource, error) {
 	// Allocate new resource for this tag
 	unclaimedRes, err := pool.queryUnclaimedResourceEager()
 	if err != nil {
@@ -118,7 +119,7 @@ func (pool SetPool) ClaimResource(userInput map[string]interface{}, description 
 		log.Error(pool.ctx, err, "Unable to claim a resource")
 		return nil, err
 	}
-	return unclaimedRes, err
+	return []ent.Resource{*unclaimedRes}, err
 }
 
 func (pool SetPool) Capacity() (float64, float64, error) {
@@ -173,7 +174,7 @@ func (pool SetPool) freeResourceInner(raw RawResourceProps,
 	// Make sure there are no nested pools attached
 	if nestedPool, err := res.QueryNestedPool().First(pool.ctx); err != nil && !ent.IsNotFound(err) {
 		log.Error(pool.ctx, err, "Unable to free a resource in pool ID %d", pool.ID)
-		return errors.Wrapf(err, "Unable to free a resource in pool \"%s\". " +
+		return errors.Wrapf(err, "Unable to free a resource in pool \"%s\". "+
 			"Unable to check nested pools", pool.Name)
 	} else if nestedPool != nil {
 		err := errors.Errorf("Unable to free a resource in pool \"%s\". "+
@@ -241,7 +242,7 @@ func (pool SetPool) QueryResource(raw RawResourceProps) (*ent.Resource, error) {
 		Only(pool.ctx)
 
 	if err2 != nil {
-		log.Error(pool.ctx, err,  "Unable retrieve resources for pool ID %d", pool.ID)
+		log.Error(pool.ctx, err, "Unable retrieve resources for pool ID %d", pool.ID)
 	}
 
 	return only, err2
@@ -284,7 +285,7 @@ func (pool SetPool) QueryResources() (ent.Resources, error) {
 		All(pool.ctx)
 
 	if err != nil {
-		log.Error(pool.ctx, err,  "Unable retrieve resources for pool ID %d", pool.ID)
+		log.Error(pool.ctx, err, "Unable retrieve resources for pool ID %d", pool.ID)
 	}
 
 	return res, err

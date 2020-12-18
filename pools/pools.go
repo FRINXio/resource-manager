@@ -2,6 +2,7 @@ package pools
 
 import (
 	"context"
+
 	log "github.com/net-auto/resourceManager/logging"
 
 	"github.com/net-auto/resourceManager/ent"
@@ -12,7 +13,7 @@ import (
 
 // Pool is a resource provider
 type Pool interface {
-	ClaimResource(userInput map[string]interface{}, description *string) (*ent.Resource, error)
+	ClaimResources(userInput map[string]interface{}, description *string) ([]ent.Resource, error)
 	FreeResource(RawResourceProps) error
 	QueryResource(RawResourceProps) (*ent.Resource, error)
 	QueryResources() (ent.Resources, error)

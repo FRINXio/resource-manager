@@ -5,7 +5,7 @@ import {
     getUniqueName,
 } from '../test-helpers.js';
 import {
-    findResourceTypeId, findAllocationStrategyId, createAllocationPool,
+    claimResources, findResourceTypeId, findAllocationStrategyId, createAllocationPool,
 } from "../graphql-queries.js";
 
 bench('Create ipv4 prefix pool 100x serially',
@@ -98,5 +98,34 @@ bench('allocate 100 ipv4_pool resources parallelly',
         const poolId = await record(histograms, 'setup', prepareIpv4Pool);
         await record(histograms, 'awaitPromisses',
             async () => allocateFromIPv4PoolParallelly(poolId, iterations, iterations * 10, {}));
+    }
+);
+
+async function allocateIPsUsingResourceCount(histograms, resourceCount) {
+    const poolId = await record(histograms, 'setup', prepareIpv4Pool);
+    await record(histograms, 'allocate',
+        async () => await claimResources(poolId, { resourceCount }));
+}
+
+bench('allocate 1 IP using claimResources',
+    async (histograms) => {
+        await allocateIPsUsingResourceCount(histograms, 1);
+    }
+);
+
+bench('allocate 100 IPs using claimResources',
+    async (histograms) => {
+        await allocateIPsUsingResourceCount(histograms, 100);
+    }
+);
+
+bench('allocate pool and 100 IPs using claimResources x 8 in parallel',
+    async (histograms) => {
+        const parallelism = 8;
+        const promises = [];
+        for (let i = 0; i < parallelism; i++) {
+            promises.push(allocateIPsUsingResourceCount(histograms, 100));
+        }
+        await record(histograms, 'awaitPromisses', async () => await Promise.all(promises));
     }
 );

@@ -575,11 +575,11 @@ export async function createAllocationPool(poolName, resourceTypeId, strategyId,
     .catch(error => suppressErrors?null:console.log(error));
 }
 
-export async function claimResource(poolId, params, description = null, suppressErrors = false){
+export async function claimResources(poolId, params, description = null, suppressErrors = false){
     return client.mutate({
         mutation: gql`
             mutation claimRes($poolId: ID!, $description: String, $userInput: Map!) {
-               ClaimResource( poolId: $poolId, description: $description, userInput: $userInput){
+               ClaimResources( poolId: $poolId, description: $description, userInput: $userInput){
                    id
                    Properties
                 }
@@ -591,7 +591,7 @@ export async function claimResource(poolId, params, description = null, suppress
             description: description,
         }
     })
-    .then(result => result.data.ClaimResource)
+    .then(result => result.data.ClaimResources)
     .catch(error => suppressErrors?null:console.log(error));
 }
 

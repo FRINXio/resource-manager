@@ -2,6 +2,7 @@ package pools
 
 import (
 	"context"
+
 	"github.com/net-auto/resourceManager/ent/resource"
 	"github.com/pkg/errors"
 
@@ -44,7 +45,7 @@ func NewSingletonPoolWithMeta(
 	return &SingletonPool{SetPool{poolBase{pool, ctx, client}}}, pool, nil
 }
 
-func (pool SingletonPool) ClaimResource(userInput map[string]interface{}, description *string) (*ent.Resource, error) {
+func (pool SingletonPool) ClaimResources(userInput map[string]interface{}, description *string) ([]ent.Resource, error) {
 	_, err := pool.client.Resource.Update().
 		SetStatus(resource.StatusClaimed).
 		Where(resource.HasPoolWith(resourcePool.ID(pool.ID))).
@@ -58,8 +59,11 @@ func (pool SingletonPool) ClaimResource(userInput map[string]interface{}, descri
 	if description != nil {
 		log.Warn(pool.ctx, "Description for a resource from singleton pool will be ignored")
 	}
-
-	return pool.client.Resource.Query().Where(resource.HasPoolWith(resourcePool.ID(pool.ID))).Only(pool.ctx)
+	resource, err := pool.client.Resource.Query().Where(resource.HasPoolWith(resourcePool.ID(pool.ID))).Only(pool.ctx)
+	if err != nil {
+		return nil, err
+	}
+	return []ent.Resource{*resource}, nil
 }
 
 func (pool SingletonPool) FreeResource(raw RawResourceProps) error {
@@ -100,7 +104,7 @@ func (pool SingletonPool) QueryResources() (ent.Resources, error) {
 			resource.StatusIn(resource.StatusBench, resource.StatusClaimed))).All(pool.ctx)
 
 	if err != nil {
-		log.Error(pool.ctx, err,  "Unable retrieve resources for pool ID %d", pool.ID)
+		log.Error(pool.ctx, err, "Unable retrieve resources for pool ID %d", pool.ID)
 	}
 
 	return all, err
@@ -115,7 +119,7 @@ func (pool SingletonPool) Destroy() error {
 	}
 
 	if len(claims) > 0 {
-		log.Warn(pool.ctx,  "Unable to delete pool ID %d there are claimed resources", pool.ID)
+		log.Warn(pool.ctx, "Unable to delete pool ID %d there are claimed resources", pool.ID)
 		return errors.Errorf("Unable to destroy pool \"%s\", there are claimed resources",
 			pool.Name)
 	}

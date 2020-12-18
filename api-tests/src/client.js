@@ -12,6 +12,7 @@ const authLink = setContext((_, { headers }) => {
             'x-tenant-id': config.X_TENANT_ID,
             'x-auth-user-roles': config.X_AUTH_USER_ROLES,
             'from': config.FROM,
+            // disable gzip for debugging: 'Accept-Encoding': 'identity'
         }
     }
 });
