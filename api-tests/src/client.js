@@ -3,7 +3,16 @@ import fetch from "cross-fetch";
 import { ApolloClient, InMemoryCache, HttpLink } from '@apollo/client';
 import { setContext } from '@apollo/client/link/context/context.cjs.js';
 
-dotenv.config();
+let isConfigOk = dotenv.config();
+
+if (isConfigOk.error) {
+    //reading config run locally from the IDE
+    isConfigOk = dotenv.config({ path: process.cwd() + '/../../.env' });
+    if (isConfigOk.error) {
+        throw isConfigOk.error
+    }
+}
+
 const config = process.env;
 
 const authLink = setContext((_, { headers }) => {
