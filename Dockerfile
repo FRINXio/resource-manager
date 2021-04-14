@@ -35,4 +35,14 @@ RUN ./.wasmer/bin/wasmer ./wasm/quickjs/quickjs.wasm -- --std -e 'console.log("W
 
 COPY run.sh run.sh
 COPY --from=build /resMgr/resourceManager resourceManager
+
+RUN groupadd -r resManager && \
+    useradd --no-log-init -r -g resManager resManager && \ 
+    chown -R resManager:resManager /resMgr && \
+    mkdir -p /home/resManager && \
+    chown -R resManager:resManager /home/resManager && \
+    chown -R resManager:resManager /var/log 
+
+USER resManager
+
 CMD ./run.sh
