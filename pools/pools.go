@@ -12,9 +12,10 @@ import (
 
 // Pool is a resource provider
 type Pool interface {
-	ClaimResource(userInput map[string]interface{}, description *string) (*ent.Resource, error)
+	ClaimResource(userInput map[string]interface{}, description *string, alternativeId map[string]interface{}) (*ent.Resource, error)
 	FreeResource(RawResourceProps) error
 	QueryResource(RawResourceProps) (*ent.Resource, error)
+	QueryResourceByAltId(map[string]interface{}) (*ent.Resource, error)
 	QueryResources() (ent.Resources, error)
 	Destroy() error
 	ResourceType() (*ent.ResourceType, error)
@@ -73,7 +74,7 @@ func newFixedPoolInner(ctx context.Context,
 	}
 
 	// Pre-create all resources
-	_, resourceErr := PreCreateResources(ctx, client, propertyValues, pool, resourceType, resource.StatusFree, nil)
+	_, resourceErr := PreCreateResources(ctx, client, propertyValues, pool, resourceType, resource.StatusFree, nil, nil)
 
 	if resourceErr != nil {
 		log.Error(ctx, err, "Unable to create new pool \"%s\"", poolName)

@@ -149,6 +149,7 @@ var (
 		{Name: "id", Type: field.TypeInt, Increment: true},
 		{Name: "status", Type: field.TypeEnum, Enums: []string{"free", "claimed", "retired", "bench"}},
 		{Name: "description", Type: field.TypeString, Nullable: true, Size: 2147483647},
+		{Name: "alternate_id", Type: field.TypeJSON, Nullable: true},
 		{Name: "updated_at", Type: field.TypeTime},
 		{Name: "resource_pool_claims", Type: field.TypeInt, Nullable: true},
 	}
@@ -160,7 +161,7 @@ var (
 		ForeignKeys: []*schema.ForeignKey{
 			{
 				Symbol:  "resources_resource_pools_claims",
-				Columns: []*schema.Column{ResourcesColumns[4]},
+				Columns: []*schema.Column{ResourcesColumns[5]},
 
 				RefColumns: []*schema.Column{ResourcePoolsColumns[0]},
 				OnDelete:   schema.SetNull,
@@ -170,7 +171,7 @@ var (
 			{
 				Name:    "resource_resource_pool_claims",
 				Unique:  false,
-				Columns: []*schema.Column{ResourcesColumns[4]},
+				Columns: []*schema.Column{ResourcesColumns[5]},
 			},
 		},
 	}

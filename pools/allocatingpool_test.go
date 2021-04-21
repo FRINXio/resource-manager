@@ -105,7 +105,7 @@ func TestAllocatingPool_ReclaimImmediately(t *testing.T) {
 	defer ts.Close()
 
 	userInput := make(map[string]interface{})
-	resource, err := ts.pool.ClaimResource(userInput, nil)
+	resource, err := ts.pool.ClaimResource(userInput, nil, nil)
 	if err != nil {
 		t.Fatalf("Unable to claim resource: %s", err)
 	}
@@ -128,7 +128,7 @@ func TestAllocatingPool_ReclaimImmediately(t *testing.T) {
 	assertInstancesInDb(ts.client.Property.Query().AllX(ts.ctx), 0, t)
 
 	// reclaiming is possible
-	_, err = ts.pool.ClaimResource(userInput, nil)
+	_, err = ts.pool.ClaimResource(userInput, nil, nil)
 	if err != nil {
 		t.Fatalf("Unable to claim resource: %s", err)
 	}
@@ -142,7 +142,7 @@ func TestAllocatingPool_ScriptFailure(t *testing.T) {
 	defer ts.Close()
 
 	userInput := make(map[string]interface{})
-	_, err := ts.pool.ClaimResource(userInput, nil)
+	_, err := ts.pool.ClaimResource(userInput, nil, nil)
 	if err == nil {
 		t.Fatalf("Resource claim should have failed")
 	}
@@ -160,7 +160,7 @@ func TestAllocatingPool_RetiredResource(t *testing.T) {
 	userInput := make(map[string]interface{})
 
 	// claim resource vlan:1
-	_, err := ts.pool.ClaimResource(userInput, nil)
+	_, err := ts.pool.ClaimResource(userInput, nil, nil)
 	if err != nil {
 		t.Fatalf("Unable to claim resource: %s", err)
 	}
@@ -175,7 +175,7 @@ func TestAllocatingPool_RetiredResource(t *testing.T) {
 	assertInstancesInDb(ts.client.Resource.Query().Where(resource.StatusEQ(resource.StatusRetired)).AllX(ts.ctx), 1, t)
 
 	// it should not be allowed to be reclaimed
-	_, err = ts.pool.ClaimResource(userInput, nil)
+	_, err = ts.pool.ClaimResource(userInput, nil, nil)
 	if err == nil {
 		t.Fatalf("Second resource claim should have failed")
 	}
@@ -192,7 +192,7 @@ func TestAllocatingPool_WithSafetyPeriod(t *testing.T) {
 	userInput := make(map[string]interface{})
 
 	// claim resource vlan:1
-	_, err := ts.pool.ClaimResource(userInput, nil)
+	_, err := ts.pool.ClaimResource(userInput, nil, nil)
 	if err != nil {
 		t.Fatalf("Unable to claim resource: %s", err)
 	}
@@ -207,7 +207,7 @@ func TestAllocatingPool_WithSafetyPeriod(t *testing.T) {
 	assertInstancesInDb(ts.client.Resource.Query().Where(resource.StatusEQ(resource.StatusBench)).AllX(ts.ctx), 1, t)
 
 	// it should not be allowed to be reclaimed immediately
-	_, err = ts.pool.ClaimResource(userInput, nil)
+	_, err = ts.pool.ClaimResource(userInput, nil, nil)
 	if err == nil {
 		t.Fatalf("Second resource claim should have failed")
 	}
@@ -215,7 +215,7 @@ func TestAllocatingPool_WithSafetyPeriod(t *testing.T) {
 	// sleep
 	time.Sleep(time.Duration(safetySeconds) * time.Second)
 	// reclaim
-	_, err = ts.pool.ClaimResource(userInput, nil)
+	_, err = ts.pool.ClaimResource(userInput, nil, nil)
 	if err != nil {
 		t.Fatalf("Unable to claim resource: %s", err)
 	}

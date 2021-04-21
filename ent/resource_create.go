@@ -42,6 +42,12 @@ func (rc *ResourceCreate) SetNillableDescription(s *string) *ResourceCreate {
 	return rc
 }
 
+// SetAlternateID sets the alternate_id field.
+func (rc *ResourceCreate) SetAlternateID(m map[string]interface{}) *ResourceCreate {
+	rc.mutation.SetAlternateID(m)
+	return rc
+}
+
 // SetUpdatedAt sets the updated_at field.
 func (rc *ResourceCreate) SetUpdatedAt(t time.Time) *ResourceCreate {
 	rc.mutation.SetUpdatedAt(t)
@@ -222,6 +228,14 @@ func (rc *ResourceCreate) createSpec() (*Resource, *sqlgraph.CreateSpec) {
 			Column: resource.FieldDescription,
 		})
 		_node.Description = &value
+	}
+	if value, ok := rc.mutation.AlternateID(); ok {
+		_spec.Fields = append(_spec.Fields, &sqlgraph.FieldSpec{
+			Type:   field.TypeJSON,
+			Value:  value,
+			Column: resource.FieldAlternateID,
+		})
+		_node.AlternateID = value
 	}
 	if value, ok := rc.mutation.UpdatedAt(); ok {
 		_spec.Fields = append(_spec.Fields, &sqlgraph.FieldSpec{

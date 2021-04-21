@@ -179,7 +179,7 @@ export async function createVlanNestedPool(parentResourceId, tags = null){
 }
 
 export function getUniqueName(prefix){
-    return prefix + Math.random().toString(36).substring(7);
+    return prefix + Math.random().toString(36).substring(5);
 }
 
 export async function prepareIpv4Pool() {

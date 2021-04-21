@@ -1,8 +1,8 @@
 import {
     claimResource,
     createSingletonPool, createTag, deleteResourcePool,
-    findResourceTypeId, createSetPool,
-    freeResource,
+    findResourceTypeId, createSetPool, createResourceType,
+    freeResource, claimResourceWithAltId, queryResourceByAltId,
     getResourcesForPool, searchPoolsByTags, tagPool, getCapacityForPool, getResourcePool
 } from "../graphql-queries.js";
 import {
@@ -276,5 +276,49 @@ test('pagination of allocated resources in vlan-pool', async (t) => {
     t.equal(pool.allocatedResources.edges.length, 1);
     t.equal(resourceIds[0], pool.allocatedResources.edges[0].node.id);
     t.notOk(pool.allocatedResources.pageInfo.hasPreviousPage);
+    t.end();
+});
+
+test('allocation pool test alternative ID', async (t) => {
+    const poolId = await createVlanRootPool();
+    await claimResourceWithAltId(poolId, {}, {vlanAltId: getUniqueName('first allocation vlan'), order: getUniqueName('first')});
+
+    let altId = {vlanAltId: getUniqueName('second allocation vlan'), order: getUniqueName('second')};
+    await claimResourceWithAltId(poolId, {}, altId);
+
+    let altId2 = {vlanAltId: Math.floor(Math.random() * 100000), order: getUniqueName('third')};
+    await claimResourceWithAltId(poolId, {}, altId2);
+
+    //test nothing found
+    let res = await queryResourceByAltId(poolId, {someKey: 'this does not exist :('});
+    t.notOk(res);
+
+    //test string-only comparison
+    res = await queryResourceByAltId(poolId, altId);
+    t.equal(res.Properties.vlan, 1);
+
+    //test string-and-number comparison
+    res = await queryResourceByAltId(poolId, altId2);
+    t.equal(res.Properties.vlan, 2);
+    t.end();
+});
+
+test('set pool test alternative ID', async (t) => {
+    let rtId = await createResourceType(getUniqueName('simplevalue'), {avalue: 'int'} )
+    let poolId = await createSetPool(
+        getUniqueName('simple_value_set_pool'),
+        rtId,
+        [{avalue:1}, {avalue:2}, {avalue:3}]
+    );
+    let altId = {id: getUniqueName('avalue1')};
+
+    await claimResourceWithAltId(poolId, {}, altId);
+    let res = await queryResourceByAltId(poolId, altId);
+    t.equal(res.Properties.avalue, 1)
+
+    //don't allow duplicate alternative IDs
+    let duplicate = await claimResourceWithAltId(poolId, {}, altId, null, true);
+    t.notOk(duplicate);
+
     t.end();
 });

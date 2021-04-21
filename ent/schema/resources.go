@@ -170,6 +170,8 @@ func (Resource) Fields() []ent.Field {
 		field.Text("description").
 			Optional().
 			Nillable(),
+		field.JSON("alternate_id", make(map[string]interface{})).
+			Optional(),
 		field.Time("updated_at").
 			Default(time.Now).
 			UpdateDefault(time.Now),

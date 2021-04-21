@@ -2,6 +2,7 @@ package pools
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
 
 	log "github.com/net-auto/resourceManager/logging"
@@ -48,7 +49,8 @@ func CreatePropertyType(
 		Save(ctx)
 }
 
-func PreCreateResources(ctx context.Context, client *ent.Client, propertyValues []RawResourceProps, pool *ent.ResourcePool, resourceType *ent.ResourceType, claimed resource.Status, description *string) ([]*ent.Resource, error) {
+func PreCreateResources(ctx context.Context, client *ent.Client, propertyValues []RawResourceProps, pool *ent.ResourcePool,
+	resourceType *ent.ResourceType, claimed resource.Status, description *string, alternativeId map[string]interface{}) ([]*ent.Resource, error) {
 
 	var created []*ent.Resource
 	for _, rawResourceProps := range propertyValues {
@@ -67,6 +69,7 @@ func PreCreateResources(ctx context.Context, client *ent.Client, propertyValues 
 			SetNillableDescription(description).
 			SetStatus(claimed).
 			AddProperties(props...).
+			SetAlternateID(alternativeId).
 			Save(ctx)
 		created = append(created, resource)
 
@@ -77,4 +80,28 @@ func PreCreateResources(ctx context.Context, client *ent.Client, propertyValues 
 	}
 
 	return created, nil
+}
+
+func ConvertValuesToFloat64(ctx context.Context, datamap map[string]interface{}) (map[string]interface{}, error) {
+	for k, v := range datamap {
+		switch t := v.(type) {
+		case int:
+			datamap[k] = float64(t)
+		case int32:
+			datamap[k] = float64(t)
+		case int64:
+			datamap[k] = float64(t)
+		case float32:
+			datamap[k] = float64(t)
+		case json.Number:
+			floatVal, err := v.(json.Number).Float64()
+			if err != nil {
+				log.Error(ctx, err, "Unable to convert a json number")
+				return nil, errors.Errorf("Unable to convert a json number, error: %v", err)
+			}
+			datamap[k] = floatVal
+		}
+	}
+
+	return datamap, nil
 }

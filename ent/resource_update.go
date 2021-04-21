@@ -55,6 +55,18 @@ func (ru *ResourceUpdate) ClearDescription() *ResourceUpdate {
 	return ru
 }
 
+// SetAlternateID sets the alternate_id field.
+func (ru *ResourceUpdate) SetAlternateID(m map[string]interface{}) *ResourceUpdate {
+	ru.mutation.SetAlternateID(m)
+	return ru
+}
+
+// ClearAlternateID clears the value of alternate_id.
+func (ru *ResourceUpdate) ClearAlternateID() *ResourceUpdate {
+	ru.mutation.ClearAlternateID()
+	return ru
+}
+
 // SetUpdatedAt sets the updated_at field.
 func (ru *ResourceUpdate) SetUpdatedAt(t time.Time) *ResourceUpdate {
 	ru.mutation.SetUpdatedAt(t)
@@ -266,6 +278,19 @@ func (ru *ResourceUpdate) sqlSave(ctx context.Context) (n int, err error) {
 			Column: resource.FieldDescription,
 		})
 	}
+	if value, ok := ru.mutation.AlternateID(); ok {
+		_spec.Fields.Set = append(_spec.Fields.Set, &sqlgraph.FieldSpec{
+			Type:   field.TypeJSON,
+			Value:  value,
+			Column: resource.FieldAlternateID,
+		})
+	}
+	if ru.mutation.AlternateIDCleared() {
+		_spec.Fields.Clear = append(_spec.Fields.Clear, &sqlgraph.FieldSpec{
+			Type:   field.TypeJSON,
+			Column: resource.FieldAlternateID,
+		})
+	}
 	if value, ok := ru.mutation.UpdatedAt(); ok {
 		_spec.Fields.Set = append(_spec.Fields.Set, &sqlgraph.FieldSpec{
 			Type:   field.TypeTime,
@@ -438,6 +463,18 @@ func (ruo *ResourceUpdateOne) SetNillableDescription(s *string) *ResourceUpdateO
 // ClearDescription clears the value of description.
 func (ruo *ResourceUpdateOne) ClearDescription() *ResourceUpdateOne {
 	ruo.mutation.ClearDescription()
+	return ruo
+}
+
+// SetAlternateID sets the alternate_id field.
+func (ruo *ResourceUpdateOne) SetAlternateID(m map[string]interface{}) *ResourceUpdateOne {
+	ruo.mutation.SetAlternateID(m)
+	return ruo
+}
+
+// ClearAlternateID clears the value of alternate_id.
+func (ruo *ResourceUpdateOne) ClearAlternateID() *ResourceUpdateOne {
+	ruo.mutation.ClearAlternateID()
 	return ruo
 }
 
@@ -648,6 +685,19 @@ func (ruo *ResourceUpdateOne) sqlSave(ctx context.Context) (_node *Resource, err
 		_spec.Fields.Clear = append(_spec.Fields.Clear, &sqlgraph.FieldSpec{
 			Type:   field.TypeString,
 			Column: resource.FieldDescription,
+		})
+	}
+	if value, ok := ruo.mutation.AlternateID(); ok {
+		_spec.Fields.Set = append(_spec.Fields.Set, &sqlgraph.FieldSpec{
+			Type:   field.TypeJSON,
+			Value:  value,
+			Column: resource.FieldAlternateID,
+		})
+	}
+	if ruo.mutation.AlternateIDCleared() {
+		_spec.Fields.Clear = append(_spec.Fields.Clear, &sqlgraph.FieldSpec{
+			Type:   field.TypeJSON,
+			Column: resource.FieldAlternateID,
 		})
 	}
 	if value, ok := ruo.mutation.UpdatedAt(); ok {

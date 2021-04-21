@@ -5,7 +5,6 @@ package resolver
 
 import (
 	"context"
-
 	"github.com/net-auto/resourceManager/ent"
 	"github.com/net-auto/resourceManager/ent/allocationstrategy"
 	"github.com/net-auto/resourceManager/ent/predicate"
@@ -155,12 +154,16 @@ func (r *mutationResolver) TestAllocationStrategy(ctx context.Context, allocatio
 }
 
 func (r *mutationResolver) ClaimResource(ctx context.Context, poolID int, description *string, userInput map[string]interface{}) (*ent.Resource, error) {
+	return r.ClaimResourceWithAltID(ctx, poolID, description, userInput, nil)
+}
+
+func (r *mutationResolver) ClaimResourceWithAltID(ctx context.Context, poolID int, description *string, userInput map[string]interface{}, alternativeID map[string]interface{}) (*ent.Resource, error) {
 	pool, err := p.ExistingPoolFromId(ctx, r.ClientFrom(ctx), poolID)
 	if err != nil {
 		return nil, gqlerror.Errorf("Unable to claim resource: %v", err)
 	}
 
-	if res, err := pool.ClaimResource(userInput, description); err != nil {
+	if res, err := pool.ClaimResource(userInput, description, alternativeID); err != nil {
 		return nil, gqlerror.Errorf("Unable to claim resource: %v", err)
 	} else {
 		return res, nil
@@ -504,6 +507,22 @@ func (r *queryResolver) QueryResources(ctx context.Context, poolID int) ([]*ent.
 	return pool.QueryResources()
 }
 
+func (r *queryResolver) QueryResourceByAltID(ctx context.Context, input map[string]interface{}, poolID int) (*ent.Resource, error) {
+	pool, err := p.ExistingPoolFromId(ctx, r.ClientFrom(ctx), poolID)
+
+	if err != nil {
+		return nil, gqlerror.Errorf("Unable to query resources: %v", err)
+	}
+
+	typeFixedAlternativeId, errFix := p.ConvertValuesToFloat64(ctx, input)
+
+	if errFix != nil {
+		return nil, gqlerror.Errorf("Unable to process input data", err)
+	}
+
+	return pool.QueryResourceByAltId(typeFixedAlternativeId)
+}
+
 func (r *queryResolver) QueryAllocationStrategy(ctx context.Context, allocationStrategyID int) (*ent.AllocationStrategy, error) {
 	client := r.ClientFrom(ctx)
 	if strats, err := client.AllocationStrategy.Query().Where(allocationstrategy.ID(allocationStrategyID)).Only(ctx); err != nil {
@@ -697,34 +716,6 @@ func (r *queryResolver) Node(ctx context.Context, id int) (ent.Noder, error) {
 	return node, err
 }
 
-func (r *resourceResolver) Properties(ctx context.Context, obj *ent.Resource) (map[string]interface{}, error) {
-	props, err := obj.QueryProperties().WithType().All(ctx)
-	if err != nil {
-		log.Error(ctx, err, "Unable to retrieve properties for resource with ID %d", obj.ID)
-		return nil, gqlerror.Errorf("Unable to query properties: %v", err)
-	}
-
-	if props, err := p.PropertiesToMap(props); err != nil {
-		log.Error(ctx, err, "Unable to process properties for resource with ID %d", obj.ID)
-		return nil, gqlerror.Errorf("Unable to query properties: %v", err)
-	} else {
-		return props, nil
-	}
-}
-
-func (r *resourceResolver) ParentPool(ctx context.Context, obj *ent.Resource) (*ent.ResourcePool, error) {
-	if es, err := obj.Edges.PoolOrErr(); !ent.IsNotLoaded(err) {
-		log.Error(ctx, err, "Unable to retrieve pool for resource with ID %d", obj.ID)
-		return es, err
-	}
-	if pool, err := obj.QueryPool().Only(ctx); err == nil {
-		return pool, nil
-	} else {
-		log.Error(ctx, err, "Unable to retrieve parent pool for resource with ID %d", obj.ID)
-		return nil, gqlerror.Errorf("Unable to query parent pool: %v", err)
-	}
-}
-
 func (r *resourceResolver) NestedPool(ctx context.Context, obj *ent.Resource) (*ent.ResourcePool, error) {
 	if es, err := obj.Edges.NestedPoolOrErr(); !ent.IsNotLoaded(err) {
 		log.Error(ctx, err, "Unable to retrieve nested pool for resource with ID %d", obj.ID)
@@ -741,28 +732,68 @@ func (r *resourceResolver) NestedPool(ctx context.Context, obj *ent.Resource) (*
 	}
 }
 
-func (r *resourcePoolResolver) ResourceType(ctx context.Context, obj *ent.ResourcePool) (*ent.ResourceType, error) {
-	if es, err := obj.Edges.ResourceTypeOrErr(); !ent.IsNotLoaded(err) {
-		log.Error(ctx, err, "Unable to retrieve resource type for pool with ID %d", obj.ID)
+func (r *resourceResolver) ParentPool(ctx context.Context, obj *ent.Resource) (*ent.ResourcePool, error) {
+	if es, err := obj.Edges.PoolOrErr(); !ent.IsNotLoaded(err) {
+		log.Error(ctx, err, "Unable to retrieve pool for resource with ID %d", obj.ID)
 		return es, err
 	}
-	rt, err := obj.QueryResourceType().Only(ctx)
-
-	if err != nil {
-		log.Error(ctx, err, "Unable to retrieve resource type for pool with ID %d", obj.ID)
+	if pool, err := obj.QueryPool().Only(ctx); err == nil {
+		return pool, nil
+	} else {
+		log.Error(ctx, err, "Unable to retrieve parent pool for resource with ID %d", obj.ID)
+		return nil, gqlerror.Errorf("Unable to query parent pool: %v", err)
 	}
-
-	return rt, err
 }
 
-func (r *resourcePoolResolver) Resources(ctx context.Context, obj *ent.ResourcePool) ([]*ent.Resource, error) {
-	resources, err := p.GetResourceFromPool(ctx, obj)
-
+func (r *resourceResolver) Properties(ctx context.Context, obj *ent.Resource) (map[string]interface{}, error) {
+	props, err := obj.QueryProperties().WithType().All(ctx)
 	if err != nil {
-		log.Error(ctx, err, "Unable to retrieve resources for pool with ID %d", obj.ID)
+		log.Error(ctx, err, "Unable to retrieve properties for resource with ID %d", obj.ID)
+		return nil, gqlerror.Errorf("Unable to query properties: %v", err)
 	}
 
-	return resources, err
+	if props, err := p.PropertiesToMap(props); err != nil {
+		log.Error(ctx, err, "Unable to process properties for resource with ID %d", obj.ID)
+		return nil, gqlerror.Errorf("Unable to query properties: %v", err)
+	} else {
+		return props, nil
+	}
+}
+
+func (r *resourcePoolResolver) AllocationStrategy(ctx context.Context, obj *ent.ResourcePool) (*ent.AllocationStrategy, error) {
+	if obj.PoolType != resourcePool.PoolTypeAllocating {
+		log.Warn(ctx, "Pool with ID %d does not have an allocation strategy", obj.ID)
+		return nil, nil
+	}
+	if es, err := obj.Edges.AllocationStrategyOrErr(); !ent.IsNotLoaded(err) {
+		log.Error(ctx, err, "Loading allocation strategy for pool ID %d failed", obj.ID)
+		return es, err
+	}
+	strategy, err := obj.QueryAllocationStrategy().Only(ctx)
+
+	if err != nil {
+		log.Error(ctx, err, "Loading allocation strategy for pool ID %d failed", obj.ID)
+	}
+
+	return strategy, err
+}
+
+func (r *resourcePoolResolver) Capacity(ctx context.Context, obj *ent.ResourcePool) (*model.PoolCapacityPayload, error) {
+	return r.Query().QueryPoolCapacity(ctx, obj.ID)
+}
+
+func (r *resourcePoolResolver) ParentResource(ctx context.Context, obj *ent.ResourcePool) (*ent.Resource, error) {
+	if es, err := obj.Edges.ParentResourceOrErr(); !ent.IsNotLoaded(err) {
+		log.Error(ctx, err, "Loading parent resource for pool ID %d failed", obj.ID)
+		return es, err
+	}
+
+	if pr, err := obj.QueryParentResource().Only(ctx); err != nil {
+		log.Error(ctx, err, "Loading parent resource for pool ID %d failed", obj.ID)
+		return nil, err
+	} else {
+		return pr, err
+	}
 }
 
 func (r *resourcePoolResolver) PoolProperties(ctx context.Context, obj *ent.ResourcePool) (map[string]interface{}, error) {
@@ -802,18 +833,43 @@ func (r *resourcePoolResolver) PoolProperties(ctx context.Context, obj *ent.Reso
 	}
 }
 
-func (r *resourcePoolResolver) ParentResource(ctx context.Context, obj *ent.ResourcePool) (*ent.Resource, error) {
-	if es, err := obj.Edges.ParentResourceOrErr(); !ent.IsNotLoaded(err) {
-		log.Error(ctx, err, "Loading parent resource for pool ID %d failed", obj.ID)
+func (r *resourcePoolResolver) ResourceType(ctx context.Context, obj *ent.ResourcePool) (*ent.ResourceType, error) {
+	if es, err := obj.Edges.ResourceTypeOrErr(); !ent.IsNotLoaded(err) {
+		log.Error(ctx, err, "Unable to retrieve resource type for pool with ID %d", obj.ID)
+		return es, err
+	}
+	rt, err := obj.QueryResourceType().Only(ctx)
+
+	if err != nil {
+		log.Error(ctx, err, "Unable to retrieve resource type for pool with ID %d", obj.ID)
+	}
+
+	return rt, err
+}
+
+func (r *resourcePoolResolver) Resources(ctx context.Context, obj *ent.ResourcePool) ([]*ent.Resource, error) {
+	resources, err := p.GetResourceFromPool(ctx, obj)
+
+	if err != nil {
+		log.Error(ctx, err, "Unable to retrieve resources for pool with ID %d", obj.ID)
+	}
+
+	return resources, err
+}
+
+func (r *resourcePoolResolver) Tags(ctx context.Context, obj *ent.ResourcePool) ([]*ent.Tag, error) {
+	if es, err := obj.Edges.TagsOrErr(); !ent.IsNotLoaded(err) {
+		log.Error(ctx, err, "Loading tags for pool ID %d failed", obj.ID)
 		return es, err
 	}
 
-	if pr, err := obj.QueryParentResource().Only(ctx); err != nil {
-		log.Error(ctx, err, "Loading parent resource for pool ID %d failed", obj.ID)
-		return nil, err
-	} else {
-		return pr, err
+	tags, err := obj.QueryTags().All(ctx)
+
+	if err != nil {
+		log.Error(ctx, err, "Loading tags for pool ID %d failed", obj.ID)
 	}
+
+	return tags, err
 }
 
 func (r *resourcePoolResolver) AllocatedResources(ctx context.Context, obj *ent.ResourcePool, first *int, last *int, before *string, after *string) (*ent.ResourceConnection, error) {
@@ -845,50 +901,6 @@ func (r *resourcePoolResolver) AllocatedResources(ctx context.Context, obj *ent.
 	return resourceConnection, err
 }
 
-func (r *resourcePoolResolver) Tags(ctx context.Context, obj *ent.ResourcePool) ([]*ent.Tag, error) {
-	if es, err := obj.Edges.TagsOrErr(); !ent.IsNotLoaded(err) {
-		log.Error(ctx, err, "Loading tags for pool ID %d failed", obj.ID)
-		return es, err
-	}
-
-	tags, err := obj.QueryTags().All(ctx)
-
-	if err != nil {
-		log.Error(ctx, err, "Loading tags for pool ID %d failed", obj.ID)
-	}
-
-	return tags, err
-}
-
-func (r *resourcePoolResolver) AllocationStrategy(ctx context.Context, obj *ent.ResourcePool) (*ent.AllocationStrategy, error) {
-	if obj.PoolType != resourcePool.PoolTypeAllocating {
-		log.Warn(ctx, "Pool with ID %d does not have an allocation strategy", obj.ID)
-		return nil, nil
-	}
-	if es, err := obj.Edges.AllocationStrategyOrErr(); !ent.IsNotLoaded(err) {
-		log.Error(ctx, err, "Loading allocation strategy for pool ID %d failed", obj.ID)
-		return es, err
-	}
-	strategy, err := obj.QueryAllocationStrategy().Only(ctx)
-
-	if err != nil {
-		log.Error(ctx, err, "Loading allocation strategy for pool ID %d failed", obj.ID)
-	}
-
-	return strategy, err
-}
-
-func (r *resourcePoolResolver) Capacity(ctx context.Context, obj *ent.ResourcePool) (*model.PoolCapacityPayload, error) {
-	return r.Query().QueryPoolCapacity(ctx, obj.ID)
-}
-
-func (r *resourceTypeResolver) PropertyTypes(ctx context.Context, obj *ent.ResourceType) ([]*ent.PropertyType, error) {
-	if es, err := obj.Edges.PropertyTypesOrErr(); !ent.IsNotLoaded(err) {
-		return es, err
-	}
-	return obj.QueryPropertyTypes().All(ctx)
-}
-
 func (r *resourceTypeResolver) Pools(ctx context.Context, obj *ent.ResourceType) ([]*ent.ResourcePool, error) {
 	if es, err := obj.Edges.PoolsOrErr(); !ent.IsNotLoaded(err) {
 		log.Error(ctx, err, "Loading resource pools for resource type %d failed", obj.ID)
@@ -901,6 +913,13 @@ func (r *resourceTypeResolver) Pools(ctx context.Context, obj *ent.ResourceType)
 	}
 
 	return pools, err
+}
+
+func (r *resourceTypeResolver) PropertyTypes(ctx context.Context, obj *ent.ResourceType) ([]*ent.PropertyType, error) {
+	if es, err := obj.Edges.PropertyTypesOrErr(); !ent.IsNotLoaded(err) {
+		return es, err
+	}
+	return obj.QueryPropertyTypes().All(ctx)
 }
 
 func (r *tagResolver) Pools(ctx context.Context, obj *ent.Tag) ([]*ent.ResourcePool, error) {

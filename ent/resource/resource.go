@@ -20,6 +20,8 @@ const (
 	FieldStatus = "status"
 	// FieldDescription holds the string denoting the description field in the database.
 	FieldDescription = "description"
+	// FieldAlternateID holds the string denoting the alternate_id field in the database.
+	FieldAlternateID = "alternate_id"
 	// FieldUpdatedAt holds the string denoting the updated_at field in the database.
 	FieldUpdatedAt = "updated_at"
 
@@ -60,6 +62,7 @@ var Columns = []string{
 	FieldID,
 	FieldStatus,
 	FieldDescription,
+	FieldAlternateID,
 	FieldUpdatedAt,
 }
 

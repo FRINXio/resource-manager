@@ -29,16 +29,16 @@ func TestClaimResoourceSetPool(t *testing.T) {
 		t.Fatalf("Expected 0 claims, got: %d", len(claims))
 	}
 	userInput := make(map[string]interface{})
-	claim1, err := pool.ClaimResource(userInput, nil)
+	claim1, err := pool.ClaimResource(userInput, nil, nil)
 	t.Log(claim1)
 	claims, err = pool.QueryResources()
 	if len(claims) != 1 {
 		t.Fatalf("Expected 1 claims, got: %d", len(claims))
 	}
-	claim2, err := pool.ClaimResource(userInput, nil)
+	claim2, err := pool.ClaimResource(userInput, nil, nil)
 	t.Log(claim2)
 
-	if _, err := pool.ClaimResource(userInput, nil); err == nil {
+	if _, err := pool.ClaimResource(userInput, nil, nil); err == nil {
 		t.Fatalf("Claiming resource from exhausted pool should return error")
 	}
 
@@ -102,8 +102,8 @@ func TestResourceRetirement(t *testing.T) {
 	}, "set", &description, schema.ResourcePoolDealocationRetire)
 
 	userInput := make(map[string]interface{})
-	claim1, _ := pool.ClaimResource(userInput, nil)
-	claim2, _ := pool.ClaimResource(userInput, nil)
+	claim1, _ := pool.ClaimResource(userInput, nil, nil)
+	claim2, _ := pool.ClaimResource(userInput, nil, nil)
 
 	pool.FreeResource(RawResourceProps{"vlan": *claim1.QueryProperties().AllX(ctx)[0].IntVal})
 	pool.FreeResource(RawResourceProps{"vlan": *claim2.QueryProperties().AllX(ctx)[0].IntVal})
@@ -112,7 +112,7 @@ func TestResourceRetirement(t *testing.T) {
 		t.Fatalf("There should be no resources returned since all have been freed")
 	}
 
-	if _, err := pool.ClaimResource(userInput, nil); err == nil {
+	if _, err := pool.ClaimResource(userInput, nil, nil); err == nil {
 		t.Fatalf("Expecting error, since all resources should have been retired")
 	}
 }
@@ -133,7 +133,7 @@ func TestResourceDealocationSafetyWindow(t *testing.T) {
 
 	// Claim and free resource 44
 	userInput := make(map[string]interface{})
-	claim1, _ := pool.ClaimResource(userInput, nil)
+	claim1, _ := pool.ClaimResource(userInput, nil, nil)
 	assertDbResourceStates(ctx, client, t, 1, 1, 0, 0)
 
 	pool.FreeResource(RawResourceProps{"vlan": *claim1.QueryProperties().AllX(ctx)[0].IntVal})
@@ -144,7 +144,7 @@ func TestResourceDealocationSafetyWindow(t *testing.T) {
 	}
 
 	// Claim and free resource ... should be 45 since 44 is free but benched
-	claim2, _ := pool.ClaimResource(userInput, nil)
+	claim2, _ := pool.ClaimResource(userInput, nil, nil)
 	assertDbResourceStates(ctx, client, t, 0, 1, 1, 0)
 
 	if *claim2.QueryProperties().AllX(ctx)[0].IntVal != 45 {
@@ -155,7 +155,7 @@ func TestResourceDealocationSafetyWindow(t *testing.T) {
 	assertDbResourceStates(ctx, client, t, 0, 0, 2, 0)
 
 	// All are benched
-	if _, err := pool.ClaimResource(userInput, nil); err == nil {
+	if _, err := pool.ClaimResource(userInput, nil, nil); err == nil {
 		t.Fatalf("Expecting error, since all resources should have been retired")
 	}
 
@@ -164,7 +164,7 @@ func TestResourceDealocationSafetyWindow(t *testing.T) {
 	// Resources are not marked free automatically, only during resource claim call
 	assertDbResourceStates(ctx, client, t, 0, 0, 2, 0)
 
-	claim1Again, _ := pool.ClaimResource(userInput, nil)
+	claim1Again, _ := pool.ClaimResource(userInput, nil, nil)
 	assertDbResourceStates(ctx, client, t, 0, 1, 1, 0)
 
 	pool.FreeResource(RawResourceProps{"vlan": *claim1Again.QueryProperties().AllX(ctx)[0].IntVal})

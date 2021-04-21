@@ -3,6 +3,7 @@
 package ent
 
 import (
+	"encoding/json"
 	"fmt"
 	"strings"
 	"time"
@@ -21,6 +22,8 @@ type Resource struct {
 	Status resource.Status `json:"status,omitempty"`
 	// Description holds the value of the "description" field.
 	Description *string `json:"description,omitempty"`
+	// AlternateID holds the value of the "alternate_id" field.
+	AlternateID map[string]interface{} `json:"alternate_id,omitempty"`
 	// UpdatedAt holds the value of the "updated_at" field.
 	UpdatedAt time.Time `json:"updated_at,omitempty"`
 	// Edges holds the relations/edges for other nodes in the graph.
@@ -85,6 +88,7 @@ func (*Resource) scanValues() []interface{} {
 		&sql.NullInt64{},  // id
 		&sql.NullString{}, // status
 		&sql.NullString{}, // description
+		&[]byte{},         // alternate_id
 		&sql.NullTime{},   // updated_at
 	}
 }
@@ -119,12 +123,20 @@ func (r *Resource) assignValues(values ...interface{}) error {
 		r.Description = new(string)
 		*r.Description = value.String
 	}
-	if value, ok := values[2].(*sql.NullTime); !ok {
-		return fmt.Errorf("unexpected type %T for field updated_at", values[2])
+
+	if value, ok := values[2].(*[]byte); !ok {
+		return fmt.Errorf("unexpected type %T for field alternate_id", values[2])
+	} else if value != nil && len(*value) > 0 {
+		if err := json.Unmarshal(*value, &r.AlternateID); err != nil {
+			return fmt.Errorf("unmarshal field alternate_id: %v", err)
+		}
+	}
+	if value, ok := values[3].(*sql.NullTime); !ok {
+		return fmt.Errorf("unexpected type %T for field updated_at", values[3])
 	} else if value.Valid {
 		r.UpdatedAt = value.Time
 	}
-	values = values[3:]
+	values = values[4:]
 	if len(values) == len(resource.ForeignKeys) {
 		if value, ok := values[0].(*sql.NullInt64); !ok {
 			return fmt.Errorf("unexpected type %T for edge-field resource_pool_claims", value)
@@ -180,6 +192,8 @@ func (r *Resource) String() string {
 		builder.WriteString(", description=")
 		builder.WriteString(*v)
 	}
+	builder.WriteString(", alternate_id=")
+	builder.WriteString(fmt.Sprintf("%v", r.AlternateID))
 	builder.WriteString(", updated_at=")
 	builder.WriteString(r.UpdatedAt.Format(time.ANSIC))
 	builder.WriteByte(')')

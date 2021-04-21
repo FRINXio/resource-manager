@@ -6,8 +6,8 @@ import (
 	"github.com/net-auto/resourceManager/ent/poolproperties"
 	"github.com/net-auto/resourceManager/ent/predicate"
 	"github.com/net-auto/resourceManager/ent/property"
-	"time"
 	log "github.com/net-auto/resourceManager/logging"
+	"time"
 
 	"github.com/net-auto/resourceManager/ent"
 	"github.com/net-auto/resourceManager/ent/resource"
@@ -229,7 +229,15 @@ func (pool AllocatingPool) Capacity() (float64, float64, error) {
 }
 
 // ClaimResource allocates the next available resource
-func (pool AllocatingPool) ClaimResource(userInput map[string]interface{}, description *string) (*ent.Resource, error) {
+func (pool AllocatingPool) ClaimResource(userInput map[string]interface{}, description *string, alternativeId map[string]interface{}) (*ent.Resource, error) {
+
+	if alternativeId != nil {
+		res, err := pool.QueryResourceByAltId(alternativeId)
+		if res != nil {
+			return nil, errors.Wrapf(err,
+				"Unable to claim resource from allocation pool #%d, because resource with alternative ID %v already exists", pool.ID, alternativeId)
+		}
+	}
 
 	strat, err := pool.AllocationStrategy()
 	if err != nil {
@@ -305,7 +313,7 @@ func (pool AllocatingPool) ClaimResource(userInput map[string]interface{}, descr
 	if len(foundResources) == 0 {
 		// 3a. Nothing found - create new resource
 		created, err := PreCreateResources(pool.ctx, pool.client, []RawResourceProps{resourceProperties},
-			pool.ResourcePool, resourceType, resource.StatusClaimed, description)
+			pool.ResourcePool, resourceType, resource.StatusClaimed, description, alternativeId)
 		if err != nil {
 			log.Error(pool.ctx, err, "Unable to create resource in pool %d", pool.ID)
 			return nil, errors.Wrapf(err, "Unable to create resource in pool #%d", pool.ID)
@@ -342,6 +350,7 @@ func (pool AllocatingPool) ClaimResource(userInput map[string]interface{}, descr
 		UpdateOne(res).
 		SetStatus(res.Status).
 		SetNillableDescription(description).
+		SetAlternateID(alternativeId).
 		Exec(pool.ctx)
 
 	//TODO what does this mean? should we somehow rollback everything that transpired until this point??

@@ -595,6 +595,37 @@ export async function claimResource(poolId, params, description = null, suppress
     .catch(error => suppressErrors?null:console.log(error));
 }
 
+export async function claimResourceWithAltId(poolId, params, altId, description = null, suppressErrors = false){
+    return client.mutate({
+        mutation: gql`
+            mutation claimResAltId($poolId: ID!, $description: String, $userInput: Map!, $alternativeId: Map!) {
+                ClaimResourceWithAltId( poolId: $poolId, description: $description, userInput: $userInput, alternativeId: $alternativeId){
+                    id
+                    Properties
+                }
+            }
+        `,
+        variables: {
+            poolId: poolId,
+            userInput: params,
+            alternativeId: altId,
+            description: description,
+        }
+    })
+    .then(result => {
+        if (!result || !result.data) {
+            return null;
+        }
+
+        return result.data.ClaimResourceWithAltId;
+    })
+    .catch(error => {
+        if (!suppressErrors) {
+            console.log(error);
+        }
+    });
+}
+
 export async function queryResource(poolId, params){
     return client.query({
         query: gql`
@@ -612,6 +643,32 @@ export async function queryResource(poolId, params){
         }
     })
     .then(result => result.data.QueryResource)
+    .catch(error => console.log(error));
+}
+
+export async function queryResourceByAltId(poolId, params){
+    return client.query({
+        query: gql`
+            query QueryResourceByAltId($poolId: ID!, $input: Map!) {
+                QueryResourceByAltId(input: $input, poolId: $poolId) {
+                    id
+                    Properties
+                    Description
+                }
+            }
+        `,
+        variables: {
+            poolId: poolId,
+            input: params,
+        }
+    })
+    .then(result => {
+        if (result.data) {
+            return result.data.QueryResourceByAltId;
+        }
+
+        return null;
+    })
     .catch(error => console.log(error));
 }
 

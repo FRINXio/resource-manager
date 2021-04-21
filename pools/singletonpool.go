@@ -3,9 +3,8 @@ package pools
 import (
 	"context"
 	"github.com/net-auto/resourceManager/ent/resource"
-	"github.com/pkg/errors"
-
 	log "github.com/net-auto/resourceManager/logging"
+	"github.com/pkg/errors"
 
 	"github.com/net-auto/resourceManager/ent"
 	resourcePool "github.com/net-auto/resourceManager/ent/resourcepool"
@@ -44,9 +43,20 @@ func NewSingletonPoolWithMeta(
 	return &SingletonPool{SetPool{poolBase{pool, ctx, client}}}, pool, nil
 }
 
-func (pool SingletonPool) ClaimResource(userInput map[string]interface{}, description *string) (*ent.Resource, error) {
+func (pool SingletonPool) ClaimResource(userInput map[string]interface{}, description *string,
+				alternativeId map[string]interface{}) (*ent.Resource, error) {
+
+	if alternativeId != nil {
+		res, err := pool.QueryResourceByAltId(alternativeId)
+		if res != nil {
+			return nil, errors.Wrapf(err,
+				"Unable to claim resource from singleton pool #%d, because resource with alternative ID %v already exists", pool.ID, alternativeId)
+		}
+	}
+
 	_, err := pool.client.Resource.Update().
 		SetStatus(resource.StatusClaimed).
+		SetAlternateID(alternativeId).
 		Where(resource.HasPoolWith(resourcePool.ID(pool.ID))).
 		Save(pool.ctx)
 

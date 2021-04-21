@@ -419,7 +419,7 @@ func (r *Resource) Node(ctx context.Context) (node *Node, err error) {
 	node = &Node{
 		ID:     r.ID,
 		Type:   "Resource",
-		Fields: make([]*Field, 3),
+		Fields: make([]*Field, 4),
 		Edges:  make([]*Edge, 3),
 	}
 	var buf []byte
@@ -439,10 +439,18 @@ func (r *Resource) Node(ctx context.Context) (node *Node, err error) {
 		Name:  "description",
 		Value: string(buf),
 	}
-	if buf, err = json.Marshal(r.UpdatedAt); err != nil {
+	if buf, err = json.Marshal(r.AlternateID); err != nil {
 		return nil, err
 	}
 	node.Fields[2] = &Field{
+		Type:  "map[string]interface {}",
+		Name:  "alternate_id",
+		Value: string(buf),
+	}
+	if buf, err = json.Marshal(r.UpdatedAt); err != nil {
+		return nil, err
+	}
+	node.Fields[3] = &Field{
 		Type:  "time.Time",
 		Name:  "updated_at",
 		Value: string(buf),
