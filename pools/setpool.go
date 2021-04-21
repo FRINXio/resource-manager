@@ -2,6 +2,8 @@ package pools
 
 import (
 	"context"
+	"github.com/facebook/ent/dialect/sql"
+	"github.com/facebook/ent/dialect/sql/sqljson"
 	"github.com/net-auto/resourceManager/ent"
 	"github.com/net-auto/resourceManager/ent/predicate"
 	resource "github.com/net-auto/resourceManager/ent/resource"
@@ -99,7 +101,16 @@ func (pool SetPool) Destroy() error {
 }
 
 // ClaimResource allocates the next available resource
-func (pool SetPool) ClaimResource(userInput map[string]interface{}, description *string) (*ent.Resource, error) {
+func (pool SetPool) ClaimResource(userInput map[string]interface{}, description *string, alternativeId map[string]interface{}) (*ent.Resource, error) {
+
+	if alternativeId != nil {
+		res, err := pool.QueryResourceByAltId(alternativeId)
+		if res != nil {
+			return nil, errors.Wrapf(err,
+				"Unable to claim resource from set pool #%d, because resource with alternative ID %v already exists", pool.ID, alternativeId)
+		}
+	}
+
 	// Allocate new resource for this tag
 	unclaimedRes, err := pool.queryUnclaimedResourceEager()
 	if err != nil {
@@ -111,6 +122,7 @@ func (pool SetPool) ClaimResource(userInput map[string]interface{}, description 
 		UpdateOne(unclaimedRes).
 		SetStatus(resource.StatusClaimed).
 		SetNillableDescription(description).
+		SetAlternateID(alternativeId).
 		Exec(pool.ctx)
 
 	if err != nil {
@@ -288,4 +300,27 @@ func (pool SetPool) QueryResources() (ent.Resources, error) {
 	}
 
 	return res, err
+}
+
+// QueryResourceByAltId returns resource if alt Id matches
+func (pool SetPool) QueryResourceByAltId(alternativeId map[string]interface{}) (*ent.Resource, error) {
+	res, err := pool.client.Resource.Query().
+		Where(func(selector *sql.Selector) {
+			for k, v := range alternativeId {
+				selector.Where(sqljson.ValueEQ("alternate_id", v, sqljson.Path(k)))
+			}
+		}).First(pool.ctx)
+
+	if err != nil {
+		log.Error(pool.ctx, err, "Unable to retrieve resources in pool ID %d", pool.ID)
+		return nil, err
+	}
+
+	if res != nil {
+		return res, nil
+	}
+
+	log.Warn(pool.ctx, "There is not such resource with alternative ID %v for pool ID %d", alternativeId, pool.ID)
+
+	return nil, errors.New("No such resource with given alternative ID")
 }

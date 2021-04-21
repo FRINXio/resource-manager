@@ -280,6 +280,20 @@ func DescriptionContainsFold(v string) predicate.Resource {
 	})
 }
 
+// AlternateIDIsNil applies the IsNil predicate on the "alternate_id" field.
+func AlternateIDIsNil() predicate.Resource {
+	return predicate.Resource(func(s *sql.Selector) {
+		s.Where(sql.IsNull(s.C(FieldAlternateID)))
+	})
+}
+
+// AlternateIDNotNil applies the NotNil predicate on the "alternate_id" field.
+func AlternateIDNotNil() predicate.Resource {
+	return predicate.Resource(func(s *sql.Selector) {
+		s.Where(sql.NotNull(s.C(FieldAlternateID)))
+	})
+}
+
 // UpdatedAtEQ applies the EQ predicate on the "updated_at" field.
 func UpdatedAtEQ(v time.Time) predicate.Resource {
 	return predicate.Resource(func(s *sql.Selector) {

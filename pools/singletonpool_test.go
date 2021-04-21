@@ -1,9 +1,9 @@
 package pools
 
 import (
-	"testing"
 	_ "github.com/mattn/go-sqlite3"
 	_ "github.com/net-auto/resourceManager/ent/runtime"
+	"testing"
 )
 
 func TestNewSingletonPool(t *testing.T) {
@@ -18,9 +18,9 @@ func TestNewSingletonPool(t *testing.T) {
 		"vlan": 44,
 	}, "singleton", nil)
 	assertDb(ctx, client, t, 1, 1, 1, 1, 1)
-	r, _ := pool.ClaimResource(map[string]interface{}{}, nil)
-	pool.ClaimResource(map[string]interface{}{}, nil)
-	pool.ClaimResource(map[string]interface{}{}, nil)
+	r, _ := pool.ClaimResource(map[string]interface{}{}, nil, nil)
+	pool.ClaimResource(map[string]interface{}{}, nil, nil)
+	pool.ClaimResource(map[string]interface{}{}, nil, nil)
 	assertDb(ctx, client, t, 1, 1, 1, 1, 1)
 	toMap, _ := PropertiesToMap(r.Edges.Properties)
 	pool.FreeResource(toMap)

@@ -340,6 +340,7 @@ type Query {
     QueryPoolTypes: [PoolType!]!
     QueryResource(input: Map!, poolId: ID!): Resource!
     QueryResources(poolId: ID!): [Resource!]!
+    QueryResourceByAltId(input: Map!, poolId: ID!): Resource!
     QueryAllocationStrategy(allocationStrategyId: ID!): AllocationStrategy!
     QueryAllocationStrategies(byName: String): [AllocationStrategy!]!
     QueryResourceTypes(byName: String): [ResourceType!]!
@@ -527,6 +528,7 @@ type Mutation {
 
     # managing resources via pools
     ClaimResource(poolId: ID!, description: String, userInput: Map!): Resource!
+    ClaimResourceWithAltId(poolId: ID!, description: String, userInput: Map!, alternativeId: Map!): Resource!
     FreeResource(input: Map!, poolId: ID!): String!
 
     # create/update/delete resource pool

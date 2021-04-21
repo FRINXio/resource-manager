@@ -115,6 +115,7 @@ type ComplexityRoot struct {
 
 	Mutation struct {
 		ClaimResource              func(childComplexity int, poolID int, description *string, userInput map[string]interface{}) int
+		ClaimResourceWithAltID     func(childComplexity int, poolID int, description *string, userInput map[string]interface{}, alternativeID map[string]interface{}) int
 		CreateAllocatingPool       func(childComplexity int, input *model.CreateAllocatingPoolInput) int
 		CreateAllocationStrategy   func(childComplexity int, input *model.CreateAllocationStrategyInput) int
 		CreateNestedAllocatingPool func(childComplexity int, input model.CreateNestedAllocatingPoolInput) int
@@ -170,6 +171,7 @@ type ComplexityRoot struct {
 		QueryPoolCapacity              func(childComplexity int, poolID int) int
 		QueryPoolTypes                 func(childComplexity int) int
 		QueryResource                  func(childComplexity int, input map[string]interface{}, poolID int) int
+		QueryResourceByAltID           func(childComplexity int, input map[string]interface{}, poolID int) int
 		QueryResourcePool              func(childComplexity int, poolID int) int
 		QueryResourcePoolHierarchyPath func(childComplexity int, poolID int) int
 		QueryResourcePools             func(childComplexity int, resourceTypeID *int, tags *model.TagOr) int
@@ -253,6 +255,7 @@ type MutationResolver interface {
 	DeleteAllocationStrategy(ctx context.Context, input *model.DeleteAllocationStrategyInput) (*model.DeleteAllocationStrategyPayload, error)
 	TestAllocationStrategy(ctx context.Context, allocationStrategyID int, resourcePool model.ResourcePoolInput, currentResources []*model.ResourceInput, userInput map[string]interface{}) (map[string]interface{}, error)
 	ClaimResource(ctx context.Context, poolID int, description *string, userInput map[string]interface{}) (*ent.Resource, error)
+	ClaimResourceWithAltID(ctx context.Context, poolID int, description *string, userInput map[string]interface{}, alternativeID map[string]interface{}) (*ent.Resource, error)
 	FreeResource(ctx context.Context, input map[string]interface{}, poolID int) (string, error)
 	CreateSetPool(ctx context.Context, input model.CreateSetPoolInput) (*model.CreateSetPoolPayload, error)
 	CreateNestedSetPool(ctx context.Context, input model.CreateNestedSetPoolInput) (*model.CreateNestedSetPoolPayload, error)
@@ -276,6 +279,7 @@ type QueryResolver interface {
 	QueryPoolTypes(ctx context.Context) ([]resourcepool.PoolType, error)
 	QueryResource(ctx context.Context, input map[string]interface{}, poolID int) (*ent.Resource, error)
 	QueryResources(ctx context.Context, poolID int) ([]*ent.Resource, error)
+	QueryResourceByAltID(ctx context.Context, input map[string]interface{}, poolID int) (*ent.Resource, error)
 	QueryAllocationStrategy(ctx context.Context, allocationStrategyID int) (*ent.AllocationStrategy, error)
 	QueryAllocationStrategies(ctx context.Context, byName *string) ([]*ent.AllocationStrategy, error)
 	QueryResourceTypes(ctx context.Context, byName *string) ([]*ent.ResourceType, error)
@@ -289,23 +293,25 @@ type QueryResolver interface {
 	Node(ctx context.Context, id int) (ent.Noder, error)
 }
 type ResourceResolver interface {
-	Properties(ctx context.Context, obj *ent.Resource) (map[string]interface{}, error)
-	ParentPool(ctx context.Context, obj *ent.Resource) (*ent.ResourcePool, error)
 	NestedPool(ctx context.Context, obj *ent.Resource) (*ent.ResourcePool, error)
+	ParentPool(ctx context.Context, obj *ent.Resource) (*ent.ResourcePool, error)
+	Properties(ctx context.Context, obj *ent.Resource) (map[string]interface{}, error)
 }
 type ResourcePoolResolver interface {
-	ResourceType(ctx context.Context, obj *ent.ResourcePool) (*ent.ResourceType, error)
-	Resources(ctx context.Context, obj *ent.ResourcePool) ([]*ent.Resource, error)
-	PoolProperties(ctx context.Context, obj *ent.ResourcePool) (map[string]interface{}, error)
-	ParentResource(ctx context.Context, obj *ent.ResourcePool) (*ent.Resource, error)
-	AllocatedResources(ctx context.Context, obj *ent.ResourcePool, first *int, last *int, before *string, after *string) (*ent.ResourceConnection, error)
-	Tags(ctx context.Context, obj *ent.ResourcePool) ([]*ent.Tag, error)
 	AllocationStrategy(ctx context.Context, obj *ent.ResourcePool) (*ent.AllocationStrategy, error)
 	Capacity(ctx context.Context, obj *ent.ResourcePool) (*model.PoolCapacityPayload, error)
+
+	ParentResource(ctx context.Context, obj *ent.ResourcePool) (*ent.Resource, error)
+	PoolProperties(ctx context.Context, obj *ent.ResourcePool) (map[string]interface{}, error)
+
+	ResourceType(ctx context.Context, obj *ent.ResourcePool) (*ent.ResourceType, error)
+	Resources(ctx context.Context, obj *ent.ResourcePool) ([]*ent.Resource, error)
+	Tags(ctx context.Context, obj *ent.ResourcePool) ([]*ent.Tag, error)
+	AllocatedResources(ctx context.Context, obj *ent.ResourcePool, first *int, last *int, before *string, after *string) (*ent.ResourceConnection, error)
 }
 type ResourceTypeResolver interface {
-	PropertyTypes(ctx context.Context, obj *ent.ResourceType) ([]*ent.PropertyType, error)
 	Pools(ctx context.Context, obj *ent.ResourceType) ([]*ent.ResourcePool, error)
+	PropertyTypes(ctx context.Context, obj *ent.ResourceType) ([]*ent.PropertyType, error)
 }
 type TagResolver interface {
 	Pools(ctx context.Context, obj *ent.Tag) ([]*ent.ResourcePool, error)
@@ -463,6 +469,18 @@ func (e *executableSchema) Complexity(typeName, field string, childComplexity in
 		}
 
 		return e.complexity.Mutation.ClaimResource(childComplexity, args["poolId"].(int), args["description"].(*string), args["userInput"].(map[string]interface{})), true
+
+	case "Mutation.ClaimResourceWithAltId":
+		if e.complexity.Mutation.ClaimResourceWithAltID == nil {
+			break
+		}
+
+		args, err := ec.field_Mutation_ClaimResourceWithAltId_args(context.TODO(), rawArgs)
+		if err != nil {
+			return 0, false
+		}
+
+		return e.complexity.Mutation.ClaimResourceWithAltID(childComplexity, args["poolId"].(int), args["description"].(*string), args["userInput"].(map[string]interface{}), args["alternativeId"].(map[string]interface{})), true
 
 	case "Mutation.CreateAllocatingPool":
 		if e.complexity.Mutation.CreateAllocatingPool == nil {
@@ -869,6 +887,18 @@ func (e *executableSchema) Complexity(typeName, field string, childComplexity in
 
 		return e.complexity.Query.QueryResource(childComplexity, args["input"].(map[string]interface{}), args["poolId"].(int)), true
 
+	case "Query.QueryResourceByAltId":
+		if e.complexity.Query.QueryResourceByAltID == nil {
+			break
+		}
+
+		args, err := ec.field_Query_QueryResourceByAltId_args(context.TODO(), rawArgs)
+		if err != nil {
+			return 0, false
+		}
+
+		return e.complexity.Query.QueryResourceByAltID(childComplexity, args["input"].(map[string]interface{}), args["poolId"].(int)), true
+
 	case "Query.QueryResourcePool":
 		if e.complexity.Query.QueryResourcePool == nil {
 			break
@@ -1260,94 +1290,133 @@ var sources = []*ast.Source{
     | INTERFACE
     | UNION
 
+"""
+Interface for entities needed by the relay-framework
+"""
 interface Node
 @goModel(model: "github.com/net-auto/resourceManager/ent.Noder") {
+    """
+    The ID of the entity
+    """
     id: ID!
 }
 
+"""
+Describes the properties of a resource
+"""
 type ResourceType implements Node
 @goModel(model: "github.com/net-auto/resourceManager/ent.ResourceType") {
-    id: ID!
     Name: String!
-    PropertyTypes: [PropertyType!]!
     Pools: [ResourcePool!]!
+    PropertyTypes: [PropertyType!]!
+    id: ID!
 }
 
+"""
+Defines the type of the property
+"""
 type PropertyType implements Node
 @goModel(model: "github.com/net-auto/resourceManager/ent.PropertyType"){
-    id: ID!
-    Name: String!
-    Type: String!,
-    IntVal: Int!,
-    StringVal: String!,
     FloatVal: Float!,
+    IntVal: Int!,
     Mandatory: Boolean!
+    Name: String!
+    StringVal: String!,
+    Type: String!,
+    id: ID!
 }
 
-
+"""
+Holds the string value for pagination
+"""
 type OutputCursor
 @goModel(model: "github.com/net-auto/resourceManager/ent.Cursor"){
     ID: String!
 }
 
+"""
+Holds information about the requested pagination page
+"""
 type PageInfo
 @goModel(model: "github.com/net-auto/resourceManager/ent.PageInfo"){
+    endCursor: OutputCursor!
     hasNextPage: Boolean!
     hasPreviousPage: Boolean!
     startCursor: OutputCursor!
-    endCursor: OutputCursor!
 }
 
+"""
+A Relay-specific entity that holds information about the requested pagination page
+"""
 type ResourceEdge
 @goModel(model: "github.com/net-auto/resourceManager/ent.ResourceEdge"){
-    node: Resource!
     cursor: OutputCursor!
+    node: Resource!
 }
 
+"""
+A Relay-specific entity holding information about pagination
+"""
 type ResourceConnection
 @goModel(model: "github.com/net-auto/resourceManager/ent.ResourceConnection"){
-    pageInfo:   PageInfo!
     edges: [ResourceEdge]!
+    pageInfo:   PageInfo!
     totalCount: Int!
 }
 
+"""
+A pool is an entity that contains allocated and free resources
+"""
 type ResourcePool implements Node
 @goModel(model: "github.com/net-auto/resourceManager/ent.ResourcePool"){
-    id: ID!
+    AllocationStrategy: AllocationStrategy
+    Capacity: PoolCapacityPayload
     Name: String!
+    ParentResource: Resource
+    PoolProperties: Map!
     PoolType: PoolType!
     ResourceType: ResourceType!
     Resources: [Resource!]!
-    PoolProperties: Map!
-    ParentResource: Resource
-    allocatedResources(first: Int, last: Int, before: String, after: String): ResourceConnection
     Tags: [Tag!]!
-    AllocationStrategy: AllocationStrategy
-    Capacity: PoolCapacityPayload
+    allocatedResources(first: Int, last: Int, before: String, after: String): ResourceConnection
+    id: ID!
 }
 
+"""
+Defines the type of pool
+"""
 enum PoolType
 @goModel(
     model: "github.com/net-auto/resourceManager/ent/resourcepool.PoolType"
 )
 {
+    allocating
     set
     singleton
-    allocating
 }
 
+"""
+Represents data-type where variable keys and values can be used
+"""
 scalar Map
 
+
+"""
+Represents an allocated resource
+"""
 type Resource implements Node
 @goModel(model: "github.com/net-auto/resourceManager/ent.Resource")
 {
-    id: ID!
     Description: String
-    Properties: Map!
-    ParentPool: ResourcePool!
     NestedPool: ResourcePool
+    ParentPool: ResourcePool!
+    Properties: Map!
+    id: ID!
 }
 
+"""
+Supported languages for allocation strategy scripts
+"""
 enum AllocationStrategyLang
 @goModel(
     model: "github.com/net-auto/resourceManager/ent/allocationstrategy.Lang"
@@ -1357,131 +1426,194 @@ enum AllocationStrategyLang
     py
 }
 
+"""
+Represents an allocation strategy
+"""
 type AllocationStrategy implements Node
 @goModel(model: "github.com/net-auto/resourceManager/ent.AllocationStrategy"){
-    id: ID!
-    Name: String!
     Description: String
     Lang: AllocationStrategyLang!
+    Name: String!
     Script: String!
+    id: ID!
 }
 
+"""
+Pools can be tagged for easier search
+"""
 type Tag implements Node
 @goModel(model: "github.com/net-auto/resourceManager/ent.Tag"){
-    id: ID!
-    Tag: String!
     Pools: [ResourcePool]
+    Tag: String!
+    id: ID!
 }
 
+"""
+Helper entities for tag search
+"""
 input TagAnd {
     matchesAll: [String!]!
 }
 
+"""
+Helper entities for tag search
+"""
 input TagOr {
     matchesAny: [TagAnd!]!
 }
 
+"""
+Convenience entity representing the identity of a pool in some calls
+"""
 input ResourcePoolInput {
-    poolProperties: Map!
     ResourcePoolName: String!
+    poolProperties: Map!
 }
 
+"""
+Alternative representation of identity of a resource (i.e. alternative to resource ID)
+"""
 input ResourceInput {
     Properties: Map!
-    UpdatedAt: String!
     # TODO replace with enum
     Status: String!
+    UpdatedAt: String!
 }
 
+"""
+Input parameters for creating a set pool
+"""
 input CreateSetPoolInput {
-    resourceTypeId: ID!
-    poolName: String!
     description: String
     poolDealocationSafetyPeriod: Int!
+    poolName: String!
     poolValues: [Map!]!
+    resourceTypeId: ID!
     tags: [String!]
 }
 
+"""
+Output of creating set pool
+"""
 type CreateSetPoolPayload {
     pool: ResourcePool
 }
 
+"""
+Input parameters for creating a nested set pool
+"""
 input CreateNestedSetPoolInput {
-    resourceTypeId: ID!
-    poolName: String!
     description: String
-    poolDealocationSafetyPeriod: Int!
-    poolValues: [Map]!
     parentResourceId: ID!
+    poolDealocationSafetyPeriod: Int!
+    poolName: String!
+    poolValues: [Map]!
+    resourceTypeId: ID!
     tags: [String!]
 }
 
+"""
+Output of creating a nested set pool
+"""
 type CreateNestedSetPoolPayload {
     pool: ResourcePool
 }
 
+"""
+Input parameters for creating a nested singleton pool
+"""
 input CreateNestedSingletonPoolInput {
-    resourceTypeId: ID!
-    poolName: String!
     description: String
-    poolValues: [Map]!
     parentResourceId: ID!
+    poolName: String!
+    poolValues: [Map]!
+    resourceTypeId: ID!
     tags: [String!]
 }
 
+"""
+Output of creating a nested singleton pool
+"""
 type CreateNestedSingletonPoolPayload {
     pool: ResourcePool
 }
 
+"""
+Input entity for deleting a pool
+"""
 input DeleteResourcePoolInput {
     resourcePoolId: ID!
 }
 
+"""
+Output entity for deleting a pool
+"""
 type DeleteResourcePoolPayload {
     resourcePoolId: ID!
 }
 
+"""
+Input parameters for creating a singleton pool
+"""
 input CreateSingletonPoolInput {
-    resourceTypeId: ID!
-    poolName: String!
     description: String
+    poolName: String!
     poolValues: [Map!]!
+    resourceTypeId: ID!
     tags: [String!]
 }
 
+"""
+Output of creating a singleton pool
+"""
 type CreateSingletonPoolPayload {
     pool: ResourcePool
 }
 
+"""
+Input parameters for creating an allocation pool
+"""
 input CreateAllocatingPoolInput {
-    resourceTypeId: ID!
-    poolName: String!
-    description: String
     allocationStrategyId: ID!
+    description: String
     poolDealocationSafetyPeriod: Int!
+    poolName: String!
     poolProperties: Map!
     poolPropertyTypes: Map!
+    resourceTypeId: ID!
     tags: [String!]
 }
 
+"""
+Output of creating an allocating pool
+"""
 type CreateAllocatingPoolPayload {
     pool: ResourcePool
 }
 
+"""
+Input parameters for creating a nested allocation pool
+"""
 input CreateNestedAllocatingPoolInput {
-    resourceTypeId: ID!
-    poolName: String!
-    description: String
     allocationStrategyId: ID!
-    poolDealocationSafetyPeriod: Int!
+    description: String
     parentResourceId: ID!
+    poolDealocationSafetyPeriod: Int!
+    poolName: String!
+    resourceTypeId: ID!
     tags: [String!]
 }
 
+"""
+Output of creating a nested allocating pool
+"""
 type CreateNestedAllocatingPoolPayload {
     pool: ResourcePool
 }
 
+"""
+Entity representing capacity of a pool
+"""
 type PoolCapacityPayload {
     freeCapacity: Float!
     utilizedCapacity: Float!
@@ -1493,6 +1625,7 @@ type Query {
     QueryPoolTypes: [PoolType!]!
     QueryResource(input: Map!, poolId: ID!): Resource!
     QueryResources(poolId: ID!): [Resource!]!
+    QueryResourceByAltId(input: Map!, poolId: ID!): Resource!
     QueryAllocationStrategy(allocationStrategyId: ID!): AllocationStrategy!
     QueryAllocationStrategies(byName: String): [AllocationStrategy!]!
     QueryResourceTypes(byName: String): [ResourceType!]!
@@ -1509,49 +1642,82 @@ type Query {
     node(id: ID!): Node
 }
 
+"""
+Input parameters for creating a new tag
+"""
 input CreateTagInput {
     tagText: String!
 }
 
+"""
+Output of creating a tag
+"""
 type CreateTagPayload {
     tag: Tag
 }
 
+"""
+Input parameters for updating an existing tag
+"""
 input UpdateTagInput {
     tagId: ID!,
     tagText: String!
 }
 
+"""
+Output of updating a tag
+"""
 type UpdateTagPayload {
     tag: Tag
 }
 
+"""
+Input parameters for deleting an existing tag
+"""
 input DeleteTagInput {
     tagId: ID!
 }
 
+"""
+Output of deleting a tag
+"""
 type DeleteTagPayload {
     tagId: ID!
 }
 
+"""
+Input parameters for a call adding a tag to pool
+"""
 input TagPoolInput {
     tagId: ID!,
     poolId: ID!
 }
 
+"""
+Output of adding a specific tag to a pool
+"""
 type TagPoolPayload {
     tag: Tag
 }
 
+"""
+Input parameters for a call removing a tag from pool
+"""
 input UntagPoolInput {
     tagId: ID!,
     poolId: ID!
 }
 
+"""
+Output of removing a specific tag from a pool
+"""
 type UntagPoolPayload {
     tag: Tag
 }
 
+"""
+Input parameters for creating a new allocation strategy
+"""
 input CreateAllocationStrategyInput {
     name: String!,
     description: String,
@@ -1559,43 +1725,74 @@ input CreateAllocationStrategyInput {
     lang: AllocationStrategyLang!
 }
 
+"""
+Output of creating a new allocation strategy
+"""
 type CreateAllocationStrategyPayload {
     strategy: AllocationStrategy
 }
 
+"""
+Input parameters for deleting an existing allocation strategy
+"""
 input DeleteAllocationStrategyInput {
     allocationStrategyId: ID!
 }
 
+"""
+Output of deleting an existing allocation strategy
+"""
 type DeleteAllocationStrategyPayload {
     strategy: AllocationStrategy
 }
 
-## resourceName: String! - name of the resource type AND property type (should they be different?)
-## resourceProperties: Map! - for key "init" the value is the initial value of the property type (like 7)
-##                            for key "type" the value is the name of the type like "int"
+"""
+Creating a new resource-type
+"""
 input CreateResourceTypeInput {
+"""
+name of the resource type AND property type (should they be different?)
+"""
     resourceName: String!,
+"""
+resourceProperties: Map! - for key "init" the value is the initial value of the property type (like 7)
+                         - for key "type" the value is the name of the type like "int"
+"""
     resourceProperties: Map!
 }
 
+"""
+Output of creating a new resource-type
+"""
 type CreateResourceTypePayload {
     resourceType: ResourceType!
 }
 
+"""
+Input parameters for deleting an existing resource-type
+"""
 input DeleteResourceTypeInput {
     resourceTypeId: ID!
 }
 
+"""
+Output of deleting a resource-type
+"""
 type DeleteResourceTypePayload {
     resourceTypeId: ID!
 }
 
+"""
+Input parameters updating the name of a resource-type
+"""
 input UpdateResourceTypeNameInput {
     resourceTypeId: ID!,
     resourceName: String!
 }
 
+"""
+Output of updating the name of a resource-type
+"""
 type UpdateResourceTypeNamePayload {
     resourceTypeId: ID!
 }
@@ -1616,6 +1813,7 @@ type Mutation {
 
     # managing resources via pools
     ClaimResource(poolId: ID!, description: String, userInput: Map!): Resource!
+    ClaimResourceWithAltId(poolId: ID!, description: String, userInput: Map!, alternativeId: Map!): Resource!
     FreeResource(input: Map!, poolId: ID!): String!
 
     # create/update/delete resource pool
@@ -1640,6 +1838,48 @@ var parsedSchema = gqlparser.MustLoadSchema(sources...)
 // endregion ************************** generated!.gotpl **************************
 
 // region    ***************************** args.gotpl *****************************
+
+func (ec *executionContext) field_Mutation_ClaimResourceWithAltId_args(ctx context.Context, rawArgs map[string]interface{}) (map[string]interface{}, error) {
+	var err error
+	args := map[string]interface{}{}
+	var arg0 int
+	if tmp, ok := rawArgs["poolId"]; ok {
+		ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("poolId"))
+		arg0, err = ec.unmarshalNID2int(ctx, tmp)
+		if err != nil {
+			return nil, err
+		}
+	}
+	args["poolId"] = arg0
+	var arg1 *string
+	if tmp, ok := rawArgs["description"]; ok {
+		ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("description"))
+		arg1, err = ec.unmarshalOString2ᚖstring(ctx, tmp)
+		if err != nil {
+			return nil, err
+		}
+	}
+	args["description"] = arg1
+	var arg2 map[string]interface{}
+	if tmp, ok := rawArgs["userInput"]; ok {
+		ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("userInput"))
+		arg2, err = ec.unmarshalNMap2map(ctx, tmp)
+		if err != nil {
+			return nil, err
+		}
+	}
+	args["userInput"] = arg2
+	var arg3 map[string]interface{}
+	if tmp, ok := rawArgs["alternativeId"]; ok {
+		ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("alternativeId"))
+		arg3, err = ec.unmarshalNMap2map(ctx, tmp)
+		if err != nil {
+			return nil, err
+		}
+	}
+	args["alternativeId"] = arg3
+	return args, nil
+}
 
 func (ec *executionContext) field_Mutation_ClaimResource_args(ctx context.Context, rawArgs map[string]interface{}) (map[string]interface{}, error) {
 	var err error
@@ -2064,6 +2304,30 @@ func (ec *executionContext) field_Query_QueryPoolCapacity_args(ctx context.Conte
 	return args, nil
 }
 
+func (ec *executionContext) field_Query_QueryResourceByAltId_args(ctx context.Context, rawArgs map[string]interface{}) (map[string]interface{}, error) {
+	var err error
+	args := map[string]interface{}{}
+	var arg0 map[string]interface{}
+	if tmp, ok := rawArgs["input"]; ok {
+		ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("input"))
+		arg0, err = ec.unmarshalNMap2map(ctx, tmp)
+		if err != nil {
+			return nil, err
+		}
+	}
+	args["input"] = arg0
+	var arg1 int
+	if tmp, ok := rawArgs["poolId"]; ok {
+		ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("poolId"))
+		arg1, err = ec.unmarshalNID2int(ctx, tmp)
+		if err != nil {
+			return nil, err
+		}
+	}
+	args["poolId"] = arg1
+	return args, nil
+}
+
 func (ec *executionContext) field_Query_QueryResourcePoolHierarchyPath_args(ctx context.Context, rawArgs map[string]interface{}) (map[string]interface{}, error) {
 	var err error
 	args := map[string]interface{}{}
@@ -2321,76 +2585,6 @@ func (ec *executionContext) field___Type_fields_args(ctx context.Context, rawArg
 
 // region    **************************** field.gotpl *****************************
 
-func (ec *executionContext) _AllocationStrategy_id(ctx context.Context, field graphql.CollectedField, obj *ent.AllocationStrategy) (ret graphql.Marshaler) {
-	defer func() {
-		if r := recover(); r != nil {
-			ec.Error(ctx, ec.Recover(ctx, r))
-			ret = graphql.Null
-		}
-	}()
-	fc := &graphql.FieldContext{
-		Object:     "AllocationStrategy",
-		Field:      field,
-		Args:       nil,
-		IsMethod:   false,
-		IsResolver: false,
-	}
-
-	ctx = graphql.WithFieldContext(ctx, fc)
-	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
-		ctx = rctx // use context from middleware stack in children
-		return obj.ID, nil
-	})
-	if err != nil {
-		ec.Error(ctx, err)
-		return graphql.Null
-	}
-	if resTmp == nil {
-		if !graphql.HasFieldError(ctx, fc) {
-			ec.Errorf(ctx, "must not be null")
-		}
-		return graphql.Null
-	}
-	res := resTmp.(int)
-	fc.Result = res
-	return ec.marshalNID2int(ctx, field.Selections, res)
-}
-
-func (ec *executionContext) _AllocationStrategy_Name(ctx context.Context, field graphql.CollectedField, obj *ent.AllocationStrategy) (ret graphql.Marshaler) {
-	defer func() {
-		if r := recover(); r != nil {
-			ec.Error(ctx, ec.Recover(ctx, r))
-			ret = graphql.Null
-		}
-	}()
-	fc := &graphql.FieldContext{
-		Object:     "AllocationStrategy",
-		Field:      field,
-		Args:       nil,
-		IsMethod:   false,
-		IsResolver: false,
-	}
-
-	ctx = graphql.WithFieldContext(ctx, fc)
-	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
-		ctx = rctx // use context from middleware stack in children
-		return obj.Name, nil
-	})
-	if err != nil {
-		ec.Error(ctx, err)
-		return graphql.Null
-	}
-	if resTmp == nil {
-		if !graphql.HasFieldError(ctx, fc) {
-			ec.Errorf(ctx, "must not be null")
-		}
-		return graphql.Null
-	}
-	res := resTmp.(string)
-	fc.Result = res
-	return ec.marshalNString2string(ctx, field.Selections, res)
-}
-
 func (ec *executionContext) _AllocationStrategy_Description(ctx context.Context, field graphql.CollectedField, obj *ent.AllocationStrategy) (ret graphql.Marshaler) {
 	defer func() {
 		if r := recover(); r != nil {
@@ -2458,6 +2652,41 @@ func (ec *executionContext) _AllocationStrategy_Lang(ctx context.Context, field 
 	return ec.marshalNAllocationStrategyLang2githubᚗcomᚋnetᚑautoᚋresourceManagerᚋentᚋallocationstrategyᚐLang(ctx, field.Selections, res)
 }
 
+func (ec *executionContext) _AllocationStrategy_Name(ctx context.Context, field graphql.CollectedField, obj *ent.AllocationStrategy) (ret graphql.Marshaler) {
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	fc := &graphql.FieldContext{
+		Object:     "AllocationStrategy",
+		Field:      field,
+		Args:       nil,
+		IsMethod:   false,
+		IsResolver: false,
+	}
+
+	ctx = graphql.WithFieldContext(ctx, fc)
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.Name, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(string)
+	fc.Result = res
+	return ec.marshalNString2string(ctx, field.Selections, res)
+}
+
 func (ec *executionContext) _AllocationStrategy_Script(ctx context.Context, field graphql.CollectedField, obj *ent.AllocationStrategy) (ret graphql.Marshaler) {
 	defer func() {
 		if r := recover(); r != nil {
@@ -2491,6 +2720,41 @@ func (ec *executionContext) _AllocationStrategy_Script(ctx context.Context, fiel
 	res := resTmp.(string)
 	fc.Result = res
 	return ec.marshalNString2string(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) _AllocationStrategy_id(ctx context.Context, field graphql.CollectedField, obj *ent.AllocationStrategy) (ret graphql.Marshaler) {
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	fc := &graphql.FieldContext{
+		Object:     "AllocationStrategy",
+		Field:      field,
+		Args:       nil,
+		IsMethod:   false,
+		IsResolver: false,
+	}
+
+	ctx = graphql.WithFieldContext(ctx, fc)
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.ID, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(int)
+	fc.Result = res
+	return ec.marshalNID2int(ctx, field.Selections, res)
 }
 
 func (ec *executionContext) _CreateAllocatingPoolPayload_pool(ctx context.Context, field graphql.CollectedField, obj *model.CreateAllocatingPoolPayload) (ret graphql.Marshaler) {
@@ -3299,6 +3563,48 @@ func (ec *executionContext) _Mutation_ClaimResource(ctx context.Context, field g
 	return ec.marshalNResource2ᚖgithubᚗcomᚋnetᚑautoᚋresourceManagerᚋentᚐResource(ctx, field.Selections, res)
 }
 
+func (ec *executionContext) _Mutation_ClaimResourceWithAltId(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	fc := &graphql.FieldContext{
+		Object:     "Mutation",
+		Field:      field,
+		Args:       nil,
+		IsMethod:   true,
+		IsResolver: true,
+	}
+
+	ctx = graphql.WithFieldContext(ctx, fc)
+	rawArgs := field.ArgumentMap(ec.Variables)
+	args, err := ec.field_Mutation_ClaimResourceWithAltId_args(ctx, rawArgs)
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	fc.Args = args
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return ec.resolvers.Mutation().ClaimResourceWithAltID(rctx, args["poolId"].(int), args["description"].(*string), args["userInput"].(map[string]interface{}), args["alternativeId"].(map[string]interface{}))
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(*ent.Resource)
+	fc.Result = res
+	return ec.marshalNResource2ᚖgithubᚗcomᚋnetᚑautoᚋresourceManagerᚋentᚐResource(ctx, field.Selections, res)
+}
+
 func (ec *executionContext) _Mutation_FreeResource(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
 	defer func() {
 		if r := recover(); r != nil {
@@ -3796,6 +4102,41 @@ func (ec *executionContext) _OutputCursor_ID(ctx context.Context, field graphql.
 	return ec.marshalNString2string(ctx, field.Selections, res)
 }
 
+func (ec *executionContext) _PageInfo_endCursor(ctx context.Context, field graphql.CollectedField, obj *ent.PageInfo) (ret graphql.Marshaler) {
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	fc := &graphql.FieldContext{
+		Object:     "PageInfo",
+		Field:      field,
+		Args:       nil,
+		IsMethod:   false,
+		IsResolver: false,
+	}
+
+	ctx = graphql.WithFieldContext(ctx, fc)
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.EndCursor, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(*ent.Cursor)
+	fc.Result = res
+	return ec.marshalNOutputCursor2ᚖgithubᚗcomᚋnetᚑautoᚋresourceManagerᚋentᚐCursor(ctx, field.Selections, res)
+}
+
 func (ec *executionContext) _PageInfo_hasNextPage(ctx context.Context, field graphql.CollectedField, obj *ent.PageInfo) (ret graphql.Marshaler) {
 	defer func() {
 		if r := recover(); r != nil {
@@ -3901,41 +4242,6 @@ func (ec *executionContext) _PageInfo_startCursor(ctx context.Context, field gra
 	return ec.marshalNOutputCursor2ᚖgithubᚗcomᚋnetᚑautoᚋresourceManagerᚋentᚐCursor(ctx, field.Selections, res)
 }
 
-func (ec *executionContext) _PageInfo_endCursor(ctx context.Context, field graphql.CollectedField, obj *ent.PageInfo) (ret graphql.Marshaler) {
-	defer func() {
-		if r := recover(); r != nil {
-			ec.Error(ctx, ec.Recover(ctx, r))
-			ret = graphql.Null
-		}
-	}()
-	fc := &graphql.FieldContext{
-		Object:     "PageInfo",
-		Field:      field,
-		Args:       nil,
-		IsMethod:   false,
-		IsResolver: false,
-	}
-
-	ctx = graphql.WithFieldContext(ctx, fc)
-	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
-		ctx = rctx // use context from middleware stack in children
-		return obj.EndCursor, nil
-	})
-	if err != nil {
-		ec.Error(ctx, err)
-		return graphql.Null
-	}
-	if resTmp == nil {
-		if !graphql.HasFieldError(ctx, fc) {
-			ec.Errorf(ctx, "must not be null")
-		}
-		return graphql.Null
-	}
-	res := resTmp.(*ent.Cursor)
-	fc.Result = res
-	return ec.marshalNOutputCursor2ᚖgithubᚗcomᚋnetᚑautoᚋresourceManagerᚋentᚐCursor(ctx, field.Selections, res)
-}
-
 func (ec *executionContext) _PoolCapacityPayload_freeCapacity(ctx context.Context, field graphql.CollectedField, obj *model.PoolCapacityPayload) (ret graphql.Marshaler) {
 	defer func() {
 		if r := recover(); r != nil {
@@ -4006,7 +4312,7 @@ func (ec *executionContext) _PoolCapacityPayload_utilizedCapacity(ctx context.Co
 	return ec.marshalNFloat2float64(ctx, field.Selections, res)
 }
 
-func (ec *executionContext) _PropertyType_id(ctx context.Context, field graphql.CollectedField, obj *ent.PropertyType) (ret graphql.Marshaler) {
+func (ec *executionContext) _PropertyType_FloatVal(ctx context.Context, field graphql.CollectedField, obj *ent.PropertyType) (ret graphql.Marshaler) {
 	defer func() {
 		if r := recover(); r != nil {
 			ec.Error(ctx, ec.Recover(ctx, r))
@@ -4024,7 +4330,7 @@ func (ec *executionContext) _PropertyType_id(ctx context.Context, field graphql.
 	ctx = graphql.WithFieldContext(ctx, fc)
 	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
 		ctx = rctx // use context from middleware stack in children
-		return obj.ID, nil
+		return obj.FloatVal, nil
 	})
 	if err != nil {
 		ec.Error(ctx, err)
@@ -4036,79 +4342,9 @@ func (ec *executionContext) _PropertyType_id(ctx context.Context, field graphql.
 		}
 		return graphql.Null
 	}
-	res := resTmp.(int)
+	res := resTmp.(*float64)
 	fc.Result = res
-	return ec.marshalNID2int(ctx, field.Selections, res)
-}
-
-func (ec *executionContext) _PropertyType_Name(ctx context.Context, field graphql.CollectedField, obj *ent.PropertyType) (ret graphql.Marshaler) {
-	defer func() {
-		if r := recover(); r != nil {
-			ec.Error(ctx, ec.Recover(ctx, r))
-			ret = graphql.Null
-		}
-	}()
-	fc := &graphql.FieldContext{
-		Object:     "PropertyType",
-		Field:      field,
-		Args:       nil,
-		IsMethod:   false,
-		IsResolver: false,
-	}
-
-	ctx = graphql.WithFieldContext(ctx, fc)
-	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
-		ctx = rctx // use context from middleware stack in children
-		return obj.Name, nil
-	})
-	if err != nil {
-		ec.Error(ctx, err)
-		return graphql.Null
-	}
-	if resTmp == nil {
-		if !graphql.HasFieldError(ctx, fc) {
-			ec.Errorf(ctx, "must not be null")
-		}
-		return graphql.Null
-	}
-	res := resTmp.(string)
-	fc.Result = res
-	return ec.marshalNString2string(ctx, field.Selections, res)
-}
-
-func (ec *executionContext) _PropertyType_Type(ctx context.Context, field graphql.CollectedField, obj *ent.PropertyType) (ret graphql.Marshaler) {
-	defer func() {
-		if r := recover(); r != nil {
-			ec.Error(ctx, ec.Recover(ctx, r))
-			ret = graphql.Null
-		}
-	}()
-	fc := &graphql.FieldContext{
-		Object:     "PropertyType",
-		Field:      field,
-		Args:       nil,
-		IsMethod:   true,
-		IsResolver: true,
-	}
-
-	ctx = graphql.WithFieldContext(ctx, fc)
-	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
-		ctx = rctx // use context from middleware stack in children
-		return ec.resolvers.PropertyType().Type(rctx, obj)
-	})
-	if err != nil {
-		ec.Error(ctx, err)
-		return graphql.Null
-	}
-	if resTmp == nil {
-		if !graphql.HasFieldError(ctx, fc) {
-			ec.Errorf(ctx, "must not be null")
-		}
-		return graphql.Null
-	}
-	res := resTmp.(string)
-	fc.Result = res
-	return ec.marshalNString2string(ctx, field.Selections, res)
+	return ec.marshalNFloat2ᚖfloat64(ctx, field.Selections, res)
 }
 
 func (ec *executionContext) _PropertyType_IntVal(ctx context.Context, field graphql.CollectedField, obj *ent.PropertyType) (ret graphql.Marshaler) {
@@ -4146,6 +4382,76 @@ func (ec *executionContext) _PropertyType_IntVal(ctx context.Context, field grap
 	return ec.marshalNInt2ᚖint(ctx, field.Selections, res)
 }
 
+func (ec *executionContext) _PropertyType_Mandatory(ctx context.Context, field graphql.CollectedField, obj *ent.PropertyType) (ret graphql.Marshaler) {
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	fc := &graphql.FieldContext{
+		Object:     "PropertyType",
+		Field:      field,
+		Args:       nil,
+		IsMethod:   false,
+		IsResolver: false,
+	}
+
+	ctx = graphql.WithFieldContext(ctx, fc)
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.Mandatory, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(bool)
+	fc.Result = res
+	return ec.marshalNBoolean2bool(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) _PropertyType_Name(ctx context.Context, field graphql.CollectedField, obj *ent.PropertyType) (ret graphql.Marshaler) {
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	fc := &graphql.FieldContext{
+		Object:     "PropertyType",
+		Field:      field,
+		Args:       nil,
+		IsMethod:   false,
+		IsResolver: false,
+	}
+
+	ctx = graphql.WithFieldContext(ctx, fc)
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.Name, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(string)
+	fc.Result = res
+	return ec.marshalNString2string(ctx, field.Selections, res)
+}
+
 func (ec *executionContext) _PropertyType_StringVal(ctx context.Context, field graphql.CollectedField, obj *ent.PropertyType) (ret graphql.Marshaler) {
 	defer func() {
 		if r := recover(); r != nil {
@@ -4181,7 +4487,7 @@ func (ec *executionContext) _PropertyType_StringVal(ctx context.Context, field g
 	return ec.marshalNString2ᚖstring(ctx, field.Selections, res)
 }
 
-func (ec *executionContext) _PropertyType_FloatVal(ctx context.Context, field graphql.CollectedField, obj *ent.PropertyType) (ret graphql.Marshaler) {
+func (ec *executionContext) _PropertyType_Type(ctx context.Context, field graphql.CollectedField, obj *ent.PropertyType) (ret graphql.Marshaler) {
 	defer func() {
 		if r := recover(); r != nil {
 			ec.Error(ctx, ec.Recover(ctx, r))
@@ -4192,14 +4498,14 @@ func (ec *executionContext) _PropertyType_FloatVal(ctx context.Context, field gr
 		Object:     "PropertyType",
 		Field:      field,
 		Args:       nil,
-		IsMethod:   false,
-		IsResolver: false,
+		IsMethod:   true,
+		IsResolver: true,
 	}
 
 	ctx = graphql.WithFieldContext(ctx, fc)
 	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
 		ctx = rctx // use context from middleware stack in children
-		return obj.FloatVal, nil
+		return ec.resolvers.PropertyType().Type(rctx, obj)
 	})
 	if err != nil {
 		ec.Error(ctx, err)
@@ -4211,12 +4517,12 @@ func (ec *executionContext) _PropertyType_FloatVal(ctx context.Context, field gr
 		}
 		return graphql.Null
 	}
-	res := resTmp.(*float64)
+	res := resTmp.(string)
 	fc.Result = res
-	return ec.marshalNFloat2ᚖfloat64(ctx, field.Selections, res)
+	return ec.marshalNString2string(ctx, field.Selections, res)
 }
 
-func (ec *executionContext) _PropertyType_Mandatory(ctx context.Context, field graphql.CollectedField, obj *ent.PropertyType) (ret graphql.Marshaler) {
+func (ec *executionContext) _PropertyType_id(ctx context.Context, field graphql.CollectedField, obj *ent.PropertyType) (ret graphql.Marshaler) {
 	defer func() {
 		if r := recover(); r != nil {
 			ec.Error(ctx, ec.Recover(ctx, r))
@@ -4234,7 +4540,7 @@ func (ec *executionContext) _PropertyType_Mandatory(ctx context.Context, field g
 	ctx = graphql.WithFieldContext(ctx, fc)
 	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
 		ctx = rctx // use context from middleware stack in children
-		return obj.Mandatory, nil
+		return obj.ID, nil
 	})
 	if err != nil {
 		ec.Error(ctx, err)
@@ -4246,9 +4552,9 @@ func (ec *executionContext) _PropertyType_Mandatory(ctx context.Context, field g
 		}
 		return graphql.Null
 	}
-	res := resTmp.(bool)
+	res := resTmp.(int)
 	fc.Result = res
-	return ec.marshalNBoolean2bool(ctx, field.Selections, res)
+	return ec.marshalNID2int(ctx, field.Selections, res)
 }
 
 func (ec *executionContext) _Query_QueryPoolCapacity(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
@@ -4410,6 +4716,48 @@ func (ec *executionContext) _Query_QueryResources(ctx context.Context, field gra
 	res := resTmp.([]*ent.Resource)
 	fc.Result = res
 	return ec.marshalNResource2ᚕᚖgithubᚗcomᚋnetᚑautoᚋresourceManagerᚋentᚐResourceᚄ(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) _Query_QueryResourceByAltId(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	fc := &graphql.FieldContext{
+		Object:     "Query",
+		Field:      field,
+		Args:       nil,
+		IsMethod:   true,
+		IsResolver: true,
+	}
+
+	ctx = graphql.WithFieldContext(ctx, fc)
+	rawArgs := field.ArgumentMap(ec.Variables)
+	args, err := ec.field_Query_QueryResourceByAltId_args(ctx, rawArgs)
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	fc.Args = args
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return ec.resolvers.Query().QueryResourceByAltID(rctx, args["input"].(map[string]interface{}), args["poolId"].(int))
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(*ent.Resource)
+	fc.Result = res
+	return ec.marshalNResource2ᚖgithubᚗcomᚋnetᚑautoᚋresourceManagerᚋentᚐResource(ctx, field.Selections, res)
 }
 
 func (ec *executionContext) _Query_QueryAllocationStrategy(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
@@ -4935,41 +5283,6 @@ func (ec *executionContext) _Query___schema(ctx context.Context, field graphql.C
 	return ec.marshalO__Schema2ᚖgithubᚗcomᚋ99designsᚋgqlgenᚋgraphqlᚋintrospectionᚐSchema(ctx, field.Selections, res)
 }
 
-func (ec *executionContext) _Resource_id(ctx context.Context, field graphql.CollectedField, obj *ent.Resource) (ret graphql.Marshaler) {
-	defer func() {
-		if r := recover(); r != nil {
-			ec.Error(ctx, ec.Recover(ctx, r))
-			ret = graphql.Null
-		}
-	}()
-	fc := &graphql.FieldContext{
-		Object:     "Resource",
-		Field:      field,
-		Args:       nil,
-		IsMethod:   false,
-		IsResolver: false,
-	}
-
-	ctx = graphql.WithFieldContext(ctx, fc)
-	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
-		ctx = rctx // use context from middleware stack in children
-		return obj.ID, nil
-	})
-	if err != nil {
-		ec.Error(ctx, err)
-		return graphql.Null
-	}
-	if resTmp == nil {
-		if !graphql.HasFieldError(ctx, fc) {
-			ec.Errorf(ctx, "must not be null")
-		}
-		return graphql.Null
-	}
-	res := resTmp.(int)
-	fc.Result = res
-	return ec.marshalNID2int(ctx, field.Selections, res)
-}
-
 func (ec *executionContext) _Resource_Description(ctx context.Context, field graphql.CollectedField, obj *ent.Resource) (ret graphql.Marshaler) {
 	defer func() {
 		if r := recover(); r != nil {
@@ -5002,7 +5315,7 @@ func (ec *executionContext) _Resource_Description(ctx context.Context, field gra
 	return ec.marshalOString2ᚖstring(ctx, field.Selections, res)
 }
 
-func (ec *executionContext) _Resource_Properties(ctx context.Context, field graphql.CollectedField, obj *ent.Resource) (ret graphql.Marshaler) {
+func (ec *executionContext) _Resource_NestedPool(ctx context.Context, field graphql.CollectedField, obj *ent.Resource) (ret graphql.Marshaler) {
 	defer func() {
 		if r := recover(); r != nil {
 			ec.Error(ctx, ec.Recover(ctx, r))
@@ -5020,21 +5333,18 @@ func (ec *executionContext) _Resource_Properties(ctx context.Context, field grap
 	ctx = graphql.WithFieldContext(ctx, fc)
 	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
 		ctx = rctx // use context from middleware stack in children
-		return ec.resolvers.Resource().Properties(rctx, obj)
+		return ec.resolvers.Resource().NestedPool(rctx, obj)
 	})
 	if err != nil {
 		ec.Error(ctx, err)
 		return graphql.Null
 	}
 	if resTmp == nil {
-		if !graphql.HasFieldError(ctx, fc) {
-			ec.Errorf(ctx, "must not be null")
-		}
 		return graphql.Null
 	}
-	res := resTmp.(map[string]interface{})
+	res := resTmp.(*ent.ResourcePool)
 	fc.Result = res
-	return ec.marshalNMap2map(ctx, field.Selections, res)
+	return ec.marshalOResourcePool2ᚖgithubᚗcomᚋnetᚑautoᚋresourceManagerᚋentᚐResourcePool(ctx, field.Selections, res)
 }
 
 func (ec *executionContext) _Resource_ParentPool(ctx context.Context, field graphql.CollectedField, obj *ent.Resource) (ret graphql.Marshaler) {
@@ -5072,7 +5382,7 @@ func (ec *executionContext) _Resource_ParentPool(ctx context.Context, field grap
 	return ec.marshalNResourcePool2ᚖgithubᚗcomᚋnetᚑautoᚋresourceManagerᚋentᚐResourcePool(ctx, field.Selections, res)
 }
 
-func (ec *executionContext) _Resource_NestedPool(ctx context.Context, field graphql.CollectedField, obj *ent.Resource) (ret graphql.Marshaler) {
+func (ec *executionContext) _Resource_Properties(ctx context.Context, field graphql.CollectedField, obj *ent.Resource) (ret graphql.Marshaler) {
 	defer func() {
 		if r := recover(); r != nil {
 			ec.Error(ctx, ec.Recover(ctx, r))
@@ -5090,39 +5400,7 @@ func (ec *executionContext) _Resource_NestedPool(ctx context.Context, field grap
 	ctx = graphql.WithFieldContext(ctx, fc)
 	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
 		ctx = rctx // use context from middleware stack in children
-		return ec.resolvers.Resource().NestedPool(rctx, obj)
-	})
-	if err != nil {
-		ec.Error(ctx, err)
-		return graphql.Null
-	}
-	if resTmp == nil {
-		return graphql.Null
-	}
-	res := resTmp.(*ent.ResourcePool)
-	fc.Result = res
-	return ec.marshalOResourcePool2ᚖgithubᚗcomᚋnetᚑautoᚋresourceManagerᚋentᚐResourcePool(ctx, field.Selections, res)
-}
-
-func (ec *executionContext) _ResourceConnection_pageInfo(ctx context.Context, field graphql.CollectedField, obj *ent.ResourceConnection) (ret graphql.Marshaler) {
-	defer func() {
-		if r := recover(); r != nil {
-			ec.Error(ctx, ec.Recover(ctx, r))
-			ret = graphql.Null
-		}
-	}()
-	fc := &graphql.FieldContext{
-		Object:     "ResourceConnection",
-		Field:      field,
-		Args:       nil,
-		IsMethod:   false,
-		IsResolver: false,
-	}
-
-	ctx = graphql.WithFieldContext(ctx, fc)
-	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
-		ctx = rctx // use context from middleware stack in children
-		return obj.PageInfo, nil
+		return ec.resolvers.Resource().Properties(rctx, obj)
 	})
 	if err != nil {
 		ec.Error(ctx, err)
@@ -5134,9 +5412,44 @@ func (ec *executionContext) _ResourceConnection_pageInfo(ctx context.Context, fi
 		}
 		return graphql.Null
 	}
-	res := resTmp.(ent.PageInfo)
+	res := resTmp.(map[string]interface{})
 	fc.Result = res
-	return ec.marshalNPageInfo2githubᚗcomᚋnetᚑautoᚋresourceManagerᚋentᚐPageInfo(ctx, field.Selections, res)
+	return ec.marshalNMap2map(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) _Resource_id(ctx context.Context, field graphql.CollectedField, obj *ent.Resource) (ret graphql.Marshaler) {
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	fc := &graphql.FieldContext{
+		Object:     "Resource",
+		Field:      field,
+		Args:       nil,
+		IsMethod:   false,
+		IsResolver: false,
+	}
+
+	ctx = graphql.WithFieldContext(ctx, fc)
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.ID, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(int)
+	fc.Result = res
+	return ec.marshalNID2int(ctx, field.Selections, res)
 }
 
 func (ec *executionContext) _ResourceConnection_edges(ctx context.Context, field graphql.CollectedField, obj *ent.ResourceConnection) (ret graphql.Marshaler) {
@@ -5174,6 +5487,41 @@ func (ec *executionContext) _ResourceConnection_edges(ctx context.Context, field
 	return ec.marshalNResourceEdge2ᚕᚖgithubᚗcomᚋnetᚑautoᚋresourceManagerᚋentᚐResourceEdge(ctx, field.Selections, res)
 }
 
+func (ec *executionContext) _ResourceConnection_pageInfo(ctx context.Context, field graphql.CollectedField, obj *ent.ResourceConnection) (ret graphql.Marshaler) {
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	fc := &graphql.FieldContext{
+		Object:     "ResourceConnection",
+		Field:      field,
+		Args:       nil,
+		IsMethod:   false,
+		IsResolver: false,
+	}
+
+	ctx = graphql.WithFieldContext(ctx, fc)
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.PageInfo, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(ent.PageInfo)
+	fc.Result = res
+	return ec.marshalNPageInfo2githubᚗcomᚋnetᚑautoᚋresourceManagerᚋentᚐPageInfo(ctx, field.Selections, res)
+}
+
 func (ec *executionContext) _ResourceConnection_totalCount(ctx context.Context, field graphql.CollectedField, obj *ent.ResourceConnection) (ret graphql.Marshaler) {
 	defer func() {
 		if r := recover(); r != nil {
@@ -5207,41 +5555,6 @@ func (ec *executionContext) _ResourceConnection_totalCount(ctx context.Context, 
 	res := resTmp.(int)
 	fc.Result = res
 	return ec.marshalNInt2int(ctx, field.Selections, res)
-}
-
-func (ec *executionContext) _ResourceEdge_node(ctx context.Context, field graphql.CollectedField, obj *ent.ResourceEdge) (ret graphql.Marshaler) {
-	defer func() {
-		if r := recover(); r != nil {
-			ec.Error(ctx, ec.Recover(ctx, r))
-			ret = graphql.Null
-		}
-	}()
-	fc := &graphql.FieldContext{
-		Object:     "ResourceEdge",
-		Field:      field,
-		Args:       nil,
-		IsMethod:   false,
-		IsResolver: false,
-	}
-
-	ctx = graphql.WithFieldContext(ctx, fc)
-	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
-		ctx = rctx // use context from middleware stack in children
-		return obj.Node, nil
-	})
-	if err != nil {
-		ec.Error(ctx, err)
-		return graphql.Null
-	}
-	if resTmp == nil {
-		if !graphql.HasFieldError(ctx, fc) {
-			ec.Errorf(ctx, "must not be null")
-		}
-		return graphql.Null
-	}
-	res := resTmp.(*ent.Resource)
-	fc.Result = res
-	return ec.marshalNResource2ᚖgithubᚗcomᚋnetᚑautoᚋresourceManagerᚋentᚐResource(ctx, field.Selections, res)
 }
 
 func (ec *executionContext) _ResourceEdge_cursor(ctx context.Context, field graphql.CollectedField, obj *ent.ResourceEdge) (ret graphql.Marshaler) {
@@ -5279,7 +5592,7 @@ func (ec *executionContext) _ResourceEdge_cursor(ctx context.Context, field grap
 	return ec.marshalNOutputCursor2githubᚗcomᚋnetᚑautoᚋresourceManagerᚋentᚐCursor(ctx, field.Selections, res)
 }
 
-func (ec *executionContext) _ResourcePool_id(ctx context.Context, field graphql.CollectedField, obj *ent.ResourcePool) (ret graphql.Marshaler) {
+func (ec *executionContext) _ResourceEdge_node(ctx context.Context, field graphql.CollectedField, obj *ent.ResourceEdge) (ret graphql.Marshaler) {
 	defer func() {
 		if r := recover(); r != nil {
 			ec.Error(ctx, ec.Recover(ctx, r))
@@ -5287,7 +5600,7 @@ func (ec *executionContext) _ResourcePool_id(ctx context.Context, field graphql.
 		}
 	}()
 	fc := &graphql.FieldContext{
-		Object:     "ResourcePool",
+		Object:     "ResourceEdge",
 		Field:      field,
 		Args:       nil,
 		IsMethod:   false,
@@ -5297,7 +5610,7 @@ func (ec *executionContext) _ResourcePool_id(ctx context.Context, field graphql.
 	ctx = graphql.WithFieldContext(ctx, fc)
 	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
 		ctx = rctx // use context from middleware stack in children
-		return obj.ID, nil
+		return obj.Node, nil
 	})
 	if err != nil {
 		ec.Error(ctx, err)
@@ -5309,9 +5622,73 @@ func (ec *executionContext) _ResourcePool_id(ctx context.Context, field graphql.
 		}
 		return graphql.Null
 	}
-	res := resTmp.(int)
+	res := resTmp.(*ent.Resource)
 	fc.Result = res
-	return ec.marshalNID2int(ctx, field.Selections, res)
+	return ec.marshalNResource2ᚖgithubᚗcomᚋnetᚑautoᚋresourceManagerᚋentᚐResource(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) _ResourcePool_AllocationStrategy(ctx context.Context, field graphql.CollectedField, obj *ent.ResourcePool) (ret graphql.Marshaler) {
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	fc := &graphql.FieldContext{
+		Object:     "ResourcePool",
+		Field:      field,
+		Args:       nil,
+		IsMethod:   true,
+		IsResolver: true,
+	}
+
+	ctx = graphql.WithFieldContext(ctx, fc)
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return ec.resolvers.ResourcePool().AllocationStrategy(rctx, obj)
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		return graphql.Null
+	}
+	res := resTmp.(*ent.AllocationStrategy)
+	fc.Result = res
+	return ec.marshalOAllocationStrategy2ᚖgithubᚗcomᚋnetᚑautoᚋresourceManagerᚋentᚐAllocationStrategy(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) _ResourcePool_Capacity(ctx context.Context, field graphql.CollectedField, obj *ent.ResourcePool) (ret graphql.Marshaler) {
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	fc := &graphql.FieldContext{
+		Object:     "ResourcePool",
+		Field:      field,
+		Args:       nil,
+		IsMethod:   true,
+		IsResolver: true,
+	}
+
+	ctx = graphql.WithFieldContext(ctx, fc)
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return ec.resolvers.ResourcePool().Capacity(rctx, obj)
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		return graphql.Null
+	}
+	res := resTmp.(*model.PoolCapacityPayload)
+	fc.Result = res
+	return ec.marshalOPoolCapacityPayload2ᚖgithubᚗcomᚋnetᚑautoᚋresourceManagerᚋgraphᚋgraphqlᚋmodelᚐPoolCapacityPayload(ctx, field.Selections, res)
 }
 
 func (ec *executionContext) _ResourcePool_Name(ctx context.Context, field graphql.CollectedField, obj *ent.ResourcePool) (ret graphql.Marshaler) {
@@ -5347,6 +5724,73 @@ func (ec *executionContext) _ResourcePool_Name(ctx context.Context, field graphq
 	res := resTmp.(string)
 	fc.Result = res
 	return ec.marshalNString2string(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) _ResourcePool_ParentResource(ctx context.Context, field graphql.CollectedField, obj *ent.ResourcePool) (ret graphql.Marshaler) {
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	fc := &graphql.FieldContext{
+		Object:     "ResourcePool",
+		Field:      field,
+		Args:       nil,
+		IsMethod:   true,
+		IsResolver: true,
+	}
+
+	ctx = graphql.WithFieldContext(ctx, fc)
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return ec.resolvers.ResourcePool().ParentResource(rctx, obj)
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		return graphql.Null
+	}
+	res := resTmp.(*ent.Resource)
+	fc.Result = res
+	return ec.marshalOResource2ᚖgithubᚗcomᚋnetᚑautoᚋresourceManagerᚋentᚐResource(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) _ResourcePool_PoolProperties(ctx context.Context, field graphql.CollectedField, obj *ent.ResourcePool) (ret graphql.Marshaler) {
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	fc := &graphql.FieldContext{
+		Object:     "ResourcePool",
+		Field:      field,
+		Args:       nil,
+		IsMethod:   true,
+		IsResolver: true,
+	}
+
+	ctx = graphql.WithFieldContext(ctx, fc)
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return ec.resolvers.ResourcePool().PoolProperties(rctx, obj)
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(map[string]interface{})
+	fc.Result = res
+	return ec.marshalNMap2map(ctx, field.Selections, res)
 }
 
 func (ec *executionContext) _ResourcePool_PoolType(ctx context.Context, field graphql.CollectedField, obj *ent.ResourcePool) (ret graphql.Marshaler) {
@@ -5454,7 +5898,7 @@ func (ec *executionContext) _ResourcePool_Resources(ctx context.Context, field g
 	return ec.marshalNResource2ᚕᚖgithubᚗcomᚋnetᚑautoᚋresourceManagerᚋentᚐResourceᚄ(ctx, field.Selections, res)
 }
 
-func (ec *executionContext) _ResourcePool_PoolProperties(ctx context.Context, field graphql.CollectedField, obj *ent.ResourcePool) (ret graphql.Marshaler) {
+func (ec *executionContext) _ResourcePool_Tags(ctx context.Context, field graphql.CollectedField, obj *ent.ResourcePool) (ret graphql.Marshaler) {
 	defer func() {
 		if r := recover(); r != nil {
 			ec.Error(ctx, ec.Recover(ctx, r))
@@ -5472,7 +5916,7 @@ func (ec *executionContext) _ResourcePool_PoolProperties(ctx context.Context, fi
 	ctx = graphql.WithFieldContext(ctx, fc)
 	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
 		ctx = rctx // use context from middleware stack in children
-		return ec.resolvers.ResourcePool().PoolProperties(rctx, obj)
+		return ec.resolvers.ResourcePool().Tags(rctx, obj)
 	})
 	if err != nil {
 		ec.Error(ctx, err)
@@ -5484,41 +5928,9 @@ func (ec *executionContext) _ResourcePool_PoolProperties(ctx context.Context, fi
 		}
 		return graphql.Null
 	}
-	res := resTmp.(map[string]interface{})
+	res := resTmp.([]*ent.Tag)
 	fc.Result = res
-	return ec.marshalNMap2map(ctx, field.Selections, res)
-}
-
-func (ec *executionContext) _ResourcePool_ParentResource(ctx context.Context, field graphql.CollectedField, obj *ent.ResourcePool) (ret graphql.Marshaler) {
-	defer func() {
-		if r := recover(); r != nil {
-			ec.Error(ctx, ec.Recover(ctx, r))
-			ret = graphql.Null
-		}
-	}()
-	fc := &graphql.FieldContext{
-		Object:     "ResourcePool",
-		Field:      field,
-		Args:       nil,
-		IsMethod:   true,
-		IsResolver: true,
-	}
-
-	ctx = graphql.WithFieldContext(ctx, fc)
-	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
-		ctx = rctx // use context from middleware stack in children
-		return ec.resolvers.ResourcePool().ParentResource(rctx, obj)
-	})
-	if err != nil {
-		ec.Error(ctx, err)
-		return graphql.Null
-	}
-	if resTmp == nil {
-		return graphql.Null
-	}
-	res := resTmp.(*ent.Resource)
-	fc.Result = res
-	return ec.marshalOResource2ᚖgithubᚗcomᚋnetᚑautoᚋresourceManagerᚋentᚐResource(ctx, field.Selections, res)
+	return ec.marshalNTag2ᚕᚖgithubᚗcomᚋnetᚑautoᚋresourceManagerᚋentᚐTagᚄ(ctx, field.Selections, res)
 }
 
 func (ec *executionContext) _ResourcePool_allocatedResources(ctx context.Context, field graphql.CollectedField, obj *ent.ResourcePool) (ret graphql.Marshaler) {
@@ -5560,7 +5972,7 @@ func (ec *executionContext) _ResourcePool_allocatedResources(ctx context.Context
 	return ec.marshalOResourceConnection2ᚖgithubᚗcomᚋnetᚑautoᚋresourceManagerᚋentᚐResourceConnection(ctx, field.Selections, res)
 }
 
-func (ec *executionContext) _ResourcePool_Tags(ctx context.Context, field graphql.CollectedField, obj *ent.ResourcePool) (ret graphql.Marshaler) {
+func (ec *executionContext) _ResourcePool_id(ctx context.Context, field graphql.CollectedField, obj *ent.ResourcePool) (ret graphql.Marshaler) {
 	defer func() {
 		if r := recover(); r != nil {
 			ec.Error(ctx, ec.Recover(ctx, r))
@@ -5569,105 +5981,6 @@ func (ec *executionContext) _ResourcePool_Tags(ctx context.Context, field graphq
 	}()
 	fc := &graphql.FieldContext{
 		Object:     "ResourcePool",
-		Field:      field,
-		Args:       nil,
-		IsMethod:   true,
-		IsResolver: true,
-	}
-
-	ctx = graphql.WithFieldContext(ctx, fc)
-	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
-		ctx = rctx // use context from middleware stack in children
-		return ec.resolvers.ResourcePool().Tags(rctx, obj)
-	})
-	if err != nil {
-		ec.Error(ctx, err)
-		return graphql.Null
-	}
-	if resTmp == nil {
-		if !graphql.HasFieldError(ctx, fc) {
-			ec.Errorf(ctx, "must not be null")
-		}
-		return graphql.Null
-	}
-	res := resTmp.([]*ent.Tag)
-	fc.Result = res
-	return ec.marshalNTag2ᚕᚖgithubᚗcomᚋnetᚑautoᚋresourceManagerᚋentᚐTagᚄ(ctx, field.Selections, res)
-}
-
-func (ec *executionContext) _ResourcePool_AllocationStrategy(ctx context.Context, field graphql.CollectedField, obj *ent.ResourcePool) (ret graphql.Marshaler) {
-	defer func() {
-		if r := recover(); r != nil {
-			ec.Error(ctx, ec.Recover(ctx, r))
-			ret = graphql.Null
-		}
-	}()
-	fc := &graphql.FieldContext{
-		Object:     "ResourcePool",
-		Field:      field,
-		Args:       nil,
-		IsMethod:   true,
-		IsResolver: true,
-	}
-
-	ctx = graphql.WithFieldContext(ctx, fc)
-	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
-		ctx = rctx // use context from middleware stack in children
-		return ec.resolvers.ResourcePool().AllocationStrategy(rctx, obj)
-	})
-	if err != nil {
-		ec.Error(ctx, err)
-		return graphql.Null
-	}
-	if resTmp == nil {
-		return graphql.Null
-	}
-	res := resTmp.(*ent.AllocationStrategy)
-	fc.Result = res
-	return ec.marshalOAllocationStrategy2ᚖgithubᚗcomᚋnetᚑautoᚋresourceManagerᚋentᚐAllocationStrategy(ctx, field.Selections, res)
-}
-
-func (ec *executionContext) _ResourcePool_Capacity(ctx context.Context, field graphql.CollectedField, obj *ent.ResourcePool) (ret graphql.Marshaler) {
-	defer func() {
-		if r := recover(); r != nil {
-			ec.Error(ctx, ec.Recover(ctx, r))
-			ret = graphql.Null
-		}
-	}()
-	fc := &graphql.FieldContext{
-		Object:     "ResourcePool",
-		Field:      field,
-		Args:       nil,
-		IsMethod:   true,
-		IsResolver: true,
-	}
-
-	ctx = graphql.WithFieldContext(ctx, fc)
-	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
-		ctx = rctx // use context from middleware stack in children
-		return ec.resolvers.ResourcePool().Capacity(rctx, obj)
-	})
-	if err != nil {
-		ec.Error(ctx, err)
-		return graphql.Null
-	}
-	if resTmp == nil {
-		return graphql.Null
-	}
-	res := resTmp.(*model.PoolCapacityPayload)
-	fc.Result = res
-	return ec.marshalOPoolCapacityPayload2ᚖgithubᚗcomᚋnetᚑautoᚋresourceManagerᚋgraphᚋgraphqlᚋmodelᚐPoolCapacityPayload(ctx, field.Selections, res)
-}
-
-func (ec *executionContext) _ResourceType_id(ctx context.Context, field graphql.CollectedField, obj *ent.ResourceType) (ret graphql.Marshaler) {
-	defer func() {
-		if r := recover(); r != nil {
-			ec.Error(ctx, ec.Recover(ctx, r))
-			ret = graphql.Null
-		}
-	}()
-	fc := &graphql.FieldContext{
-		Object:     "ResourceType",
 		Field:      field,
 		Args:       nil,
 		IsMethod:   false,
@@ -5729,41 +6042,6 @@ func (ec *executionContext) _ResourceType_Name(ctx context.Context, field graphq
 	return ec.marshalNString2string(ctx, field.Selections, res)
 }
 
-func (ec *executionContext) _ResourceType_PropertyTypes(ctx context.Context, field graphql.CollectedField, obj *ent.ResourceType) (ret graphql.Marshaler) {
-	defer func() {
-		if r := recover(); r != nil {
-			ec.Error(ctx, ec.Recover(ctx, r))
-			ret = graphql.Null
-		}
-	}()
-	fc := &graphql.FieldContext{
-		Object:     "ResourceType",
-		Field:      field,
-		Args:       nil,
-		IsMethod:   true,
-		IsResolver: true,
-	}
-
-	ctx = graphql.WithFieldContext(ctx, fc)
-	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
-		ctx = rctx // use context from middleware stack in children
-		return ec.resolvers.ResourceType().PropertyTypes(rctx, obj)
-	})
-	if err != nil {
-		ec.Error(ctx, err)
-		return graphql.Null
-	}
-	if resTmp == nil {
-		if !graphql.HasFieldError(ctx, fc) {
-			ec.Errorf(ctx, "must not be null")
-		}
-		return graphql.Null
-	}
-	res := resTmp.([]*ent.PropertyType)
-	fc.Result = res
-	return ec.marshalNPropertyType2ᚕᚖgithubᚗcomᚋnetᚑautoᚋresourceManagerᚋentᚐPropertyTypeᚄ(ctx, field.Selections, res)
-}
-
 func (ec *executionContext) _ResourceType_Pools(ctx context.Context, field graphql.CollectedField, obj *ent.ResourceType) (ret graphql.Marshaler) {
 	defer func() {
 		if r := recover(); r != nil {
@@ -5799,7 +6077,7 @@ func (ec *executionContext) _ResourceType_Pools(ctx context.Context, field graph
 	return ec.marshalNResourcePool2ᚕᚖgithubᚗcomᚋnetᚑautoᚋresourceManagerᚋentᚐResourcePoolᚄ(ctx, field.Selections, res)
 }
 
-func (ec *executionContext) _Tag_id(ctx context.Context, field graphql.CollectedField, obj *ent.Tag) (ret graphql.Marshaler) {
+func (ec *executionContext) _ResourceType_PropertyTypes(ctx context.Context, field graphql.CollectedField, obj *ent.ResourceType) (ret graphql.Marshaler) {
 	defer func() {
 		if r := recover(); r != nil {
 			ec.Error(ctx, ec.Recover(ctx, r))
@@ -5807,7 +6085,42 @@ func (ec *executionContext) _Tag_id(ctx context.Context, field graphql.Collected
 		}
 	}()
 	fc := &graphql.FieldContext{
-		Object:     "Tag",
+		Object:     "ResourceType",
+		Field:      field,
+		Args:       nil,
+		IsMethod:   true,
+		IsResolver: true,
+	}
+
+	ctx = graphql.WithFieldContext(ctx, fc)
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return ec.resolvers.ResourceType().PropertyTypes(rctx, obj)
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.([]*ent.PropertyType)
+	fc.Result = res
+	return ec.marshalNPropertyType2ᚕᚖgithubᚗcomᚋnetᚑautoᚋresourceManagerᚋentᚐPropertyTypeᚄ(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) _ResourceType_id(ctx context.Context, field graphql.CollectedField, obj *ent.ResourceType) (ret graphql.Marshaler) {
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	fc := &graphql.FieldContext{
+		Object:     "ResourceType",
 		Field:      field,
 		Args:       nil,
 		IsMethod:   false,
@@ -5832,6 +6145,38 @@ func (ec *executionContext) _Tag_id(ctx context.Context, field graphql.Collected
 	res := resTmp.(int)
 	fc.Result = res
 	return ec.marshalNID2int(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) _Tag_Pools(ctx context.Context, field graphql.CollectedField, obj *ent.Tag) (ret graphql.Marshaler) {
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	fc := &graphql.FieldContext{
+		Object:     "Tag",
+		Field:      field,
+		Args:       nil,
+		IsMethod:   true,
+		IsResolver: true,
+	}
+
+	ctx = graphql.WithFieldContext(ctx, fc)
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return ec.resolvers.Tag().Pools(rctx, obj)
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		return graphql.Null
+	}
+	res := resTmp.([]*ent.ResourcePool)
+	fc.Result = res
+	return ec.marshalOResourcePool2ᚕᚖgithubᚗcomᚋnetᚑautoᚋresourceManagerᚋentᚐResourcePool(ctx, field.Selections, res)
 }
 
 func (ec *executionContext) _Tag_Tag(ctx context.Context, field graphql.CollectedField, obj *ent.Tag) (ret graphql.Marshaler) {
@@ -5869,7 +6214,7 @@ func (ec *executionContext) _Tag_Tag(ctx context.Context, field graphql.Collecte
 	return ec.marshalNString2string(ctx, field.Selections, res)
 }
 
-func (ec *executionContext) _Tag_Pools(ctx context.Context, field graphql.CollectedField, obj *ent.Tag) (ret graphql.Marshaler) {
+func (ec *executionContext) _Tag_id(ctx context.Context, field graphql.CollectedField, obj *ent.Tag) (ret graphql.Marshaler) {
 	defer func() {
 		if r := recover(); r != nil {
 			ec.Error(ctx, ec.Recover(ctx, r))
@@ -5880,25 +6225,28 @@ func (ec *executionContext) _Tag_Pools(ctx context.Context, field graphql.Collec
 		Object:     "Tag",
 		Field:      field,
 		Args:       nil,
-		IsMethod:   true,
-		IsResolver: true,
+		IsMethod:   false,
+		IsResolver: false,
 	}
 
 	ctx = graphql.WithFieldContext(ctx, fc)
 	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
 		ctx = rctx // use context from middleware stack in children
-		return ec.resolvers.Tag().Pools(rctx, obj)
+		return obj.ID, nil
 	})
 	if err != nil {
 		ec.Error(ctx, err)
 		return graphql.Null
 	}
 	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
 		return graphql.Null
 	}
-	res := resTmp.([]*ent.ResourcePool)
+	res := resTmp.(int)
 	fc.Result = res
-	return ec.marshalOResourcePool2ᚕᚖgithubᚗcomᚋnetᚑautoᚋresourceManagerᚋentᚐResourcePool(ctx, field.Selections, res)
+	return ec.marshalNID2int(ctx, field.Selections, res)
 }
 
 func (ec *executionContext) _TagPoolPayload_tag(ctx context.Context, field graphql.CollectedField, obj *model.TagPoolPayload) (ret graphql.Marshaler) {
@@ -7125,19 +7473,11 @@ func (ec *executionContext) unmarshalInputCreateAllocatingPoolInput(ctx context.
 
 	for k, v := range asMap {
 		switch k {
-		case "resourceTypeId":
+		case "allocationStrategyId":
 			var err error
 
-			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("resourceTypeId"))
-			it.ResourceTypeID, err = ec.unmarshalNID2int(ctx, v)
-			if err != nil {
-				return it, err
-			}
-		case "poolName":
-			var err error
-
-			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("poolName"))
-			it.PoolName, err = ec.unmarshalNString2string(ctx, v)
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("allocationStrategyId"))
+			it.AllocationStrategyID, err = ec.unmarshalNID2int(ctx, v)
 			if err != nil {
 				return it, err
 			}
@@ -7149,19 +7489,19 @@ func (ec *executionContext) unmarshalInputCreateAllocatingPoolInput(ctx context.
 			if err != nil {
 				return it, err
 			}
-		case "allocationStrategyId":
-			var err error
-
-			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("allocationStrategyId"))
-			it.AllocationStrategyID, err = ec.unmarshalNID2int(ctx, v)
-			if err != nil {
-				return it, err
-			}
 		case "poolDealocationSafetyPeriod":
 			var err error
 
 			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("poolDealocationSafetyPeriod"))
 			it.PoolDealocationSafetyPeriod, err = ec.unmarshalNInt2int(ctx, v)
+			if err != nil {
+				return it, err
+			}
+		case "poolName":
+			var err error
+
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("poolName"))
+			it.PoolName, err = ec.unmarshalNString2string(ctx, v)
 			if err != nil {
 				return it, err
 			}
@@ -7178,6 +7518,14 @@ func (ec *executionContext) unmarshalInputCreateAllocatingPoolInput(ctx context.
 
 			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("poolPropertyTypes"))
 			it.PoolPropertyTypes, err = ec.unmarshalNMap2map(ctx, v)
+			if err != nil {
+				return it, err
+			}
+		case "resourceTypeId":
+			var err error
+
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("resourceTypeId"))
+			it.ResourceTypeID, err = ec.unmarshalNID2int(ctx, v)
 			if err != nil {
 				return it, err
 			}
@@ -7245,19 +7593,11 @@ func (ec *executionContext) unmarshalInputCreateNestedAllocatingPoolInput(ctx co
 
 	for k, v := range asMap {
 		switch k {
-		case "resourceTypeId":
+		case "allocationStrategyId":
 			var err error
 
-			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("resourceTypeId"))
-			it.ResourceTypeID, err = ec.unmarshalNID2int(ctx, v)
-			if err != nil {
-				return it, err
-			}
-		case "poolName":
-			var err error
-
-			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("poolName"))
-			it.PoolName, err = ec.unmarshalNString2string(ctx, v)
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("allocationStrategyId"))
+			it.AllocationStrategyID, err = ec.unmarshalNID2int(ctx, v)
 			if err != nil {
 				return it, err
 			}
@@ -7269,11 +7609,11 @@ func (ec *executionContext) unmarshalInputCreateNestedAllocatingPoolInput(ctx co
 			if err != nil {
 				return it, err
 			}
-		case "allocationStrategyId":
+		case "parentResourceId":
 			var err error
 
-			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("allocationStrategyId"))
-			it.AllocationStrategyID, err = ec.unmarshalNID2int(ctx, v)
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("parentResourceId"))
+			it.ParentResourceID, err = ec.unmarshalNID2int(ctx, v)
 			if err != nil {
 				return it, err
 			}
@@ -7285,11 +7625,19 @@ func (ec *executionContext) unmarshalInputCreateNestedAllocatingPoolInput(ctx co
 			if err != nil {
 				return it, err
 			}
-		case "parentResourceId":
+		case "poolName":
 			var err error
 
-			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("parentResourceId"))
-			it.ParentResourceID, err = ec.unmarshalNID2int(ctx, v)
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("poolName"))
+			it.PoolName, err = ec.unmarshalNString2string(ctx, v)
+			if err != nil {
+				return it, err
+			}
+		case "resourceTypeId":
+			var err error
+
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("resourceTypeId"))
+			it.ResourceTypeID, err = ec.unmarshalNID2int(ctx, v)
 			if err != nil {
 				return it, err
 			}
@@ -7313,27 +7661,19 @@ func (ec *executionContext) unmarshalInputCreateNestedSetPoolInput(ctx context.C
 
 	for k, v := range asMap {
 		switch k {
-		case "resourceTypeId":
-			var err error
-
-			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("resourceTypeId"))
-			it.ResourceTypeID, err = ec.unmarshalNID2int(ctx, v)
-			if err != nil {
-				return it, err
-			}
-		case "poolName":
-			var err error
-
-			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("poolName"))
-			it.PoolName, err = ec.unmarshalNString2string(ctx, v)
-			if err != nil {
-				return it, err
-			}
 		case "description":
 			var err error
 
 			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("description"))
 			it.Description, err = ec.unmarshalOString2ᚖstring(ctx, v)
+			if err != nil {
+				return it, err
+			}
+		case "parentResourceId":
+			var err error
+
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("parentResourceId"))
+			it.ParentResourceID, err = ec.unmarshalNID2int(ctx, v)
 			if err != nil {
 				return it, err
 			}
@@ -7345,6 +7685,14 @@ func (ec *executionContext) unmarshalInputCreateNestedSetPoolInput(ctx context.C
 			if err != nil {
 				return it, err
 			}
+		case "poolName":
+			var err error
+
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("poolName"))
+			it.PoolName, err = ec.unmarshalNString2string(ctx, v)
+			if err != nil {
+				return it, err
+			}
 		case "poolValues":
 			var err error
 
@@ -7353,11 +7701,11 @@ func (ec *executionContext) unmarshalInputCreateNestedSetPoolInput(ctx context.C
 			if err != nil {
 				return it, err
 			}
-		case "parentResourceId":
+		case "resourceTypeId":
 			var err error
 
-			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("parentResourceId"))
-			it.ParentResourceID, err = ec.unmarshalNID2int(ctx, v)
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("resourceTypeId"))
+			it.ResourceTypeID, err = ec.unmarshalNID2int(ctx, v)
 			if err != nil {
 				return it, err
 			}
@@ -7381,11 +7729,19 @@ func (ec *executionContext) unmarshalInputCreateNestedSingletonPoolInput(ctx con
 
 	for k, v := range asMap {
 		switch k {
-		case "resourceTypeId":
+		case "description":
 			var err error
 
-			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("resourceTypeId"))
-			it.ResourceTypeID, err = ec.unmarshalNID2int(ctx, v)
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("description"))
+			it.Description, err = ec.unmarshalOString2ᚖstring(ctx, v)
+			if err != nil {
+				return it, err
+			}
+		case "parentResourceId":
+			var err error
+
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("parentResourceId"))
+			it.ParentResourceID, err = ec.unmarshalNID2int(ctx, v)
 			if err != nil {
 				return it, err
 			}
@@ -7397,14 +7753,6 @@ func (ec *executionContext) unmarshalInputCreateNestedSingletonPoolInput(ctx con
 			if err != nil {
 				return it, err
 			}
-		case "description":
-			var err error
-
-			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("description"))
-			it.Description, err = ec.unmarshalOString2ᚖstring(ctx, v)
-			if err != nil {
-				return it, err
-			}
 		case "poolValues":
 			var err error
 
@@ -7413,11 +7761,11 @@ func (ec *executionContext) unmarshalInputCreateNestedSingletonPoolInput(ctx con
 			if err != nil {
 				return it, err
 			}
-		case "parentResourceId":
+		case "resourceTypeId":
 			var err error
 
-			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("parentResourceId"))
-			it.ParentResourceID, err = ec.unmarshalNID2int(ctx, v)
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("resourceTypeId"))
+			it.ResourceTypeID, err = ec.unmarshalNID2int(ctx, v)
 			if err != nil {
 				return it, err
 			}
@@ -7469,22 +7817,6 @@ func (ec *executionContext) unmarshalInputCreateSetPoolInput(ctx context.Context
 
 	for k, v := range asMap {
 		switch k {
-		case "resourceTypeId":
-			var err error
-
-			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("resourceTypeId"))
-			it.ResourceTypeID, err = ec.unmarshalNID2int(ctx, v)
-			if err != nil {
-				return it, err
-			}
-		case "poolName":
-			var err error
-
-			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("poolName"))
-			it.PoolName, err = ec.unmarshalNString2string(ctx, v)
-			if err != nil {
-				return it, err
-			}
 		case "description":
 			var err error
 
@@ -7501,11 +7833,27 @@ func (ec *executionContext) unmarshalInputCreateSetPoolInput(ctx context.Context
 			if err != nil {
 				return it, err
 			}
+		case "poolName":
+			var err error
+
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("poolName"))
+			it.PoolName, err = ec.unmarshalNString2string(ctx, v)
+			if err != nil {
+				return it, err
+			}
 		case "poolValues":
 			var err error
 
 			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("poolValues"))
 			it.PoolValues, err = ec.unmarshalNMap2ᚕmapᚄ(ctx, v)
+			if err != nil {
+				return it, err
+			}
+		case "resourceTypeId":
+			var err error
+
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("resourceTypeId"))
+			it.ResourceTypeID, err = ec.unmarshalNID2int(ctx, v)
 			if err != nil {
 				return it, err
 			}
@@ -7529,11 +7877,11 @@ func (ec *executionContext) unmarshalInputCreateSingletonPoolInput(ctx context.C
 
 	for k, v := range asMap {
 		switch k {
-		case "resourceTypeId":
+		case "description":
 			var err error
 
-			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("resourceTypeId"))
-			it.ResourceTypeID, err = ec.unmarshalNID2int(ctx, v)
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("description"))
+			it.Description, err = ec.unmarshalOString2ᚖstring(ctx, v)
 			if err != nil {
 				return it, err
 			}
@@ -7545,19 +7893,19 @@ func (ec *executionContext) unmarshalInputCreateSingletonPoolInput(ctx context.C
 			if err != nil {
 				return it, err
 			}
-		case "description":
-			var err error
-
-			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("description"))
-			it.Description, err = ec.unmarshalOString2ᚖstring(ctx, v)
-			if err != nil {
-				return it, err
-			}
 		case "poolValues":
 			var err error
 
 			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("poolValues"))
 			it.PoolValues, err = ec.unmarshalNMap2ᚕmapᚄ(ctx, v)
+			if err != nil {
+				return it, err
+			}
+		case "resourceTypeId":
+			var err error
+
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("resourceTypeId"))
+			it.ResourceTypeID, err = ec.unmarshalNID2int(ctx, v)
 			if err != nil {
 				return it, err
 			}
@@ -7689,19 +8037,19 @@ func (ec *executionContext) unmarshalInputResourceInput(ctx context.Context, obj
 			if err != nil {
 				return it, err
 			}
-		case "UpdatedAt":
-			var err error
-
-			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("UpdatedAt"))
-			it.UpdatedAt, err = ec.unmarshalNString2string(ctx, v)
-			if err != nil {
-				return it, err
-			}
 		case "Status":
 			var err error
 
 			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("Status"))
 			it.Status, err = ec.unmarshalNString2string(ctx, v)
+			if err != nil {
+				return it, err
+			}
+		case "UpdatedAt":
+			var err error
+
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("UpdatedAt"))
+			it.UpdatedAt, err = ec.unmarshalNString2string(ctx, v)
 			if err != nil {
 				return it, err
 			}
@@ -7717,19 +8065,19 @@ func (ec *executionContext) unmarshalInputResourcePoolInput(ctx context.Context,
 
 	for k, v := range asMap {
 		switch k {
-		case "poolProperties":
-			var err error
-
-			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("poolProperties"))
-			it.PoolProperties, err = ec.unmarshalNMap2map(ctx, v)
-			if err != nil {
-				return it, err
-			}
 		case "ResourcePoolName":
 			var err error
 
 			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("ResourcePoolName"))
 			it.ResourcePoolName, err = ec.unmarshalNString2string(ctx, v)
+			if err != nil {
+				return it, err
+			}
+		case "poolProperties":
+			var err error
+
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("poolProperties"))
+			it.PoolProperties, err = ec.unmarshalNMap2map(ctx, v)
 			if err != nil {
 				return it, err
 			}
@@ -7949,8 +8297,10 @@ func (ec *executionContext) _AllocationStrategy(ctx context.Context, sel ast.Sel
 		switch field.Name {
 		case "__typename":
 			out.Values[i] = graphql.MarshalString("AllocationStrategy")
-		case "id":
-			out.Values[i] = ec._AllocationStrategy_id(ctx, field, obj)
+		case "Description":
+			out.Values[i] = ec._AllocationStrategy_Description(ctx, field, obj)
+		case "Lang":
+			out.Values[i] = ec._AllocationStrategy_Lang(ctx, field, obj)
 			if out.Values[i] == graphql.Null {
 				invalids++
 			}
@@ -7959,15 +8309,13 @@ func (ec *executionContext) _AllocationStrategy(ctx context.Context, sel ast.Sel
 			if out.Values[i] == graphql.Null {
 				invalids++
 			}
-		case "Description":
-			out.Values[i] = ec._AllocationStrategy_Description(ctx, field, obj)
-		case "Lang":
-			out.Values[i] = ec._AllocationStrategy_Lang(ctx, field, obj)
+		case "Script":
+			out.Values[i] = ec._AllocationStrategy_Script(ctx, field, obj)
 			if out.Values[i] == graphql.Null {
 				invalids++
 			}
-		case "Script":
-			out.Values[i] = ec._AllocationStrategy_Script(ctx, field, obj)
+		case "id":
+			out.Values[i] = ec._AllocationStrategy_id(ctx, field, obj)
 			if out.Values[i] == graphql.Null {
 				invalids++
 			}
@@ -8366,6 +8714,11 @@ func (ec *executionContext) _Mutation(ctx context.Context, sel ast.SelectionSet)
 			if out.Values[i] == graphql.Null {
 				invalids++
 			}
+		case "ClaimResourceWithAltId":
+			out.Values[i] = ec._Mutation_ClaimResourceWithAltId(ctx, field)
+			if out.Values[i] == graphql.Null {
+				invalids++
+			}
 		case "FreeResource":
 			out.Values[i] = ec._Mutation_FreeResource(ctx, field)
 			if out.Values[i] == graphql.Null {
@@ -8479,6 +8832,11 @@ func (ec *executionContext) _PageInfo(ctx context.Context, sel ast.SelectionSet,
 		switch field.Name {
 		case "__typename":
 			out.Values[i] = graphql.MarshalString("PageInfo")
+		case "endCursor":
+			out.Values[i] = ec._PageInfo_endCursor(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				invalids++
+			}
 		case "hasNextPage":
 			out.Values[i] = ec._PageInfo_hasNextPage(ctx, field, obj)
 			if out.Values[i] == graphql.Null {
@@ -8491,11 +8849,6 @@ func (ec *executionContext) _PageInfo(ctx context.Context, sel ast.SelectionSet,
 			}
 		case "startCursor":
 			out.Values[i] = ec._PageInfo_startCursor(ctx, field, obj)
-			if out.Values[i] == graphql.Null {
-				invalids++
-			}
-		case "endCursor":
-			out.Values[i] = ec._PageInfo_endCursor(ctx, field, obj)
 			if out.Values[i] == graphql.Null {
 				invalids++
 			}
@@ -8553,13 +8906,28 @@ func (ec *executionContext) _PropertyType(ctx context.Context, sel ast.Selection
 		switch field.Name {
 		case "__typename":
 			out.Values[i] = graphql.MarshalString("PropertyType")
-		case "id":
-			out.Values[i] = ec._PropertyType_id(ctx, field, obj)
+		case "FloatVal":
+			out.Values[i] = ec._PropertyType_FloatVal(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				atomic.AddUint32(&invalids, 1)
+			}
+		case "IntVal":
+			out.Values[i] = ec._PropertyType_IntVal(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				atomic.AddUint32(&invalids, 1)
+			}
+		case "Mandatory":
+			out.Values[i] = ec._PropertyType_Mandatory(ctx, field, obj)
 			if out.Values[i] == graphql.Null {
 				atomic.AddUint32(&invalids, 1)
 			}
 		case "Name":
 			out.Values[i] = ec._PropertyType_Name(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				atomic.AddUint32(&invalids, 1)
+			}
+		case "StringVal":
+			out.Values[i] = ec._PropertyType_StringVal(ctx, field, obj)
 			if out.Values[i] == graphql.Null {
 				atomic.AddUint32(&invalids, 1)
 			}
@@ -8577,23 +8945,8 @@ func (ec *executionContext) _PropertyType(ctx context.Context, sel ast.Selection
 				}
 				return res
 			})
-		case "IntVal":
-			out.Values[i] = ec._PropertyType_IntVal(ctx, field, obj)
-			if out.Values[i] == graphql.Null {
-				atomic.AddUint32(&invalids, 1)
-			}
-		case "StringVal":
-			out.Values[i] = ec._PropertyType_StringVal(ctx, field, obj)
-			if out.Values[i] == graphql.Null {
-				atomic.AddUint32(&invalids, 1)
-			}
-		case "FloatVal":
-			out.Values[i] = ec._PropertyType_FloatVal(ctx, field, obj)
-			if out.Values[i] == graphql.Null {
-				atomic.AddUint32(&invalids, 1)
-			}
-		case "Mandatory":
-			out.Values[i] = ec._PropertyType_Mandatory(ctx, field, obj)
+		case "id":
+			out.Values[i] = ec._PropertyType_id(ctx, field, obj)
 			if out.Values[i] == graphql.Null {
 				atomic.AddUint32(&invalids, 1)
 			}
@@ -8674,6 +9027,20 @@ func (ec *executionContext) _Query(ctx context.Context, sel ast.SelectionSet) gr
 					}
 				}()
 				res = ec._Query_QueryResources(ctx, field)
+				if res == graphql.Null {
+					atomic.AddUint32(&invalids, 1)
+				}
+				return res
+			})
+		case "QueryResourceByAltId":
+			field := field
+			out.Concurrently(i, func() (res graphql.Marshaler) {
+				defer func() {
+					if r := recover(); r != nil {
+						ec.Error(ctx, ec.Recover(ctx, r))
+					}
+				}()
+				res = ec._Query_QueryResourceByAltId(ctx, field)
 				if res == graphql.Null {
 					atomic.AddUint32(&invalids, 1)
 				}
@@ -8856,14 +9223,9 @@ func (ec *executionContext) _Resource(ctx context.Context, sel ast.SelectionSet,
 		switch field.Name {
 		case "__typename":
 			out.Values[i] = graphql.MarshalString("Resource")
-		case "id":
-			out.Values[i] = ec._Resource_id(ctx, field, obj)
-			if out.Values[i] == graphql.Null {
-				atomic.AddUint32(&invalids, 1)
-			}
 		case "Description":
 			out.Values[i] = ec._Resource_Description(ctx, field, obj)
-		case "Properties":
+		case "NestedPool":
 			field := field
 			out.Concurrently(i, func() (res graphql.Marshaler) {
 				defer func() {
@@ -8871,10 +9233,7 @@ func (ec *executionContext) _Resource(ctx context.Context, sel ast.SelectionSet,
 						ec.Error(ctx, ec.Recover(ctx, r))
 					}
 				}()
-				res = ec._Resource_Properties(ctx, field, obj)
-				if res == graphql.Null {
-					atomic.AddUint32(&invalids, 1)
-				}
+				res = ec._Resource_NestedPool(ctx, field, obj)
 				return res
 			})
 		case "ParentPool":
@@ -8891,7 +9250,7 @@ func (ec *executionContext) _Resource(ctx context.Context, sel ast.SelectionSet,
 				}
 				return res
 			})
-		case "NestedPool":
+		case "Properties":
 			field := field
 			out.Concurrently(i, func() (res graphql.Marshaler) {
 				defer func() {
@@ -8899,9 +9258,17 @@ func (ec *executionContext) _Resource(ctx context.Context, sel ast.SelectionSet,
 						ec.Error(ctx, ec.Recover(ctx, r))
 					}
 				}()
-				res = ec._Resource_NestedPool(ctx, field, obj)
+				res = ec._Resource_Properties(ctx, field, obj)
+				if res == graphql.Null {
+					atomic.AddUint32(&invalids, 1)
+				}
 				return res
 			})
+		case "id":
+			out.Values[i] = ec._Resource_id(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				atomic.AddUint32(&invalids, 1)
+			}
 		default:
 			panic("unknown field " + strconv.Quote(field.Name))
 		}
@@ -8924,13 +9291,13 @@ func (ec *executionContext) _ResourceConnection(ctx context.Context, sel ast.Sel
 		switch field.Name {
 		case "__typename":
 			out.Values[i] = graphql.MarshalString("ResourceConnection")
-		case "pageInfo":
-			out.Values[i] = ec._ResourceConnection_pageInfo(ctx, field, obj)
+		case "edges":
+			out.Values[i] = ec._ResourceConnection_edges(ctx, field, obj)
 			if out.Values[i] == graphql.Null {
 				invalids++
 			}
-		case "edges":
-			out.Values[i] = ec._ResourceConnection_edges(ctx, field, obj)
+		case "pageInfo":
+			out.Values[i] = ec._ResourceConnection_pageInfo(ctx, field, obj)
 			if out.Values[i] == graphql.Null {
 				invalids++
 			}
@@ -8961,13 +9328,13 @@ func (ec *executionContext) _ResourceEdge(ctx context.Context, sel ast.Selection
 		switch field.Name {
 		case "__typename":
 			out.Values[i] = graphql.MarshalString("ResourceEdge")
-		case "node":
-			out.Values[i] = ec._ResourceEdge_node(ctx, field, obj)
+		case "cursor":
+			out.Values[i] = ec._ResourceEdge_cursor(ctx, field, obj)
 			if out.Values[i] == graphql.Null {
 				invalids++
 			}
-		case "cursor":
-			out.Values[i] = ec._ResourceEdge_cursor(ctx, field, obj)
+		case "node":
+			out.Values[i] = ec._ResourceEdge_node(ctx, field, obj)
 			if out.Values[i] == graphql.Null {
 				invalids++
 			}
@@ -8993,16 +9360,58 @@ func (ec *executionContext) _ResourcePool(ctx context.Context, sel ast.Selection
 		switch field.Name {
 		case "__typename":
 			out.Values[i] = graphql.MarshalString("ResourcePool")
-		case "id":
-			out.Values[i] = ec._ResourcePool_id(ctx, field, obj)
-			if out.Values[i] == graphql.Null {
-				atomic.AddUint32(&invalids, 1)
-			}
+		case "AllocationStrategy":
+			field := field
+			out.Concurrently(i, func() (res graphql.Marshaler) {
+				defer func() {
+					if r := recover(); r != nil {
+						ec.Error(ctx, ec.Recover(ctx, r))
+					}
+				}()
+				res = ec._ResourcePool_AllocationStrategy(ctx, field, obj)
+				return res
+			})
+		case "Capacity":
+			field := field
+			out.Concurrently(i, func() (res graphql.Marshaler) {
+				defer func() {
+					if r := recover(); r != nil {
+						ec.Error(ctx, ec.Recover(ctx, r))
+					}
+				}()
+				res = ec._ResourcePool_Capacity(ctx, field, obj)
+				return res
+			})
 		case "Name":
 			out.Values[i] = ec._ResourcePool_Name(ctx, field, obj)
 			if out.Values[i] == graphql.Null {
 				atomic.AddUint32(&invalids, 1)
 			}
+		case "ParentResource":
+			field := field
+			out.Concurrently(i, func() (res graphql.Marshaler) {
+				defer func() {
+					if r := recover(); r != nil {
+						ec.Error(ctx, ec.Recover(ctx, r))
+					}
+				}()
+				res = ec._ResourcePool_ParentResource(ctx, field, obj)
+				return res
+			})
+		case "PoolProperties":
+			field := field
+			out.Concurrently(i, func() (res graphql.Marshaler) {
+				defer func() {
+					if r := recover(); r != nil {
+						ec.Error(ctx, ec.Recover(ctx, r))
+					}
+				}()
+				res = ec._ResourcePool_PoolProperties(ctx, field, obj)
+				if res == graphql.Null {
+					atomic.AddUint32(&invalids, 1)
+				}
+				return res
+			})
 		case "PoolType":
 			out.Values[i] = ec._ResourcePool_PoolType(ctx, field, obj)
 			if out.Values[i] == graphql.Null {
@@ -9036,42 +9445,6 @@ func (ec *executionContext) _ResourcePool(ctx context.Context, sel ast.Selection
 				}
 				return res
 			})
-		case "PoolProperties":
-			field := field
-			out.Concurrently(i, func() (res graphql.Marshaler) {
-				defer func() {
-					if r := recover(); r != nil {
-						ec.Error(ctx, ec.Recover(ctx, r))
-					}
-				}()
-				res = ec._ResourcePool_PoolProperties(ctx, field, obj)
-				if res == graphql.Null {
-					atomic.AddUint32(&invalids, 1)
-				}
-				return res
-			})
-		case "ParentResource":
-			field := field
-			out.Concurrently(i, func() (res graphql.Marshaler) {
-				defer func() {
-					if r := recover(); r != nil {
-						ec.Error(ctx, ec.Recover(ctx, r))
-					}
-				}()
-				res = ec._ResourcePool_ParentResource(ctx, field, obj)
-				return res
-			})
-		case "allocatedResources":
-			field := field
-			out.Concurrently(i, func() (res graphql.Marshaler) {
-				defer func() {
-					if r := recover(); r != nil {
-						ec.Error(ctx, ec.Recover(ctx, r))
-					}
-				}()
-				res = ec._ResourcePool_allocatedResources(ctx, field, obj)
-				return res
-			})
 		case "Tags":
 			field := field
 			out.Concurrently(i, func() (res graphql.Marshaler) {
@@ -9086,7 +9459,7 @@ func (ec *executionContext) _ResourcePool(ctx context.Context, sel ast.Selection
 				}
 				return res
 			})
-		case "AllocationStrategy":
+		case "allocatedResources":
 			field := field
 			out.Concurrently(i, func() (res graphql.Marshaler) {
 				defer func() {
@@ -9094,20 +9467,14 @@ func (ec *executionContext) _ResourcePool(ctx context.Context, sel ast.Selection
 						ec.Error(ctx, ec.Recover(ctx, r))
 					}
 				}()
-				res = ec._ResourcePool_AllocationStrategy(ctx, field, obj)
+				res = ec._ResourcePool_allocatedResources(ctx, field, obj)
 				return res
 			})
-		case "Capacity":
-			field := field
-			out.Concurrently(i, func() (res graphql.Marshaler) {
-				defer func() {
-					if r := recover(); r != nil {
-						ec.Error(ctx, ec.Recover(ctx, r))
-					}
-				}()
-				res = ec._ResourcePool_Capacity(ctx, field, obj)
-				return res
-			})
+		case "id":
+			out.Values[i] = ec._ResourcePool_id(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				atomic.AddUint32(&invalids, 1)
+			}
 		default:
 			panic("unknown field " + strconv.Quote(field.Name))
 		}
@@ -9130,30 +9497,11 @@ func (ec *executionContext) _ResourceType(ctx context.Context, sel ast.Selection
 		switch field.Name {
 		case "__typename":
 			out.Values[i] = graphql.MarshalString("ResourceType")
-		case "id":
-			out.Values[i] = ec._ResourceType_id(ctx, field, obj)
-			if out.Values[i] == graphql.Null {
-				atomic.AddUint32(&invalids, 1)
-			}
 		case "Name":
 			out.Values[i] = ec._ResourceType_Name(ctx, field, obj)
 			if out.Values[i] == graphql.Null {
 				atomic.AddUint32(&invalids, 1)
 			}
-		case "PropertyTypes":
-			field := field
-			out.Concurrently(i, func() (res graphql.Marshaler) {
-				defer func() {
-					if r := recover(); r != nil {
-						ec.Error(ctx, ec.Recover(ctx, r))
-					}
-				}()
-				res = ec._ResourceType_PropertyTypes(ctx, field, obj)
-				if res == graphql.Null {
-					atomic.AddUint32(&invalids, 1)
-				}
-				return res
-			})
 		case "Pools":
 			field := field
 			out.Concurrently(i, func() (res graphql.Marshaler) {
@@ -9168,6 +9516,25 @@ func (ec *executionContext) _ResourceType(ctx context.Context, sel ast.Selection
 				}
 				return res
 			})
+		case "PropertyTypes":
+			field := field
+			out.Concurrently(i, func() (res graphql.Marshaler) {
+				defer func() {
+					if r := recover(); r != nil {
+						ec.Error(ctx, ec.Recover(ctx, r))
+					}
+				}()
+				res = ec._ResourceType_PropertyTypes(ctx, field, obj)
+				if res == graphql.Null {
+					atomic.AddUint32(&invalids, 1)
+				}
+				return res
+			})
+		case "id":
+			out.Values[i] = ec._ResourceType_id(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				atomic.AddUint32(&invalids, 1)
+			}
 		default:
 			panic("unknown field " + strconv.Quote(field.Name))
 		}
@@ -9190,16 +9557,6 @@ func (ec *executionContext) _Tag(ctx context.Context, sel ast.SelectionSet, obj 
 		switch field.Name {
 		case "__typename":
 			out.Values[i] = graphql.MarshalString("Tag")
-		case "id":
-			out.Values[i] = ec._Tag_id(ctx, field, obj)
-			if out.Values[i] == graphql.Null {
-				atomic.AddUint32(&invalids, 1)
-			}
-		case "Tag":
-			out.Values[i] = ec._Tag_Tag(ctx, field, obj)
-			if out.Values[i] == graphql.Null {
-				atomic.AddUint32(&invalids, 1)
-			}
 		case "Pools":
 			field := field
 			out.Concurrently(i, func() (res graphql.Marshaler) {
@@ -9211,6 +9568,16 @@ func (ec *executionContext) _Tag(ctx context.Context, sel ast.SelectionSet, obj 
 				res = ec._Tag_Pools(ctx, field, obj)
 				return res
 			})
+		case "Tag":
+			out.Values[i] = ec._Tag_Tag(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				atomic.AddUint32(&invalids, 1)
+			}
+		case "id":
+			out.Values[i] = ec._Tag_id(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				atomic.AddUint32(&invalids, 1)
+			}
 		default:
 			panic("unknown field " + strconv.Quote(field.Name))
 		}
