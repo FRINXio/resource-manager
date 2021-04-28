@@ -340,6 +340,52 @@ func loadRandomSignedInt32(ctx context.Context, client *ent.Tx) error {
 	return nil
 }
 
+func loadFormaterStrategy(ctx context.Context, client *ent.Tx) error {
+
+	exists, err := client.ResourceType.Query().Where(resourcetype.Name("formater_string")).Exist(ctx)
+	if err != nil {
+		return err
+	}
+	if exists {
+		return nil
+	}
+
+	propCounter, err := client.PropertyType.Create().
+		SetName("counter").
+		SetType(propertytype.TypeInt).
+		Save(ctx)
+	if err != nil {
+		return err
+	}
+
+	propText, err := client.PropertyType.Create().
+		SetName("text").
+		SetType(propertytype.TypeString).
+		Save(ctx)
+	if err != nil {
+		return err
+	}
+
+	_, err = client.ResourceType.Create().
+		SetName("formater_string").
+		AddPropertyTypes(propCounter, propText).
+		Save(ctx)
+	if err != nil {
+		return err
+	}
+
+	_, err = client.AllocationStrategy.Create().
+		SetName("formater_counter").
+		SetLang(allocationstrategy.LangJs).
+		SetScript(FORMATTER_COUNTER).
+		Save(ctx)
+	if err != nil {
+		return err
+	}
+
+	return nil
+}
+
 
 func loadInner(ctx context.Context, client *ent.Tx) error {
 	err := loadIpv4Prefix(ctx, client)
@@ -376,6 +422,11 @@ func loadInner(ctx context.Context, client *ent.Tx) error {
 	err = loadRandomSignedInt32(ctx, client)
 	if err != nil {
 		return errors.Wrapf(err, "Unable to load random signed int32 resource type")
+	}
+
+	err = loadFormaterStrategy(ctx, client)
+	if err != nil {
+		return errors.Wrapf(err, "Unable to load formater_string resource type")
 	}
 
 	return nil

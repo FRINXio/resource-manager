@@ -1518,3 +1518,38 @@ function capacity() {
 
 `
 
+const FORMATTER_COUNTER = `
+'use strict';
+
+// framework managed constants
+//;
+//;
+// framework managed constants
+
+// STRATEGY_START
+
+
+function  getNextFreeCounter() {
+    let max = 0;
+    for (let i = 0; i < currentResources.length; i++) {
+        if (currentResources[i].counter > max) {
+            max = currentResources[i].counter;
+        }
+    }
+
+    return ++max;
+}
+
+function invoke() {
+    let nextFreeCounter = getNextFreeCounter();
+    return {text: userInput.textFunction(userInput, nextFreeCounter, resourcePoolProperties), counter: nextFreeCounter};
+}
+
+function capacity() {
+    let allocatedCapacity = getNextFreeCounter() - 1;
+    let freeCapacity = Number.MAX_SAFE_INTEGER - allocatedCapacity;
+    return { freeCapacity: freeCapacity, utilizedCapacity: allocatedCapacity };
+}
+
+
+`
