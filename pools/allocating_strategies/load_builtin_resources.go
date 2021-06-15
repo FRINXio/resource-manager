@@ -340,9 +340,9 @@ func loadRandomSignedInt32(ctx context.Context, client *ent.Tx) error {
 	return nil
 }
 
-func loadFormaterStrategy(ctx context.Context, client *ent.Tx) error {
+func loadUniqueIdStrategy(ctx context.Context, client *ent.Tx) error {
 
-	exists, err := client.ResourceType.Query().Where(resourcetype.Name("formater_string")).Exist(ctx)
+	exists, err := client.ResourceType.Query().Where(resourcetype.Name("unique-id")).Exist(ctx)
 	if err != nil {
 		return err
 	}
@@ -367,7 +367,7 @@ func loadFormaterStrategy(ctx context.Context, client *ent.Tx) error {
 	}
 
 	_, err = client.ResourceType.Create().
-		SetName("formater_string").
+		SetName("unique-id").
 		AddPropertyTypes(propCounter, propText).
 		Save(ctx)
 	if err != nil {
@@ -375,9 +375,9 @@ func loadFormaterStrategy(ctx context.Context, client *ent.Tx) error {
 	}
 
 	_, err = client.AllocationStrategy.Create().
-		SetName("formater_counter").
+		SetName("unique-id").
 		SetLang(allocationstrategy.LangJs).
-		SetScript(FORMATTER_COUNTER).
+		SetScript(UNIQUE_ID).
 		Save(ctx)
 	if err != nil {
 		return err
@@ -424,9 +424,9 @@ func loadInner(ctx context.Context, client *ent.Tx) error {
 		return errors.Wrapf(err, "Unable to load random signed int32 resource type")
 	}
 
-	err = loadFormaterStrategy(ctx, client)
+	err = loadUniqueIdStrategy(ctx, client)
 	if err != nil {
-		return errors.Wrapf(err, "Unable to load formater_string resource type")
+		return errors.Wrapf(err, "Unable to load unique-id resource type")
 	}
 
 	return nil

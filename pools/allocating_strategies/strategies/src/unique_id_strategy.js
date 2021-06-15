@@ -7,25 +7,42 @@ var userInput = {}
 // STRATEGY_START
 
 /*
-
-'VPN-{counter}-
-{userInput.someProperty}-{resourcePool.someProperty}-local'
+Unique id generator
+- this strategy accepts template as textFunction and will replace variables in {} for values
+- {counter} is static variable for iterations
+- example: 'VPN-{counter}-{network}-{vpn}-local'
  */
 
-function  getNextFreeCounter() {
+String.prototype.format = function(dict) {
+    return this.replace(/{(\w+)}/g, function(match, key) {
+        return typeof dict[key] !== 'undefined'
+            ? dict[key]
+            : match
+            ;
+    });
+};
+
+function getNextFreeCounter() {
     let max = 0;
     for (let i = 0; i < currentResources.length; i++) {
-        if (currentResources[i].counter > max) {
-            max = currentResources[i].counter;
+        if (currentResources[i].Properties.counter > max) {
+            max = currentResources[i].Properties.counter;
         }
     }
-
     return ++max;
 }
 
+// main
 function invoke() {
     let nextFreeCounter = getNextFreeCounter();
-    return {text: userInput.textFunction(userInput, nextFreeCounter, resourcePoolProperties), counter: nextFreeCounter};
+    if (resourcePoolProperties == null){
+        console.error("Unable to extract resources")
+        return null
+    }
+    const { textFunction, ...poolProperties } = resourcePoolProperties;
+    let textOutput = resourcePoolProperties["textFunction"].format(
+        {...{counter: nextFreeCounter}, ...poolProperties})
+    return { text: textOutput, counter: nextFreeCounter };
 }
 
 function capacity() {
