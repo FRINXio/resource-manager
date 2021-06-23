@@ -8,8 +8,8 @@ var userInput = {}
 
 /*
 Unique id generator
-- this strategy accepts template as textFunction and will replace variables in {} for values
-- {counter} is static variable for iterations
+- this strategy accepts text template as "idFormat" and will replace variables in {} for values
+- {counter} is mandatory static variable for iterations
 - example: 'VPN-{counter}-{network}-{vpn}-local'
  */
 
@@ -35,14 +35,22 @@ function getNextFreeCounter() {
 // main
 function invoke() {
     let nextFreeCounter = getNextFreeCounter();
-    if (resourcePoolProperties == null){
+    if (resourcePoolProperties == null) {
         console.error("Unable to extract resources")
         return null
     }
+    if (!("idFormat" in resourcePoolProperties)) {
+        console.error("Missing idFormat in resources")
+        return null
+    }
+    if (!resourcePoolProperties["idFormat"].includes("{counter}")) {
+        console.error("Missing {counter} in idFormat")
+        return null
+    }
     const { textFunction, ...poolProperties } = resourcePoolProperties;
-    let textOutput = resourcePoolProperties["textFunction"].format(
+    let idFormat = resourcePoolProperties["idFormat"].format(
         {...{counter: nextFreeCounter}, ...poolProperties})
-    return { text: textOutput, counter: nextFreeCounter };
+    return { text: idFormat, counter: nextFreeCounter };
 }
 
 function capacity() {

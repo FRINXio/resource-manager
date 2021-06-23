@@ -1313,14 +1313,18 @@ function getNextFreeCounter() {
 // main
 function invoke() {
     let nextFreeCounter = getNextFreeCounter();
-    if (resourcePoolProperties == null){
+    if (resourcePoolProperties == null) {
         console.error("Unable to extract resources");
         return null
     }
+    if (!resourcePoolProperties["idFormat"].includes("{counter}")) {
+        console.error("Missing {counter} in idFormat");
+        return null
+    }
     const { textFunction, ...poolProperties } = resourcePoolProperties;
-    let textOutput = resourcePoolProperties["textFunction"].format(
+    let idFormat = resourcePoolProperties["idFormat"].format(
         {...{counter: nextFreeCounter}, ...poolProperties});
-    return { text: textOutput, counter: nextFreeCounter };
+    return { text: idFormat, counter: nextFreeCounter };
 }
 
 function capacity() {
