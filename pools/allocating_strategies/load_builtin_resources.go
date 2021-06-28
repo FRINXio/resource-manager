@@ -342,7 +342,7 @@ func loadRandomSignedInt32(ctx context.Context, client *ent.Tx) error {
 
 func loadUniqueIdStrategy(ctx context.Context, client *ent.Tx) error {
 
-	exists, err := client.ResourceType.Query().Where(resourcetype.Name("unique-id")).Exist(ctx)
+	exists, err := client.ResourceType.Query().Where(resourcetype.Name("unique_id")).Exist(ctx)
 	if err != nil {
 		return err
 	}
@@ -367,7 +367,7 @@ func loadUniqueIdStrategy(ctx context.Context, client *ent.Tx) error {
 	}
 
 	_, err = client.ResourceType.Create().
-		SetName("unique-id").
+		SetName("unique_id").
 		AddPropertyTypes(propCounter, propText).
 		Save(ctx)
 	if err != nil {
@@ -375,7 +375,7 @@ func loadUniqueIdStrategy(ctx context.Context, client *ent.Tx) error {
 	}
 
 	_, err = client.AllocationStrategy.Create().
-		SetName("unique-id").
+		SetName("unique_id").
 		SetLang(allocationstrategy.LangJs).
 		SetScript(UNIQUE_ID).
 		Save(ctx)
@@ -426,7 +426,7 @@ func loadInner(ctx context.Context, client *ent.Tx) error {
 
 	err = loadUniqueIdStrategy(ctx, client)
 	if err != nil {
-		return errors.Wrapf(err, "Unable to load unique-id resource type")
+		return errors.Wrapf(err, "Unable to load unique id resource type")
 	}
 
 	return nil
