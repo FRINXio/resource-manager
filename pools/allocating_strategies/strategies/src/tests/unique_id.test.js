@@ -70,6 +70,23 @@ test("multiple l3vpn counters", () => {
     expect(capacity).toStrictEqual({freeCapacity: Number.MAX_SAFE_INTEGER - 10, utilizedCapacity: 10});
 })
 
+test("simple range counter",() =>{
+    let unique_id = strat.invokeWithParams([],
+        {from: 1000, idFormat: "{counter}"},
+        {});
+    expect(unique_id).toStrictEqual({'counter': 1000, text: '1000' })
+})
+
+test("multiple range counter",() =>{
+    let outputs = []
+    for (let i = 1; i <= 10; i++) {
+        let unique_id = strat.invokeWithParams(outputs,
+            {from: 1000, idFormat: "{counter}"},
+            {});
+        outputs.push(uniqueId(unique_id.counter, unique_id.text))
+        expect(unique_id).toStrictEqual({'counter': 999 + i, text: (999 + i).toString() })
+    }
+})
 function uniqueId(counter, text) {
     return {"Properties": {"counter": counter, "text": text}}
 }
