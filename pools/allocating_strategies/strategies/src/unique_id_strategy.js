@@ -9,7 +9,8 @@ var userInput = {}
 /*
 Unique id generator
 - this strategy accepts text template as "idFormat" and will replace variables in {} for values
-- {counter} is mandatory static variable for iterations
+- {counter} is mandatory static variable for iterations and initial value is 1
+- Unique id resource type to have one optional property of type int ["from"] and it sets initial value of {counter}
 - example: 'VPN-{counter}-{network}-{vpn}-local'
  */
 
@@ -22,8 +23,8 @@ String.prototype.format = function(dict) {
     });
 };
 
-function getNextFreeCounter() {
-    let max = 0;
+function getNextFreeCounter(properties) {
+    let max = typeof(properties['from']) == 'undefined' ? 0 : properties['from'] - 1
     for (let i = 0; i < currentResources.length; i++) {
         if (currentResources[i].Properties.counter > max) {
             max = currentResources[i].Properties.counter;
@@ -34,11 +35,11 @@ function getNextFreeCounter() {
 
 // main
 function invoke() {
-    let nextFreeCounter = getNextFreeCounter();
     if (resourcePoolProperties == null) {
         console.error("Unable to extract resources")
         return null
     }
+    let nextFreeCounter = getNextFreeCounter(resourcePoolProperties);
     if (!("idFormat" in resourcePoolProperties)) {
         console.error("Missing idFormat in resources")
         return null
@@ -54,7 +55,7 @@ function invoke() {
 }
 
 function capacity() {
-    let allocatedCapacity = getNextFreeCounter() - 1;
+    let allocatedCapacity = getNextFreeCounter(resourcePoolProperties) - 1;
     let freeCapacity = Number.MAX_SAFE_INTEGER - allocatedCapacity;
     return { freeCapacity: freeCapacity, utilizedCapacity: allocatedCapacity };
 }
