@@ -4,6 +4,8 @@ import (
 	"bytes"
 	"context"
 	"encoding/json"
+	"io/ioutil"
+	"math/rand"
 	"os"
 	"os/exec"
 	"strconv"
@@ -122,6 +124,15 @@ func InvokeAllocationStrategy(
 	}
 }
 
+func createRandomName() string {
+	var letterRunes = []rune("abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ")
+	b := make([]rune, 10)
+	for i := range b {
+		b[i] = letterRunes[rand.Intn(len(letterRunes))]
+	}
+	return string(b)
+}
+
 func serializeJsVariable(name string, data interface{}) (string, error) {
 	userInputBytes, err := json.Marshal(data)
 	if err != nil {
@@ -175,11 +186,24 @@ const log = console.error;
 		// default in case of nil
 		currentResources = []*model.ResourceInput{}
 	}
-	addition, err = serializeJsVariable("currentResources", currentResources)
+	resourceFileName := createRandomName()
+
+	resourcesBytes, err := json.Marshal(currentResources)
+	err = ioutil.WriteFile("/tmp/" + resourceFileName + ".json", resourcesBytes, 0644)
 	if err != nil {
 		return nil, "", err
 	}
-	header += addition
+	defer func(name string) {
+		err := os.Remove(name)
+		if err != nil {
+
+		}
+	}("/tmp/" + resourceFileName + ".json")
+	openAndReadFile := `
+let fileOutput = std.readFile('/tmp/`+resourceFileName+`.json');
+const currentResources = std.parseExtJSON(fileOutput);
+`
+	header += openAndReadFile
 
 	footer := `
 let result = ` + functionName + `
@@ -293,11 +317,24 @@ def log(*args, **kwargs):
 		// default in case of nil
 		currentResources = []*model.ResourceInput{}
 	}
-	addition, err = serializePythonVariable("currentResources", currentResources)
+	resourceFileName := createRandomName()
+
+	resourcesBytes, err := json.Marshal(currentResources)
+	err = ioutil.WriteFile("/tmp/" + resourceFileName + ".json", resourcesBytes, 0644)
 	if err != nil {
 		return nil, "", err
 	}
-	header += addition
+	defer func(name string) {
+		err := os.Remove(name)
+		if err != nil {
+
+		}
+	}("/tmp/" + resourceFileName + ".json")
+	openAndReadResourceFile := `
+with open('/tmp/` + resourceFileName + `.json') as fp:
+    currentResources = json.load(fp)
+`
+	header += openAndReadResourceFile
 
 	header += `
 def ` + functionName + `:
