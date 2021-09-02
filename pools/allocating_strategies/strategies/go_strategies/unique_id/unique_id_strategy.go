@@ -1,4 +1,4 @@
-package src
+package unique_id
 
 import (
 	"strconv"
