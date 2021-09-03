@@ -1,7 +1,17 @@
-package vlan
+package src
+// framework managed constants
+type Vlan struct {
+	currentResources []map[string]interface{}
+	resourcePoolProperties map[string]interface{}
+}
 
-var currentResources []map[string]interface{}
-var resourcePoolProperties map[string]interface{}
+func NewVlan(currentResources []map[string]interface{}, resourcePoolProperties map[string]interface{}) Vlan {
+	return Vlan{currentResources, resourcePoolProperties}
+}
+
+// framework managed constants
+
+// STRATEGY_START
 
 func utilizedCapacity(allocatedRanges []map[string]interface{}, newlyAllocatedVlan int) int {
 	return len(allocatedRanges) + newlyAllocatedVlan
@@ -20,19 +30,19 @@ func contains(slice []int, val int) bool {
 	return false
 }
 
-func invoke() map[string]interface{} {
-	if resourcePoolProperties == nil {
+func (vlan Vlan) invoke() map[string]interface{} {
+	if vlan.resourcePoolProperties == nil {
 		// console.error("Unable to allocate VLAN" +
 		// 	". Unable to extract parent vlan range from pool name: " + resourcePoolProperties)
 		return nil
 	}
 	parentRange := make(map[string]interface{})
-	for k, v := range resourcePoolProperties {
+	for k, v := range vlan.resourcePoolProperties {
 		parentRange[k] = v
 	}
 
 	var currentResourcesUnwrapped []map[string]interface{}
-	for _, element := range currentResources {
+	for _, element := range vlan.currentResources {
 		value, ok := element["Properties"]
 		if ok {
 			currentResourcesUnwrapped = append(currentResourcesUnwrapped, value.(map[string]interface{}))
@@ -65,30 +75,11 @@ func invoke() map[string]interface{} {
 	return nil
 }
 
-func capacity() map[string]interface{} {
+func (vlan Vlan) capacity() map[string]interface{} {
 	var result = make(map[string]interface{})
-	result["freeCapacity"] = freeCapacity(resourcePoolProperties, len(currentResources))
-	result["utilizedCapacity"] = len(currentResources)
+	result["freeCapacity"] = freeCapacity(vlan.resourcePoolProperties, len(vlan.currentResources))
+	result["utilizedCapacity"] = len(vlan.currentResources)
 	return result
 }
 
 // STRATEGY_END
-
-// For testing purposes
-func invokeWithParams(
-	currentResourcesArg []map[string]interface{},
-	resourcePoolArg map[string]interface{}) map[string]interface{} {
-
-	currentResources = currentResourcesArg
-	resourcePoolProperties = resourcePoolArg
-	return invoke()
-}
-
-func invokeWithParamsCapacity(
-	currentResourcesArg []map[string]interface{},
-	resourcePoolArg map[string]interface{}) map[string]interface{} {
-
-	currentResources = currentResourcesArg
-	resourcePoolProperties = resourcePoolArg
-	return capacity()
-}
