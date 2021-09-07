@@ -254,8 +254,7 @@ func loadVlan(ctx context.Context, client *ent.Tx) error {
 
 	_, err = client.AllocationStrategy.Create().
 		SetName("vlan").
-		SetLang(allocationstrategy.LangJs).
-		SetScript(VLAN).
+		SetLang(allocationstrategy.LangGo).
 		Save(ctx)
 	if err != nil {
 		return err
@@ -376,8 +375,7 @@ func loadUniqueIdStrategy(ctx context.Context, client *ent.Tx) error {
 
 	_, err = client.AllocationStrategy.Create().
 		SetName("unique_id").
-		SetLang(allocationstrategy.LangJs).
-		SetScript(UNIQUE_ID).
+		SetLang(allocationstrategy.LangGo).
 		Save(ctx)
 	if err != nil {
 		return err

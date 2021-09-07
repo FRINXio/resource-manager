@@ -71,6 +71,46 @@ return {"vlan": userInput["desiredVlan"]}
 	checkResult(t, now, actual, logString)
 }
 
+func TestInvokeGo(t *testing.T) {
+	if testing.Short() {
+		t.Skip("skipping integration test")
+	}
+	userInput := make(map[string]interface{})
+	var resourcePool model.ResourcePoolInput
+	resourcePool.ResourcePoolName = "vlan"
+
+	now := time.Now()
+	var r0 model.ResourceInput
+	r0.Properties = map[string]interface{}{"vlan": 0}
+	r0.Status = "claimed"
+	r0.UpdatedAt = now.String()
+
+	var currentResources []*model.ResourceInput
+	currentResources = append(currentResources, &r0)
+
+	var resourcePoolResources = map[string]interface{}{"from": 0, "to": 4095}
+
+	actual, logString, err := invokeGo(userInput, resourcePool, currentResources, resourcePoolResources)
+	if err != nil {
+		t.Fatalf("Unable run - %s", err)
+	}
+
+	expected := make(map[string]interface{})
+	expected["vlan"] = 1
+	if !reflect.DeepEqual(actual, expected) {
+		t.Fatalf("Unexpected evaluation response: %v, should be %v", actual, expected)
+	}
+	// check stderr
+	actualLog := make(map[string]interface{})
+	json.Unmarshal([]byte(logString), &actualLog)
+	expectedLogString := ""
+	expectedLog := make(map[string]interface{})
+	json.Unmarshal([]byte(expectedLogString), &expectedLog)
+	if !reflect.DeepEqual(actualLog, expectedLog) {
+		t.Fatalf("Unexpected logging result: %v, should be %v", logString, expectedLogString)
+	}
+}
+
 func createCurrentResources(now time.Time) []*model.ResourceInput {
 	var r0 model.ResourceInput
 	r0.Properties = map[string]interface{}{"value": 1}

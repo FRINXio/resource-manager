@@ -80,7 +80,7 @@ func (AllocationStrategy) Fields() []ent.Field {
 			Optional().
 			Nillable(),
 		field.Enum("lang").
-			Values("py", "js").
+			Values("py", "js", "go").
 			Default("js"),
 		field.Text("script").
 			NotEmpty(),
