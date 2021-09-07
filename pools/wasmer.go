@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"context"
 	"encoding/json"
+	src "github.com/net-auto/resourceManager/pools/allocating_strategies/strategies/generated"
 	"os"
 	"os/exec"
 	"strconv"
@@ -115,11 +116,60 @@ func InvokeAllocationStrategy(
 		return invoker.invokeJs(strat.Script, userInput, resourcePool, currentResources, poolPropertiesMaps, functionName)
 	case allocationstrategy.LangPy:
 		return invoker.invokePy(strat.Script, userInput, resourcePool, currentResources, poolPropertiesMaps, functionName)
+	case allocationstrategy.LangGo:
+		return invokeGo(userInput, resourcePool, currentResources, poolPropertiesMaps)
 	default:
 		err := errors.Errorf("Unknown language \"%s\" for strategy \"%s\"", strat.Lang, strat.Name)
 		log.Error(nil, err, "Unknown strategy language")
 		return nil, "", err
 	}
+}
+func currentResourcesToArray(currentResources []*model.ResourceInput) ([]map[string]interface{}, error) {
+	var mapInterface []map[string]interface{}
+	for _, element := range currentResources {
+		m := make(map[string]interface{})
+		inrec, err := json.Marshal(element)
+		if err != nil {
+			err := errors.Wrap(err, "Cannot serialize currentResources into json")
+			log.Error(nil, err, "Cannot serialize currentResources")
+			return mapInterface, err
+		}
+		if err := json.Unmarshal(inrec, &m); err != nil {
+			log.Error(nil, err, "Parsing error")
+			return mapInterface, errors.Wrapf(err, "Parsing error")
+		}
+
+		mapInterface = append(mapInterface, m)
+	}
+	return mapInterface, nil
+}
+
+func invokeGo(
+	userInput map[string]interface{},
+	resourcePool model.ResourcePoolInput,
+	currentResources []*model.ResourceInput,
+	poolPropertiesMaps map[string]interface{},
+) (map[string]interface{}, string, error) {
+	if resourcePool.ResourcePoolName == "vlan" {
+		arrayOfMapInterface, err := currentResourcesToArray(currentResources)
+		if err != nil {
+			return nil, "", err
+		}
+		vlanStruct := src.NewVlan(arrayOfMapInterface, poolPropertiesMaps)
+		output, err := vlanStruct.Invoke()
+		return output, "", err
+	}
+	if resourcePool.ResourcePoolName == "unique-id" {
+		arrayOfMapInterface, err := currentResourcesToArray(currentResources)
+		if err != nil {
+			return nil, "", err
+		}
+		uniqueIdStruct := src.NewUniqueId(arrayOfMapInterface, poolPropertiesMaps)
+		output, err := uniqueIdStruct.Invoke()
+		return output, "", err
+	}
+
+	return nil, "", nil
 }
 
 func serializeJsVariable(name string, data interface{}) (string, error) {

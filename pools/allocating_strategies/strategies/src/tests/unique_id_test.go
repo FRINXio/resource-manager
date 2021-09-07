@@ -1,6 +1,8 @@
-package src
+package tests
 
 import (
+	"github.com/net-auto/resourceManager/pools/allocating_strategies/strategies/src"
+	"github.com/pkg/errors"
 	"reflect"
 	"strconv"
 	"testing"
@@ -26,9 +28,9 @@ func TestUniqueIdOutputAndCapacity(t *testing.T) {
 		"vpn": "VPN85", "network": "Network19",
 		"idFormat": "VPN-{counter}-{network}-{vpn}-local",
 	}
-	uniqueIdStruct := NewUniqueId(allocated, resourcePool)
+	uniqueIdStruct := src.NewUniqueId(allocated, resourcePool)
 
-	var output = uniqueIdStruct.invoke()
+	var output, err = uniqueIdStruct.Invoke()
 	var expectedOutput = make(map[string]interface{})
 	expectedOutput["counter"] = 4
 	expectedOutput["text"] = "VPN-4-Network19-VPN85-local"
@@ -37,9 +39,13 @@ func TestUniqueIdOutputAndCapacity(t *testing.T) {
 	if !eq {
 		t.Fatalf("different output of %s expected, got: %s", expectedOutput, output)
 	}
+	eq = reflect.DeepEqual(err, nil)
+	if !eq {
+		t.Fatalf("different output of nil expected, got: %s", err)
+	}
 
-	uniqueIdStruct = NewUniqueId(allocated, resourcePool)
-	var capacity = uniqueIdStruct.capacity()
+	uniqueIdStruct = src.NewUniqueId(allocated, resourcePool)
+	var capacity = uniqueIdStruct.Capacity()
 	var expectedCapacity = make(map[string]interface{})
 	expectedCapacity["freeCapacity"] = int(^uint(0) >> 1) - 3  // Number.MAX_SAFE_INTEGER - 3
 	expectedCapacity["utilizedCapacity"] = 3
@@ -53,16 +59,20 @@ func TestUniqueIdOutputAndCapacity(t *testing.T) {
 func TestSimpleRangeCounter(t *testing.T) {
 	var outputs []map[string]interface{}
 	var resourcePool = map[string]interface{}{"from": 1000, "idFormat": "{counter}"}
-	uniqueIdStruct := NewUniqueId(outputs, resourcePool)
+	uniqueIdStruct := src.NewUniqueId(outputs, resourcePool)
 	for i := 0; i <= 10; i++ {
-		var output = uniqueIdStruct.invoke()
+		var output, err = uniqueIdStruct.Invoke()
 		var expectedOutput = map[string]interface{}{"counter": 1000 + i, "text": strconv.Itoa(1000 + i)}
 		eq := reflect.DeepEqual(output, expectedOutput)
 		if !eq {
 			t.Fatalf("different output of %s expected, got: %s", expectedOutput, output)
 		}
+		eq = reflect.DeepEqual(err, nil)
+		if !eq {
+			t.Fatalf("different output of nil expected, got: %s", err)
+		}
 		outputs = append(outputs, uniqueId(output["counter"].(int), output["text"].(string)))
-		uniqueIdStruct = NewUniqueId(outputs, resourcePool)
+		uniqueIdStruct = src.NewUniqueId(outputs, resourcePool)
 	}
 
 }
@@ -70,12 +80,17 @@ func TestSimpleRangeCounter(t *testing.T) {
 func TestParamsWithoutResourcePool(t *testing.T) {
 	var allocated []map[string]interface{}
 
-	uniqueIdStruct := NewUniqueId(allocated, nil)
-	var output = uniqueIdStruct.invoke()
+	uniqueIdStruct := src.NewUniqueId(allocated, nil)
+	var output, err = uniqueIdStruct.Invoke()
 
 	eq := reflect.DeepEqual(output, (map[string]interface{})(nil))
 	if !eq {
 		t.Fatalf("different output of nil expected, got: %s", output)
+	}
+	expectedOutput := errors.New("Unable to extract resources")
+	eq = reflect.DeepEqual(err.Error(), expectedOutput.Error())
+	if !eq {
+		t.Fatalf("different output of %s expected, got: %s", expectedOutput, err)
 	}
 }
 
@@ -85,30 +100,39 @@ func TestResourcePoolWithoutIdFormat(t *testing.T) {
 		"vpn": "VPN85", "network": "Network19",
 		"idFormat": "VPN-{network}-{vpn}-local",
 	}
-	uniqueIdStruct := NewUniqueId(allocated, resourcePool)
-	var output = uniqueIdStruct.invoke()
+	uniqueIdStruct := src.NewUniqueId(allocated, resourcePool)
+	output, err := uniqueIdStruct.Invoke()
 
 	eq := reflect.DeepEqual(output, (map[string]interface{})(nil))
 	if !eq {
 		t.Fatalf("different output of nil expected, got: %s", output)
+	}
+	expectedOutput := errors.New("Missing {counter} in idFormat")
+	eq = reflect.DeepEqual(err.Error(), expectedOutput.Error())
+	if !eq {
+		t.Fatalf("different output of %s expected, got: %s", expectedOutput, err)
 	}
 }
 
 func TestMultipleL3vpnCounters(t *testing.T) {
 	var outputs []map[string]interface{}
 	var resourcePool = map[string]interface{}{"someProperty": "L3VPN", "idFormat": "{someProperty}{counter}"}
-	uniqueIdStruct := NewUniqueId(outputs, resourcePool)
+	uniqueIdStruct := src.NewUniqueId(outputs, resourcePool)
 	for i := 1; i <= 10; i++ {
-		var output = uniqueIdStruct.invoke()
-		var expectedOutput = map[string]interface{}{"counter": i, "text": "L3VPN" + strconv.Itoa(i)}
+		output, err := uniqueIdStruct.Invoke()
+		expectedOutput := map[string]interface{}{"counter": i, "text": "L3VPN" + strconv.Itoa(i)}
 		eq := reflect.DeepEqual(output, expectedOutput)
 		if !eq {
 			t.Fatalf("different output of %s expected, got: %s", expectedOutput, output)
 		}
+		eq = reflect.DeepEqual(err, nil)
+		if !eq {
+			t.Fatalf("different output of nil expected, got: %s", err)
+		}
 		outputs = append(outputs, uniqueId(output["counter"].(int), output["text"].(string)))
-		uniqueIdStruct = NewUniqueId(outputs, resourcePool)
+		uniqueIdStruct = src.NewUniqueId(outputs, resourcePool)
 
-		var capacity = uniqueIdStruct.capacity()
+		var capacity = uniqueIdStruct.Capacity()
 		var expectedCapacity = make(map[string]interface{})
 		expectedCapacity["freeCapacity"] = int(^uint(0) >> 1) - i  // Number.MAX_SAFE_INTEGER - 3
 		expectedCapacity["utilizedCapacity"] = i

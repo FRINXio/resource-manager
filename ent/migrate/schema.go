@@ -13,7 +13,7 @@ var (
 		{Name: "id", Type: field.TypeInt, Increment: true},
 		{Name: "name", Type: field.TypeString, Unique: true},
 		{Name: "description", Type: field.TypeString, Nullable: true, Size: 2147483647},
-		{Name: "lang", Type: field.TypeEnum, Enums: []string{"py", "js"}, Default: "js"},
+		{Name: "lang", Type: field.TypeEnum, Enums: []string{"py", "js", "go"}, Default: "js"},
 		{Name: "script", Type: field.TypeString, Size: 2147483647},
 	}
 	// AllocationStrategiesTable holds the schema information for the "allocation_strategies" table.
