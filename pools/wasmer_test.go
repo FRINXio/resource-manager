@@ -2,6 +2,7 @@ package pools
 
 import (
 	"encoding/json"
+	"github.com/net-auto/resourceManager/ent/allocationstrategy"
 	"reflect"
 	"testing"
 	"time"
@@ -71,13 +72,21 @@ return {"vlan": userInput["desiredVlan"]}
 	checkResult(t, now, actual, logString)
 }
 
-func TestInvokeGo(t *testing.T) {
+func TestVlanInvokeGo(t *testing.T) {
 	if testing.Short() {
 		t.Skip("skipping integration test")
 	}
+	ctx := getContext()
+	client := openDb(ctx)
+	strat, _ := client.AllocationStrategy.Create().
+		SetName("vlan").
+		SetLang(allocationstrategy.LangGo).
+		SetScript("Hello World!").
+		Save(ctx)
+
 	userInput := make(map[string]interface{})
 	var resourcePool model.ResourcePoolInput
-	resourcePool.ResourcePoolName = "vlan"
+	resourcePool.ResourcePoolName = "svlan"
 
 	now := time.Now()
 	var r0 model.ResourceInput
@@ -90,7 +99,7 @@ func TestInvokeGo(t *testing.T) {
 
 	var resourcePoolResources = map[string]interface{}{"from": 0, "to": 4095}
 
-	actual, logString, err := invokeGo(userInput, resourcePool, currentResources, resourcePoolResources)
+	actual, logString, err := invokeGo(strat, userInput, resourcePool, currentResources, resourcePoolResources)
 	if err != nil {
 		t.Fatalf("Unable run - %s", err)
 	}
@@ -101,12 +110,53 @@ func TestInvokeGo(t *testing.T) {
 		t.Fatalf("Unexpected evaluation response: %v, should be %v", actual, expected)
 	}
 	// check stderr
-	actualLog := make(map[string]interface{})
-	json.Unmarshal([]byte(logString), &actualLog)
 	expectedLogString := ""
-	expectedLog := make(map[string]interface{})
-	json.Unmarshal([]byte(expectedLogString), &expectedLog)
-	if !reflect.DeepEqual(actualLog, expectedLog) {
+	if !reflect.DeepEqual(logString, expectedLogString) {
+		t.Fatalf("Unexpected logging result: %v, should be %v", logString, expectedLogString)
+	}
+}
+
+func TestUniqueIdInvokeGo(t *testing.T) {
+	if testing.Short() {
+		t.Skip("skipping integration test")
+	}
+	ctx := getContext()
+	client := openDb(ctx)
+	strat, _ := client.AllocationStrategy.Create().
+		SetName("unique_id").
+		SetLang(allocationstrategy.LangGo).
+		SetScript("Hello World!").
+		Save(ctx)
+
+	userInput := make(map[string]interface{})
+	var resourcePool model.ResourcePoolInput
+	resourcePool.ResourcePoolName = "svlan"
+
+	now := time.Now()
+	var r0 model.ResourceInput
+	r0.Properties = map[string]interface{}{"text": "1000", "counter": 1000}
+	r0.Status = "claimed"
+	r0.UpdatedAt = now.String()
+
+	var currentResources []*model.ResourceInput
+	currentResources = append(currentResources, &r0)
+
+	var resourcePoolResources = map[string]interface{}{"from": 1000, "idFormat": "{counter}"}
+
+	actual, logString, err := invokeGo(strat, userInput, resourcePool, currentResources, resourcePoolResources)
+	if err != nil {
+		t.Fatalf("Unable run - %s", err)
+	}
+
+	expected := make(map[string]interface{})
+	expected["text"] = "1001"
+	expected["counter"] = 1001
+	if !reflect.DeepEqual(actual, expected) {
+		t.Fatalf("Unexpected evaluation response: %v, should be %v", actual, expected)
+	}
+	// check stderr
+	expectedLogString := ""
+	if !reflect.DeepEqual(logString, expectedLogString) {
 		t.Fatalf("Unexpected logging result: %v, should be %v", logString, expectedLogString)
 	}
 }
