@@ -26,10 +26,6 @@ func main() {
 package pools
 
 `
-	files, err = filepath.Glob(STRATEGY_DIR + "*" + JS_SUFFIX)
-	if err != nil {
-		panic(err)
-	}
 	for _, file := range files {
 		strategyB, err := ioutil.ReadFile(file)
 		if err != nil {
