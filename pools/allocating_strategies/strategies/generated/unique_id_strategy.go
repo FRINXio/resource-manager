@@ -28,8 +28,8 @@ func (uniqueId *UniqueId) getNextFreeCounter() int {
 	for _, element := range uniqueId.currentResources {
 		var properties = element["Properties"].(map[string]interface{})
 		for k, v := range properties {
-			if k == "counter" && v.(int) > max {
-				max = v.(int)
+			if k == "counter" && int(v.(float64)) > max {
+				max = int(v.(float64))
 			}
 		}
 	}

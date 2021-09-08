@@ -50,7 +50,7 @@ func (vlan *Vlan) Invoke() (map[string]interface{}, error) {
 	for _, element := range currentResourcesUnwrapped {
 		value, ok := element["vlan"]
 		if ok {
-			currentResourcesSet = append(currentResourcesSet, value.(int))
+			currentResourcesSet = append(currentResourcesSet, int(value.(float64)))
 		}
 	}
 	from, ok := parentRange["from"]
