@@ -8,7 +8,7 @@ import (
 	"testing"
 )
 
-func uniqueId(counter int, text string) map[string]interface{}{
+func uniqueId(counter float64, text string) map[string]interface{}{
 	uniqueIdProperties := make(map[string]interface{})
 	uniqueIdMap := make(map[string]interface{})
 	uniqueIdMap["counter"] = counter
@@ -71,7 +71,7 @@ func TestSimpleRangeCounter(t *testing.T) {
 		if !eq {
 			t.Fatalf("different output of nil expected, got: %s", err)
 		}
-		outputs = append(outputs, uniqueId(output["counter"].(int), output["text"].(string)))
+		outputs = append(outputs, uniqueId(float64(output["counter"].(int)), output["text"].(string)))
 		uniqueIdStruct = src.NewUniqueId(outputs, resourcePool)
 	}
 
@@ -129,7 +129,7 @@ func TestMultipleL3vpnCounters(t *testing.T) {
 		if !eq {
 			t.Fatalf("different output of nil expected, got: %s", err)
 		}
-		outputs = append(outputs, uniqueId(output["counter"].(int), output["text"].(string)))
+		outputs = append(outputs, uniqueId(float64(output["counter"].(int)), output["text"].(string)))
 		uniqueIdStruct = src.NewUniqueId(outputs, resourcePool)
 
 		var capacity = uniqueIdStruct.Capacity()

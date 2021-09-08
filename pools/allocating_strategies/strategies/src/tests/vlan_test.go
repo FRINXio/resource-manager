@@ -7,7 +7,7 @@ import (
 	"testing"
 )
 
-func vlan(vlan int) map[string]interface{}{
+func vlan(vlan float64) map[string]interface{}{
 	vlanProperties := make(map[string]interface{})
 	vlanMap := make(map[string]interface{})
 	vlanMap["vlan"] = vlan
@@ -18,7 +18,7 @@ func vlan(vlan int) map[string]interface{}{
 func vlans(from int, to int) []map[string]interface{}{
 	var vlansArray []map[string]interface{}
 	for i := from; i <= to; i++ {
-		vlansArray = append(vlansArray, vlan(i))
+		vlansArray = append(vlansArray, vlan(float64(i)))
 	}
 	return vlansArray
 }
