@@ -99,13 +99,13 @@ func TestVlanInvokeGo(t *testing.T) {
 
 	var resourcePoolResources = map[string]interface{}{"from": 0, "to": 4095}
 
-	actual, logString, err := invokeGo(strat, userInput, resourcePool, currentResources, resourcePoolResources)
+	actual, logString, err := invokeGo(strat, userInput, resourcePool, currentResources, resourcePoolResources, "invoke()")
 	if err != nil {
 		t.Fatalf("Unable run - %s", err)
 	}
 
 	expected := make(map[string]interface{})
-	expected["vlan"] = 1
+	expected["vlan"] = float64(1)
 	if !reflect.DeepEqual(actual, expected) {
 		t.Fatalf("Unexpected evaluation response: %v, should be %v", actual, expected)
 	}
@@ -143,14 +143,14 @@ func TestUniqueIdInvokeGo(t *testing.T) {
 
 	var resourcePoolResources = map[string]interface{}{"from": 1000, "idFormat": "{counter}"}
 
-	actual, logString, err := invokeGo(strat, userInput, resourcePool, currentResources, resourcePoolResources)
+	actual, logString, err := invokeGo(strat, userInput, resourcePool, currentResources, resourcePoolResources, "invoke()")
 	if err != nil {
 		t.Fatalf("Unable run - %s", err)
 	}
 
 	expected := make(map[string]interface{})
 	expected["text"] = "1001"
-	expected["counter"] = 1001
+	expected["counter"] = float64(1001)
 	if !reflect.DeepEqual(actual, expected) {
 		t.Fatalf("Unexpected evaluation response: %v, should be %v", actual, expected)
 	}
