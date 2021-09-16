@@ -203,6 +203,6 @@ test('vlan strategy', async (t) => {
         poolName,
         [], {});
 
-    t.equal(allocated.stdout.vlan, 0);
+    t.equal(allocated.vlan, 0);
     t.end();
 });
