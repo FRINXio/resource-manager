@@ -3,6 +3,8 @@ package src
 // STRATEGY_START
 
 import (
+	"encoding/json"
+	"fmt"
 	"github.com/pkg/errors"
 	"strconv"
 	"strings"
@@ -17,19 +19,27 @@ func NewUniqueId(currentResources []map[string]interface{}, resourcePoolProperti
 	return UniqueId{currentResources, resourcePoolProperties}
 }
 
-func (uniqueId *UniqueId) getNextFreeCounter() int {
-	var max int
+func (uniqueId *UniqueId) getNextFreeCounter() float64 {
+	var max float64
 	value, ok := uniqueId.resourcePoolProperties["from"]
+	switch value.(type) {
+	case json.Number:
+		value, _ = value.(json.Number).Float64()
+	case float64:
+		value = value.(float64)
+	case int:
+		value = float64(value.(int))
+	}
 	if ok {
-		max = value.(int) - 1
+		max = value.(float64) - 1
 	} else {
 		max = 0
 	}
 	for _, element := range uniqueId.currentResources {
 		var properties = element["Properties"].(map[string]interface{})
 		for k, v := range properties {
-			if k == "counter" && int(v.(float64)) > max {
-				max = int(v.(float64))
+			if k == "counter" && v.(float64) > max {
+				max = v.(float64)
 			}
 		}
 	}
@@ -57,9 +67,15 @@ func (uniqueId *UniqueId) Invoke() (map[string]interface{}, error) {
 	replacePoolProperties["counter"] = nextFreeCounter
 	for k, v := range replacePoolProperties {
 		switch v.(type) {
+		case float64:
+			v = fmt.Sprint(v.(float64))
 		case int:
 			v = strconv.Itoa(v.(int))
+		case json.Number:
+			v, _ = v.(json.Number).Float64()
+			v = fmt.Sprint(v.(float64))
 		}
+
 		value = strings.Replace(value.(string), "{" + k + "}", v.(string), 1)
 	}
 	var result = make(map[string]interface{})
@@ -69,8 +85,8 @@ func (uniqueId *UniqueId) Invoke() (map[string]interface{}, error) {
 }
 
 func (uniqueId *UniqueId) Capacity() map[string]interface{} {
-	var allocatedCapacity = uniqueId.getNextFreeCounter() - 1
-	var freeCapacity = int(^uint(0) >> 1) - allocatedCapacity
+	var allocatedCapacity = float64(len(uniqueId.currentResources))
+	var freeCapacity = float64(^uint(0) >> 1) - allocatedCapacity
 	var result = make(map[string]interface{})
 	result["freeCapacity"] = freeCapacity
 	result["utilizedCapacity"] = allocatedCapacity

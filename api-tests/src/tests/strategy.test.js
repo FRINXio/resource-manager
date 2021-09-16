@@ -201,8 +201,8 @@ test('vlan strategy', async (t) => {
     let allocated = await testStrategy(strategyId,
         {from: 0, to: 4095},
         poolName,
-        [], {}, true);
+        [], {});
 
-    t.equal(allocated, null);
+    t.equal(allocated.stdout.vlan, 0);
     t.end();
 });

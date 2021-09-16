@@ -55,7 +55,7 @@ func TestAllocateVlan(t *testing.T) {
 	var resourcePool = map[string]interface{}{"from": 0, "to": 4095}
 	vlanStruct := src.NewVlan(allocated, resourcePool)
 	output, err := vlanStruct.Invoke()
-	expectedOutput := map[string]interface{}{"vlan": 0}
+	expectedOutput := map[string]interface{}{"vlan": float64(0)}
 	eq := reflect.DeepEqual(output, expectedOutput)
 	if !eq {
 		t.Fatalf("different output of %s expected, got: %s", expectedOutput, output)
@@ -69,7 +69,7 @@ func TestAllocateVlan(t *testing.T) {
 	resourcePool = map[string]interface{}{"from": 0, "to": 4095}
 	vlanStruct = src.NewVlan(allocated, resourcePool)
 	output, err = vlanStruct.Invoke()
-	expectedOutput = map[string]interface{}{"vlan": 0}
+	expectedOutput = map[string]interface{}{"vlan": float64(0)}
 	eq = reflect.DeepEqual(output, expectedOutput)
 	if !eq {
 		t.Fatalf("different output of %s expected, got: %s", expectedOutput, output)
@@ -79,7 +79,7 @@ func TestAllocateVlan(t *testing.T) {
 	resourcePool = map[string]interface{}{"from": 278, "to": 333}
 	vlanStruct = src.NewVlan(allocated, resourcePool)
 	output, err = vlanStruct.Invoke()
-	expectedOutput = map[string]interface{}{"vlan": 279}
+	expectedOutput = map[string]interface{}{"vlan": float64(279)}
 	eq = reflect.DeepEqual(output, expectedOutput)
 	if !eq {
 		t.Fatalf("different output of %s expected, got: %s", expectedOutput, output)
@@ -88,7 +88,7 @@ func TestAllocateVlan(t *testing.T) {
 	resourcePool = map[string]interface{}{"from": 0, "to": 4095}
 	vlanStruct = src.NewVlan(vlans(0, 4094), resourcePool)
 	output, err = vlanStruct.Invoke()
-	expectedOutput = map[string]interface{}{"vlan": 4095}
+	expectedOutput = map[string]interface{}{"vlan": float64(4095)}
 	eq = reflect.DeepEqual(output, expectedOutput)
 	if !eq {
 		t.Fatalf("different output of %s expected, got: %s", expectedOutput, output)
@@ -110,25 +110,36 @@ func TestAllocateVlanFull(t *testing.T) {
 	}
 }
 
-func TestVlanCapacityMeasureFull(t *testing.T) {
+func TestVlanCapacityMeasureEmpty(t *testing.T) {
+	var allocated []map[string]interface{}
 	var resourcePool = map[string]interface{}{"from": 0, "to": 4095}
-	vlanStruct := src.NewVlan(vlans(0, 4095), resourcePool)
+	vlanStruct := src.NewVlan(allocated, resourcePool)
 	output := vlanStruct.Capacity()
-	expectedOutput := map[string]interface{}{"freeCapacity": 0, "utilizedCapacity": 4096}
+	expectedOutput := map[string]interface{}{"freeCapacity": float64(4096), "utilizedCapacity": float64(0)}
 	eq := reflect.DeepEqual(output, expectedOutput)
 	if !eq {
 		t.Fatalf("different output of %s expected, got: %s", expectedOutput, output)
 	}
+}
 
+func TestVlanCapacityMeasureFull(t *testing.T) {
+	var resourcePool = map[string]interface{}{"from": 0, "to": 4095}
+	vlanStruct := src.NewVlan(vlans(0, 4095), resourcePool)
+	output := vlanStruct.Capacity()
+	expectedOutput := map[string]interface{}{"freeCapacity": float64(0), "utilizedCapacity": float64(4096)}
+	eq := reflect.DeepEqual(output, expectedOutput)
+	if !eq {
+		t.Fatalf("different output of %s expected, got: %s", expectedOutput, output)
+	}
 }
 
 func TestFreeCapacity(t *testing.T) {
 	vlanRangeProperties, _ := vlanRange(100, 900)["Properties"]
-	output := src.FreeCapacity(vlanRangeProperties.(map[string]interface{}), 100)
-	expectedOutput := 701
+	output := src.FreeCapacity(vlanRangeProperties.(map[string]interface{}), float64(100))
+	expectedOutput := float64(701)
 	eq := reflect.DeepEqual(output, expectedOutput)
 	if !eq {
-		t.Fatalf("different output of %d expected, got: %d", expectedOutput, output)
+		t.Fatalf("different output of %f expected, got: %f", expectedOutput, output)
 	}
 }
 
@@ -136,9 +147,9 @@ func TestUtilisation(t *testing.T) {
 	allocated := []map[string]interface{}{
 		vlan(0), vlan(1), vlan(1000)}
 	output := src.UtilizedCapacity(allocated, 1)
-	expectedOutput := 4
+	expectedOutput := float64(4)
 	eq := reflect.DeepEqual(output, expectedOutput)
 	if !eq {
-		t.Fatalf("different output of %d expected, got: %d", expectedOutput, output)
+		t.Fatalf("different output of %f expected, got: %f", expectedOutput, output)
 	}
 }
