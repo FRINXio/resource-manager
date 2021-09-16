@@ -117,7 +117,7 @@ func InvokeAllocationStrategy(
 	case allocationstrategy.LangPy:
 		return invoker.invokePy(strat.Script, userInput, resourcePool, currentResources, poolPropertiesMaps, functionName)
 	case allocationstrategy.LangGo:
-		return invokeGo(strat, userInput, resourcePool, currentResources, poolPropertiesMaps)
+		return invokeGo(strat, userInput, resourcePool, currentResources, poolPropertiesMaps, functionName)
 	default:
 		err := errors.Errorf("Unknown language \"%s\" for strategy \"%s\"", strat.Lang, strat.Name)
 		log.Error(nil, err, "Unknown strategy language")
@@ -150,8 +150,9 @@ func invokeGo(
 	resourcePool model.ResourcePoolInput,
 	currentResources []*model.ResourceInput,
 	poolPropertiesMaps map[string]interface{},
+	functionName string,
 ) (map[string]interface{}, string, error) {
-	log.Debug(nil, "resourcePool:\n %s", resourcePool)
+	var output map[string]interface{}
 	if strat.Name == "vlan" {
 		arrayOfMapInterface, err := currentResourcesToArray(currentResources)
 		if err != nil {
@@ -159,7 +160,11 @@ func invokeGo(
 		}
 		log.Debug(nil, "CurrentResources:\n %s\n poolProperties:\n %s", arrayOfMapInterface, poolPropertiesMaps)
 		vlanStruct := src.NewVlan(arrayOfMapInterface, poolPropertiesMaps)
-		output, err := vlanStruct.Invoke()
+		if functionName == "invoke()" {
+			output, err = vlanStruct.Invoke()
+		} else {
+			output = vlanStruct.Capacity()
+		}
 		return output, "", err
 	}
 	if strat.Name == "unique_id" {
@@ -169,7 +174,11 @@ func invokeGo(
 		}
 		log.Debug(nil, "CurrentResources:\n %s\n poolProperties:\n %s", arrayOfMapInterface, poolPropertiesMaps)
 		uniqueIdStruct := src.NewUniqueId(arrayOfMapInterface, poolPropertiesMaps)
-		output, err := uniqueIdStruct.Invoke()
+		if functionName == "invoke()" {
+			output, err = uniqueIdStruct.Invoke()
+		} else {
+			output = uniqueIdStruct.Capacity()
+		}
 		return output, "", err
 	}
 

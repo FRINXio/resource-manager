@@ -1,6 +1,9 @@
 package src
 
-import "github.com/pkg/errors"
+import (
+	"encoding/json"
+	"github.com/pkg/errors"
+)
 
 // STRATEGY_START
 
@@ -13,15 +16,15 @@ func NewVlan(currentResources []map[string]interface{}, resourcePoolProperties m
 	return Vlan{currentResources, resourcePoolProperties}
 }
 
-func UtilizedCapacity(allocatedRanges []map[string]interface{}, newlyAllocatedVlan int) int {
-	return len(allocatedRanges) + newlyAllocatedVlan
+func UtilizedCapacity(allocatedRanges []map[string]interface{}, newlyAllocatedVlan float64) float64 {
+	return float64(len(allocatedRanges)) + newlyAllocatedVlan
 }
 
-func FreeCapacity(vlanRange map[string]interface{}, utilisedCapacity int) int {
-	return vlanRange["to"].(int) - vlanRange["from"].(int) + 1 - utilisedCapacity
+func FreeCapacity(vlanRange map[string]interface{}, utilisedCapacity float64) float64 {
+	return float64(vlanRange["to"].(int) - vlanRange["from"].(int) + 1 - int(utilisedCapacity))
 }
 
-func contains(slice []int, val int) bool {
+func contains(slice []float64, val float64) bool {
 	for _, item := range slice {
 		if item == val {
 			return true
@@ -46,11 +49,11 @@ func (vlan *Vlan) Invoke() (map[string]interface{}, error) {
 			currentResourcesUnwrapped = append(currentResourcesUnwrapped, value.(map[string]interface{}))
 		}
 	}
-	var currentResourcesSet []int
+	var currentResourcesSet []float64
 	for _, element := range currentResourcesUnwrapped {
 		value, ok := element["vlan"]
 		if ok {
-			currentResourcesSet = append(currentResourcesSet, int(value.(float64)))
+			currentResourcesSet = append(currentResourcesSet, value.(float64))
 		}
 	}
 	from, ok := parentRange["from"]
@@ -61,12 +64,39 @@ func (vlan *Vlan) Invoke() (map[string]interface{}, error) {
 	if !ok {
 		return nil, errors.New("Missing to in parentRange")
 	}
+
+	switch from.(type) {
+	case json.Number:
+		intVal64, err := from.(json.Number).Int64()
+		if err != nil {
+			return nil, errors.New("Unable to convert a json number")
+		}
+		from = int(intVal64)
+	case float64:
+		from = int(from.(float64))
+	case int:
+		from = from.(int)
+	}
+
+	switch to.(type) {
+	case json.Number:
+		intVal64, err := to.(json.Number).Float64()
+		if err != nil {
+			return nil, errors.New("Unable to convert a json number")
+		}
+		to = int(intVal64)
+	case float64:
+		to = int(to.(float64))
+	case int:
+		to = to.(int)
+	}
+
 	for i := from.(int); i <= to.(int); i++ {
-		if !contains(currentResourcesSet, i) {
+		if !contains(currentResourcesSet, float64(i)) {
 			// FIXME How to pass these stats ?
 			// logStats(i, parentRange, currentResourcesUnwrapped)
 			vlanProperties := make(map[string]interface{})
-			vlanProperties["vlan"] = i
+			vlanProperties["vlan"] = float64(i)
 			return vlanProperties, nil
 		}
 	}
@@ -75,8 +105,8 @@ func (vlan *Vlan) Invoke() (map[string]interface{}, error) {
 
 func (vlan *Vlan) Capacity() map[string]interface{} {
 	var result = make(map[string]interface{})
-	result["freeCapacity"] = FreeCapacity(vlan.resourcePoolProperties, len(vlan.currentResources))
-	result["utilizedCapacity"] = len(vlan.currentResources)
+	result["freeCapacity"] = FreeCapacity(vlan.resourcePoolProperties, float64(len(vlan.currentResources)))
+	result["utilizedCapacity"] = float64(len(vlan.currentResources))
 	return result
 }
 
