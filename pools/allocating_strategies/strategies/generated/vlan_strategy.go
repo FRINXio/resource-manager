@@ -5,8 +5,6 @@ import (
 	"github.com/pkg/errors"
 )
 
-// STRATEGY_START
-
 type Vlan struct {
 	currentResources []map[string]interface{}
 	resourcePoolProperties map[string]interface{}
@@ -34,20 +32,20 @@ func contains(slice []float64, val float64) bool {
 }
 
 func NumberToInt(number interface{}) (interface{}, error) {
-	var newNuber int
+	var newNumber int
 	switch number.(type) {
 	case json.Number:
 		intVal64, err := number.(json.Number).Float64()
 		if err != nil {
 			return nil, errors.New("Unable to convert a json number")
 		}
-		newNuber = int(intVal64)
+		newNumber = int(intVal64)
 	case float64:
-		newNuber = int(number.(float64))
+		newNumber = int(number.(float64))
 	case int:
-		newNuber = number.(int)
+		newNumber = number.(int)
 	}
-	return newNuber, nil
+	return newNumber, nil
 }
 
 func (vlan *Vlan) Invoke() (map[string]interface{}, error) {
@@ -109,5 +107,3 @@ func (vlan *Vlan) Capacity() (map[string]interface{}, error) {
 	result["utilizedCapacity"] = float64(len(vlan.currentResources))
 	return result, nil
 }
-
-// STRATEGY_END

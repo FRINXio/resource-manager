@@ -4,7 +4,7 @@ import (
 	"bytes"
 	"context"
 	"encoding/json"
-	strategy "github.com/net-auto/resourceManager/pools/allocating_strategies/strategies/generated"
+	strategies "github.com/net-auto/resourceManager/pools/allocating_strategies/strategies/generated"
 	"os"
 	"os/exec"
 	"strconv"
@@ -124,6 +124,7 @@ func InvokeAllocationStrategy(
 		return nil, "", err
 	}
 }
+
 func currentResourcesToArray(currentResources []*model.ResourceInput) ([]map[string]interface{}, error) {
 	var mapInterface []map[string]interface{}
 	for _, element := range currentResources {
@@ -144,8 +145,24 @@ func currentResourcesToArray(currentResources []*model.ResourceInput) ([]map[str
 	return mapInterface, nil
 }
 
+type GoStrategy interface {
+	Invoke() (map[string]interface{}, error)
+	Capacity() (map[string]interface{}, error)
+}
+
+func runStrategy(goStrategy GoStrategy, functionName string) (map[string]interface{}, error) {
+	switch functionName {
+	case "invoke()":
+		return goStrategy.Invoke()
+	case "capacity()":
+		return goStrategy.Capacity()
+	default:
+		return nil, errors.New("Not known function")
+	}
+}
+
 func invokeGo(
-	strat *ent.AllocationStrategy,
+	strategy *ent.AllocationStrategy,
 	userInput map[string]interface{},
 	resourcePool model.ResourcePoolInput,
 	currentResources []*model.ResourceInput,
@@ -153,36 +170,33 @@ func invokeGo(
 	functionName string,
 ) (map[string]interface{}, string, error) {
 	var output map[string]interface{}
-	arrayOfMapInterface, err := currentResourcesToArray(currentResources)
+	var goStrategy GoStrategy
+
+	currentResourcesArray, err := currentResourcesToArray(currentResources)
 	if err != nil {
 		return nil, "", err
 	}
-	log.Debug(nil, "CurrentResources:\n %s\n poolProperties:\n %s", arrayOfMapInterface, poolPropertiesMaps)
+	log.Debug(nil, "CurrentResources:\n %s\n poolProperties:\n %s", currentResourcesArray, poolPropertiesMaps)
 
-	if strat.Name == "vlan" {
-		vlanStruct := strategy.NewVlan(arrayOfMapInterface, poolPropertiesMaps)
-		if functionName == "invoke()" {
-			output, err = vlanStruct.Invoke()
-		}
-		if functionName == "capacity()" {
-			output, err = vlanStruct.Capacity()
-		}
-		log.Debug(nil, "Stdout: %s", output)
-		return output, "", nil
+	switch strategy.Name {
+	case "vlan":
+		// TODO: Pass currentResourcesArray as pointer
+		vlan := strategies.NewVlan(currentResourcesArray, poolPropertiesMaps)
+		goStrategy = &vlan
+	case "unique_id":
+		// TODO: Pass currentResourcesArray as pointer
+		id := strategies.NewUniqueId(currentResourcesArray, poolPropertiesMaps)
+		goStrategy = &id
+	default:
+		return nil, "", errors.New("Not known go strategy")
 	}
-	if strat.Name == "unique_id" {
-		uniqueIdStruct := strategy.NewUniqueId(arrayOfMapInterface, poolPropertiesMaps)
-		if functionName == "invoke()" {
-			output, err = uniqueIdStruct.Invoke()
-		}
-		if functionName == "capacity()" {
-			output, err = uniqueIdStruct.Capacity()
-		}
-		log.Debug(nil, "Stdout: %s", output)
-		return output, "", nil
-	}
+	output, err = runStrategy(goStrategy, functionName)
 
-	return nil, "", nil
+	if err != nil {
+		return nil, "", err
+	}
+	log.Debug(nil, "Stdout: %s", output)
+	return output, "", nil
 }
 
 func serializeJsVariable(name string, data interface{}) (string, error) {
