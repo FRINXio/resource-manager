@@ -1,7 +1,5 @@
 package src
 
-// STRATEGY_START
-
 import (
 	"encoding/json"
 	"fmt"
@@ -95,5 +93,3 @@ func (uniqueId *UniqueId) Capacity() (map[string]interface{}, error) {
 	result["utilizedCapacity"] = allocatedCapacity
 	return result, nil
 }
-
-// STRATEGY_END
