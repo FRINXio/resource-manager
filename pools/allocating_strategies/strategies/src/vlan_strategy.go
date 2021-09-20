@@ -33,6 +33,23 @@ func contains(slice []float64, val float64) bool {
 	return false
 }
 
+func NumberToInt(number interface{}) (interface{}, error) {
+	var newNuber int
+	switch number.(type) {
+	case json.Number:
+		intVal64, err := number.(json.Number).Float64()
+		if err != nil {
+			return nil, errors.New("Unable to convert a json number")
+		}
+		newNuber = int(intVal64)
+	case float64:
+		newNuber = int(number.(float64))
+	case int:
+		newNuber = number.(int)
+	}
+	return newNuber, nil
+}
+
 func (vlan *Vlan) Invoke() (map[string]interface{}, error) {
 	if vlan.resourcePoolProperties == nil {
 		return nil, errors.New("Unable to extract parent vlan range from pool name")
@@ -65,30 +82,13 @@ func (vlan *Vlan) Invoke() (map[string]interface{}, error) {
 		return nil, errors.New("Missing to in parentRange")
 	}
 
-	switch from.(type) {
-	case json.Number:
-		intVal64, err := from.(json.Number).Int64()
-		if err != nil {
-			return nil, errors.New("Unable to convert a json number")
-		}
-		from = int(intVal64)
-	case float64:
-		from = int(from.(float64))
-	case int:
-		from = from.(int)
+	from, err := NumberToInt(from)
+	if err != nil {
+		return nil, err
 	}
-
-	switch to.(type) {
-	case json.Number:
-		intVal64, err := to.(json.Number).Float64()
-		if err != nil {
-			return nil, errors.New("Unable to convert a json number")
-		}
-		to = int(intVal64)
-	case float64:
-		to = int(to.(float64))
-	case int:
-		to = to.(int)
+	to, err = NumberToInt(to)
+	if err != nil {
+		return nil, err
 	}
 
 	for i := from.(int); i <= to.(int); i++ {
@@ -103,11 +103,11 @@ func (vlan *Vlan) Invoke() (map[string]interface{}, error) {
 	return nil, errors.New("Unable to allocate VLAN. Insufficient capacity to allocate a new vlan")
 }
 
-func (vlan *Vlan) Capacity() map[string]interface{} {
+func (vlan *Vlan) Capacity() (map[string]interface{}, error) {
 	var result = make(map[string]interface{})
 	result["freeCapacity"] = FreeCapacity(vlan.resourcePoolProperties, float64(len(vlan.currentResources)))
 	result["utilizedCapacity"] = float64(len(vlan.currentResources))
-	return result
+	return result, nil
 }
 
 // STRATEGY_END

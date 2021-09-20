@@ -33,7 +33,7 @@ func (uniqueId *UniqueId) getNextFreeCounter() float64 {
 	if ok {
 		max = value.(float64) - 1
 	} else {
-		max = 0
+		max = float64(0)
 	}
 	for _, element := range uniqueId.currentResources {
 		var properties = element["Properties"].(map[string]interface{})
@@ -72,8 +72,11 @@ func (uniqueId *UniqueId) Invoke() (map[string]interface{}, error) {
 		case int:
 			v = strconv.Itoa(v.(int))
 		case json.Number:
-			v, _ = v.(json.Number).Float64()
-			v = fmt.Sprint(v.(float64))
+			intVal64, err := v.(json.Number).Float64()
+			if err != nil {
+				return nil, errors.New("Unable to convert a json number")
+			}
+			v = fmt.Sprint(intVal64)
 		}
 
 		value = strings.Replace(value.(string), "{" + k + "}", v.(string), 1)
@@ -84,13 +87,13 @@ func (uniqueId *UniqueId) Invoke() (map[string]interface{}, error) {
 	return result, nil
 }
 
-func (uniqueId *UniqueId) Capacity() map[string]interface{} {
+func (uniqueId *UniqueId) Capacity() (map[string]interface{}, error) {
 	var allocatedCapacity = float64(len(uniqueId.currentResources))
 	var freeCapacity = float64(^uint(0) >> 1) - allocatedCapacity
 	var result = make(map[string]interface{})
 	result["freeCapacity"] = freeCapacity
 	result["utilizedCapacity"] = allocatedCapacity
-	return result
+	return result, nil
 }
 
 // STRATEGY_END
