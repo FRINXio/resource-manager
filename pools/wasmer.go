@@ -4,7 +4,7 @@ import (
 	"bytes"
 	"context"
 	"encoding/json"
-	src "github.com/net-auto/resourceManager/pools/allocating_strategies/strategies/generated"
+	strategy "github.com/net-auto/resourceManager/pools/allocating_strategies/strategies/generated"
 	"os"
 	"os/exec"
 	"strconv"
@@ -153,33 +153,33 @@ func invokeGo(
 	functionName string,
 ) (map[string]interface{}, string, error) {
 	var output map[string]interface{}
+	arrayOfMapInterface, err := currentResourcesToArray(currentResources)
+	if err != nil {
+		return nil, "", err
+	}
+	log.Debug(nil, "CurrentResources:\n %s\n poolProperties:\n %s", arrayOfMapInterface, poolPropertiesMaps)
+
 	if strat.Name == "vlan" {
-		arrayOfMapInterface, err := currentResourcesToArray(currentResources)
-		if err != nil {
-			return nil, "", err
-		}
-		log.Debug(nil, "CurrentResources:\n %s\n poolProperties:\n %s", arrayOfMapInterface, poolPropertiesMaps)
-		vlanStruct := src.NewVlan(arrayOfMapInterface, poolPropertiesMaps)
+		vlanStruct := strategy.NewVlan(arrayOfMapInterface, poolPropertiesMaps)
 		if functionName == "invoke()" {
 			output, err = vlanStruct.Invoke()
-		} else {
-			output = vlanStruct.Capacity()
 		}
-		return output, "", err
+		if functionName == "capacity()" {
+			output, err = vlanStruct.Capacity()
+		}
+		log.Debug(nil, "Stdout: %s", output)
+		return output, "", nil
 	}
 	if strat.Name == "unique_id" {
-		arrayOfMapInterface, err := currentResourcesToArray(currentResources)
-		if err != nil {
-			return nil, "", err
-		}
-		log.Debug(nil, "CurrentResources:\n %s\n poolProperties:\n %s", arrayOfMapInterface, poolPropertiesMaps)
-		uniqueIdStruct := src.NewUniqueId(arrayOfMapInterface, poolPropertiesMaps)
+		uniqueIdStruct := strategy.NewUniqueId(arrayOfMapInterface, poolPropertiesMaps)
 		if functionName == "invoke()" {
 			output, err = uniqueIdStruct.Invoke()
-		} else {
-			output = uniqueIdStruct.Capacity()
 		}
-		return output, "", err
+		if functionName == "capacity()" {
+			output, err = uniqueIdStruct.Capacity()
+		}
+		log.Debug(nil, "Stdout: %s", output)
+		return output, "", nil
 	}
 
 	return nil, "", nil

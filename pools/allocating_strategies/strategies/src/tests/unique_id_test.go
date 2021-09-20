@@ -46,7 +46,7 @@ func TestUniqueIdOutputAndCapacity(t *testing.T) {
 	}
 
 	uniqueIdStruct = src.NewUniqueId(allocated, resourcePool)
-	var capacity = uniqueIdStruct.Capacity()
+	capacity, err := uniqueIdStruct.Capacity()
 	var expectedCapacity = make(map[string]interface{})
 	expectedCapacity["freeCapacity"] = float64(^uint(0) >> 1) - 3  // Number.MAX_SAFE_INTEGER - 3
 	expectedCapacity["utilizedCapacity"] = float64(3)
@@ -133,7 +133,7 @@ func TestMultipleL3vpnCounters(t *testing.T) {
 		outputs = append(outputs, uniqueId(output["counter"].(float64), output["text"].(string)))
 		uniqueIdStruct = src.NewUniqueId(outputs, resourcePool)
 
-		var capacity = uniqueIdStruct.Capacity()
+		capacity, err := uniqueIdStruct.Capacity()
 		var expectedCapacity = make(map[string]interface{})
 		expectedCapacity["freeCapacity"] = float64(^uint(0) >> 1) - float64(i)  // Number.MAX_SAFE_INTEGER - 3
 		expectedCapacity["utilizedCapacity"] = float64(i)

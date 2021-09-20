@@ -7,7 +7,7 @@ import (
 	"testing"
 )
 
-func vlan(vlan float64) map[string]interface{}{
+func vlan(vlan float64) map[string]interface{} {
 	vlanProperties := make(map[string]interface{})
 	vlanMap := make(map[string]interface{})
 	vlanMap["vlan"] = vlan
@@ -15,7 +15,7 @@ func vlan(vlan float64) map[string]interface{}{
 	return vlanProperties
 }
 
-func vlans(from int, to int) []map[string]interface{}{
+func vlans(from int, to int) []map[string]interface{} {
 	var vlansArray []map[string]interface{}
 	for i := from; i <= to; i++ {
 		vlansArray = append(vlansArray, vlan(float64(i)))
@@ -23,7 +23,7 @@ func vlans(from int, to int) []map[string]interface{}{
 	return vlansArray
 }
 
-func vlanRange(from int, to int) map[string]interface{}{
+func vlanRange(from int, to int) map[string]interface{} {
 	rangeProperties := make(map[string]interface{})
 	rangeMap := make(map[string]interface{})
 	rangeMap["from"] = from
@@ -114,7 +114,7 @@ func TestVlanCapacityMeasureEmpty(t *testing.T) {
 	var allocated []map[string]interface{}
 	var resourcePool = map[string]interface{}{"from": 0, "to": 4095}
 	vlanStruct := src.NewVlan(allocated, resourcePool)
-	output := vlanStruct.Capacity()
+	output, _ := vlanStruct.Capacity()
 	expectedOutput := map[string]interface{}{"freeCapacity": float64(4096), "utilizedCapacity": float64(0)}
 	eq := reflect.DeepEqual(output, expectedOutput)
 	if !eq {
@@ -125,7 +125,7 @@ func TestVlanCapacityMeasureEmpty(t *testing.T) {
 func TestVlanCapacityMeasureFull(t *testing.T) {
 	var resourcePool = map[string]interface{}{"from": 0, "to": 4095}
 	vlanStruct := src.NewVlan(vlans(0, 4095), resourcePool)
-	output := vlanStruct.Capacity()
+	output, _ := vlanStruct.Capacity()
 	expectedOutput := map[string]interface{}{"freeCapacity": float64(0), "utilizedCapacity": float64(4096)}
 	eq := reflect.DeepEqual(output, expectedOutput)
 	if !eq {
