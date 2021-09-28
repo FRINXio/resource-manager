@@ -75,7 +75,6 @@ func TestSimpleRangeCounter(t *testing.T) {
 		outputs = append(outputs, uniqueId(output["counter"].(float64), output["text"].(string)))
 		uniqueIdStruct = src.NewUniqueId(outputs, resourcePool)
 	}
-
 }
 
 func TestParamsWithoutResourcePool(t *testing.T) {
@@ -141,5 +140,25 @@ func TestMultipleL3vpnCounters(t *testing.T) {
 		if !eq {
 			t.Fatalf("different output of %s expected, got: %s", expectedCapacity, capacity)
 		}
+	}
+}
+
+func TestSimplePrefixNumber(t *testing.T) {
+	var outputs []map[string]interface{}
+	var resourcePool = map[string]interface{}{"prefixNumber": 5, "idFormat": "{counter}"}
+	uniqueIdStruct := src.NewUniqueId(outputs, resourcePool)
+	for i := 1; i <= 10; i++ {
+		var output, err = uniqueIdStruct.Invoke()
+		var expectedOutput = map[string]interface{}{"counter": float64(i), "text": fmt.Sprintf("%05d", i)}
+		eq := reflect.DeepEqual(output, expectedOutput)
+		if !eq {
+			t.Fatalf("different output of %s expected, got: %s", expectedOutput, output)
+		}
+		eq = reflect.DeepEqual(err, nil)
+		if !eq {
+			t.Fatalf("different output of nil expected, got: %s", err)
+		}
+		outputs = append(outputs, uniqueId(output["counter"].(float64), output["text"].(string)))
+		uniqueIdStruct = src.NewUniqueId(outputs, resourcePool)
 	}
 }
