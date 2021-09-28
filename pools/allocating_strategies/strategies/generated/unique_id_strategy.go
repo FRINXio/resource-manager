@@ -62,7 +62,7 @@ func (uniqueId *UniqueId) Invoke() (map[string]interface{}, error) {
 			replacePoolProperties[k] = v
 		}
 	}
-	prefixNumber, ok := uniqueId.resourcePoolProperties["prefixNumber"]
+	prefixNumber, ok := uniqueId.resourcePoolProperties["counterFormatWidth"]
 	if ok {
 		replacePoolProperties["counter"] = fmt.Sprintf(
 			"%0" + strconv.Itoa(prefixNumber.(int)) +"d", int(nextFreeCounter))
