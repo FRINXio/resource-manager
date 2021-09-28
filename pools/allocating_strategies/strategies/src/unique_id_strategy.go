@@ -49,20 +49,26 @@ func (uniqueId *UniqueId) Invoke() (map[string]interface{}, error) {
 		return nil, errors.New("Unable to extract resources")
 	}
 	var nextFreeCounter = uniqueId.getNextFreeCounter()
-	value, ok := uniqueId.resourcePoolProperties["idFormat"]
+	idFormat, ok := uniqueId.resourcePoolProperties["idFormat"]
 	if !ok {
 		return nil, errors.New("Missing idFormat in resources")
 	}
-	if !strings.Contains(value.(string), "{counter}") {
+	if !strings.Contains(idFormat.(string), "{counter}") {
 		return nil, errors.New("Missing {counter} in idFormat")
 	}
 	replacePoolProperties := make(map[string]interface{})
 	for k, v := range uniqueId.resourcePoolProperties {
-		if k != "idFormat" {
+		if k != "idFormat" && k != "prefix_number"{
 			replacePoolProperties[k] = v
 		}
 	}
-	replacePoolProperties["counter"] = nextFreeCounter
+	prefixNumber, ok := uniqueId.resourcePoolProperties["prefixNumber"]
+	if ok {
+		replacePoolProperties["counter"] = fmt.Sprintf(
+			"%0" + strconv.Itoa(prefixNumber.(int)) +"d", int(nextFreeCounter))
+	} else {
+		replacePoolProperties["counter"] = nextFreeCounter
+	}
 	for k, v := range replacePoolProperties {
 		switch v.(type) {
 		case float64:
@@ -77,10 +83,10 @@ func (uniqueId *UniqueId) Invoke() (map[string]interface{}, error) {
 			v = fmt.Sprint(intVal64)
 		}
 
-		value = strings.Replace(value.(string), "{" + k + "}", v.(string), 1)
+		idFormat = strings.Replace(idFormat.(string), "{" + k + "}", v.(string), 1)
 	}
 	var result = make(map[string]interface{})
-	result["text"] = value
+	result["text"] = idFormat
 	result["counter"] = nextFreeCounter
 	return result, nil
 }
