@@ -145,7 +145,7 @@ func TestMultipleL3vpnCounters(t *testing.T) {
 
 func TestSimplePrefixNumber(t *testing.T) {
 	var outputs []map[string]interface{}
-	var resourcePool = map[string]interface{}{"prefixNumber": 5, "idFormat": "{counter}"}
+	var resourcePool = map[string]interface{}{"counterFormatWidth": 5, "idFormat": "{counter}"}
 	uniqueIdStruct := src.NewUniqueId(outputs, resourcePool)
 	for i := 1; i <= 10; i++ {
 		var output, err = uniqueIdStruct.Invoke()
