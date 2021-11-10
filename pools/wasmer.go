@@ -187,6 +187,10 @@ func invokeGo(
 		// TODO: Pass currentResourcesArray as pointer
 		id := strategies.NewUniqueId(currentResourcesArray, poolPropertiesMaps)
 		goStrategy = &id
+	case "ipv4":
+		// TODO: Pass currentResourcesArray as pointer
+		id := strategies.NewIpv4(currentResourcesArray, poolPropertiesMaps, userInput)
+		goStrategy = &id
 	default:
 		return nil, "", errors.New("Not known go strategy")
 	}
