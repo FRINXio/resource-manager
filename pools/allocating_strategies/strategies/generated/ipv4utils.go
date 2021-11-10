@@ -55,7 +55,7 @@ func subnetLastAddress(subnet int, mask int) int {
 }
 
 func addressesToStr(currentResourcesUnwrapped []map[string]interface{}) string{
-	var addressesToStr= ""
+	var addressesToStr = ""
 	for _, allocatedAddr := range currentResourcesUnwrapped {
 		addressStr, _ := allocatedAddr["address"]
 		addressesToStr += addressStr.(string)
@@ -67,5 +67,6 @@ func addressesToStr(currentResourcesUnwrapped []map[string]interface{}) string{
 func prefixToStr(prefix map[string]interface{}) string {
 	addressStr, _ := prefix["address"]
 	prefixStr, _ := prefix["prefix"]
+	prefixStr, _ = NumberToInt(prefixStr)
 	return addressStr.(string) + "/" + strconv.Itoa(prefixStr.(int))
 }
