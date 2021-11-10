@@ -53,6 +53,10 @@ func (ipv4 *Ipv4) Invoke() (map[string]interface{}, error) {
 	if !ok {
 		return nil, errors.New("Unable to extract prefix resources")
 	}
+	rootMask, err := NumberToInt(rootMask)
+	if err != nil {
+		return nil, err
+	}
 	rootPrefixStr := prefixToStr(ipv4.resourcePoolProperties)
 	rootCapacity := subnetAddresses(rootMask.(int))
 	rootAddressNum, err := inetAton(rootAddressStr.(string))
