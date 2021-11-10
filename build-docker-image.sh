@@ -1,1 +1,1 @@
-docker build . --tag frinx/resource-manager
+docker build . --no-cache --tag frinx/resource-manager

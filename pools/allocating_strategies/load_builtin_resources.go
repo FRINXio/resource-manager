@@ -131,7 +131,7 @@ func loadIpv4(ctx context.Context, client *ent.Tx) error {
 
 	_, err = client.AllocationStrategy.Create().
 		SetName("ipv4").
-		SetLang(allocationstrategy.LangJs).
+		SetLang(allocationstrategy.LangGo).
 		SetScript(IPV4).
 		Save(ctx)
 	if err != nil {
