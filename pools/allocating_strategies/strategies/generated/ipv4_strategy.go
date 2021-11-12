@@ -70,14 +70,14 @@ func (ipv4 *Ipv4) Invoke() (map[string]interface{}, error) {
 	}
 
 	// unwrap and sort currentResources
-	var currentResourcesAddresses []string
+	currentResourcesSet := make(map[string]bool)
 	for _, element := range ipv4.currentResources {
 		value, ok := element["Properties"]
 		if !ok {
 			return nil, errors.New("Wrong properties in current resources")
 		}
 		if address, ok := value.(map[string]interface{})["address"]; ok {
-			currentResourcesAddresses = append(currentResourcesAddresses, address.(string))
+			currentResourcesSet[address.(string)] = true
 		}
 	}
 
@@ -101,10 +101,8 @@ func (ipv4 *Ipv4) Invoke() (map[string]interface{}, error) {
 		}
 		if desiredValueNum >= firstPossibleAddr && desiredValueNum < lastPossibleAddr {
 			desiredIpv4Address := inetNtoa(desiredValueNum)
-			for _, address := range currentResourcesAddresses {
-				if address == desiredIpv4Address {
-					return nil, errors.New("Ipv4 address " + value.(string) + " was already claimed." )
-				}
+			if currentResourcesSet[desiredIpv4Address] {
+				return nil, errors.New("Ipv4 address " + value.(string) + " was already claimed." )
 			}
 			result["address"] = value.(string)
 			return result, nil
@@ -114,19 +112,12 @@ func (ipv4 *Ipv4) Invoke() (map[string]interface{}, error) {
 	}
 
 	for i := firstPossibleAddr; i < lastPossibleAddr; i++ {
-		notFound := true
-		for _, address := range currentResourcesAddresses {
-			if address == inetNtoa(i) {
-				notFound = false
-				break
-			}
-		}
-		if notFound {
+		if !currentResourcesSet[inetNtoa(i)] {
 			result["address"] = inetNtoa(i)
 			return result, nil
 		}
 	}
 	return nil, errors.New("Unable to allocate Ipv4 address from: " + rootPrefixStr + "." +
 		"Insufficient capacity to allocate a new address.\n" +
-		"Currently allocated addresses: " + addressesToStr(currentResourcesAddresses))
+		"Currently allocated addresses: " + addressesToStr(ipv4.currentResources))
 }
