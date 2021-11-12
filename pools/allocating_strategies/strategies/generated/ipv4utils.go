@@ -21,8 +21,7 @@ func inetAton(addrstr string) (int, error) {
 		return 0, errors.New("Address: " + addrstr + " is invalid, doesn't match regex: " + re.String())
 	}
 	for i := 1; i <= 4; i++ {
-		n, err := strconv.Atoi(res[i])
-		if err != nil && (n < 0 || n > 255){
+		if n, err := strconv.Atoi(res[i]); err != nil && (n < 0 || n > 255){
 			return 0, errors.New("Address: " + addrstr + " is invalid, outside of ipv4 range: " + addrstr)
 		}
 	}
@@ -54,11 +53,10 @@ func subnetLastAddress(subnet int, mask int) int {
 	return subnet + subnetAddresses(mask) - 1
 }
 
-func addressesToStr(currentResourcesUnwrapped []map[string]interface{}) string{
+func addressesToStr(currentResourcesAddresses []string) string{
 	var addressesToStr = ""
-	for _, allocatedAddr := range currentResourcesUnwrapped {
-		addressStr, _ := allocatedAddr["address"]
-		addressesToStr += addressStr.(string)
+	for _, allocatedAddr := range currentResourcesAddresses {
+		addressesToStr += allocatedAddr
 		addressesToStr += ", "
 	}
 	return addressesToStr

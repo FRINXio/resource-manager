@@ -22,9 +22,8 @@ func (ipv4 *Ipv4) UtilizedCapacity(allocatedRanges []map[string]interface{}, new
 
 // FreeCapacity calculate free capacity based on previously allocated prefixes
 func (ipv4 *Ipv4) FreeCapacity(address string, mask int, utilisedCapacity float64) float64 {
-	value, ok := ipv4.userInput["subnet"]
 	var subnetItself int
-	if ok && value.(bool) {
+	if value, ok := ipv4.userInput["subnet"]; ok && value.(bool) {
 		subnetItself = 1
 	} else {
 		subnetItself = 0
@@ -34,8 +33,14 @@ func (ipv4 *Ipv4) FreeCapacity(address string, mask int, utilisedCapacity float6
 
 func (ipv4 *Ipv4) Capacity() (map[string]interface{}, error){
 	var result = make(map[string]interface{})
-	rootAddressStr, _ := ipv4.resourcePoolProperties["address"]
-	rootMask, _ := ipv4.resourcePoolProperties["prefix"]
+	rootAddressStr, ok := ipv4.resourcePoolProperties["address"]
+	if !ok {
+		return nil, errors.New("Unable to extract address resource")
+	}
+	rootMask, ok := ipv4.resourcePoolProperties["prefix"]
+	if !ok {
+		return nil, errors.New("Unable to extract prefix resources")
+	}
 	result["freeCapacity"] = ipv4.FreeCapacity(rootAddressStr.(string), rootMask.(int), float64(len(ipv4.currentResources)))
 	result["utilizedCapacity"] = float64(len(ipv4.currentResources))
 	return result, nil
@@ -65,26 +70,21 @@ func (ipv4 *Ipv4) Invoke() (map[string]interface{}, error) {
 	}
 
 	// unwrap and sort currentResources
-	var currentResourcesUnwrapped []map[string]interface{}
+	var currentResourcesAddresses []string
 	for _, element := range ipv4.currentResources {
 		value, ok := element["Properties"]
-		if ok {
-			currentResourcesUnwrapped = append(currentResourcesUnwrapped, value.(map[string]interface{}))
+		if !ok {
+			return nil, errors.New("Wrong properties in current resources")
 		}
-	}
-	var currentResourcesSet []string
-	for _, element := range currentResourcesUnwrapped {
-		value, ok := element["address"]
-		if ok {
-			currentResourcesSet = append(currentResourcesSet, value.(string))
+		if address, ok := value.(map[string]interface{})["address"]; ok {
+			currentResourcesAddresses = append(currentResourcesAddresses, address.(string))
 		}
 	}
 
 	var firstPossibleAddr = 0
 	var lastPossibleAddr = 0
 
-	value, ok := ipv4.userInput["subnet"]
-	if ok && value == true{
+	if value, ok := ipv4.userInput["subnet"]; ok && value == true {
 		firstPossibleAddr = rootAddressNum + 1
 		lastPossibleAddr = rootAddressNum + rootCapacity - 1
 	} else {
@@ -94,16 +94,17 @@ func (ipv4 *Ipv4) Invoke() (map[string]interface{}, error) {
 
 	var result = make(map[string]interface{})
 
-	value, ok = ipv4.userInput["desiredValue"]
-	if ok {
+	if value, ok := ipv4.userInput["desiredValue"]; ok {
 		desiredValueNum, err := inetAton(value.(string))
 		if err != nil {
 			return nil, err
 		}
 		if desiredValueNum >= firstPossibleAddr && desiredValueNum < lastPossibleAddr {
 			desiredIpv4Address := inetNtoa(desiredValueNum)
-			if stringInSlice(desiredIpv4Address, currentResourcesSet)  {
-				return nil, errors.New("Ipv4 address " + value.(string) + " was already claimed." )
+			for _, address := range currentResourcesAddresses {
+				if address == desiredIpv4Address {
+					return nil, errors.New("Ipv4 address " + value.(string) + " was already claimed." )
+				}
 			}
 			result["address"] = value.(string)
 			return result, nil
@@ -112,24 +113,20 @@ func (ipv4 *Ipv4) Invoke() (map[string]interface{}, error) {
 		}
 	}
 
-	for  i := firstPossibleAddr; i < lastPossibleAddr; i++ {
-		if !stringInSlice(inetNtoa(i), currentResourcesSet)  {
-			// FIXME How to pass these stats ?
-			// logStats(inet_ntoa(i), rootPrefixParsed, userInput.subnet === true, currentResourcesUnwrapped)
+	for i := firstPossibleAddr; i < lastPossibleAddr; i++ {
+		notFound := true
+		for _, address := range currentResourcesAddresses {
+			if address == inetNtoa(i) {
+				notFound = false
+				break
+			}
+		}
+		if notFound {
 			result["address"] = inetNtoa(i)
 			return result, nil
 		}
 	}
 	return nil, errors.New("Unable to allocate Ipv4 address from: " + rootPrefixStr + "." +
 		"Insufficient capacity to allocate a new address.\n" +
-		"Currently allocated addresses: " + addressesToStr(currentResourcesUnwrapped))
-}
-
-func stringInSlice(a string, list []string) bool {
-	for _, b := range list {
-		if b == a {
-			return true
-		}
-	}
-	return false
+		"Currently allocated addresses: " + addressesToStr(currentResourcesAddresses))
 }
