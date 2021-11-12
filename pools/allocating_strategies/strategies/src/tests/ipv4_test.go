@@ -90,18 +90,18 @@ func TestAllocateAllAddresses24(t *testing.T) {
 	}
 }
 
-func TestAllocateAllAddresses21(t *testing.T) {
+func TestAllocateAllAddresses19(t *testing.T) {
 	var allocated []map[string]interface{}
-	var resourcePool = map[string]interface{}{"prefix": 21, "address": "192.168.0.0"}
+	var resourcePool = map[string]interface{}{"prefix": 19, "address": "192.168.0.0"}
 	var userInput = map[string]interface{}{"subnet": true}
 	ipv4Struct := src.NewIpv4(allocated, resourcePool, userInput)
-	for  i := 0; i < 8; i++ {
+	for  i := 0; i < 32; i++ {
 		for j := 0; j < 256; j++ {
 			if i == 0 && j == 0 {
 				// First subnet addr: reserved
 				continue
 			}
-			if i == 7 && j == 255 {
+			if i == 31 && j == 255 {
 				// Broadcast: reserved
 				continue
 			}
@@ -125,7 +125,7 @@ func TestAllocateAllAddresses21(t *testing.T) {
 	}
 
 	// If treated as a pool, there are still 2 more addresses left
-	resourcePool = map[string]interface{}{"prefix": 21, "address": "192.168.0.0"}
+	resourcePool = map[string]interface{}{"prefix": 19, "address": "192.168.0.0"}
 	userInput = map[string]interface{}{}
 	ipv4Struct = src.NewIpv4(allocated, resourcePool, userInput)
 	output, err := ipv4Struct.Invoke()
@@ -140,7 +140,7 @@ func TestAllocateAllAddresses21(t *testing.T) {
 	ipv4Struct = src.NewIpv4(allocated, resourcePool, userInput)
 
 	output, err = ipv4Struct.Invoke()
-	expectedOutput = map[string]interface{}{"address": "192.168.7.255"}
+	expectedOutput = map[string]interface{}{"address": "192.168.31.255"}
 	if eq := reflect.DeepEqual(output, expectedOutput); !eq {
 		t.Fatalf("different output of %s expected, got: %s", expectedOutput, output)
 	}
