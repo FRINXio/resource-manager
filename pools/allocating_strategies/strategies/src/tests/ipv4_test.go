@@ -125,7 +125,6 @@ func TestAllocateAllAddresses19(t *testing.T) {
 	}
 
 	// If treated as a pool, there are still 2 more addresses left
-	resourcePool = map[string]interface{}{"prefix": 19, "address": "192.168.0.0"}
 	userInput = map[string]interface{}{}
 	ipv4Struct = src.NewIpv4(allocated, resourcePool, userInput)
 	output, err := ipv4Struct.Invoke()
