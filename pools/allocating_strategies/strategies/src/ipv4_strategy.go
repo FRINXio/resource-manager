@@ -69,7 +69,7 @@ func (ipv4 *Ipv4) Invoke() (map[string]interface{}, error) {
 		return nil, err
 	}
 
-	// unwrap and sort currentResources
+	// unwrap and create currentResourcesSet
 	currentResourcesSet := make(map[string]bool)
 	for _, element := range ipv4.currentResources {
 		value, ok := element["Properties"]

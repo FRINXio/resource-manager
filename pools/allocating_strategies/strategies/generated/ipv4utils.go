@@ -13,25 +13,23 @@ func inetNtoa(addrint int) string {
 		strconv.Itoa(addrint & 0xff)
 }
 
-
 func inetAton(addrstr string) (int, error) {
 	re, _ := regexp.Compile("^([0-9]{1,3})\\.([0-9]{1,3})\\.([0-9]{1,3})\\.([0-9]{1,3})$")
 	res := re.FindStringSubmatch(addrstr)
 	if len(res) < 5 {
 		return 0, errors.New("Address: " + addrstr + " is invalid, doesn't match regex: " + re.String())
 	}
+	var numbers [4]int
 	for i := 1; i <= 4; i++ {
-		if n, err := strconv.Atoi(res[i])
-		err != nil && (n < 0 || n > 255){
+		if n, err := strconv.Atoi(res[i]); err != nil && (n < 0 || n > 255) {
 			return 0, errors.New("Address: " + addrstr + " is invalid, outside of ipv4 range: " + addrstr)
+		} else {
+			numbers[i - 1] = n
 		}
 	}
-	n1, _ := strconv.Atoi(res[1])
-	n2, _ := strconv.Atoi(res[2])
-	n3, _ := strconv.Atoi(res[3])
-	n4, _ := strconv.Atoi(res[4])
-	return (n1 << 24) | (n2 << 16) | (n3 << 8) | n4, nil
+	return (numbers[0] << 24) | (numbers[1] << 16) | (numbers[2] << 8) | numbers[3], nil
 }
+
 // parse prefix from a string e.g. 1.2.3.4/18 into an object
 // number of addresses in a subnet based on its mask
 func subnetAddresses(mask int) int {
@@ -54,7 +52,7 @@ func subnetLastAddress(subnet int, mask int) int {
 	return subnet + subnetAddresses(mask) - 1
 }
 
-func addressesToStr(currentResourcesAddresses []map[string]interface{}) string{
+func addressesToStr(currentResourcesAddresses []map[string]interface{}) string {
 	var addressesToStr = ""
 	for _, allocatedAddr := range currentResourcesAddresses {
 		value, _ := allocatedAddr["Properties"]
