@@ -52,6 +52,10 @@ func getAddressAndPrefixFromCurrentResource(currentResource map[string]interface
 	if !ok {
 		return "", 0, errors.New("Unable to extract prefix resource from properties")
 	}
+	prefix, err := NumberToInt(prefix)
+	if err != nil {
+		return "", 0, err
+	}
 	return address.(string), prefix.(int), nil
 }
 
