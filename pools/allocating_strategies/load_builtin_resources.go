@@ -47,7 +47,7 @@ func loadIpv4Prefix(ctx context.Context, client *ent.Tx) error {
 
 	_, err = client.AllocationStrategy.Create().
 		SetName("ipv4_prefix").
-		SetLang(allocationstrategy.LangJs).
+		SetLang(allocationstrategy.LangGo).
 		SetScript(IPV4_PREFIX).
 		Save(ctx)
 	if err != nil {
