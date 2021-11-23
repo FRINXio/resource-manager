@@ -56,14 +56,21 @@ func (uniqueId *UniqueId) Invoke() (map[string]interface{}, error) {
 	if !strings.Contains(idFormat.(string), "{counter}") {
 		return nil, errors.New("Missing {counter} in idFormat")
 	}
+
+	if toValue, ok := uniqueId.resourcePoolProperties["to"]; ok {
+		toValue, err := NumberToInt(toValue)
+		if err != nil || nextFreeCounter > float64(toValue.(int)) {
+			return nil, errors.New("Unable to allocate Unique-id from idFormat: \"" + idFormat.(string) + "\"." +
+				"Insufficient capacity to allocate a unique-id.")
+		}
+	}
 	replacePoolProperties := make(map[string]interface{})
 	for k, v := range uniqueId.resourcePoolProperties {
 		if k != "idFormat" && k != "prefix_number"{
 			replacePoolProperties[k] = v
 		}
 	}
-	prefixNumber, ok := uniqueId.resourcePoolProperties["counterFormatWidth"]
-	if ok {
+	if prefixNumber, ok := uniqueId.resourcePoolProperties["counterFormatWidth"]; ok {
 		replacePoolProperties["counter"] = fmt.Sprintf(
 			"%0" + strconv.Itoa(prefixNumber.(int)) +"d", int(nextFreeCounter))
 	} else {
@@ -93,9 +100,22 @@ func (uniqueId *UniqueId) Invoke() (map[string]interface{}, error) {
 
 func (uniqueId *UniqueId) Capacity() (map[string]interface{}, error) {
 	var allocatedCapacity = float64(len(uniqueId.currentResources))
-	var freeCapacity = float64(^uint(0) >> 1) - allocatedCapacity
 	var result = make(map[string]interface{})
-	result["freeCapacity"] = freeCapacity
+	var fromValue float64
+	var toValue float64
+	to, ok := uniqueId.resourcePoolProperties["to"]
+	if ok {
+		toValue = float64(to.(int))
+	} else {
+		toValue = float64(^uint(0) >> 1)
+	}
+	from, ok := uniqueId.resourcePoolProperties["from"]
+	if ok {
+		fromValue = float64(from.(int))
+	} else {
+		fromValue = float64(0)
+	}
+	result["freeCapacity"] = toValue - allocatedCapacity - fromValue + 1
 	result["utilizedCapacity"] = allocatedCapacity
 	return result, nil
 }
