@@ -29,7 +29,8 @@ func TestUniqueIdOutputAndCapacity(t *testing.T) {
 		"vpn": "VPN85", "network": "Network19",
 		"idFormat": "VPN-{counter}-{network}-{vpn}-local",
 	}
-	uniqueIdStruct := src.NewUniqueId(allocated, resourcePool)
+	var userInput = map[string]interface{}{}
+	uniqueIdStruct := src.NewUniqueId(allocated, resourcePool, userInput)
 
 	var output, err = uniqueIdStruct.Invoke()
 	var expectedOutput = make(map[string]interface{})
@@ -43,7 +44,7 @@ func TestUniqueIdOutputAndCapacity(t *testing.T) {
 		t.Fatalf("different output of nil expected, got: %s", err)
 	}
 
-	uniqueIdStruct = src.NewUniqueId(allocated, resourcePool)
+	uniqueIdStruct = src.NewUniqueId(allocated, resourcePool, userInput)
 	capacity, err := uniqueIdStruct.Capacity()
 	var expectedCapacity = make(map[string]interface{})
 	expectedCapacity["freeCapacity"] = float64(^uint(0) >> 1) - 3  // Number.MAX_SAFE_INTEGER - 3
@@ -57,7 +58,8 @@ func TestUniqueIdOutputAndCapacity(t *testing.T) {
 func TestSimpleRangeCounter(t *testing.T) {
 	var outputs []map[string]interface{}
 	var resourcePool = map[string]interface{}{"from": 1000, "idFormat": "{counter}"}
-	uniqueIdStruct := src.NewUniqueId(outputs, resourcePool)
+	var userInput = map[string]interface{}{}
+	uniqueIdStruct := src.NewUniqueId(outputs, resourcePool, userInput)
 	for i := 0; i <= 10; i++ {
 		var output, err = uniqueIdStruct.Invoke()
 		var expectedOutput = map[string]interface{}{"counter": float64(1000 + i), "text": fmt.Sprint(1000 + i)}
@@ -68,14 +70,15 @@ func TestSimpleRangeCounter(t *testing.T) {
 			t.Fatalf("different output of nil expected, got: %s", err)
 		}
 		outputs = append(outputs, uniqueId(output["counter"].(float64), output["text"].(string)))
-		uniqueIdStruct = src.NewUniqueId(outputs, resourcePool)
+		uniqueIdStruct = src.NewUniqueId(outputs, resourcePool, userInput)
 	}
 }
 
 func TestParamsWithoutResourcePool(t *testing.T) {
 	var allocated []map[string]interface{}
+	var userInput = map[string]interface{}{}
 
-	uniqueIdStruct := src.NewUniqueId(allocated, nil)
+	uniqueIdStruct := src.NewUniqueId(allocated, nil, userInput)
 	var output, err = uniqueIdStruct.Invoke()
 
 	if eq := reflect.DeepEqual(output, (map[string]interface{})(nil)); !eq {
@@ -93,7 +96,8 @@ func TestResourcePoolWithoutIdFormat(t *testing.T) {
 		"vpn": "VPN85", "network": "Network19",
 		"idFormat": "VPN-{network}-{vpn}-local",
 	}
-	uniqueIdStruct := src.NewUniqueId(allocated, resourcePool)
+	var userInput = map[string]interface{}{}
+	uniqueIdStruct := src.NewUniqueId(allocated, resourcePool, userInput)
 	output, err := uniqueIdStruct.Invoke()
 
 	if eq := reflect.DeepEqual(output, (map[string]interface{})(nil)); !eq {
@@ -108,7 +112,8 @@ func TestResourcePoolWithoutIdFormat(t *testing.T) {
 func TestMultipleL3vpnCounters(t *testing.T) {
 	var outputs []map[string]interface{}
 	var resourcePool = map[string]interface{}{"someProperty": "L3VPN", "idFormat": "{someProperty}{counter}"}
-	uniqueIdStruct := src.NewUniqueId(outputs, resourcePool)
+	var userInput = map[string]interface{}{}
+	uniqueIdStruct := src.NewUniqueId(outputs, resourcePool, userInput)
 	for i := 1; i <= 10; i++ {
 		output, err := uniqueIdStruct.Invoke()
 		expectedOutput := map[string]interface{}{"counter": float64(i), "text": "L3VPN" + strconv.Itoa(i)}
@@ -119,7 +124,7 @@ func TestMultipleL3vpnCounters(t *testing.T) {
 			t.Fatalf("different output of nil expected, got: %s", err)
 		}
 		outputs = append(outputs, uniqueId(output["counter"].(float64), output["text"].(string)))
-		uniqueIdStruct = src.NewUniqueId(outputs, resourcePool)
+		uniqueIdStruct = src.NewUniqueId(outputs, resourcePool, userInput)
 
 		capacity, err := uniqueIdStruct.Capacity()
 		var expectedCapacity = make(map[string]interface{})
@@ -134,7 +139,8 @@ func TestMultipleL3vpnCounters(t *testing.T) {
 func TestSimplePrefixNumber(t *testing.T) {
 	var outputs []map[string]interface{}
 	var resourcePool = map[string]interface{}{"counterFormatWidth": 5, "idFormat": "{counter}"}
-	uniqueIdStruct := src.NewUniqueId(outputs, resourcePool)
+	var userInput = map[string]interface{}{}
+	uniqueIdStruct := src.NewUniqueId(outputs, resourcePool, userInput)
 	for i := 1; i <= 10; i++ {
 		var output, err = uniqueIdStruct.Invoke()
 		var expectedOutput = map[string]interface{}{"counter": float64(i), "text": fmt.Sprintf("%05d", i)}
@@ -146,7 +152,7 @@ func TestSimplePrefixNumber(t *testing.T) {
 			t.Fatalf("different output of nil expected, got: %s", err)
 		}
 		outputs = append(outputs, uniqueId(output["counter"].(float64), output["text"].(string)))
-		uniqueIdStruct = src.NewUniqueId(outputs, resourcePool)
+		uniqueIdStruct = src.NewUniqueId(outputs, resourcePool, userInput)
 	}
 }
 
@@ -154,11 +160,12 @@ func TestCapacityTo(t *testing.T) {
 	to := 25
 	var outputs []map[string]interface{}
 	var resourcePool = map[string]interface{}{"to": to, "idFormat": "{counter}"}
-	uniqueIdStruct := src.NewUniqueId(outputs, resourcePool)
+	var userInput = map[string]interface{}{}
+	uniqueIdStruct := src.NewUniqueId(outputs, resourcePool, userInput)
 	for i := 0; i <= 10; i++ {
 		output, err := uniqueIdStruct.Invoke()
 		outputs = append(outputs, uniqueId(output["counter"].(float64), output["text"].(string)))
-		uniqueIdStruct = src.NewUniqueId(outputs, resourcePool)
+		uniqueIdStruct = src.NewUniqueId(outputs, resourcePool, userInput)
 		capacityOutput, err := uniqueIdStruct.Capacity()
 		var expectedOutput = map[string]interface{}{"freeCapacity": float64(to - i), "utilizedCapacity": float64(i + 1) }
 		if eq := reflect.DeepEqual(capacityOutput, expectedOutput); !eq {
@@ -175,7 +182,8 @@ func TestInvokeFromTo(t *testing.T) {
 	to := 510
 	var outputs []map[string]interface{}
 	var resourcePool = map[string]interface{}{"from": from, "to": to, "idFormat": "{counter}"}
-	uniqueIdStruct := src.NewUniqueId(outputs, resourcePool)
+	var userInput = map[string]interface{}{}
+	uniqueIdStruct := src.NewUniqueId(outputs, resourcePool, userInput)
 	for i := 0; i <= 10; i++ {
 		var output, err = uniqueIdStruct.Invoke()
 		var expectedOutput = map[string]interface{}{"counter": float64(from + i), "text": strconv.Itoa(from + i)}
@@ -186,14 +194,14 @@ func TestInvokeFromTo(t *testing.T) {
 			t.Fatalf("different output of nil expected, got: %s", err)
 		}
 		outputs = append(outputs, uniqueId(output["counter"].(float64), output["text"].(string)))
-		uniqueIdStruct = src.NewUniqueId(outputs, resourcePool)
+		uniqueIdStruct = src.NewUniqueId(outputs, resourcePool, userInput)
 	}
 	output, err := uniqueIdStruct.Invoke()
 	if eq := reflect.DeepEqual(output, (map[string]interface{})(nil)); !eq {
 		t.Fatalf("different output of nil expected, got: %s", output)
 	}
 	expectedOutput := errors.New("Unable to allocate Unique-id from idFormat: \"{counter}\"." +
-		"Insufficient capacity to allocate a unique-id.")
+		" Insufficient capacity to allocate a unique-id.")
 	if eq := reflect.DeepEqual(err.Error(), expectedOutput.Error()); !eq {
 		t.Fatalf("different output of %s expected, got: %s", expectedOutput, err)
 	}
@@ -204,11 +212,12 @@ func TestCapacityFromTo(t *testing.T) {
 	to := 510
 	var outputs []map[string]interface{}
 	var resourcePool = map[string]interface{}{"from": from, "to": to, "idFormat": "{counter}"}
-	uniqueIdStruct := src.NewUniqueId(outputs, resourcePool)
+	var userInput = map[string]interface{}{}
+	uniqueIdStruct := src.NewUniqueId(outputs, resourcePool, userInput)
 	for i := 0; i <= 10; i++ {
 		output, err := uniqueIdStruct.Invoke()
 		outputs = append(outputs, uniqueId(output["counter"].(float64), output["text"].(string)))
-		uniqueIdStruct = src.NewUniqueId(outputs, resourcePool)
+		uniqueIdStruct = src.NewUniqueId(outputs, resourcePool, userInput)
 		capacityOutput, err := uniqueIdStruct.Capacity()
 		var expectedOutput = map[string]interface{}{"freeCapacity": float64(to - from - i), "utilizedCapacity": float64(i + 1) }
 		if eq := reflect.DeepEqual(capacityOutput, expectedOutput); !eq {
@@ -217,5 +226,136 @@ func TestCapacityFromTo(t *testing.T) {
 		if eq := reflect.DeepEqual(err, nil); !eq {
 			t.Fatalf("different output of nil expected, got: %s", err)
 		}
+	}
+}
+
+func TestDesiredValueSimple(t *testing.T) {
+	var outputs []map[string]interface{}
+	var resourcePool = map[string]interface{}{"idFormat": "{counter}"}
+	var userInput = map[string]interface{}{"desiredValue": "5"}
+	uniqueIdStruct := src.NewUniqueId(outputs, resourcePool, userInput)
+	output, err := uniqueIdStruct.Invoke()
+	var expectedOutput = map[string]interface{}{"counter": float64(5), "text": strconv.Itoa(5)}
+	if eq := reflect.DeepEqual(output, expectedOutput); !eq {
+		t.Fatalf("different output of %s expected, got: %s", expectedOutput, output)
+	}
+	if eq := reflect.DeepEqual(err, nil); !eq {
+		t.Fatalf("different output of nil expected, got: %s", err)
+	}
+}
+
+func TestDesiredValueSimple2(t *testing.T) {
+	var outputs []map[string]interface{}
+	var resourcePool = map[string]interface{}{"idFormat": "L3VPN{counter}"}
+	var userInput = map[string]interface{}{"desiredValue": "L3VPN5"}
+	uniqueIdStruct := src.NewUniqueId(outputs, resourcePool, userInput)
+	output, err := uniqueIdStruct.Invoke()
+	var expectedOutput = map[string]interface{}{"counter": float64(5), "text": "L3VPN" + strconv.Itoa(5)}
+	if eq := reflect.DeepEqual(output, expectedOutput); !eq {
+		t.Fatalf("different output of %s expected, got: %s", expectedOutput, output)
+	}
+	if eq := reflect.DeepEqual(err, nil); !eq {
+		t.Fatalf("different output of nil expected, got: %s", err)
+	}
+}
+
+func TestDesiredValueSimple3(t *testing.T) {
+	var outputs []map[string]interface{}
+	var resourcePool = map[string]interface{}{"idFormat": "L3VPN{counter}{pattern}", "pattern": "AAA"}
+	var userInput = map[string]interface{}{"desiredValue": "L3VPN5AAA"}
+	uniqueIdStruct := src.NewUniqueId(outputs, resourcePool, userInput)
+	output, err := uniqueIdStruct.Invoke()
+	var expectedOutput = map[string]interface{}{"counter": float64(5), "text": "L3VPN" + strconv.Itoa(5) + "AAA"}
+	if eq := reflect.DeepEqual(output, expectedOutput); !eq {
+		t.Fatalf("different output of %s expected, got: %s", expectedOutput, output)
+	}
+	if eq := reflect.DeepEqual(err, nil); !eq {
+		t.Fatalf("different output of nil expected, got: %s", err)
+	}
+}
+
+func TestDesiredValueWrongDesiredValue(t *testing.T) {
+	var outputs []map[string]interface{}
+	var resourcePool = map[string]interface{}{"idFormat": "L3VPN{counter}{pattern}", "pattern": "AAA"}
+	var userInput = map[string]interface{}{"desiredValue": "RRRR665"}
+	uniqueIdStruct := src.NewUniqueId(outputs, resourcePool, userInput)
+	output, err := uniqueIdStruct.Invoke()
+
+	if eq := reflect.DeepEqual(output, (map[string]interface{})(nil)); !eq {
+		t.Fatalf("different output of nil expected, got: %s", output)
+	}
+	expectedOutput := errors.New("Wrong desired value, does not equal idFormat: L3VPN{counter}{pattern}")
+	if eq := reflect.DeepEqual(err.Error(), expectedOutput.Error()); !eq {
+		t.Fatalf("different output of %s expected, got: %s", expectedOutput, err)
+	}
+}
+
+func TestDesiredValueAlreadyClaimedValue(t *testing.T) {
+	var outputs = []map[string]interface{}{uniqueId(float64(5), "L3VPN5AAA")}
+	var resourcePool = map[string]interface{}{"idFormat": "L3VPN{counter}{pattern}", "pattern": "AAA"}
+	var userInput = map[string]interface{}{"desiredValue": "L3VPN5AAA"}
+	uniqueIdStruct := src.NewUniqueId(outputs, resourcePool, userInput)
+	output, err := uniqueIdStruct.Invoke()
+
+	if eq := reflect.DeepEqual(output, (map[string]interface{})(nil)); !eq {
+		t.Fatalf("different output of nil expected, got: %s", output)
+	}
+	expectedOutput := errors.New("Unique-id L3VPN5AAA was already claimed.")
+	if eq := reflect.DeepEqual(err.Error(), expectedOutput.Error()); !eq {
+		t.Fatalf("different output of %s expected, got: %s", expectedOutput, err)
+	}
+}
+
+func TestDesiredValueComplicated(t *testing.T) {
+	from := 2
+	to := 11
+	var outputs []map[string]interface{}
+	var resourcePool = map[string]interface{}{"counterFormatWidth": 2, "from": from, "to": to, "someProperty": "L3VPN", "idFormat": "{someProperty}{counter}"}
+	var userInput = map[string]interface{}{}
+	uniqueIdStruct := src.NewUniqueId(outputs, resourcePool, userInput)
+	for i := 0; i <= 8; i++ {
+		output, err := uniqueIdStruct.Invoke()
+		expectedOutput := map[string]interface{}{"counter": float64(i + from), "text": "L3VPN" + fmt.Sprintf("%02d", i + from)}
+		if eq := reflect.DeepEqual(output, expectedOutput); !eq {
+			t.Fatalf("different output of %s expected, got: %s", expectedOutput, output)
+		}
+		if eq := reflect.DeepEqual(err, nil); !eq {
+			t.Fatalf("different output of nil expected, got: %s", err)
+		}
+		outputs = append(outputs, uniqueId(output["counter"].(float64), output["text"].(string)))
+		uniqueIdStruct = src.NewUniqueId(outputs, resourcePool, userInput)
+	}
+	userInput = map[string]interface{}{"desiredValue": "L3VPN07"}
+	uniqueIdStruct = src.NewUniqueId(outputs, resourcePool, userInput)
+
+	output, err := uniqueIdStruct.Invoke()
+	if eq := reflect.DeepEqual(output, (map[string]interface{})(nil)); !eq {
+		t.Fatalf("different output of nil expected, got: %s", output)
+	}
+	var expectedOutputError = errors.New("Unique-id L3VPN07 was already claimed.")
+	if eq := reflect.DeepEqual(err.Error(), expectedOutputError.Error()); !eq {
+		t.Fatalf("different output of %s expected, got: %s", expectedOutputError, err)
+	}
+
+	userInput = map[string]interface{}{}
+	uniqueIdStruct = src.NewUniqueId(outputs, resourcePool, userInput)
+	output, err = uniqueIdStruct.Invoke()
+	expectedOutput := map[string]interface{}{"counter": float64(11), "text": "L3VPN11"}
+	if eq := reflect.DeepEqual(output, expectedOutput); !eq {
+		t.Fatalf("different output of %s expected, got: %s", expectedOutput, output)
+	}
+	if eq := reflect.DeepEqual(err, nil); !eq {
+		t.Fatalf("different output of nil expected, got: %s", err)
+	}
+	outputs = append(outputs, uniqueId(output["counter"].(float64), output["text"].(string)))
+
+	uniqueIdStruct = src.NewUniqueId(outputs, resourcePool, userInput)
+	output, err = uniqueIdStruct.Invoke()
+	if eq := reflect.DeepEqual(output, (map[string]interface{})(nil)); !eq {
+		t.Fatalf("different output of nil expected, got: %s", output)
+	}
+	expectedOutputError = errors.New("Unable to allocate Unique-id from idFormat: \"{someProperty}{counter}\". Insufficient capacity to allocate a unique-id.")
+	if eq := reflect.DeepEqual(err.Error(), expectedOutputError.Error()); !eq {
+		t.Fatalf("different output of %s expected, got: %s", expectedOutputError, err)
 	}
 }
