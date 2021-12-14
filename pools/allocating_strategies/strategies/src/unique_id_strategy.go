@@ -22,7 +22,7 @@ func NewUniqueId(currentResources []map[string]interface{},
 }
 
 func (uniqueId *UniqueId) getNextFreeCounterAndResourcesSet() (float64, map[float64]bool) {
-	var max float64
+	var start float64
 	currentResourcesSet := make(map[float64]bool)
 	value, ok := uniqueId.resourcePoolProperties["from"]
 
@@ -35,20 +35,20 @@ func (uniqueId *UniqueId) getNextFreeCounterAndResourcesSet() (float64, map[floa
 		value = float64(value.(int))
 	}
 	if ok {
-		max = value.(float64) - 1
+		start = value.(float64) - 1
 	} else {
-		max = float64(0)
+		start = float64(0)
 	}
 
 	for _, element := range uniqueId.currentResources {
 		var properties = element["Properties"].(map[string]interface{})
 		var counter = properties["counter"].(float64)
-		if counter > max {
-			max = counter
-		}
 		currentResourcesSet[counter] = true
+		if counter == start + 1 {
+			start = counter
+		}
 	}
-	return max + 1, currentResourcesSet
+	return start + 1, currentResourcesSet
 }
 
 func (uniqueId *UniqueId) Invoke() (map[string]interface{}, error) {
