@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"github.com/pkg/errors"
+	"regexp"
 	"strconv"
 	"strings"
 )
@@ -11,15 +12,20 @@ import (
 type UniqueId struct {
 	currentResources []map[string]interface{}
 	resourcePoolProperties map[string]interface{}
+	userInput map[string]interface{}
 }
 
-func NewUniqueId(currentResources []map[string]interface{}, resourcePoolProperties map[string]interface{}) UniqueId {
-	return UniqueId{currentResources, resourcePoolProperties}
+func NewUniqueId(currentResources []map[string]interface{},
+	resourcePoolProperties map[string]interface{},
+	userInput map[string]interface{}) UniqueId {
+	return UniqueId{currentResources, resourcePoolProperties, userInput}
 }
 
-func (uniqueId *UniqueId) getNextFreeCounter() float64 {
-	var max float64
+func (uniqueId *UniqueId) getNextFreeCounterAndResourcesSet() (float64, map[float64]bool) {
+	var start float64
+	currentResourcesSet := make(map[float64]bool)
 	value, ok := uniqueId.resourcePoolProperties["from"]
+
 	switch value.(type) {
 	case json.Number:
 		value, _ = value.(json.Number).Float64()
@@ -29,26 +35,27 @@ func (uniqueId *UniqueId) getNextFreeCounter() float64 {
 		value = float64(value.(int))
 	}
 	if ok {
-		max = value.(float64) - 1
+		start = value.(float64) - 1
 	} else {
-		max = float64(0)
+		start = float64(0)
 	}
+
 	for _, element := range uniqueId.currentResources {
 		var properties = element["Properties"].(map[string]interface{})
-		for k, v := range properties {
-			if k == "counter" && v.(float64) > max {
-				max = v.(float64)
-			}
+		var counter = properties["counter"].(float64)
+		currentResourcesSet[counter] = true
+		if counter == start + 1 {
+			start = counter
 		}
 	}
-	return max + 1
+	return start + 1, currentResourcesSet
 }
 
 func (uniqueId *UniqueId) Invoke() (map[string]interface{}, error) {
 	if uniqueId.resourcePoolProperties == nil {
 		return nil, errors.New("Unable to extract resources")
 	}
-	var nextFreeCounter = uniqueId.getNextFreeCounter()
+	nextFreeCounter, currentResourcesSet := uniqueId.getNextFreeCounterAndResourcesSet()
 	idFormat, ok := uniqueId.resourcePoolProperties["idFormat"]
 	if !ok {
 		return nil, errors.New("Missing idFormat in resources")
@@ -61,12 +68,13 @@ func (uniqueId *UniqueId) Invoke() (map[string]interface{}, error) {
 		toValue, err := NumberToInt(toValue)
 		if err != nil || nextFreeCounter > float64(toValue.(int)) {
 			return nil, errors.New("Unable to allocate Unique-id from idFormat: \"" + idFormat.(string) + "\"." +
-				"Insufficient capacity to allocate a unique-id.")
+				" Insufficient capacity to allocate a unique-id.")
 		}
 	}
+
 	replacePoolProperties := make(map[string]interface{})
 	for k, v := range uniqueId.resourcePoolProperties {
-		if k != "idFormat" && k != "prefix_number"{
+		if k != "idFormat" && k != "counterFormatWidth" && k!= "from" && k!= "to" {
 			replacePoolProperties[k] = v
 		}
 	}
@@ -76,6 +84,36 @@ func (uniqueId *UniqueId) Invoke() (map[string]interface{}, error) {
 	} else {
 		replacePoolProperties["counter"] = nextFreeCounter
 	}
+
+	if value, ok := uniqueId.userInput["desiredValue"]; ok {
+		var result = make(map[string]interface{})
+		pattern := idFormat.(string)
+		for k, v := range replacePoolProperties {
+			if k != "counter" {
+				pattern = strings.Replace(pattern, "{" + k + "}", v.(string), 1)
+			} else {
+				pattern = strings.Replace(pattern, "{counter}", "(?P<counter>\\d+)", 1)
+			}
+		}
+		rgx := regexp.MustCompile(pattern)
+		stringSubmatchs := rgx.FindStringSubmatch(value.(string))
+
+		if len(stringSubmatchs) > 0 {
+			for index, subxpname := range rgx.SubexpNames() {
+				if subxpname == "counter" {
+					counter, _ := strconv.ParseFloat(stringSubmatchs[index], 0)
+					if currentResourcesSet[counter] {
+						return nil, errors.New("Unique-id " + value.(string) + " was already claimed." )
+					}
+					result["counter"] = counter
+					result["text"] = value
+					return result, nil
+				}
+			}
+		}
+		return nil, errors.New("Wrong desired value, does not equal idFormat: " + idFormat.(string))
+	}
+
 	for k, v := range replacePoolProperties {
 		switch v.(type) {
 		case float64:

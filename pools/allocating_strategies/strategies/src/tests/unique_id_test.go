@@ -34,8 +34,8 @@ func TestUniqueIdOutputAndCapacity(t *testing.T) {
 
 	var output, err = uniqueIdStruct.Invoke()
 	var expectedOutput = make(map[string]interface{})
-	expectedOutput["counter"] = float64(4)
-	expectedOutput["text"] = "VPN-4-Network19-VPN85-local"
+	expectedOutput["counter"] = float64(2)
+	expectedOutput["text"] = "VPN-2-Network19-VPN85-local"
 
 	if eq := reflect.DeepEqual(output, expectedOutput); !eq {
 		t.Fatalf("different output of %s expected, got: %s", expectedOutput, output)
