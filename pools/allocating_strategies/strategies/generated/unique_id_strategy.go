@@ -44,11 +44,13 @@ func (uniqueId *UniqueId) getNextFreeCounterAndResourcesSet() (float64, map[floa
 		var properties = element["Properties"].(map[string]interface{})
 		var counter = properties["counter"].(float64)
 		currentResourcesSet[counter] = true
-		if counter == start + 1 {
-			start = counter
+	}
+	for i := start; i < float64(len(uniqueId.currentResources)) + start; i++ {
+		if !currentResourcesSet[i + 1] {
+			return i + 1, currentResourcesSet
 		}
 	}
-	return start + 1, currentResourcesSet
+	return float64(len(uniqueId.currentResources)) + start + 1, currentResourcesSet
 }
 
 func (uniqueId *UniqueId) Invoke() (map[string]interface{}, error) {
@@ -64,17 +66,16 @@ func (uniqueId *UniqueId) Invoke() (map[string]interface{}, error) {
 		return nil, errors.New("Missing {counter} in idFormat")
 	}
 
-	if toValue, ok := uniqueId.resourcePoolProperties["to"]; ok {
-		toValue, err := NumberToInt(toValue)
-		if err != nil || nextFreeCounter > float64(toValue.(int)) {
-			return nil, errors.New("Unable to allocate Unique-id from idFormat: \"" + idFormat.(string) + "\"." +
-				" Insufficient capacity to allocate a unique-id.")
-		}
+	var toValue = ^uint(0) >> 1 // max int
+	resourcePooltoValue, ok := uniqueId.resourcePoolProperties["to"]
+	if ok {
+		resourcePooltoValue, _ := NumberToInt(resourcePooltoValue)
+		toValue = uint(resourcePooltoValue.(int))
 	}
 
 	replacePoolProperties := make(map[string]interface{})
 	for k, v := range uniqueId.resourcePoolProperties {
-		if k != "idFormat" && k != "counterFormatWidth" && k!= "from" && k!= "to" {
+		if k != "idFormat" && k != "counterFormatWidth" && k != "from" && k != "to" {
 			replacePoolProperties[k] = v
 		}
 	}
@@ -105,6 +106,10 @@ func (uniqueId *UniqueId) Invoke() (map[string]interface{}, error) {
 					if currentResourcesSet[counter] {
 						return nil, errors.New("Unique-id " + value.(string) + " was already claimed." )
 					}
+					if counter > float64(toValue) {
+						return nil, errors.New("Unable to allocate Unique-id: \"" + value.(string) + "\"." +
+							" Value is out of scope: " + strconv.FormatInt(int64(toValue), 10))
+					}
 					result["counter"] = counter
 					result["text"] = value
 					return result, nil
@@ -112,6 +117,11 @@ func (uniqueId *UniqueId) Invoke() (map[string]interface{}, error) {
 			}
 		}
 		return nil, errors.New("Wrong desired value, does not equal idFormat: " + idFormat.(string))
+	}
+
+	if nextFreeCounter > float64(toValue) {
+		return nil, errors.New("Unable to allocate Unique-id from idFormat: \"" + idFormat.(string) + "\"." +
+			" Insufficient capacity to allocate a unique-id.")
 	}
 
 	for k, v := range replacePoolProperties {

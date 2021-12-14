@@ -358,4 +358,13 @@ func TestDesiredValueComplicated(t *testing.T) {
 	if eq := reflect.DeepEqual(err.Error(), expectedOutputError.Error()); !eq {
 		t.Fatalf("different output of %s expected, got: %s", expectedOutputError, err)
 	}
+
+	userInput = map[string]interface{}{"desiredValue": "L3VPN25"}
+	uniqueIdStruct = src.NewUniqueId(outputs, resourcePool, userInput)
+	output, err = uniqueIdStruct.Invoke()
+
+	expectedOutputError = errors.New("Unable to allocate Unique-id: \"L3VPN25\". Value is out of scope: 11")
+	if eq := reflect.DeepEqual(err.Error(), expectedOutputError.Error()); !eq {
+		t.Fatalf("different output of %s expected, got: %s", expectedOutputError, err)
+	}
 }
