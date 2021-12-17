@@ -216,7 +216,7 @@ func loadVlanRange(ctx context.Context, client *ent.Tx) error {
 
 	_, err = client.AllocationStrategy.Create().
 		SetName("vlan_range").
-		SetLang(allocationstrategy.LangJs).
+		SetLang(allocationstrategy.LangGo).
 		SetScript(VLAN_RANGE).
 		Save(ctx)
 	if err != nil {
@@ -386,7 +386,6 @@ func loadUniqueIdStrategy(ctx context.Context, client *ent.Tx) error {
 	return nil
 }
 
-
 func loadInner(ctx context.Context, client *ent.Tx) error {
 	err := loadIpv4Prefix(ctx, client)
 	if err != nil {
@@ -458,4 +457,3 @@ func LoadBuiltinTypes(ctx context.Context, client *ent.Client) error {
 	}
 	return nil
 }
-
