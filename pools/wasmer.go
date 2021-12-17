@@ -191,6 +191,10 @@ func invokeGo(
 		// TODO: Pass currentResourcesArray as pointer
 		id := strategies.NewIpv4(currentResourcesArray, poolPropertiesMaps, userInput)
 		goStrategy = &id
+	case "vlan_range":
+		// TODO: Pass currentResourcesArray as pointer
+		id := strategies.NewVlanRange(currentResourcesArray, poolPropertiesMaps, userInput)
+		goStrategy = &id
 	default:
 		return nil, "", errors.New("Not known go strategy")
 	}
@@ -305,8 +309,8 @@ func (wasmer Wasmer) invoke(name string, arg ...string) (map[string]interface{},
 	if err := json.Unmarshal(stdout, &m); err != nil {
 		log.Error(nil, err, "Parsing error")
 		return nil, stderr, errors.Wrapf(err,
-			"Unable to parse allocation function output as flat JSON: \"%s\". " +
-			"Error output: \"%s\"", string(stdout), stderr)
+			"Unable to parse allocation function output as flat JSON: \"%s\". "+
+				"Error output: \"%s\"", string(stdout), stderr)
 	}
 	return m, stderr, nil
 }

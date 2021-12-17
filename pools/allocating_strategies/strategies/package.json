@@ -14,7 +14,7 @@
     "ipv6": "yarn generate src/ipv6_strategy.js",
     "random_S_int32": "yarn generate src/random_s_int32_strategy.js",
     "rd": "yarn generate src/route_distinguisher_strategy.js",
-    "vlan-range": "yarn generate src/vlan_range_strategy.js",
+    "vlan-range": "cp src/vlan_range_strategy.go generated",
     "vlan": "yarn generate src/vlan_strategy.js",
     "unique-id": "yarn generate src/unique_id_strategy.js",
     "vlan_go": "cp src/vlan_strategy.go generated",
