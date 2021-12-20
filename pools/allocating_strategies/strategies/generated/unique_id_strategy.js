@@ -1,8 +1,8 @@
 'use strict';
 
 // framework managed constants
-//;
-//;
+var currentResources = [];
+var resourcePoolProperties = {};
 // framework managed constants
 
 // STRATEGY_START

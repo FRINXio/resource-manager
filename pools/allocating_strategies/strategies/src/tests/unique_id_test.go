@@ -232,10 +232,10 @@ func TestCapacityFromTo(t *testing.T) {
 func TestDesiredValueSimple(t *testing.T) {
 	var outputs []map[string]interface{}
 	var resourcePool = map[string]interface{}{"idFormat": "{counter}"}
-	var userInput = map[string]interface{}{"desiredValue": "5"}
+	var userInput = map[string]interface{}{"desiredValue": 5}
 	uniqueIdStruct := src.NewUniqueId(outputs, resourcePool, userInput)
 	output, err := uniqueIdStruct.Invoke()
-	var expectedOutput = map[string]interface{}{"counter": float64(5), "text": strconv.Itoa(5)}
+	var expectedOutput = map[string]interface{}{"counter": float64(5), "text": "5"}
 	if eq := reflect.DeepEqual(output, expectedOutput); !eq {
 		t.Fatalf("different output of %s expected, got: %s", expectedOutput, output)
 	}
@@ -247,7 +247,7 @@ func TestDesiredValueSimple(t *testing.T) {
 func TestDesiredValueSimple2(t *testing.T) {
 	var outputs []map[string]interface{}
 	var resourcePool = map[string]interface{}{"idFormat": "L3VPN{counter}"}
-	var userInput = map[string]interface{}{"desiredValue": "L3VPN5"}
+	var userInput = map[string]interface{}{"desiredValue": 5}
 	uniqueIdStruct := src.NewUniqueId(outputs, resourcePool, userInput)
 	output, err := uniqueIdStruct.Invoke()
 	var expectedOutput = map[string]interface{}{"counter": float64(5), "text": "L3VPN" + strconv.Itoa(5)}
@@ -262,7 +262,7 @@ func TestDesiredValueSimple2(t *testing.T) {
 func TestDesiredValueSimple3(t *testing.T) {
 	var outputs []map[string]interface{}
 	var resourcePool = map[string]interface{}{"idFormat": "L3VPN{counter}{pattern}", "pattern": "AAA"}
-	var userInput = map[string]interface{}{"desiredValue": "L3VPN5AAA"}
+	var userInput = map[string]interface{}{"desiredValue": 5}
 	uniqueIdStruct := src.NewUniqueId(outputs, resourcePool, userInput)
 	output, err := uniqueIdStruct.Invoke()
 	var expectedOutput = map[string]interface{}{"counter": float64(5), "text": "L3VPN" + strconv.Itoa(5) + "AAA"}
@@ -274,26 +274,10 @@ func TestDesiredValueSimple3(t *testing.T) {
 	}
 }
 
-func TestDesiredValueWrongDesiredValue(t *testing.T) {
-	var outputs []map[string]interface{}
-	var resourcePool = map[string]interface{}{"idFormat": "L3VPN{counter}{pattern}", "pattern": "AAA"}
-	var userInput = map[string]interface{}{"desiredValue": "RRRR665"}
-	uniqueIdStruct := src.NewUniqueId(outputs, resourcePool, userInput)
-	output, err := uniqueIdStruct.Invoke()
-
-	if eq := reflect.DeepEqual(output, (map[string]interface{})(nil)); !eq {
-		t.Fatalf("different output of nil expected, got: %s", output)
-	}
-	expectedOutput := errors.New("Wrong desired value, does not equal idFormat: L3VPN{counter}{pattern}")
-	if eq := reflect.DeepEqual(err.Error(), expectedOutput.Error()); !eq {
-		t.Fatalf("different output of %s expected, got: %s", expectedOutput, err)
-	}
-}
-
 func TestDesiredValueAlreadyClaimedValue(t *testing.T) {
 	var outputs = []map[string]interface{}{uniqueId(float64(5), "L3VPN5AAA")}
 	var resourcePool = map[string]interface{}{"idFormat": "L3VPN{counter}{pattern}", "pattern": "AAA"}
-	var userInput = map[string]interface{}{"desiredValue": "L3VPN5AAA"}
+	var userInput = map[string]interface{}{"desiredValue": 5}
 	uniqueIdStruct := src.NewUniqueId(outputs, resourcePool, userInput)
 	output, err := uniqueIdStruct.Invoke()
 
@@ -325,7 +309,7 @@ func TestDesiredValueComplicated(t *testing.T) {
 		outputs = append(outputs, uniqueId(output["counter"].(float64), output["text"].(string)))
 		uniqueIdStruct = src.NewUniqueId(outputs, resourcePool, userInput)
 	}
-	userInput = map[string]interface{}{"desiredValue": "L3VPN07"}
+	userInput = map[string]interface{}{"desiredValue": 7}
 	uniqueIdStruct = src.NewUniqueId(outputs, resourcePool, userInput)
 
 	output, err := uniqueIdStruct.Invoke()
@@ -359,12 +343,31 @@ func TestDesiredValueComplicated(t *testing.T) {
 		t.Fatalf("different output of %s expected, got: %s", expectedOutputError, err)
 	}
 
-	userInput = map[string]interface{}{"desiredValue": "L3VPN25"}
+	userInput = map[string]interface{}{"desiredValue": 25}
 	uniqueIdStruct = src.NewUniqueId(outputs, resourcePool, userInput)
 	output, err = uniqueIdStruct.Invoke()
 
-	expectedOutputError = errors.New("Unable to allocate Unique-id: \"L3VPN25\". Value is out of scope: 11")
+	expectedOutputError = errors.New("Unable to allocate Unique-id desiredValue: 25. Value is out of scope: 11")
 	if eq := reflect.DeepEqual(err.Error(), expectedOutputError.Error()); !eq {
 		t.Fatalf("different output of %s expected, got: %s", expectedOutputError, err)
+	}
+}
+
+func TestFirstMissing(t *testing.T) {
+	from := 0
+	to := 8
+	var outputs = []map[string]interface{}{uniqueId(float64(7), "L3VPN-7"), uniqueId(float64(1), "L3VPN-1"),
+		uniqueId(float64(3), "L3VPN-3"), uniqueId(float64(4), "L3VPN-4")}
+	var resourcePool = map[string]interface{}{ "from": from, "to": to, "idFormat": "L3VPN-{counter}"}
+	var userInput = map[string]interface{}{}
+	uniqueIdStruct := src.NewUniqueId(outputs, resourcePool, userInput)
+
+	output, err := uniqueIdStruct.Invoke()
+	expectedOutput := map[string]interface{}{"counter": float64(0), "text": "L3VPN-0"}
+	if eq := reflect.DeepEqual(output, expectedOutput); !eq {
+		t.Fatalf("different output of %s expected, got: %s", expectedOutput, output)
+	}
+	if eq := reflect.DeepEqual(err, nil); !eq {
+		t.Fatalf("different output of nil expected, got: %s", err)
 	}
 }
