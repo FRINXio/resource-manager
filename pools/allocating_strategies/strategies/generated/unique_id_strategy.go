@@ -4,7 +4,6 @@ import (
 	"encoding/json"
 	"fmt"
 	"github.com/pkg/errors"
-	"regexp"
 	"strconv"
 	"strings"
 )
@@ -21,24 +20,9 @@ func NewUniqueId(currentResources []map[string]interface{},
 	return UniqueId{currentResources, resourcePoolProperties, userInput}
 }
 
-func (uniqueId *UniqueId) getNextFreeCounterAndResourcesSet() (float64, map[float64]bool) {
-	var start float64
+func (uniqueId *UniqueId) getNextFreeCounterAndResourcesSet(fromValue int) (float64, map[float64]bool) {
+	var start = float64(fromValue)
 	currentResourcesSet := make(map[float64]bool)
-	value, ok := uniqueId.resourcePoolProperties["from"]
-
-	switch value.(type) {
-	case json.Number:
-		value, _ = value.(json.Number).Float64()
-	case float64:
-		value = value.(float64)
-	case int:
-		value = float64(value.(int))
-	}
-	if ok {
-		start = value.(float64) - 1
-	} else {
-		start = float64(0)
-	}
 
 	for _, element := range uniqueId.currentResources {
 		var properties = element["Properties"].(map[string]interface{})
@@ -57,7 +41,14 @@ func (uniqueId *UniqueId) Invoke() (map[string]interface{}, error) {
 	if uniqueId.resourcePoolProperties == nil {
 		return nil, errors.New("Unable to extract resources")
 	}
-	nextFreeCounter, currentResourcesSet := uniqueId.getNextFreeCounterAndResourcesSet()
+	var fromValue = 0 // max int
+	resourcePoolfromValue, ok := uniqueId.resourcePoolProperties["from"]
+	if ok {
+		resourcePoolfromValue, _ := NumberToInt(resourcePoolfromValue)
+		fromValue = resourcePoolfromValue.(int) - 1
+	}
+
+	nextFreeCounter, currentResourcesSet := uniqueId.getNextFreeCounterAndResourcesSet(fromValue)
 	idFormat, ok := uniqueId.resourcePoolProperties["idFormat"]
 	if !ok {
 		return nil, errors.New("Missing idFormat in resources")
@@ -79,44 +70,24 @@ func (uniqueId *UniqueId) Invoke() (map[string]interface{}, error) {
 			replacePoolProperties[k] = v
 		}
 	}
+
+	if value, ok := uniqueId.userInput["desiredValue"]; ok {
+		value, _ = NumberToInt(value)
+		nextFreeCounter = float64(value.(int))
+		if nextFreeCounter > float64(toValue) {
+			return nil, errors.New("Unable to allocate Unique-id desiredValue: " + strconv.FormatInt(int64(value.(int)), 10) + "." +
+				" Value is out of scope: " + strconv.FormatInt(int64(toValue), 10))
+		}
+		if nextFreeCounter < float64(fromValue) {
+			return nil, errors.New("Unable to allocate Unique-id desiredValue: " + strconv.FormatInt(int64(value.(int)), 10) + "." +
+				" Value is out of scope: " + strconv.FormatInt(int64(fromValue), 10))
+		}
+	}
 	if prefixNumber, ok := uniqueId.resourcePoolProperties["counterFormatWidth"]; ok {
 		replacePoolProperties["counter"] = fmt.Sprintf(
 			"%0" + strconv.Itoa(prefixNumber.(int)) +"d", int(nextFreeCounter))
 	} else {
 		replacePoolProperties["counter"] = nextFreeCounter
-	}
-
-	if value, ok := uniqueId.userInput["desiredValue"]; ok {
-		var result = make(map[string]interface{})
-		pattern := idFormat.(string)
-		for k, v := range replacePoolProperties {
-			if k != "counter" {
-				pattern = strings.Replace(pattern, "{" + k + "}", v.(string), 1)
-			} else {
-				pattern = strings.Replace(pattern, "{counter}", "(?P<counter>\\d+)", 1)
-			}
-		}
-		rgx := regexp.MustCompile(pattern)
-		stringSubmatchs := rgx.FindStringSubmatch(value.(string))
-
-		if len(stringSubmatchs) > 0 {
-			for index, subxpname := range rgx.SubexpNames() {
-				if subxpname == "counter" {
-					counter, _ := strconv.ParseFloat(stringSubmatchs[index], 0)
-					if currentResourcesSet[counter] {
-						return nil, errors.New("Unique-id " + value.(string) + " was already claimed." )
-					}
-					if counter > float64(toValue) {
-						return nil, errors.New("Unable to allocate Unique-id: \"" + value.(string) + "\"." +
-							" Value is out of scope: " + strconv.FormatInt(int64(toValue), 10))
-					}
-					result["counter"] = counter
-					result["text"] = value
-					return result, nil
-				}
-			}
-		}
-		return nil, errors.New("Wrong desired value, does not equal idFormat: " + idFormat.(string))
 	}
 
 	if nextFreeCounter > float64(toValue) {
@@ -140,6 +111,10 @@ func (uniqueId *UniqueId) Invoke() (map[string]interface{}, error) {
 
 		idFormat = strings.Replace(idFormat.(string), "{" + k + "}", v.(string), 1)
 	}
+	if currentResourcesSet[nextFreeCounter] {
+		return nil, errors.New("Unique-id " + idFormat.(string) + " was already claimed." )
+	}
+
 	var result = make(map[string]interface{})
 	result["text"] = idFormat
 	result["counter"] = nextFreeCounter
