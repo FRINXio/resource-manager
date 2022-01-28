@@ -3,15 +3,20 @@ package src
 import (
 	"encoding/json"
 	"github.com/pkg/errors"
+	"regexp"
+	"strconv"
 )
 
 type Vlan struct {
-	currentResources []map[string]interface{}
+	currentResources       []map[string]interface{}
 	resourcePoolProperties map[string]interface{}
+	userInput              map[string]interface{}
 }
 
-func NewVlan(currentResources []map[string]interface{}, resourcePoolProperties map[string]interface{}) Vlan {
-	return Vlan{currentResources, resourcePoolProperties}
+func NewVlan(currentResources []map[string]interface{},
+	resourcePoolProperties map[string]interface{},
+	userInput map[string]interface{}) Vlan {
+	return Vlan{currentResources, resourcePoolProperties, userInput}
 }
 
 func UtilizedCapacity(allocatedRanges []map[string]interface{}, newlyAllocatedVlan float64) float64 {
@@ -89,9 +94,32 @@ func (vlan *Vlan) Invoke() (map[string]interface{}, error) {
 		return nil, err
 	}
 
+	if value, ok := vlan.userInput["desiredValue"]; ok {
+		re := regexp.MustCompile(`^\d+$`)
+		if re.MatchString(value.(string)) {
+			desiredValueNum, err := strconv.Atoi(value.(string))
+			if err != nil {
+				return nil, err
+			}
+			if desiredValueNum >= from.(int) && desiredValueNum < to.(int) {
+				if contains(currentResourcesSet, float64(desiredValueNum)) {
+					return nil, errors.New("VLAN " + value.(string) + " was already claimed.")
+				}
+				vlanProperties := make(map[string]interface{})
+				vlanProperties["vlan"] = float64(desiredValueNum)
+				return vlanProperties, nil
+			} else {
+				return nil, errors.New("VLAN " + value.(string) + " is out of range: " +
+					strconv.Itoa(from.(int)) + " - " + strconv.Itoa(to.(int)))
+			}
+		} else {
+			return nil, errors.New("VLAN must be a number. Received: " + value.(string) + ".")
+		}
+	}
+
 	for i := from.(int); i <= to.(int); i++ {
 		if !contains(currentResourcesSet, float64(i)) {
-			// FIXME How to pass these stats ?
+			// FIXME How to pass these stats
 			// logStats(i, parentRange, currentResourcesUnwrapped)
 			vlanProperties := make(map[string]interface{})
 			vlanProperties["vlan"] = float64(i)
