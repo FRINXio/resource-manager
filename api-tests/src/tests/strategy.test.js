@@ -1,5 +1,5 @@
 import {deleteAllocationStrategy, testStrategy, createAllocationStrategy, findAllocationStrategyId} from '../graphql-queries.js';
-import {getUniqueName} from '../test-helpers.js';
+import {cleanup, getUniqueName} from '../test-helpers.js';
 import tap from 'tap';
 const test = tap.test;
 
@@ -11,6 +11,8 @@ test('create and call JS strategy', async (t) => {
         'js');
     let strategyOutput = await testStrategy(strategyId, { ResourcePoolName: 'testpool'}, poolName, [], {desiredVlan: 85} );
     t.equal(strategyOutput.stdout.vlan, 85);
+
+    await cleanup()
     t.end();
 });
 
@@ -24,6 +26,8 @@ test('create and call Py strategy', async (t) => {
         { ResourcePoolName: poolName},
         poolName, [], {desiredVlan: 11} );
     t.equal(strategyOutput.stdout.vlan, 11);
+
+    await cleanup()
     t.end();
 });
 
@@ -49,6 +53,8 @@ test('simple ipv4 prefix strategy', async (t) => {
         [], {desiredSize: 8388608});
     t.equal(x.stdout.address, '10.0.0.0');
     t.equal(x.stdout.prefix, 9);
+
+    await cleanup()
     t.end();
 });
 
@@ -64,6 +70,8 @@ test('ipv4 prefix strategy one resource already claimed', async (t) => {
         }], {desiredSize: 8388608});
     t.equal(allocated.stdout.address, '10.128.0.0');
     t.equal(allocated.stdout.prefix, 9);
+
+    await cleanup()
     t.end();
 });
 
@@ -84,6 +92,8 @@ test('ipv4 prefix strategy pool has no capacity left', async (t) => {
         poolName, allocatedResources, {desiredSize: 8388608},
         true);
     t.notOk(allocated);
+
+    await cleanup()
     t.end();
 });
 
@@ -94,6 +104,8 @@ test('ipv4 strategy just get an IP', async (t) => {
         {prefix: 8, address: '10.0.0.0'},
         poolName, [], {});
     t.equal(allocated.stdout.address, '10.0.0.0');
+
+    await cleanup()
     t.end();
 });
 
@@ -107,6 +119,8 @@ test('simple ipv6 prefix strategy', async (t) => {
         [], {desiredSize: 101});
     t.equal(allocated.stdout.address, 'dead::');
     t.equal(allocated.stdout.prefix, 121);
+
+    await cleanup()
     t.end();
 });
 
@@ -118,6 +132,8 @@ test('simple ipv6 strategy', async (t) => {
         poolName,
         [], {subnet: true});
     t.equal(allocated.stdout.address, 'dead::1');
+
+    await cleanup()
     t.end();
 });
 
@@ -130,6 +146,8 @@ test('ipv4-rd strategy', async (t) => {
         [], {ipv4: '1.2.3.4', assignedNumber: 2});
 
     t.equal(allocated.stdout.rd, '1.2.3.4:2');
+
+    await cleanup()
     t.end();
 });
 
@@ -148,6 +166,8 @@ test('ipv4-rd strategy duplicate already claimed', async (t) => {
         true);
 
     t.notOk(allocated);
+
+    await cleanup()
     t.end();
 });
 
@@ -161,6 +181,8 @@ test('as-rd strategy', async (t) => {
         [], {asNumber: 22, assignedNumber: 288});
 
     t.equal(allocated.stdout.rd, '22:288');
+
+    await cleanup()
     t.end();
 });
 
@@ -173,6 +195,8 @@ test('vlan range strategy', async (t) => {
         [], {desiredSize: 101});
 
     t.deepEqual(allocated.stdout, {from: 0, to:100});
+
+    await cleanup()
     t.end();
 });
 
@@ -192,6 +216,8 @@ test('vlan range strategy range partly claimed', async (t) => {
         claimed, {desiredSize: 101});
 
     t.deepEqual(allocated.stdout, {from: 1001, to:1101});
+
+    await cleanup()
     t.end();
 });
 
@@ -204,5 +230,7 @@ test('vlan strategy', async (t) => {
         [], {});
 
     t.equal(allocated.stdout.vlan, 0);
+
+    await cleanup()
     t.end();
 });

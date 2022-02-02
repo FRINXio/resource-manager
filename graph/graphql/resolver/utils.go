@@ -11,18 +11,18 @@ import (
 	"github.com/vektah/gqlparser/v2/gqlerror"
 )
 
-func decodeCursor(cursorAsString * string) (*ent.Cursor, error) {
-	    if cursorAsString == nil {
-			return nil, nil
-		}
+func decodeCursor(cursorAsString *string) (*ent.Cursor, error) {
+	if cursorAsString == nil {
+		return nil, nil
+	}
 
-		result := &ent.Cursor{
-			ID:    1,
-			Value: nil,
-		}
-		err := result.UnmarshalGQL(*cursorAsString)
+	result := &ent.Cursor{
+		ID:    1,
+		Value: nil,
+	}
+	err := result.UnmarshalGQL(*cursorAsString)
 
-		return result, err
+	return result, err
 }
 
 func hasParent(currentPool *ent.ResourcePool) bool {
@@ -66,7 +66,7 @@ func createNestedPool(ctx context.Context,
 		poolProperties, err := client.PoolProperties.Create().AddProperties(properties...).Save(ctx)
 
 		if err != nil {
-				return nil, gqlerror.Errorf("Cannot create pool properties, error: %v", err)
+			return nil, gqlerror.Errorf("Cannot create pool properties, error: %v", err)
 		}
 
 		_, err = pool.Update().SetPoolProperties(poolProperties).Save(ctx)
@@ -110,7 +110,6 @@ func resourcePoolTagPredicate(tags *model.TagOr) predicate.ResourcePool {
 	}
 	return predicateOr
 }
-
 
 func createTagsAndTagPool(ctx context.Context, client *ent.Client, rp *ent.ResourcePool, tags []string) error {
 	var tagsInDb []*ent.Tag

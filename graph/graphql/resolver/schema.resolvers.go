@@ -5,6 +5,7 @@ package resolver
 
 import (
 	"context"
+	"time"
 
 	"github.com/net-auto/resourceManager/ent"
 	"github.com/net-auto/resourceManager/ent/allocationstrategy"
@@ -590,6 +591,39 @@ func (r *queryResolver) QueryResourcePools(ctx context.Context, resourceTypeID *
 	if tags != nil {
 		// TODO make sure all tags exist
 		query.Where(resourcePoolTagPredicate(tags))
+	}
+
+	if resourcePools, err := query.All(ctx); err != nil {
+		log.Error(ctx, err, "Unable to retrieve resource pools")
+		return nil, gqlerror.Errorf("Unable to query resource pools: %v", err)
+	} else {
+		return resourcePools, nil
+	}
+}
+
+func (r *queryResolver) QueryRecentlyActiveResourcePools(ctx context.Context, fromDatetime string, toDatetime *string) ([]*ent.ResourcePool, error) {
+	client := r.ClientFrom(ctx)
+	query := client.ResourcePool.Query()
+	dateFrom, err := time.Parse("2006-01-02-15", fromDatetime)
+	if err != nil {
+		log.Error(ctx, err, "Unable to parse date from: "+fromDatetime+". Must be in format: YYYY-MM-DD-hh.")
+		return nil, gqlerror.Errorf("Unable to parse date from: "+fromDatetime+
+			". Must be in format: YYYY-MM-DD-hh. Error: %v", err)
+	}
+
+	if toDatetime != nil && len(*toDatetime) != 0 {
+		dateTo, err := time.Parse("2006-01-02-15", *toDatetime)
+		if err != nil {
+			log.Error(ctx, err, "Unable to parse date to: "+*toDatetime+". Must be in format: YYYY-MM-DD-hh.")
+			return nil, gqlerror.Errorf("Unable to parse date to: "+*toDatetime+
+				". Must be in format: YYYY-MM-DD-hh. Error: %v", err)
+		}
+		query.Where(resourcePool.HasClaimsWith(resource.And(
+			resource.UpdatedAtGTE(dateFrom), resource.UpdatedAtLTE(dateTo))))
+	} else {
+		currentDate := time.Now()
+		query.Where(resourcePool.HasClaimsWith(resource.And(
+			resource.UpdatedAtGTE(dateFrom), resource.UpdatedAtLTE(currentDate))))
 	}
 
 	if resourcePools, err := query.All(ctx); err != nil {
