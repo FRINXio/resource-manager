@@ -1,5 +1,5 @@
 import { deleteResourceType, findResourceTypeId, createResourceType, createSetPool, claimResource } from '../graphql-queries.js';
-import {getUniqueName} from '../test-helpers.js';
+import { cleanup, getUniqueName } from '../test-helpers.js';
 import tap from 'tap';
 const test = tap.test;
 
@@ -13,6 +13,8 @@ test('create resource type, set pool and claim a resource', async (t) => {
     let resource = await claimResource(poolId, {});
     t.equal(resource.Properties.a, 11)
     t.equal(resource.Properties.b, 'eleven');
+
+    await cleanup()
     t.end();
 });
 

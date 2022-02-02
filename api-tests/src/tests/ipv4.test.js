@@ -1,9 +1,9 @@
-import { claimResource, getResourcePool, getPoolHierarchyPath } from '../graphql-queries.js';
+import {claimResource, getResourcePool, getPoolHierarchyPath, deleteResourcePool} from '../graphql-queries.js';
 import {
     createIpv4PrefixRootPool, createIpv4PrefixNestedPool,
     createSingletonIpv4PrefixNestedPool,
     createIpv4NestedPool, get2ChildrenIds,
-    prepareIpv4Pool, allocateFromIPv4PoolSerially, allocateFromIPv4PoolParallelly, queryIPs
+    prepareIpv4Pool, allocateFromIPv4PoolSerially, allocateFromIPv4PoolParallelly, queryIPs, cleanup
 } from '../test-helpers.js';
 
 import tap from 'tap';
@@ -14,6 +14,7 @@ test('create ipv4 prefix root pool', async (t) => {
     t.ok(pool);
     t.equal(pool.PoolProperties['address'], '10.0.0.0')
     t.equal(pool.PoolProperties['prefix'], 8)
+    await deleteResourcePool(pool.id);
     t.end();
 });
 
@@ -108,6 +109,7 @@ test('create ipv4 hierarchy', async (t) => {
     const hierarchyPath21 = await getPoolHierarchyPath(pool21Id);
     t.deepEqual(hierarchyPath21.map(it => it.id), [rootPoolId]);
 
+    await cleanup()
     t.end();
 });
 
@@ -118,6 +120,8 @@ test('ipv4_prefix_pool serially', async (t) => {
     const queriedIPs = await queryIPs(poolId, count);
     t.deepEqual(queriedIPs, createdIPs);
     t.equal(queriedIPs.length, count);
+
+    await cleanup()
     t.end();
 });
 
@@ -128,6 +132,8 @@ test('ipv4_pool serially', async (t) => {
     const queriedIPs = await queryIPs(poolId, count);
     t.deepEqual(queriedIPs, createdIPs);
     t.equal(queriedIPs.length, count);
+
+    await cleanup()
     t.end();
 });
 
@@ -139,6 +145,8 @@ test('ipv4_prefix_pool parallelly', async (t) => {
     const queriedIPs = (await queryIPs(poolId, count)).sort();
     t.deepEqual(queriedIPs, createdIPs);
     t.equal(queriedIPs.length, count);
+
+    await cleanup()
     t.end();
 });
 
@@ -150,5 +158,7 @@ test('ipv4_pool parallelly', async (t) => {
     const queriedIPs = (await queryIPs(poolId, count)).sort();
     t.deepEqual(queriedIPs, createdIPs);
     t.equal(queriedIPs.length, count);
+
+    await cleanup()
     t.end();
 });

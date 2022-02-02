@@ -1,11 +1,23 @@
 import {
     claimResource,
-    createSingletonPool, createTag, deleteResourcePool,
-    findResourceTypeId, createSetPool, createResourceType,
-    freeResource, claimResourceWithAltId, queryResourceByAltId,
-    getResourcesForPool, searchPoolsByTags, tagPool, getCapacityForPool, getResourcePool
+    createSingletonPool,
+    createTag,
+    deleteResourcePool,
+    findResourceTypeId,
+    createSetPool,
+    createResourceType,
+    freeResource,
+    claimResourceWithAltId,
+    queryResourceByAltId,
+    getResourcesForPool,
+    searchPoolsByTags,
+    tagPool,
+    getCapacityForPool,
+    getResourcePool,
+    getResourcePoolsByDatetimeRange
 } from "../graphql-queries.js";
 import {
+    cleanup,
     createIpv4PrefixRootPool,
     createIpv4RootPool,
     createIpv6PrefixRootPool,
@@ -33,6 +45,8 @@ test('singleton claim and free resource', async (t) => {
 
     rs = await getResourcesForPool(poolId);
     t.equal(rs.length, 0);
+
+    await cleanup()
     t.end();
 });
 
@@ -61,6 +75,41 @@ test('create and delete singleton pool', async (t) => {
     await deleteResourcePool(poolId);
     foundPool = await searchPoolsByTags({matchesAny: [{matchesAll: [tagText]}]});
     t.equal(foundPool.length, 0);
+
+    await cleanup()
+    t.end();
+});
+
+test('get pools by range of datetime', async (t) => {
+    const poolId = await createIpv4RootPool('192.168.3.0', 16);
+
+    await claimResource(poolId, {});
+    await claimResource(poolId, {});
+
+    let today = new Date().toISOString().slice(0, 13);
+    today = today.replace("T", "-");
+    let pools = await getResourcePoolsByDatetimeRange(today, "");
+    //from today 00:00 to current moment expected 1 pool and 2 resources
+    t.equal(pools.length, 1);
+    t.equal(pools[0].Resources.length, 2)
+
+    let tomorrow = new Date()
+    tomorrow.setDate(new Date().getDate() + 1)
+    tomorrow = tomorrow.toISOString().slice(0,13)
+    tomorrow = tomorrow.replace("T", "-");
+    pools = await getResourcePoolsByDatetimeRange(today, tomorrow);
+    //from today 00:00 to tomorrow expected 1 pool and 2 resources
+    t.equal(pools.length, 1);
+    t.equal(pools[0].Resources.length, 2);
+
+    let yesterday = new Date()
+    yesterday.setDate(new Date().getDate() - 1)
+    yesterday = yesterday.toISOString().slice(0,13)
+    yesterday = yesterday.replace("T", "-");
+    pools = await getResourcePoolsByDatetimeRange(yesterday, today);
+    t.equal(pools.length, 0);
+
+    await cleanup()
     t.end();
 });
 
@@ -77,6 +126,8 @@ test('create and delete resources in set pool', async (t) => {
     await freeResource(poolId, resource.Properties)
     rs = await getResourcesForPool(poolId);
     t.equal(rs.length, 0);
+
+    await cleanup()
     t.end();
 });
 
@@ -111,6 +162,8 @@ test('capacity for allocating vlan-range pool', async (t) => {
     const capacity = await getCapacityForPool(poolId);
     t.equal(capacity.utilizedCapacity, 5);
     t.equal(capacity.freeCapacity, 4091);
+
+    await cleanup()
     t.end();
 });
 
@@ -124,6 +177,8 @@ test('capacity for allocating vlan pool', async (t) => {
     const capacity = await getCapacityForPool(poolId);
     t.equal(capacity.utilizedCapacity, 3);
     t.equal(capacity.freeCapacity, 4093);
+
+    await cleanup()
     t.end();
 });
 
@@ -138,6 +193,8 @@ test('capacity for allocating ipv6-prefix pool', async (t) => {
     const capacity = await getCapacityForPool(poolId);
     t.equal(capacity.utilizedCapacity, 16);
     t.equal(capacity.freeCapacity, 240);
+
+    await cleanup()
     t.end();
 });
 
@@ -152,6 +209,8 @@ test('capacity for allocating ipv6 pool', async (t) => {
     const capacity = await getCapacityForPool(poolId);
     t.equal(capacity.utilizedCapacity, 4);
     t.equal(capacity.freeCapacity, 5.192296858534828e+33);
+
+    await cleanup()
     t.end();
 });
 
@@ -164,6 +223,8 @@ test('capacity for allocating ipv4 pool', async (t) => {
     const capacity = await getCapacityForPool(poolId);
     t.equal(capacity.utilizedCapacity, 2);
     t.equal(capacity.freeCapacity, 65532);
+
+    await cleanup()
     t.end();
 });
 
@@ -176,6 +237,8 @@ test('capacity for random pool', async (t) => {
     const capacity = await getCapacityForPool(poolId);
     t.equal(capacity.utilizedCapacity, 2);
     t.equal(capacity.freeCapacity, 997);
+
+    await cleanup()
     t.end();
 });
 
@@ -188,6 +251,8 @@ test('capacity for allocating ipv4-prefix pool', async (t) => {
     const capacity = await getCapacityForPool(poolId);
     t.equal(capacity.utilizedCapacity, 4);
     t.equal(capacity.freeCapacity, 16777210);
+
+    await cleanup()
     t.end();
 });
 
@@ -201,6 +266,8 @@ test('capacity for allocating RD pool', async (t) => {
     const capacity = await getCapacityForPool(rdPoolId);
     t.equal(capacity.utilizedCapacity, 3);
     t.equal(capacity.freeCapacity, 281474976710656);
+
+    await cleanup()
     t.end();
 });
 
@@ -219,6 +286,8 @@ test('capacity for set pool', async (t) => {
     const capacity = await getCapacityForPool(poolId);
     t.equal(capacity.utilizedCapacity, 3);
     t.equal(capacity.freeCapacity, 1);
+
+    await cleanup()
     t.end();
 });
 
@@ -235,6 +304,8 @@ test('capacity for singleton pool', async (t) => {
     const capacity = await getCapacityForPool(poolId);
     t.equal(capacity.utilizedCapacity, 1);
     t.equal(capacity.freeCapacity, 0);
+
+    await cleanup()
     t.end();
 });
 
@@ -276,6 +347,8 @@ test('pagination of allocated resources in vlan-pool', async (t) => {
     t.equal(pool.allocatedResources.edges.length, 1);
     t.equal(resourceIds[0], pool.allocatedResources.edges[0].node.id);
     t.notOk(pool.allocatedResources.pageInfo.hasPreviousPage);
+
+    await cleanup()
     t.end();
 });
 
@@ -300,6 +373,8 @@ test('allocation pool test alternative ID', async (t) => {
     //test string-and-number comparison
     res = await queryResourceByAltId(poolId, altId2);
     t.equal(res.Properties.vlan, 2);
+
+    await cleanup()
     t.end();
 });
 
@@ -320,5 +395,6 @@ test('set pool test alternative ID', async (t) => {
     let duplicate = await claimResourceWithAltId(poolId, {}, altId, null, true);
     t.notOk(duplicate);
 
+    await cleanup()
     t.end();
 });

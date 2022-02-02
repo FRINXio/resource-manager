@@ -123,6 +123,15 @@ export async function getResourcePool(poolId, before, after, first, last) {
                            id
                        }
                    }
+                    Resources{
+                        id
+                        Properties
+                        NestedPool {
+                            id
+                            Name
+                            PoolType
+                        }
+                    }
                 }
             }
         `,
@@ -135,6 +144,43 @@ export async function getResourcePool(poolId, before, after, first, last) {
         }
     })
     .then(result => result.data.QueryResourcePool)
+    .catch(error => console.log(error));
+}
+
+export async function getResourcePoolsByDatetimeRange(fromDatetime, toDatetime) {
+    return client.query({
+        query: gql`
+            query getRecentlyActiveResourcePools($fromDatetime: String!, $toDatetime: String) {
+                QueryRecentlyActiveResourcePools(fromDatetime:$fromDatetime, toDatetime:$toDatetime) {
+                    id
+                    Name
+                    AllocationStrategy {
+                        id
+                        Name
+                        Description
+                    }
+                    ResourceType {
+                        id
+                        Name
+                    }
+                    Resources{
+                        id
+                        Properties
+                        NestedPool {
+                            id
+                            Name
+                            PoolType
+                        }
+                    }
+                }
+            }
+        `,
+        variables: {
+            fromDatetime: fromDatetime,
+            toDatetime: toDatetime,
+        }
+    })
+    .then(result => result.data.QueryRecentlyActiveResourcePools)
     .catch(error => console.log(error));
 }
 
@@ -687,3 +733,78 @@ export async function freeResource(poolId, propInput){
     .then(result => result.data.FreeResource)
     .catch(error => console.log(error));
 }
+
+export async function getLeafPools(resourceTypeId, tags) {
+    return client.query({
+        query: gql`
+            query QueryLeafResourcePools($resourceTypeId: ID, $tags: TagOr) {
+                QueryLeafResourcePools(resourceTypeId: $resourceTypeId, tags: $tags) {
+                    id
+                    Name
+                    AllocationStrategy {
+                        id
+                        Name
+                        Description
+                    }
+                    ResourceType {
+                        id
+                        Name
+                    }
+                    Resources{
+                        id
+                        Properties
+                        NestedPool {
+                            id
+                            Name
+                            PoolType
+                        }
+                    }
+                }
+            }
+        `,
+        variables: {
+            resourceTypeId: resourceTypeId,
+            tags: tags
+        }
+    })
+    .then(result => result.data.QueryLeafResourcePools)
+    .catch(error => console.log(error));
+}
+
+export async function getAllPoolsByTypeOrTag(resourceTypeId, tags) {
+    return client.query({
+        query: gql`
+            query QueryResourcePools($resourceTypeId: ID, $tags: TagOr) {
+                QueryResourcePools(resourceTypeId: $resourceTypeId, tags: $tags) {
+                    id
+                    Name
+                    AllocationStrategy {
+                        id
+                        Name
+                        Description
+                    }
+                    ResourceType {
+                        id
+                        Name
+                    }
+                    Resources{
+                        id
+                        Properties
+                        NestedPool {
+                            id
+                            Name
+                            PoolType
+                        }
+                    }
+                }
+            }
+        `,
+        variables: {
+            resourceTypeId: resourceTypeId,
+            tags: tags
+        }
+    })
+    .then(result => result.data.QueryResourcePools)
+    .catch(error => console.log(error));
+}
+
