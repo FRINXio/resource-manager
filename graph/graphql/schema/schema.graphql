@@ -126,6 +126,7 @@ type Resource implements Node
     NestedPool: ResourcePool
     ParentPool: ResourcePool!
     Properties: Map!
+    AlternativeId: Map!
     id: ID!
 }
 

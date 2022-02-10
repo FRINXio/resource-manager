@@ -184,11 +184,12 @@ type ComplexityRoot struct {
 	}
 
 	Resource struct {
-		Description func(childComplexity int) int
-		ID          func(childComplexity int) int
-		NestedPool  func(childComplexity int) int
-		ParentPool  func(childComplexity int) int
-		Properties  func(childComplexity int) int
+		AlternativeID func(childComplexity int) int
+		Description   func(childComplexity int) int
+		ID            func(childComplexity int) int
+		NestedPool    func(childComplexity int) int
+		ParentPool    func(childComplexity int) int
+		Properties    func(childComplexity int) int
 	}
 
 	ResourceConnection struct {
@@ -298,6 +299,7 @@ type ResourceResolver interface {
 	NestedPool(ctx context.Context, obj *ent.Resource) (*ent.ResourcePool, error)
 	ParentPool(ctx context.Context, obj *ent.Resource) (*ent.ResourcePool, error)
 	Properties(ctx context.Context, obj *ent.Resource) (map[string]interface{}, error)
+	AlternativeID(ctx context.Context, obj *ent.Resource) (map[string]interface{}, error)
 }
 type ResourcePoolResolver interface {
 	AllocationStrategy(ctx context.Context, obj *ent.ResourcePool) (*ent.AllocationStrategy, error)
@@ -1004,6 +1006,13 @@ func (e *executableSchema) Complexity(typeName, field string, childComplexity in
 
 		return e.complexity.Query.SearchPoolsByTags(childComplexity, args["tags"].(*model.TagOr)), true
 
+	case "Resource.AlternativeId":
+		if e.complexity.Resource.AlternativeID == nil {
+			break
+		}
+
+		return e.complexity.Resource.AlternativeID(childComplexity), true
+
 	case "Resource.Description":
 		if e.complexity.Resource.Description == nil {
 			break
@@ -1425,6 +1434,7 @@ type Resource implements Node
     NestedPool: ResourcePool
     ParentPool: ResourcePool!
     Properties: Map!
+    AlternativeId: Map!
     id: ID!
 }
 
@@ -5498,6 +5508,41 @@ func (ec *executionContext) _Resource_Properties(ctx context.Context, field grap
 	return ec.marshalNMap2map(ctx, field.Selections, res)
 }
 
+func (ec *executionContext) _Resource_AlternativeId(ctx context.Context, field graphql.CollectedField, obj *ent.Resource) (ret graphql.Marshaler) {
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	fc := &graphql.FieldContext{
+		Object:     "Resource",
+		Field:      field,
+		Args:       nil,
+		IsMethod:   true,
+		IsResolver: true,
+	}
+
+	ctx = graphql.WithFieldContext(ctx, fc)
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return ec.resolvers.Resource().AlternativeID(rctx, obj)
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(map[string]interface{})
+	fc.Result = res
+	return ec.marshalNMap2map(ctx, field.Selections, res)
+}
+
 func (ec *executionContext) _Resource_id(ctx context.Context, field graphql.CollectedField, obj *ent.Resource) (ret graphql.Marshaler) {
 	defer func() {
 		if r := recover(); r != nil {
@@ -9354,6 +9399,20 @@ func (ec *executionContext) _Resource(ctx context.Context, sel ast.SelectionSet,
 					}
 				}()
 				res = ec._Resource_Properties(ctx, field, obj)
+				if res == graphql.Null {
+					atomic.AddUint32(&invalids, 1)
+				}
+				return res
+			})
+		case "AlternativeId":
+			field := field
+			out.Concurrently(i, func() (res graphql.Marshaler) {
+				defer func() {
+					if r := recover(); r != nil {
+						ec.Error(ctx, ec.Recover(ctx, r))
+					}
+				}()
+				res = ec._Resource_AlternativeId(ctx, field, obj)
 				if res == graphql.Null {
 					atomic.AddUint32(&invalids, 1)
 				}
