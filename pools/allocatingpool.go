@@ -56,7 +56,7 @@ func DeletePoolProperties(ctx context.Context, client *ent.Client, poolId int) e
 	return nil
 }
 
-func CreatePoolProperties(ctx context.Context, client *ent.Client, pp []map[string]interface{},resPropertyType *ent.ResourceType ) (*ent.PoolProperties, error) {
+func CreatePoolProperties(ctx context.Context, client *ent.Client, pp []map[string]interface{}, resPropertyType *ent.ResourceType) (*ent.PoolProperties, error) {
 	var propTypes = ToRawTypes(pp)
 
 	//this loops only once
@@ -183,7 +183,7 @@ func (pool AllocatingPool) Capacity() (float64, float64, error) {
 
 	if err1 != nil {
 		log.Error(pool.ctx, err, "Unable to load resources for pool %d", pool.ID)
-		return 0,0, errors.Wrapf(err1,
+		return 0, 0, errors.Wrapf(err1,
 			"Unable to load resources for pool %d, resource loading error", pool.ID)
 	}
 
@@ -191,7 +191,7 @@ func (pool AllocatingPool) Capacity() (float64, float64, error) {
 
 	if err != nil {
 		log.Error(pool.ctx, err, "Unable to load resources for pool %d", pool.ID)
-		return 0,0, errors.Wrapf(err,
+		return 0, 0, errors.Wrapf(err,
 			"Unable to get properties from pool #%d, resource type loading error ", pool.ID)
 	}
 
@@ -199,18 +199,18 @@ func (pool AllocatingPool) Capacity() (float64, float64, error) {
 
 	if propErr != nil {
 		log.Error(pool.ctx, propErr, "Unable to convert value from property")
-		return 0,0, errors.Wrapf(propErr, "Unable to convert value from property")
+		return 0, 0, errors.Wrapf(propErr, "Unable to convert value from property")
 	}
 
 	var emptyMap = map[string]interface{}{}
-	result, _ , err := InvokeAllocationStrategy(
+	result, _, err := InvokeAllocationStrategy(
 		pool.invoker, strat, emptyMap, model.ResourcePoolInput{
 			PoolProperties:   emptyMap,
 			ResourcePoolName: pool.Name,
 		}, currentResources, propMap, "capacity()")
 	if err != nil || result == nil {
 		log.Error(pool.ctx, err, "Invoking allocation strategy failed")
-		return 0,0, errors.Wrapf(err,
+		return 0, 0, errors.Wrapf(err,
 			"Unable to compute capacity pool #%d, allocation strategy \"%s\" failed", pool.ID, strat.Name)
 	}
 
@@ -230,14 +230,6 @@ func (pool AllocatingPool) Capacity() (float64, float64, error) {
 
 // ClaimResource allocates the next available resource
 func (pool AllocatingPool) ClaimResource(userInput map[string]interface{}, description *string, alternativeId map[string]interface{}) (*ent.Resource, error) {
-
-	if alternativeId != nil {
-		res, err := pool.QueryResourceByAltId(alternativeId)
-		if res != nil {
-			return nil, errors.Wrapf(err,
-				"Unable to claim resource from allocation pool #%d, because resource with alternative ID %v already exists", pool.ID, alternativeId)
-		}
-	}
 
 	strat, err := pool.AllocationStrategy()
 	if err != nil {
@@ -320,7 +312,7 @@ func (pool AllocatingPool) ClaimResource(userInput map[string]interface{}, descr
 		}
 		if len(created) > 1 {
 			// TODO this seems serious, shouldn't we delete those resources or something more than log it?
-			log.Error(pool.ctx, err, "Unexpected error creating resource in pool %d" +
+			log.Error(pool.ctx, err, "Unexpected error creating resource in pool %d"+
 				" multiple resources created (count: %d)", pool.ID, len(created))
 			return nil, errors.Errorf(
 				"Unexpected error creating resource in pool #%d, properties \"%s\" . "+
@@ -376,7 +368,7 @@ func convertProperties(ps []*ent.Property) (map[string]interface{}, error) {
 	return result, nil
 }
 
-func  (pool AllocatingPool) loadClaimedResources() ([]*model.ResourceInput, error) {
+func (pool AllocatingPool) loadClaimedResources() ([]*model.ResourceInput, error) {
 	var currentResources []*model.ResourceInput
 	claimedResources, err := pool.findResources().WithProperties(
 		func(propertyQuery *ent.PropertyQuery) { propertyQuery.WithType() }).All(pool.ctx)
