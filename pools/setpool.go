@@ -103,6 +103,14 @@ func (pool SetPool) Destroy() error {
 // ClaimResource allocates the next available resource
 func (pool SetPool) ClaimResource(userInput map[string]interface{}, description *string, alternativeId map[string]interface{}) (*ent.Resource, error) {
 
+	if alternativeId != nil {
+		res, err := pool.QueryResourceByAltId(alternativeId)
+		if res != nil {
+			return nil, errors.Wrapf(err,
+				"Unable to claim resource from set pool #%d, because resource with alternative ID %v already exists", pool.ID, alternativeId)
+		}
+	}
+
 	// Allocate new resource for this tag
 	unclaimedRes, err := pool.queryUnclaimedResourceEager()
 	if err != nil {
@@ -177,7 +185,7 @@ func (pool SetPool) freeResourceInner(raw RawResourceProps,
 	// Make sure there are no nested pools attached
 	if nestedPool, err := res.QueryNestedPool().First(pool.ctx); err != nil && !ent.IsNotFound(err) {
 		log.Error(pool.ctx, err, "Unable to free a resource in pool ID %d", pool.ID)
-		return errors.Wrapf(err, "Unable to free a resource in pool \"%s\". "+
+		return errors.Wrapf(err, "Unable to free a resource in pool \"%s\". " +
 			"Unable to check nested pools", pool.Name)
 	} else if nestedPool != nil {
 		err := errors.Errorf("Unable to free a resource in pool \"%s\". "+
@@ -245,7 +253,7 @@ func (pool SetPool) QueryResource(raw RawResourceProps) (*ent.Resource, error) {
 		Only(pool.ctx)
 
 	if err2 != nil {
-		log.Error(pool.ctx, err, "Unable retrieve resources for pool ID %d", pool.ID)
+		log.Error(pool.ctx, err,  "Unable retrieve resources for pool ID %d", pool.ID)
 	}
 
 	return only, err2
@@ -288,7 +296,7 @@ func (pool SetPool) QueryResources() (ent.Resources, error) {
 		All(pool.ctx)
 
 	if err != nil {
-		log.Error(pool.ctx, err, "Unable retrieve resources for pool ID %d", pool.ID)
+		log.Error(pool.ctx, err,  "Unable retrieve resources for pool ID %d", pool.ID)
 	}
 
 	return res, err

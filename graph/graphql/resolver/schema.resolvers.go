@@ -795,10 +795,6 @@ func (r *resourceResolver) Properties(ctx context.Context, obj *ent.Resource) (m
 	}
 }
 
-func (r *resourceResolver) AlternativeID(ctx context.Context, obj *ent.Resource) (map[string]interface{}, error) {
-	return obj.AlternateID, nil
-}
-
 func (r *resourcePoolResolver) AllocationStrategy(ctx context.Context, obj *ent.ResourcePool) (*ent.AllocationStrategy, error) {
 	if obj.PoolType != resourcePool.PoolTypeAllocating {
 		log.Warn(ctx, "Pool with ID %d does not have an allocation strategy", obj.ID)

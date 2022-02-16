@@ -44,7 +44,15 @@ func NewSingletonPoolWithMeta(
 }
 
 func (pool SingletonPool) ClaimResource(userInput map[string]interface{}, description *string,
-	alternativeId map[string]interface{}) (*ent.Resource, error) {
+				alternativeId map[string]interface{}) (*ent.Resource, error) {
+
+	if alternativeId != nil {
+		res, err := pool.QueryResourceByAltId(alternativeId)
+		if res != nil {
+			return nil, errors.Wrapf(err,
+				"Unable to claim resource from singleton pool #%d, because resource with alternative ID %v already exists", pool.ID, alternativeId)
+		}
+	}
 
 	_, err := pool.client.Resource.Update().
 		SetStatus(resource.StatusClaimed).
@@ -102,7 +110,7 @@ func (pool SingletonPool) QueryResources() (ent.Resources, error) {
 			resource.StatusIn(resource.StatusBench, resource.StatusClaimed))).All(pool.ctx)
 
 	if err != nil {
-		log.Error(pool.ctx, err, "Unable retrieve resources for pool ID %d", pool.ID)
+		log.Error(pool.ctx, err,  "Unable retrieve resources for pool ID %d", pool.ID)
 	}
 
 	return all, err
@@ -117,7 +125,7 @@ func (pool SingletonPool) Destroy() error {
 	}
 
 	if len(claims) > 0 {
-		log.Warn(pool.ctx, "Unable to delete pool ID %d there are claimed resources", pool.ID)
+		log.Warn(pool.ctx,  "Unable to delete pool ID %d there are claimed resources", pool.ID)
 		return errors.Errorf("Unable to destroy pool \"%s\", there are claimed resources",
 			pool.Name)
 	}

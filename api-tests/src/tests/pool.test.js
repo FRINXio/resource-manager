@@ -391,8 +391,9 @@ test('set pool test alternative ID', async (t) => {
     let res = await queryResourceByAltId(poolId, altId);
     t.equal(res.Properties.avalue, 1)
 
+    //don't allow duplicate alternative IDs
     let duplicate = await claimResourceWithAltId(poolId, {}, altId, null, true);
-    t.ok(duplicate);
+    t.notOk(duplicate);
 
     await cleanup()
     t.end();
