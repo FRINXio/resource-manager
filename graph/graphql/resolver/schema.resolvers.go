@@ -456,6 +456,31 @@ func (r *mutationResolver) UpdateResourceTypeName(ctx context.Context, input mod
 	}
 }
 
+func (r *mutationResolver) UpdateResourceAltID(ctx context.Context, input map[string]interface{}, poolID int, alternativeID map[string]interface{}) (*model.UpdateResourceAltID, error) {
+	pool, err := p.ExistingPoolFromId(ctx, r.ClientFrom(ctx), poolID)
+	if err != nil {
+		return nil, gqlerror.Errorf("Unable to retrieve pool: %v", err)
+	}
+	queryResource, err := pool.QueryResource(input)
+	if err != nil {
+		return nil, gqlerror.Errorf("Unable to query Resource: %v", err)
+	}
+	var client = r.ClientFrom(ctx)
+	retValue := &model.UpdateResourceAltID{AlternativeID: alternativeID, Resource: input}
+	for k, _ := range queryResource.AlternateID {
+		for k2, v2 := range alternativeID {
+			if k == k2 {
+				queryResource.AlternateID[k] = v2
+			}
+		}
+	}
+	if _, err := client.Resource.UpdateOne(queryResource).SetAlternateID(queryResource.AlternateID).Save(ctx); err != nil {
+		log.Error(ctx, err, "Unable to update queryResource alternative ID %v", alternativeID)
+		return retValue, gqlerror.Errorf("Unable to update queryResource type: %v", err)
+	}
+	return retValue, nil
+}
+
 func (r *outputCursorResolver) ID(ctx context.Context, obj *ent.Cursor) (string, error) {
 	//this will never be called because ent.Cursor will use its msgpack annotation
 	return "", nil

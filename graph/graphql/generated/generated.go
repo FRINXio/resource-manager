@@ -133,6 +133,7 @@ type ComplexityRoot struct {
 		TagPool                    func(childComplexity int, input model.TagPoolInput) int
 		TestAllocationStrategy     func(childComplexity int, allocationStrategyID int, resourcePool model.ResourcePoolInput, currentResources []*model.ResourceInput, userInput map[string]interface{}) int
 		UntagPool                  func(childComplexity int, input model.UntagPoolInput) int
+		UpdateResourceAltID        func(childComplexity int, input map[string]interface{}, poolID int, alternativeID map[string]interface{}) int
 		UpdateResourceTypeName     func(childComplexity int, input model.UpdateResourceTypeNameInput) int
 		UpdateTag                  func(childComplexity int, input model.UpdateTagInput) int
 	}
@@ -238,6 +239,11 @@ type ComplexityRoot struct {
 		Tag func(childComplexity int) int
 	}
 
+	UpdateResourceAltID struct {
+		AlternativeID func(childComplexity int) int
+		Resource      func(childComplexity int) int
+	}
+
 	UpdateResourceTypeNamePayload struct {
 		ResourceTypeID func(childComplexity int) int
 	}
@@ -269,6 +275,7 @@ type MutationResolver interface {
 	CreateResourceType(ctx context.Context, input model.CreateResourceTypeInput) (*model.CreateResourceTypePayload, error)
 	DeleteResourceType(ctx context.Context, input model.DeleteResourceTypeInput) (*model.DeleteResourceTypePayload, error)
 	UpdateResourceTypeName(ctx context.Context, input model.UpdateResourceTypeNameInput) (*model.UpdateResourceTypeNamePayload, error)
+	UpdateResourceAltID(ctx context.Context, input map[string]interface{}, poolID int, alternativeID map[string]interface{}) (*model.UpdateResourceAltID, error)
 }
 type OutputCursorResolver interface {
 	ID(ctx context.Context, obj *ent.Cursor) (string, error)
@@ -689,6 +696,18 @@ func (e *executableSchema) Complexity(typeName, field string, childComplexity in
 		}
 
 		return e.complexity.Mutation.UntagPool(childComplexity, args["input"].(model.UntagPoolInput)), true
+
+	case "Mutation.UpdateResourceAltId":
+		if e.complexity.Mutation.UpdateResourceAltID == nil {
+			break
+		}
+
+		args, err := ec.field_Mutation_UpdateResourceAltId_args(context.TODO(), rawArgs)
+		if err != nil {
+			return 0, false
+		}
+
+		return e.complexity.Mutation.UpdateResourceAltID(childComplexity, args["input"].(map[string]interface{}), args["poolId"].(int), args["alternativeId"].(map[string]interface{})), true
 
 	case "Mutation.UpdateResourceTypeName":
 		if e.complexity.Mutation.UpdateResourceTypeName == nil {
@@ -1227,6 +1246,20 @@ func (e *executableSchema) Complexity(typeName, field string, childComplexity in
 		}
 
 		return e.complexity.UntagPoolPayload.Tag(childComplexity), true
+
+	case "UpdateResourceAltId.AlternativeId":
+		if e.complexity.UpdateResourceAltID.AlternativeID == nil {
+			break
+		}
+
+		return e.complexity.UpdateResourceAltID.AlternativeID(childComplexity), true
+
+	case "UpdateResourceAltId.Resource":
+		if e.complexity.UpdateResourceAltID.Resource == nil {
+			break
+		}
+
+		return e.complexity.UpdateResourceAltID.Resource(childComplexity), true
 
 	case "UpdateResourceTypeNamePayload.resourceTypeId":
 		if e.complexity.UpdateResourceTypeNamePayload.ResourceTypeID == nil {
@@ -1822,6 +1855,14 @@ type UpdateResourceTypeNamePayload {
     resourceTypeId: ID!
 }
 
+"""
+Output of updating the alternative id of a resource
+"""
+type UpdateResourceAltId {
+    AlternativeId: Map!
+    Resource: Map!
+}
+
 type Mutation {
     # Tagging
     CreateTag(input: CreateTagInput!): CreateTagPayload!
@@ -1855,6 +1896,9 @@ type Mutation {
     DeleteResourceType(input: DeleteResourceTypeInput!): DeleteResourceTypePayload!
     ## it only changes the name of the resource type
     UpdateResourceTypeName(input: UpdateResourceTypeNameInput!): UpdateResourceTypeNamePayload!
+
+    # update resource alternative id
+    UpdateResourceAltId(input: Map!, poolId: ID!, alternativeId: Map!): UpdateResourceAltId!
 }
 `, BuiltIn: false},
 }
@@ -2227,6 +2271,39 @@ func (ec *executionContext) field_Mutation_UntagPool_args(ctx context.Context, r
 		}
 	}
 	args["input"] = arg0
+	return args, nil
+}
+
+func (ec *executionContext) field_Mutation_UpdateResourceAltId_args(ctx context.Context, rawArgs map[string]interface{}) (map[string]interface{}, error) {
+	var err error
+	args := map[string]interface{}{}
+	var arg0 map[string]interface{}
+	if tmp, ok := rawArgs["input"]; ok {
+		ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("input"))
+		arg0, err = ec.unmarshalNMap2map(ctx, tmp)
+		if err != nil {
+			return nil, err
+		}
+	}
+	args["input"] = arg0
+	var arg1 int
+	if tmp, ok := rawArgs["poolId"]; ok {
+		ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("poolId"))
+		arg1, err = ec.unmarshalNID2int(ctx, tmp)
+		if err != nil {
+			return nil, err
+		}
+	}
+	args["poolId"] = arg1
+	var arg2 map[string]interface{}
+	if tmp, ok := rawArgs["alternativeId"]; ok {
+		ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("alternativeId"))
+		arg2, err = ec.unmarshalNMap2map(ctx, tmp)
+		if err != nil {
+			return nil, err
+		}
+	}
+	args["alternativeId"] = arg2
 	return args, nil
 }
 
@@ -4114,6 +4191,48 @@ func (ec *executionContext) _Mutation_UpdateResourceTypeName(ctx context.Context
 	res := resTmp.(*model.UpdateResourceTypeNamePayload)
 	fc.Result = res
 	return ec.marshalNUpdateResourceTypeNamePayload2ᚖgithubᚗcomᚋnetᚑautoᚋresourceManagerᚋgraphᚋgraphqlᚋmodelᚐUpdateResourceTypeNamePayload(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) _Mutation_UpdateResourceAltId(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	fc := &graphql.FieldContext{
+		Object:     "Mutation",
+		Field:      field,
+		Args:       nil,
+		IsMethod:   true,
+		IsResolver: true,
+	}
+
+	ctx = graphql.WithFieldContext(ctx, fc)
+	rawArgs := field.ArgumentMap(ec.Variables)
+	args, err := ec.field_Mutation_UpdateResourceAltId_args(ctx, rawArgs)
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	fc.Args = args
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return ec.resolvers.Mutation().UpdateResourceAltID(rctx, args["input"].(map[string]interface{}), args["poolId"].(int), args["alternativeId"].(map[string]interface{}))
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(*model.UpdateResourceAltID)
+	fc.Result = res
+	return ec.marshalNUpdateResourceAltId2ᚖgithubᚗcomᚋnetᚑautoᚋresourceManagerᚋgraphᚋgraphqlᚋmodelᚐUpdateResourceAltID(ctx, field.Selections, res)
 }
 
 func (ec *executionContext) _OutputCursor_ID(ctx context.Context, field graphql.CollectedField, obj *ent.Cursor) (ret graphql.Marshaler) {
@@ -6437,6 +6556,76 @@ func (ec *executionContext) _UntagPoolPayload_tag(ctx context.Context, field gra
 	res := resTmp.(*ent.Tag)
 	fc.Result = res
 	return ec.marshalOTag2ᚖgithubᚗcomᚋnetᚑautoᚋresourceManagerᚋentᚐTag(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) _UpdateResourceAltId_AlternativeId(ctx context.Context, field graphql.CollectedField, obj *model.UpdateResourceAltID) (ret graphql.Marshaler) {
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	fc := &graphql.FieldContext{
+		Object:     "UpdateResourceAltId",
+		Field:      field,
+		Args:       nil,
+		IsMethod:   false,
+		IsResolver: false,
+	}
+
+	ctx = graphql.WithFieldContext(ctx, fc)
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.AlternativeID, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(map[string]interface{})
+	fc.Result = res
+	return ec.marshalNMap2map(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) _UpdateResourceAltId_Resource(ctx context.Context, field graphql.CollectedField, obj *model.UpdateResourceAltID) (ret graphql.Marshaler) {
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	fc := &graphql.FieldContext{
+		Object:     "UpdateResourceAltId",
+		Field:      field,
+		Args:       nil,
+		IsMethod:   false,
+		IsResolver: false,
+	}
+
+	ctx = graphql.WithFieldContext(ctx, fc)
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.Resource, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(map[string]interface{})
+	fc.Result = res
+	return ec.marshalNMap2map(ctx, field.Selections, res)
 }
 
 func (ec *executionContext) _UpdateResourceTypeNamePayload_resourceTypeId(ctx context.Context, field graphql.CollectedField, obj *model.UpdateResourceTypeNamePayload) (ret graphql.Marshaler) {
@@ -8900,6 +9089,11 @@ func (ec *executionContext) _Mutation(ctx context.Context, sel ast.SelectionSet)
 			if out.Values[i] == graphql.Null {
 				invalids++
 			}
+		case "UpdateResourceAltId":
+			out.Values[i] = ec._Mutation_UpdateResourceAltId(ctx, field)
+			if out.Values[i] == graphql.Null {
+				invalids++
+			}
 		default:
 			panic("unknown field " + strconv.Quote(field.Name))
 		}
@@ -9780,6 +9974,38 @@ func (ec *executionContext) _UntagPoolPayload(ctx context.Context, sel ast.Selec
 			out.Values[i] = graphql.MarshalString("UntagPoolPayload")
 		case "tag":
 			out.Values[i] = ec._UntagPoolPayload_tag(ctx, field, obj)
+		default:
+			panic("unknown field " + strconv.Quote(field.Name))
+		}
+	}
+	out.Dispatch()
+	if invalids > 0 {
+		return graphql.Null
+	}
+	return out
+}
+
+var updateResourceAltIdImplementors = []string{"UpdateResourceAltId"}
+
+func (ec *executionContext) _UpdateResourceAltId(ctx context.Context, sel ast.SelectionSet, obj *model.UpdateResourceAltID) graphql.Marshaler {
+	fields := graphql.CollectFields(ec.OperationContext, sel, updateResourceAltIdImplementors)
+
+	out := graphql.NewFieldSet(fields)
+	var invalids uint32
+	for i, field := range fields {
+		switch field.Name {
+		case "__typename":
+			out.Values[i] = graphql.MarshalString("UpdateResourceAltId")
+		case "AlternativeId":
+			out.Values[i] = ec._UpdateResourceAltId_AlternativeId(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				invalids++
+			}
+		case "Resource":
+			out.Values[i] = ec._UpdateResourceAltId_Resource(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				invalids++
+			}
 		default:
 			panic("unknown field " + strconv.Quote(field.Name))
 		}
@@ -11101,6 +11327,20 @@ func (ec *executionContext) marshalNUntagPoolPayload2ᚖgithubᚗcomᚋnetᚑaut
 		return graphql.Null
 	}
 	return ec._UntagPoolPayload(ctx, sel, v)
+}
+
+func (ec *executionContext) marshalNUpdateResourceAltId2githubᚗcomᚋnetᚑautoᚋresourceManagerᚋgraphᚋgraphqlᚋmodelᚐUpdateResourceAltID(ctx context.Context, sel ast.SelectionSet, v model.UpdateResourceAltID) graphql.Marshaler {
+	return ec._UpdateResourceAltId(ctx, sel, &v)
+}
+
+func (ec *executionContext) marshalNUpdateResourceAltId2ᚖgithubᚗcomᚋnetᚑautoᚋresourceManagerᚋgraphᚋgraphqlᚋmodelᚐUpdateResourceAltID(ctx context.Context, sel ast.SelectionSet, v *model.UpdateResourceAltID) graphql.Marshaler {
+	if v == nil {
+		if !graphql.HasFieldError(ctx, graphql.GetFieldContext(ctx)) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	return ec._UpdateResourceAltId(ctx, sel, v)
 }
 
 func (ec *executionContext) unmarshalNUpdateResourceTypeNameInput2githubᚗcomᚋnetᚑautoᚋresourceManagerᚋgraphᚋgraphqlᚋmodelᚐUpdateResourceTypeNameInput(ctx context.Context, v interface{}) (model.UpdateResourceTypeNameInput, error) {

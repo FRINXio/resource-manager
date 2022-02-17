@@ -14,7 +14,8 @@ import {
     tagPool,
     getCapacityForPool,
     getResourcePool,
-    getResourcePoolsByDatetimeRange
+    getResourcePoolsByDatetimeRange,
+    updateResourceAltId
 } from "../graphql-queries.js";
 import {
     cleanup,
@@ -361,6 +362,17 @@ test('allocation pool test alternative ID', async (t) => {
 
     let altId2 = {vlanAltId: Math.floor(Math.random() * 100000), order: getUniqueName('third')};
     await claimResourceWithAltId(poolId, {}, altId2);
+
+    let altId3 = {vlanAltId: Math.floor(Math.random() * 100000), order: getUniqueName('third')};
+    let resource = await claimResourceWithAltId(poolId, {}, altId2);
+
+    await updateResourceAltId(poolId, resource.Properties, altId3)
+
+    let res3 = await queryResourceByAltId(poolId, altId3);
+
+    t.equal(res3.Properties.vlan, 3);
+    t.equal(res3.AlternativeId.vlanAltId, altId3.vlanAltId)
+    t.equal(res3.AlternativeId.order, altId3.order)
 
     //test nothing found
     let res = await queryResourceByAltId(poolId, {someKey: 'this does not exist :('});

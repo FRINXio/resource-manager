@@ -700,6 +700,7 @@ export async function queryResourceByAltId(poolId, params){
                     id
                     Properties
                     Description
+                    AlternativeId
                 }
             }
         `,
@@ -715,6 +716,25 @@ export async function queryResourceByAltId(poolId, params){
 
         return null;
     })
+    .catch(error => console.log(error));
+}
+
+export async function updateResourceAltId(poolId, input, alternativeId){
+    return client.mutate({
+        mutation: gql`
+            mutation UpdateResourceAltId($input: Map!, $poolId: ID!, $alternativeId: Map!) {
+                UpdateResourceAltId(input: $input, poolId: $poolId, alternativeId:$alternativeId) {
+                    AlternativeId
+                }
+            }
+        `,
+        variables: {
+            poolId: poolId,
+            input: input,
+            alternativeId: alternativeId
+        }
+    })
+    .then(result => result.data.UpdateResourceAltId)
     .catch(error => console.log(error));
 }
 

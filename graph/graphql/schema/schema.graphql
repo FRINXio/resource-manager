@@ -514,6 +514,14 @@ type UpdateResourceTypeNamePayload {
     resourceTypeId: ID!
 }
 
+"""
+Output of updating the alternative id of a resource
+"""
+type UpdateResourceAltId {
+    AlternativeId: Map!
+    Resource: Map!
+}
+
 type Mutation {
     # Tagging
     CreateTag(input: CreateTagInput!): CreateTagPayload!
@@ -547,4 +555,7 @@ type Mutation {
     DeleteResourceType(input: DeleteResourceTypeInput!): DeleteResourceTypePayload!
     ## it only changes the name of the resource type
     UpdateResourceTypeName(input: UpdateResourceTypeNameInput!): UpdateResourceTypeNamePayload!
+
+    # update resource alternative id
+    UpdateResourceAltId(input: Map!, poolId: ID!, alternativeId: Map!): UpdateResourceAltId!
 }
