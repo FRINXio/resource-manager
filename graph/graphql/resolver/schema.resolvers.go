@@ -7,6 +7,8 @@ import (
 	"context"
 	"time"
 
+	"github.com/facebook/ent/dialect/sql"
+	"github.com/facebook/ent/dialect/sql/sqljson"
 	"github.com/net-auto/resourceManager/ent"
 	"github.com/net-auto/resourceManager/ent/allocationstrategy"
 	"github.com/net-auto/resourceManager/ent/predicate"
@@ -509,20 +511,36 @@ func (r *queryResolver) QueryResources(ctx context.Context, poolID int) ([]*ent.
 	return pool.QueryResources()
 }
 
-func (r *queryResolver) QueryResourceByAltID(ctx context.Context, input map[string]interface{}, poolID int) (*ent.Resource, error) {
-	pool, err := p.ExistingPoolFromId(ctx, r.ClientFrom(ctx), poolID)
+func (r *queryResolver) QueryResourcesByAltID(ctx context.Context, input map[string]interface{}, poolID *int) ([]*ent.Resource, error) {
+	if poolID != nil {
+		pool, err := p.ExistingPoolFromId(ctx, r.ClientFrom(ctx), *poolID)
+		if err != nil {
+			return nil, gqlerror.Errorf("Unable to query resources: %v", err)
+		}
+		typeFixedAlternativeId, errFix := p.ConvertValuesToFloat64(ctx, input)
+		if errFix != nil {
+			return nil, gqlerror.Errorf("Unable to process input data", err)
+		}
+		return pool.QueryResourcesByAltId(typeFixedAlternativeId)
+	}
 
+	res, err := r.ClientFrom(ctx).Resource.Query().
+		Where(func(selector *sql.Selector) {
+			for k, v := range input {
+				selector.Where(sqljson.ValueEQ("alternate_id", v, sqljson.Path(k)))
+			}
+		}).All(ctx)
 	if err != nil {
+		log.Error(ctx, err, "Unable to retrieve resources with alternative ID %v", input)
 		return nil, gqlerror.Errorf("Unable to query resources: %v", err)
 	}
 
-	typeFixedAlternativeId, errFix := p.ConvertValuesToFloat64(ctx, input)
-
-	if errFix != nil {
-		return nil, gqlerror.Errorf("Unable to process input data", err)
+	if res != nil {
+		return res, nil
 	}
 
-	return pool.QueryResourceByAltId(typeFixedAlternativeId)
+	log.Warn(ctx, "There is not such resources with alternative ID %v", input)
+	return nil, gqlerror.Errorf("Unable to query resources: %v", err)
 }
 
 func (r *queryResolver) QueryAllocationStrategy(ctx context.Context, allocationStrategyID int) (*ent.AllocationStrategy, error) {

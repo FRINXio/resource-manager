@@ -8,13 +8,13 @@ import {
     createResourceType,
     freeResource,
     claimResourceWithAltId,
-    queryResourceByAltId,
+    queryResourcesByAltId,
     getResourcesForPool,
     searchPoolsByTags,
     tagPool,
     getCapacityForPool,
     getResourcePool,
-    getResourcePoolsByDatetimeRange
+    getResourcePoolsByDatetimeRange,
 } from "../graphql-queries.js";
 import {
     cleanup,
@@ -363,16 +363,16 @@ test('allocation pool test alternative ID', async (t) => {
     await claimResourceWithAltId(poolId, {}, altId2);
 
     //test nothing found
-    let res = await queryResourceByAltId(poolId, {someKey: 'this does not exist :('});
-    t.notOk(res);
+    let res = await queryResourcesByAltId(poolId, {someKey: 'this does not exist :('});
+    t.notOk(res[0]);
 
     //test string-only comparison
-    res = await queryResourceByAltId(poolId, altId);
-    t.equal(res.Properties.vlan, 1);
+    res = await queryResourcesByAltId(poolId, altId);
+    t.equal(res[0].Properties.vlan, 1);
 
     //test string-and-number comparison
-    res = await queryResourceByAltId(poolId, altId2);
-    t.equal(res.Properties.vlan, 2);
+    res = await queryResourcesByAltId(poolId, altId2);
+    t.equal(res[0].Properties.vlan, 2);
 
     await cleanup()
     t.end();
@@ -388,8 +388,8 @@ test('set pool test alternative ID', async (t) => {
     let altId = {id: getUniqueName('avalue1')};
 
     await claimResourceWithAltId(poolId, {}, altId);
-    let res = await queryResourceByAltId(poolId, altId);
-    t.equal(res.Properties.avalue, 1)
+    let res = await queryResourcesByAltId(poolId, altId);
+    t.equal(res[0].Properties.avalue, 1)
 
     let duplicate = await claimResourceWithAltId(poolId, {}, altId, null, true);
     t.ok(duplicate);
