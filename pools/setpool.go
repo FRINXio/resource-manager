@@ -294,14 +294,14 @@ func (pool SetPool) QueryResources() (ent.Resources, error) {
 	return res, err
 }
 
-// QueryResourceByAltId returns resource if alt Id matches
-func (pool SetPool) QueryResourceByAltId(alternativeId map[string]interface{}) (*ent.Resource, error) {
+// QueryResourcesByAltId returns resources if alt Id matches
+func (pool SetPool) QueryResourcesByAltId(alternativeId map[string]interface{}) ([]*ent.Resource, error) {
 	res, err := pool.client.Resource.Query().
 		Where(func(selector *sql.Selector) {
 			for k, v := range alternativeId {
 				selector.Where(sqljson.ValueEQ("alternate_id", v, sqljson.Path(k)))
 			}
-		}).First(pool.ctx)
+		}).All(pool.ctx)
 
 	if err != nil {
 		log.Error(pool.ctx, err, "Unable to retrieve resources in pool ID %d", pool.ID)
