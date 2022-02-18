@@ -547,4 +547,7 @@ type Mutation {
     DeleteResourceType(input: DeleteResourceTypeInput!): DeleteResourceTypePayload!
     ## it only changes the name of the resource type
     UpdateResourceTypeName(input: UpdateResourceTypeNameInput!): UpdateResourceTypeNamePayload!
+
+    # update resource alternative id
+    UpdateResourceAltId(input: Map!, poolId: ID!, alternativeId: Map!): Resource!
 }
