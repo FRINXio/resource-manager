@@ -341,7 +341,7 @@ type Query {
     QueryPoolTypes: [PoolType!]!
     QueryResource(input: Map!, poolId: ID!): Resource!
     QueryResources(poolId: ID!): [Resource!]!
-    QueryResourceByAltId(input: Map!, poolId: ID!): Resource!
+    QueryResourcesByAltId(input: Map!, poolId: ID): [Resource!]!
     QueryAllocationStrategy(allocationStrategyId: ID!): AllocationStrategy!
     QueryAllocationStrategies(byName: String): [AllocationStrategy!]!
     QueryResourceTypes(byName: String): [ResourceType!]!
@@ -514,14 +514,6 @@ type UpdateResourceTypeNamePayload {
     resourceTypeId: ID!
 }
 
-"""
-Output of updating the alternative id of a resource
-"""
-type UpdateResourceAltId {
-    AlternativeId: Map!
-    Resource: Map!
-}
-
 type Mutation {
     # Tagging
     CreateTag(input: CreateTagInput!): CreateTagPayload!
@@ -557,5 +549,5 @@ type Mutation {
     UpdateResourceTypeName(input: UpdateResourceTypeNameInput!): UpdateResourceTypeNamePayload!
 
     # update resource alternative id
-    UpdateResourceAltId(input: Map!, poolId: ID!, alternativeId: Map!): UpdateResourceAltId!
+    UpdateResourceAltId(input: Map!, poolId: ID!, alternativeId: Map!): Resource!
 }

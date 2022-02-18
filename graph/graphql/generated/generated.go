@@ -173,12 +173,12 @@ type ComplexityRoot struct {
 		QueryPoolTypes                   func(childComplexity int) int
 		QueryRecentlyActiveResourcePools func(childComplexity int, fromDatetime string, toDatetime *string) int
 		QueryResource                    func(childComplexity int, input map[string]interface{}, poolID int) int
-		QueryResourceByAltID             func(childComplexity int, input map[string]interface{}, poolID int) int
 		QueryResourcePool                func(childComplexity int, poolID int) int
 		QueryResourcePoolHierarchyPath   func(childComplexity int, poolID int) int
 		QueryResourcePools               func(childComplexity int, resourceTypeID *int, tags *model.TagOr) int
 		QueryResourceTypes               func(childComplexity int, byName *string) int
 		QueryResources                   func(childComplexity int, poolID int) int
+		QueryResourcesByAltID            func(childComplexity int, input map[string]interface{}, poolID *int) int
 		QueryRootResourcePools           func(childComplexity int, resourceTypeID *int, tags *model.TagOr) int
 		QueryTags                        func(childComplexity int) int
 		SearchPoolsByTags                func(childComplexity int, tags *model.TagOr) int
@@ -239,11 +239,6 @@ type ComplexityRoot struct {
 		Tag func(childComplexity int) int
 	}
 
-	UpdateResourceAltID struct {
-		AlternativeID func(childComplexity int) int
-		Resource      func(childComplexity int) int
-	}
-
 	UpdateResourceTypeNamePayload struct {
 		ResourceTypeID func(childComplexity int) int
 	}
@@ -275,7 +270,7 @@ type MutationResolver interface {
 	CreateResourceType(ctx context.Context, input model.CreateResourceTypeInput) (*model.CreateResourceTypePayload, error)
 	DeleteResourceType(ctx context.Context, input model.DeleteResourceTypeInput) (*model.DeleteResourceTypePayload, error)
 	UpdateResourceTypeName(ctx context.Context, input model.UpdateResourceTypeNameInput) (*model.UpdateResourceTypeNamePayload, error)
-	UpdateResourceAltID(ctx context.Context, input map[string]interface{}, poolID int, alternativeID map[string]interface{}) (*model.UpdateResourceAltID, error)
+	UpdateResourceAltID(ctx context.Context, input map[string]interface{}, poolID int, alternativeID map[string]interface{}) (*ent.Resource, error)
 }
 type OutputCursorResolver interface {
 	ID(ctx context.Context, obj *ent.Cursor) (string, error)
@@ -288,7 +283,7 @@ type QueryResolver interface {
 	QueryPoolTypes(ctx context.Context) ([]resourcepool.PoolType, error)
 	QueryResource(ctx context.Context, input map[string]interface{}, poolID int) (*ent.Resource, error)
 	QueryResources(ctx context.Context, poolID int) ([]*ent.Resource, error)
-	QueryResourceByAltID(ctx context.Context, input map[string]interface{}, poolID int) (*ent.Resource, error)
+	QueryResourcesByAltID(ctx context.Context, input map[string]interface{}, poolID *int) ([]*ent.Resource, error)
 	QueryAllocationStrategy(ctx context.Context, allocationStrategyID int) (*ent.AllocationStrategy, error)
 	QueryAllocationStrategies(ctx context.Context, byName *string) ([]*ent.AllocationStrategy, error)
 	QueryResourceTypes(ctx context.Context, byName *string) ([]*ent.ResourceType, error)
@@ -922,18 +917,6 @@ func (e *executableSchema) Complexity(typeName, field string, childComplexity in
 
 		return e.complexity.Query.QueryResource(childComplexity, args["input"].(map[string]interface{}), args["poolId"].(int)), true
 
-	case "Query.QueryResourceByAltId":
-		if e.complexity.Query.QueryResourceByAltID == nil {
-			break
-		}
-
-		args, err := ec.field_Query_QueryResourceByAltId_args(context.TODO(), rawArgs)
-		if err != nil {
-			return 0, false
-		}
-
-		return e.complexity.Query.QueryResourceByAltID(childComplexity, args["input"].(map[string]interface{}), args["poolId"].(int)), true
-
 	case "Query.QueryResourcePool":
 		if e.complexity.Query.QueryResourcePool == nil {
 			break
@@ -993,6 +976,18 @@ func (e *executableSchema) Complexity(typeName, field string, childComplexity in
 		}
 
 		return e.complexity.Query.QueryResources(childComplexity, args["poolId"].(int)), true
+
+	case "Query.QueryResourcesByAltId":
+		if e.complexity.Query.QueryResourcesByAltID == nil {
+			break
+		}
+
+		args, err := ec.field_Query_QueryResourcesByAltId_args(context.TODO(), rawArgs)
+		if err != nil {
+			return 0, false
+		}
+
+		return e.complexity.Query.QueryResourcesByAltID(childComplexity, args["input"].(map[string]interface{}), args["poolId"].(*int)), true
 
 	case "Query.QueryRootResourcePools":
 		if e.complexity.Query.QueryRootResourcePools == nil {
@@ -1246,20 +1241,6 @@ func (e *executableSchema) Complexity(typeName, field string, childComplexity in
 		}
 
 		return e.complexity.UntagPoolPayload.Tag(childComplexity), true
-
-	case "UpdateResourceAltId.AlternativeId":
-		if e.complexity.UpdateResourceAltID.AlternativeID == nil {
-			break
-		}
-
-		return e.complexity.UpdateResourceAltID.AlternativeID(childComplexity), true
-
-	case "UpdateResourceAltId.Resource":
-		if e.complexity.UpdateResourceAltID.Resource == nil {
-			break
-		}
-
-		return e.complexity.UpdateResourceAltID.Resource(childComplexity), true
 
 	case "UpdateResourceTypeNamePayload.resourceTypeId":
 		if e.complexity.UpdateResourceTypeNamePayload.ResourceTypeID == nil {
@@ -1682,7 +1663,7 @@ type Query {
     QueryPoolTypes: [PoolType!]!
     QueryResource(input: Map!, poolId: ID!): Resource!
     QueryResources(poolId: ID!): [Resource!]!
-    QueryResourceByAltId(input: Map!, poolId: ID!): Resource!
+    QueryResourcesByAltId(input: Map!, poolId: ID): [Resource!]!
     QueryAllocationStrategy(allocationStrategyId: ID!): AllocationStrategy!
     QueryAllocationStrategies(byName: String): [AllocationStrategy!]!
     QueryResourceTypes(byName: String): [ResourceType!]!
@@ -1855,14 +1836,6 @@ type UpdateResourceTypeNamePayload {
     resourceTypeId: ID!
 }
 
-"""
-Output of updating the alternative id of a resource
-"""
-type UpdateResourceAltId {
-    AlternativeId: Map!
-    Resource: Map!
-}
-
 type Mutation {
     # Tagging
     CreateTag(input: CreateTagInput!): CreateTagPayload!
@@ -1898,7 +1871,7 @@ type Mutation {
     UpdateResourceTypeName(input: UpdateResourceTypeNameInput!): UpdateResourceTypeNamePayload!
 
     # update resource alternative id
-    UpdateResourceAltId(input: Map!, poolId: ID!, alternativeId: Map!): UpdateResourceAltId!
+    UpdateResourceAltId(input: Map!, poolId: ID!, alternativeId: Map!): Resource!
 }
 `, BuiltIn: false},
 }
@@ -2430,30 +2403,6 @@ func (ec *executionContext) field_Query_QueryRecentlyActiveResourcePools_args(ct
 	return args, nil
 }
 
-func (ec *executionContext) field_Query_QueryResourceByAltId_args(ctx context.Context, rawArgs map[string]interface{}) (map[string]interface{}, error) {
-	var err error
-	args := map[string]interface{}{}
-	var arg0 map[string]interface{}
-	if tmp, ok := rawArgs["input"]; ok {
-		ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("input"))
-		arg0, err = ec.unmarshalNMap2map(ctx, tmp)
-		if err != nil {
-			return nil, err
-		}
-	}
-	args["input"] = arg0
-	var arg1 int
-	if tmp, ok := rawArgs["poolId"]; ok {
-		ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("poolId"))
-		arg1, err = ec.unmarshalNID2int(ctx, tmp)
-		if err != nil {
-			return nil, err
-		}
-	}
-	args["poolId"] = arg1
-	return args, nil
-}
-
 func (ec *executionContext) field_Query_QueryResourcePoolHierarchyPath_args(ctx context.Context, rawArgs map[string]interface{}) (map[string]interface{}, error) {
 	var err error
 	args := map[string]interface{}{}
@@ -2539,6 +2488,30 @@ func (ec *executionContext) field_Query_QueryResource_args(ctx context.Context, 
 	if tmp, ok := rawArgs["poolId"]; ok {
 		ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("poolId"))
 		arg1, err = ec.unmarshalNID2int(ctx, tmp)
+		if err != nil {
+			return nil, err
+		}
+	}
+	args["poolId"] = arg1
+	return args, nil
+}
+
+func (ec *executionContext) field_Query_QueryResourcesByAltId_args(ctx context.Context, rawArgs map[string]interface{}) (map[string]interface{}, error) {
+	var err error
+	args := map[string]interface{}{}
+	var arg0 map[string]interface{}
+	if tmp, ok := rawArgs["input"]; ok {
+		ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("input"))
+		arg0, err = ec.unmarshalNMap2map(ctx, tmp)
+		if err != nil {
+			return nil, err
+		}
+	}
+	args["input"] = arg0
+	var arg1 *int
+	if tmp, ok := rawArgs["poolId"]; ok {
+		ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("poolId"))
+		arg1, err = ec.unmarshalOID2ᚖint(ctx, tmp)
 		if err != nil {
 			return nil, err
 		}
@@ -4230,9 +4203,9 @@ func (ec *executionContext) _Mutation_UpdateResourceAltId(ctx context.Context, f
 		}
 		return graphql.Null
 	}
-	res := resTmp.(*model.UpdateResourceAltID)
+	res := resTmp.(*ent.Resource)
 	fc.Result = res
-	return ec.marshalNUpdateResourceAltId2ᚖgithubᚗcomᚋnetᚑautoᚋresourceManagerᚋgraphᚋgraphqlᚋmodelᚐUpdateResourceAltID(ctx, field.Selections, res)
+	return ec.marshalNResource2ᚖgithubᚗcomᚋnetᚑautoᚋresourceManagerᚋentᚐResource(ctx, field.Selections, res)
 }
 
 func (ec *executionContext) _OutputCursor_ID(ctx context.Context, field graphql.CollectedField, obj *ent.Cursor) (ret graphql.Marshaler) {
@@ -4886,7 +4859,7 @@ func (ec *executionContext) _Query_QueryResources(ctx context.Context, field gra
 	return ec.marshalNResource2ᚕᚖgithubᚗcomᚋnetᚑautoᚋresourceManagerᚋentᚐResourceᚄ(ctx, field.Selections, res)
 }
 
-func (ec *executionContext) _Query_QueryResourceByAltId(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
+func (ec *executionContext) _Query_QueryResourcesByAltId(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
 	defer func() {
 		if r := recover(); r != nil {
 			ec.Error(ctx, ec.Recover(ctx, r))
@@ -4903,7 +4876,7 @@ func (ec *executionContext) _Query_QueryResourceByAltId(ctx context.Context, fie
 
 	ctx = graphql.WithFieldContext(ctx, fc)
 	rawArgs := field.ArgumentMap(ec.Variables)
-	args, err := ec.field_Query_QueryResourceByAltId_args(ctx, rawArgs)
+	args, err := ec.field_Query_QueryResourcesByAltId_args(ctx, rawArgs)
 	if err != nil {
 		ec.Error(ctx, err)
 		return graphql.Null
@@ -4911,7 +4884,7 @@ func (ec *executionContext) _Query_QueryResourceByAltId(ctx context.Context, fie
 	fc.Args = args
 	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
 		ctx = rctx // use context from middleware stack in children
-		return ec.resolvers.Query().QueryResourceByAltID(rctx, args["input"].(map[string]interface{}), args["poolId"].(int))
+		return ec.resolvers.Query().QueryResourcesByAltID(rctx, args["input"].(map[string]interface{}), args["poolId"].(*int))
 	})
 	if err != nil {
 		ec.Error(ctx, err)
@@ -4923,9 +4896,9 @@ func (ec *executionContext) _Query_QueryResourceByAltId(ctx context.Context, fie
 		}
 		return graphql.Null
 	}
-	res := resTmp.(*ent.Resource)
+	res := resTmp.([]*ent.Resource)
 	fc.Result = res
-	return ec.marshalNResource2ᚖgithubᚗcomᚋnetᚑautoᚋresourceManagerᚋentᚐResource(ctx, field.Selections, res)
+	return ec.marshalNResource2ᚕᚖgithubᚗcomᚋnetᚑautoᚋresourceManagerᚋentᚐResourceᚄ(ctx, field.Selections, res)
 }
 
 func (ec *executionContext) _Query_QueryAllocationStrategy(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
@@ -6556,76 +6529,6 @@ func (ec *executionContext) _UntagPoolPayload_tag(ctx context.Context, field gra
 	res := resTmp.(*ent.Tag)
 	fc.Result = res
 	return ec.marshalOTag2ᚖgithubᚗcomᚋnetᚑautoᚋresourceManagerᚋentᚐTag(ctx, field.Selections, res)
-}
-
-func (ec *executionContext) _UpdateResourceAltId_AlternativeId(ctx context.Context, field graphql.CollectedField, obj *model.UpdateResourceAltID) (ret graphql.Marshaler) {
-	defer func() {
-		if r := recover(); r != nil {
-			ec.Error(ctx, ec.Recover(ctx, r))
-			ret = graphql.Null
-		}
-	}()
-	fc := &graphql.FieldContext{
-		Object:     "UpdateResourceAltId",
-		Field:      field,
-		Args:       nil,
-		IsMethod:   false,
-		IsResolver: false,
-	}
-
-	ctx = graphql.WithFieldContext(ctx, fc)
-	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
-		ctx = rctx // use context from middleware stack in children
-		return obj.AlternativeID, nil
-	})
-	if err != nil {
-		ec.Error(ctx, err)
-		return graphql.Null
-	}
-	if resTmp == nil {
-		if !graphql.HasFieldError(ctx, fc) {
-			ec.Errorf(ctx, "must not be null")
-		}
-		return graphql.Null
-	}
-	res := resTmp.(map[string]interface{})
-	fc.Result = res
-	return ec.marshalNMap2map(ctx, field.Selections, res)
-}
-
-func (ec *executionContext) _UpdateResourceAltId_Resource(ctx context.Context, field graphql.CollectedField, obj *model.UpdateResourceAltID) (ret graphql.Marshaler) {
-	defer func() {
-		if r := recover(); r != nil {
-			ec.Error(ctx, ec.Recover(ctx, r))
-			ret = graphql.Null
-		}
-	}()
-	fc := &graphql.FieldContext{
-		Object:     "UpdateResourceAltId",
-		Field:      field,
-		Args:       nil,
-		IsMethod:   false,
-		IsResolver: false,
-	}
-
-	ctx = graphql.WithFieldContext(ctx, fc)
-	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
-		ctx = rctx // use context from middleware stack in children
-		return obj.Resource, nil
-	})
-	if err != nil {
-		ec.Error(ctx, err)
-		return graphql.Null
-	}
-	if resTmp == nil {
-		if !graphql.HasFieldError(ctx, fc) {
-			ec.Errorf(ctx, "must not be null")
-		}
-		return graphql.Null
-	}
-	res := resTmp.(map[string]interface{})
-	fc.Result = res
-	return ec.marshalNMap2map(ctx, field.Selections, res)
 }
 
 func (ec *executionContext) _UpdateResourceTypeNamePayload_resourceTypeId(ctx context.Context, field graphql.CollectedField, obj *model.UpdateResourceTypeNamePayload) (ret graphql.Marshaler) {
@@ -9352,7 +9255,7 @@ func (ec *executionContext) _Query(ctx context.Context, sel ast.SelectionSet) gr
 				}
 				return res
 			})
-		case "QueryResourceByAltId":
+		case "QueryResourcesByAltId":
 			field := field
 			out.Concurrently(i, func() (res graphql.Marshaler) {
 				defer func() {
@@ -9360,7 +9263,7 @@ func (ec *executionContext) _Query(ctx context.Context, sel ast.SelectionSet) gr
 						ec.Error(ctx, ec.Recover(ctx, r))
 					}
 				}()
-				res = ec._Query_QueryResourceByAltId(ctx, field)
+				res = ec._Query_QueryResourcesByAltId(ctx, field)
 				if res == graphql.Null {
 					atomic.AddUint32(&invalids, 1)
 				}
@@ -9974,38 +9877,6 @@ func (ec *executionContext) _UntagPoolPayload(ctx context.Context, sel ast.Selec
 			out.Values[i] = graphql.MarshalString("UntagPoolPayload")
 		case "tag":
 			out.Values[i] = ec._UntagPoolPayload_tag(ctx, field, obj)
-		default:
-			panic("unknown field " + strconv.Quote(field.Name))
-		}
-	}
-	out.Dispatch()
-	if invalids > 0 {
-		return graphql.Null
-	}
-	return out
-}
-
-var updateResourceAltIdImplementors = []string{"UpdateResourceAltId"}
-
-func (ec *executionContext) _UpdateResourceAltId(ctx context.Context, sel ast.SelectionSet, obj *model.UpdateResourceAltID) graphql.Marshaler {
-	fields := graphql.CollectFields(ec.OperationContext, sel, updateResourceAltIdImplementors)
-
-	out := graphql.NewFieldSet(fields)
-	var invalids uint32
-	for i, field := range fields {
-		switch field.Name {
-		case "__typename":
-			out.Values[i] = graphql.MarshalString("UpdateResourceAltId")
-		case "AlternativeId":
-			out.Values[i] = ec._UpdateResourceAltId_AlternativeId(ctx, field, obj)
-			if out.Values[i] == graphql.Null {
-				invalids++
-			}
-		case "Resource":
-			out.Values[i] = ec._UpdateResourceAltId_Resource(ctx, field, obj)
-			if out.Values[i] == graphql.Null {
-				invalids++
-			}
 		default:
 			panic("unknown field " + strconv.Quote(field.Name))
 		}
@@ -11327,20 +11198,6 @@ func (ec *executionContext) marshalNUntagPoolPayload2ᚖgithubᚗcomᚋnetᚑaut
 		return graphql.Null
 	}
 	return ec._UntagPoolPayload(ctx, sel, v)
-}
-
-func (ec *executionContext) marshalNUpdateResourceAltId2githubᚗcomᚋnetᚑautoᚋresourceManagerᚋgraphᚋgraphqlᚋmodelᚐUpdateResourceAltID(ctx context.Context, sel ast.SelectionSet, v model.UpdateResourceAltID) graphql.Marshaler {
-	return ec._UpdateResourceAltId(ctx, sel, &v)
-}
-
-func (ec *executionContext) marshalNUpdateResourceAltId2ᚖgithubᚗcomᚋnetᚑautoᚋresourceManagerᚋgraphᚋgraphqlᚋmodelᚐUpdateResourceAltID(ctx context.Context, sel ast.SelectionSet, v *model.UpdateResourceAltID) graphql.Marshaler {
-	if v == nil {
-		if !graphql.HasFieldError(ctx, graphql.GetFieldContext(ctx)) {
-			ec.Errorf(ctx, "must not be null")
-		}
-		return graphql.Null
-	}
-	return ec._UpdateResourceAltId(ctx, sel, v)
 }
 
 func (ec *executionContext) unmarshalNUpdateResourceTypeNameInput2githubᚗcomᚋnetᚑautoᚋresourceManagerᚋgraphᚋgraphqlᚋmodelᚐUpdateResourceTypeNameInput(ctx context.Context, v interface{}) (model.UpdateResourceTypeNameInput, error) {

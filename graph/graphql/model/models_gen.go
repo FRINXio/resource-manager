@@ -228,12 +228,6 @@ type UntagPoolPayload struct {
 	Tag *ent.Tag `json:"tag"`
 }
 
-// Output of updating the alternative id of a resource
-type UpdateResourceAltID struct {
-	AlternativeID map[string]interface{} `json:"AlternativeId"`
-	Resource      map[string]interface{} `json:"Resource"`
-}
-
 // Input parameters updating the name of a resource-type
 type UpdateResourceTypeNameInput struct {
 	ResourceTypeID int    `json:"resourceTypeId"`

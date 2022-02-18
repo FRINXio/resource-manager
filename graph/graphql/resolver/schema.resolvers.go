@@ -7,6 +7,8 @@ import (
 	"context"
 	"time"
 
+	"github.com/facebook/ent/dialect/sql"
+	"github.com/facebook/ent/dialect/sql/sqljson"
 	"github.com/net-auto/resourceManager/ent"
 	"github.com/net-auto/resourceManager/ent/allocationstrategy"
 	"github.com/net-auto/resourceManager/ent/predicate"
@@ -456,7 +458,7 @@ func (r *mutationResolver) UpdateResourceTypeName(ctx context.Context, input mod
 	}
 }
 
-func (r *mutationResolver) UpdateResourceAltID(ctx context.Context, input map[string]interface{}, poolID int, alternativeID map[string]interface{}) (*model.UpdateResourceAltID, error) {
+func (r *mutationResolver) UpdateResourceAltID(ctx context.Context, input map[string]interface{}, poolID int, alternativeID map[string]interface{}) (*ent.Resource, error) {
 	pool, err := p.ExistingPoolFromId(ctx, r.ClientFrom(ctx), poolID)
 	if err != nil {
 		return nil, gqlerror.Errorf("Unable to retrieve pool: %v", err)
@@ -466,7 +468,6 @@ func (r *mutationResolver) UpdateResourceAltID(ctx context.Context, input map[st
 		return nil, gqlerror.Errorf("Unable to query Resource: %v", err)
 	}
 	var client = r.ClientFrom(ctx)
-	retValue := &model.UpdateResourceAltID{AlternativeID: alternativeID, Resource: input}
 	for k, _ := range queryResource.AlternateID {
 		for k2, v2 := range alternativeID {
 			if k == k2 {
@@ -476,9 +477,9 @@ func (r *mutationResolver) UpdateResourceAltID(ctx context.Context, input map[st
 	}
 	if _, err := client.Resource.UpdateOne(queryResource).SetAlternateID(queryResource.AlternateID).Save(ctx); err != nil {
 		log.Error(ctx, err, "Unable to update queryResource alternative ID %v", alternativeID)
-		return retValue, gqlerror.Errorf("Unable to update queryResource type: %v", err)
+		return queryResource, gqlerror.Errorf("Unable to update queryResource type: %v", err)
 	}
-	return retValue, nil
+	return queryResource, nil
 }
 
 func (r *outputCursorResolver) ID(ctx context.Context, obj *ent.Cursor) (string, error) {
@@ -534,20 +535,36 @@ func (r *queryResolver) QueryResources(ctx context.Context, poolID int) ([]*ent.
 	return pool.QueryResources()
 }
 
-func (r *queryResolver) QueryResourceByAltID(ctx context.Context, input map[string]interface{}, poolID int) (*ent.Resource, error) {
-	pool, err := p.ExistingPoolFromId(ctx, r.ClientFrom(ctx), poolID)
+func (r *queryResolver) QueryResourcesByAltID(ctx context.Context, input map[string]interface{}, poolID *int) ([]*ent.Resource, error) {
+	if poolID != nil {
+		pool, err := p.ExistingPoolFromId(ctx, r.ClientFrom(ctx), *poolID)
+		if err != nil {
+			return nil, gqlerror.Errorf("Unable to query resources: %v", err)
+		}
+		typeFixedAlternativeId, errFix := p.ConvertValuesToFloat64(ctx, input)
+		if errFix != nil {
+			return nil, gqlerror.Errorf("Unable to process input data", err)
+		}
+		return pool.QueryResourcesByAltId(typeFixedAlternativeId)
+	}
 
+	res, err := r.ClientFrom(ctx).Resource.Query().
+		Where(func(selector *sql.Selector) {
+			for k, v := range input {
+				selector.Where(sqljson.ValueEQ("alternate_id", v, sqljson.Path(k)))
+			}
+		}).All(ctx)
 	if err != nil {
+		log.Error(ctx, err, "Unable to retrieve resources with alternative ID %v", input)
 		return nil, gqlerror.Errorf("Unable to query resources: %v", err)
 	}
 
-	typeFixedAlternativeId, errFix := p.ConvertValuesToFloat64(ctx, input)
-
-	if errFix != nil {
-		return nil, gqlerror.Errorf("Unable to process input data", err)
+	if res != nil {
+		return res, nil
 	}
 
-	return pool.QueryResourceByAltId(typeFixedAlternativeId)
+	log.Warn(ctx, "There is not such resources with alternative ID %v", input)
+	return nil, gqlerror.Errorf("Unable to query resources: %v", err)
 }
 
 func (r *queryResolver) QueryAllocationStrategy(ctx context.Context, allocationStrategyID int) (*ent.AllocationStrategy, error) {

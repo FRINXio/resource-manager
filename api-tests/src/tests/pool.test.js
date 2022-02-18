@@ -8,7 +8,7 @@ import {
     createResourceType,
     freeResource,
     claimResourceWithAltId,
-    queryResourceByAltId,
+    queryResourcesByAltId,
     getResourcesForPool,
     searchPoolsByTags,
     tagPool,
@@ -368,23 +368,23 @@ test('allocation pool test alternative ID', async (t) => {
 
     await updateResourceAltId(poolId, resource.Properties, altId3)
 
-    let res3 = await queryResourceByAltId(poolId, altId3);
+    let res3 = await queryResourcesByAltId(poolId, altId3);
 
-    t.equal(res3.Properties.vlan, 3);
-    t.equal(res3.AlternativeId.vlanAltId, altId3.vlanAltId)
-    t.equal(res3.AlternativeId.order, altId3.order)
+    t.equal(res3[0].Properties.vlan, 3);
+    t.equal(res3[0].AlternativeId.vlanAltId, altId3.vlanAltId)
+    t.equal(res3[0].AlternativeId.order, altId3.order)
 
     //test nothing found
-    let res = await queryResourceByAltId(poolId, {someKey: 'this does not exist :('});
-    t.notOk(res);
+    let res = await queryResourcesByAltId(poolId, {someKey: 'this does not exist :('});
+    t.notOk(res[0]);
 
     //test string-only comparison
-    res = await queryResourceByAltId(poolId, altId);
-    t.equal(res.Properties.vlan, 1);
+    res = await queryResourcesByAltId(poolId, altId);
+    t.equal(res[0].Properties.vlan, 1);
 
     //test string-and-number comparison
-    res = await queryResourceByAltId(poolId, altId2);
-    t.equal(res.Properties.vlan, 2);
+    res = await queryResourcesByAltId(poolId, altId2);
+    t.equal(res[0].Properties.vlan, 2);
 
     await cleanup()
     t.end();
@@ -400,8 +400,8 @@ test('set pool test alternative ID', async (t) => {
     let altId = {id: getUniqueName('avalue1')};
 
     await claimResourceWithAltId(poolId, {}, altId);
-    let res = await queryResourceByAltId(poolId, altId);
-    t.equal(res.Properties.avalue, 1)
+    let res = await queryResourcesByAltId(poolId, altId);
+    t.equal(res[0].Properties.avalue, 1)
 
     let duplicate = await claimResourceWithAltId(poolId, {}, altId, null, true);
     t.ok(duplicate);
