@@ -15,7 +15,8 @@ import {
     getCapacityForPool,
     getResourcePool,
     getResourcePoolsByDatetimeRange,
-    updateResourceAltId
+    updateResourceAltId,
+    getEmptyPools
 } from "../graphql-queries.js";
 import {
     cleanup,
@@ -405,6 +406,23 @@ test('set pool test alternative ID', async (t) => {
 
     let duplicate = await claimResourceWithAltId(poolId, {}, altId, null, true);
     t.ok(duplicate);
+
+    await cleanup()
+    t.end();
+});
+
+test('empty pools test', async (t) => {
+    const poolId = await createIpv4RootPool('192.168.3.0', 16);
+    await createIpv4RootPool('192.168.24.0', 16);
+
+    let emptyPools = await getEmptyPools(null);
+    t.equal(emptyPools.length, 2)
+
+    await claimResource(poolId, {});
+    await claimResource(poolId, {});
+
+    emptyPools = await getEmptyPools(null);
+    t.equal(emptyPools.length, 1)
 
     await cleanup()
     t.end();

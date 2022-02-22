@@ -831,3 +831,39 @@ export async function updateResourceAltId(poolId, input, alternativeId){
     .then(result => result.data.UpdateResourceAltId)
     .catch(error => console.log(error));
 }
+
+export async function getEmptyPools(resourceTypeId){
+    return client.query({
+        query: gql`
+            query QueryEmptyResourcePools($resourceTypeId: ID) {
+                QueryEmptyResourcePools(resourceTypeId: $resourceTypeId) {
+                    id
+                    Name
+                    AllocationStrategy {
+                        id
+                        Name
+                        Description
+                    }
+                    ResourceType {
+                        id
+                        Name
+                    }
+                    Resources{
+                        id
+                        Properties
+                        NestedPool {
+                            id
+                            Name
+                            PoolType
+                        }
+                    }
+                }
+            }
+        `,
+        variables: {
+            resourceTypeId: resourceTypeId
+        }
+    })
+    .then(result => result.data.QueryEmptyResourcePools)
+    .catch(error => console.log(error));
+}
