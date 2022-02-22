@@ -622,6 +622,24 @@ func (r *queryResolver) QueryResourcePool(ctx context.Context, poolID int) (*ent
 	return rp, err
 }
 
+func (r *queryResolver) QueryEmptyResourcePools(ctx context.Context, resourceTypeID *int) ([]*ent.ResourcePool, error) {
+	client := r.ClientFrom(ctx)
+	query := client.ResourcePool.Query()
+
+	if resourceTypeID != nil {
+		query.Where(resourcePool.HasResourceTypeWith(resourcetype.ID(*resourceTypeID))).Where(resourcePool.Not(resourcePool.HasClaims()))
+	} else {
+		query.Where(resourcePool.Not(resourcePool.HasClaims()))
+	}
+
+	if resourcePools, err := query.All(ctx); err != nil {
+		log.Error(ctx, err, "Unable to retrieve resource pools")
+		return nil, gqlerror.Errorf("Unable to query resource pools: %v", err)
+	} else {
+		return resourcePools, nil
+	}
+}
+
 func (r *queryResolver) QueryResourcePools(ctx context.Context, resourceTypeID *int, tags *model.TagOr) ([]*ent.ResourcePool, error) {
 	client := r.ClientFrom(ctx)
 	query := client.ResourcePool.Query()

@@ -168,6 +168,7 @@ type ComplexityRoot struct {
 		Node                             func(childComplexity int, id int) int
 		QueryAllocationStrategies        func(childComplexity int, byName *string) int
 		QueryAllocationStrategy          func(childComplexity int, allocationStrategyID int) int
+		QueryEmptyResourcePools          func(childComplexity int, resourceTypeID *int) int
 		QueryLeafResourcePools           func(childComplexity int, resourceTypeID *int, tags *model.TagOr) int
 		QueryPoolCapacity                func(childComplexity int, poolID int) int
 		QueryPoolTypes                   func(childComplexity int) int
@@ -288,6 +289,7 @@ type QueryResolver interface {
 	QueryAllocationStrategies(ctx context.Context, byName *string) ([]*ent.AllocationStrategy, error)
 	QueryResourceTypes(ctx context.Context, byName *string) ([]*ent.ResourceType, error)
 	QueryResourcePool(ctx context.Context, poolID int) (*ent.ResourcePool, error)
+	QueryEmptyResourcePools(ctx context.Context, resourceTypeID *int) ([]*ent.ResourcePool, error)
 	QueryResourcePools(ctx context.Context, resourceTypeID *int, tags *model.TagOr) ([]*ent.ResourcePool, error)
 	QueryRecentlyActiveResourcePools(ctx context.Context, fromDatetime string, toDatetime *string) ([]*ent.ResourcePool, error)
 	QueryResourcePoolHierarchyPath(ctx context.Context, poolID int) ([]*ent.ResourcePool, error)
@@ -861,6 +863,18 @@ func (e *executableSchema) Complexity(typeName, field string, childComplexity in
 		}
 
 		return e.complexity.Query.QueryAllocationStrategy(childComplexity, args["allocationStrategyId"].(int)), true
+
+	case "Query.QueryEmptyResourcePools":
+		if e.complexity.Query.QueryEmptyResourcePools == nil {
+			break
+		}
+
+		args, err := ec.field_Query_QueryEmptyResourcePools_args(context.TODO(), rawArgs)
+		if err != nil {
+			return 0, false
+		}
+
+		return e.complexity.Query.QueryEmptyResourcePools(childComplexity, args["resourceTypeId"].(*int)), true
 
 	case "Query.QueryLeafResourcePools":
 		if e.complexity.Query.QueryLeafResourcePools == nil {
@@ -1670,6 +1684,7 @@ type Query {
 
     QueryResourcePool(poolId: ID!): ResourcePool!
 
+    QueryEmptyResourcePools(resourceTypeId: ID): [ResourcePool!]!
     QueryResourcePools(resourceTypeId: ID, tags: TagOr): [ResourcePool!]!
     QueryRecentlyActiveResourcePools(fromDatetime: String!, toDatetime: String): [ResourcePool!]!
     QueryResourcePoolHierarchyPath(poolId: ID!): [ResourcePool!]!
@@ -2337,6 +2352,21 @@ func (ec *executionContext) field_Query_QueryAllocationStrategy_args(ctx context
 		}
 	}
 	args["allocationStrategyId"] = arg0
+	return args, nil
+}
+
+func (ec *executionContext) field_Query_QueryEmptyResourcePools_args(ctx context.Context, rawArgs map[string]interface{}) (map[string]interface{}, error) {
+	var err error
+	args := map[string]interface{}{}
+	var arg0 *int
+	if tmp, ok := rawArgs["resourceTypeId"]; ok {
+		ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("resourceTypeId"))
+		arg0, err = ec.unmarshalOID2ᚖint(ctx, tmp)
+		if err != nil {
+			return nil, err
+		}
+	}
+	args["resourceTypeId"] = arg0
 	return args, nil
 }
 
@@ -5067,6 +5097,48 @@ func (ec *executionContext) _Query_QueryResourcePool(ctx context.Context, field 
 	res := resTmp.(*ent.ResourcePool)
 	fc.Result = res
 	return ec.marshalNResourcePool2ᚖgithubᚗcomᚋnetᚑautoᚋresourceManagerᚋentᚐResourcePool(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) _Query_QueryEmptyResourcePools(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	fc := &graphql.FieldContext{
+		Object:     "Query",
+		Field:      field,
+		Args:       nil,
+		IsMethod:   true,
+		IsResolver: true,
+	}
+
+	ctx = graphql.WithFieldContext(ctx, fc)
+	rawArgs := field.ArgumentMap(ec.Variables)
+	args, err := ec.field_Query_QueryEmptyResourcePools_args(ctx, rawArgs)
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	fc.Args = args
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return ec.resolvers.Query().QueryEmptyResourcePools(rctx, args["resourceTypeId"].(*int))
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.([]*ent.ResourcePool)
+	fc.Result = res
+	return ec.marshalNResourcePool2ᚕᚖgithubᚗcomᚋnetᚑautoᚋresourceManagerᚋentᚐResourcePoolᚄ(ctx, field.Selections, res)
 }
 
 func (ec *executionContext) _Query_QueryResourcePools(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
@@ -9320,6 +9392,20 @@ func (ec *executionContext) _Query(ctx context.Context, sel ast.SelectionSet) gr
 					}
 				}()
 				res = ec._Query_QueryResourcePool(ctx, field)
+				if res == graphql.Null {
+					atomic.AddUint32(&invalids, 1)
+				}
+				return res
+			})
+		case "QueryEmptyResourcePools":
+			field := field
+			out.Concurrently(i, func() (res graphql.Marshaler) {
+				defer func() {
+					if r := recover(); r != nil {
+						ec.Error(ctx, ec.Recover(ctx, r))
+					}
+				}()
+				res = ec._Query_QueryEmptyResourcePools(ctx, field)
 				if res == graphql.Null {
 					atomic.AddUint32(&invalids, 1)
 				}

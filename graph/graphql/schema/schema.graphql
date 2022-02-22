@@ -348,6 +348,7 @@ type Query {
 
     QueryResourcePool(poolId: ID!): ResourcePool!
 
+    QueryEmptyResourcePools(resourceTypeId: ID): [ResourcePool!]!
     QueryResourcePools(resourceTypeId: ID, tags: TagOr): [ResourcePool!]!
     QueryRecentlyActiveResourcePools(fromDatetime: String!, toDatetime: String): [ResourcePool!]!
     QueryResourcePoolHierarchyPath(poolId: ID!): [ResourcePool!]!
