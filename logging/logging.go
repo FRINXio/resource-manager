@@ -31,7 +31,7 @@ func GetLogger() *logrus.Logger {
 }
 
 func Init(path string, logLevel string, withColors bool) {
-	f, err := os.OpenFile(path, os.O_WRONLY | os.O_CREATE | os.O_APPEND, 0755)
+	f, err := os.OpenFile(path, os.O_WRONLY | os.O_CREATE | os.O_APPEND, 0644)
 
 	if err != nil {
 		logging.Fatalf("error opening file: %v", err)
