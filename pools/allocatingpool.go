@@ -370,8 +370,14 @@ func convertProperties(ps []*ent.Property) (map[string]interface{}, error) {
 
 func (pool AllocatingPool) loadClaimedResources() ([]*model.ResourceInput, error) {
 	var currentResources []*model.ResourceInput
-	claimedResources, err := pool.findResources().WithProperties(
-		func(propertyQuery *ent.PropertyQuery) { propertyQuery.WithType() }).All(pool.ctx)
+
+	claimedResources, err := pool.client.Resource.Query().
+		Where(resource.HasPoolWith(resourcePool.ID(pool.ID))).
+		WithProperties(func(propertyQuery *ent.PropertyQuery) {
+			propertyQuery.WithType()
+		}).
+		All(pool.ctx)
+
 	if err != nil {
 		log.Error(pool.ctx, err, "Unable to get claimed resources from pool %d", pool.ID)
 		return nil, errors.Wrapf(err,

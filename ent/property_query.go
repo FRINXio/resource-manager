@@ -768,6 +768,7 @@ func (pgb *PropertyGroupBy) sqlScan(ctx context.Context, v interface{}) error {
 	}
 	rows := &sql.Rows{}
 	query, args := selector.Query()
+	fmt.Println(query)
 	if err := pgb.driver.Query(ctx, query, args, rows); err != nil {
 		return err
 	}
@@ -797,6 +798,7 @@ type PropertySelect struct {
 // Scan applies the selector query and scan the result into the given value.
 func (ps *PropertySelect) Scan(ctx context.Context, v interface{}) error {
 	query, err := ps.path(ctx)
+	fmt.Println(query)
 	if err != nil {
 		return err
 	}
@@ -1007,6 +1009,8 @@ func (ps *PropertySelect) sqlScan(ctx context.Context, v interface{}) error {
 	}
 	rows := &sql.Rows{}
 	query, args := ps.sqlQuery().Query()
+	fmt.Println(query)
+	fmt.Println("AAAAAA")
 	if err := ps.driver.Query(ctx, query, args, rows); err != nil {
 		return err
 	}

@@ -8,6 +8,7 @@ import (
 	"errors"
 	"fmt"
 	"math"
+	"strings"
 
 	"github.com/facebook/ent/dialect/sql"
 	"github.com/facebook/ent/dialect/sql/sqlgraph"
@@ -1070,11 +1071,16 @@ func (rs *ResourceSelect) BoolX(ctx context.Context) bool {
 func (rs *ResourceSelect) sqlScan(ctx context.Context, v interface{}) error {
 	for _, f := range rs.fields {
 		if !resource.ValidColumn(f) {
-			return &ValidationError{Name: f, err: fmt.Errorf("invalid field %q for selection", f)}
+			//fmt.Println("XXXXXX")
+			//return &ValidationError{Name: f, err: fmt.Errorf("invalid field %q for selection", f)}
 		}
 	}
 	rows := &sql.Rows{}
 	query, args := rs.sqlQuery().Query()
+	fmt.Println(query)
+	query = strings.Replace(query, " `resources`.", " ", len(rs.fields))
+	fmt.Println(query)
+	fmt.Println("BBBBBB")
 	if err := rs.driver.Query(ctx, query, args, rows); err != nil {
 		return err
 	}
