@@ -31,7 +31,7 @@ import (
 
 // Tenancy provides tenant client for key.
 type Tenancy interface {
-	ClientFor(context.Context, string, *zap.Logger) (*ent.Client, error)
+	ClientFor(context.Context, string, *zap.Logger) (*ent.Client, *dialect.Driver, error)
 }
 
 // FixedTenancy returns a fixed client.
@@ -70,25 +70,32 @@ func NewCacheTenancy(tenancy Tenancy, initFunc func(*ent.Client)) *CacheTenancy 
 	}
 }
 
+type clientAndDriver struct {
+	client *ent.Client
+	driver *dialect.Driver
+}
+
 // ClientFor implements Tenancy interface.
-func (c *CacheTenancy) ClientFor(ctx context.Context, name string, logger *zap.Logger) (*ent.Client, error) {
-	if client, ok := c.clients.Load(name); ok {
-		return client.(*ent.Client), nil
+func (c *CacheTenancy) ClientFor(ctx context.Context, name string, logger *zap.Logger) (*ent.Client, *dialect.Driver, error) {
+	if cAndD, ok := c.clients.Load(name); ok {
+		cAndDTyped := cAndD.(*clientAndDriver)
+		return cAndDTyped.client, cAndDTyped.driver, nil
 	}
 	c.mu.Lock()
 	defer c.mu.Unlock()
-	if client, ok := c.clients.Load(name); ok {
-		return client.(*ent.Client), nil
+	if cAndD, ok := c.clients.Load(name); ok {
+		cAndDTyped := cAndD.(*clientAndDriver)
+		return cAndDTyped.client, cAndDTyped.driver, nil
 	}
-	client, err := c.tenancy.ClientFor(ctx, name, logger)
+	client, driver, err := c.tenancy.ClientFor(ctx, name, logger)
 	if err != nil {
-		return client, err
+		return client, driver, err
 	}
 	if c.initFunc != nil {
 		c.initFunc(client)
 	}
-	c.clients.Store(name, client)
-	return client, nil
+	c.clients.Store(name, clientAndDriver{client, driver})
+	return client, driver, nil
 }
 
 // CheckHealth implements health.Checker interface.
@@ -148,8 +155,10 @@ func (m *PsqlTenancy) ClientFor(ctx context.Context, name string, logger *zap.Lo
 	m.mu.Lock()
 	m.closers = append(m.closers, closer)
 	m.mu.Unlock()
-	drv := ent.Driver(entsql.OpenDB(dialect.Postgres, db))
-	client := ent.NewClient(drv)
+	driver := entsql.OpenDB(dialect.Postgres, db)
+	driverOption := ent.Driver(driver)
+
+	client := ent.NewClient(driverOption)
 
 	logger.Debug("Invoking db migration for tenant", zap.String("tenant", name))
 	if err := m.migrate(ctx, client, logger); err != nil {

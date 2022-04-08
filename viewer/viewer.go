@@ -7,12 +7,13 @@
 package viewer
 
 import (
-	logger "github.com/net-auto/resourceManager/logging"
+	"context"
 	"encoding/json"
 	"github.com/facebookincubator/symphony/pkg/log"
 	fb_viewer "github.com/facebookincubator/symphony/pkg/viewer"
 	"github.com/net-auto/resourceManager/ent"
 	"github.com/net-auto/resourceManager/ent/schema"
+	logger "github.com/net-auto/resourceManager/logging"
 	"net/http"
 	"strings"
 
@@ -24,9 +25,9 @@ import (
 const (
 	// TenantHeader is the http tenant header.
 	TenantHeader = "x-tenant-id"
-	UserHeader = "from"
-	RoleHeader = "x-auth-user-roles"
-	GroupHeader = "x-auth-user-groups"
+	UserHeader   = "from"
+	RoleHeader   = "x-auth-user-roles"
+	GroupHeader  = "x-auth-user-groups"
 )
 
 // TenancyHandler adds viewer / tenancy into incoming requests.
@@ -34,14 +35,14 @@ func TenancyHandler(h http.Handler, tenancy Tenancy, symphLogger log.Logger) htt
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		tenant := r.Header.Get(TenantHeader)
 		if tenant == "" {
-			logger.Warn(r.Context(),"request missing tenant header")
+			logger.Warn(r.Context(), "request missing tenant header")
 			http.Error(w, "missing tenant header", http.StatusBadRequest)
 			return
 		}
 
 		user := r.Header.Get(UserHeader)
 		if user == "" {
-			logger.Warn(r.Context(),"request missing user header")
+			logger.Warn(r.Context(), "request missing user header")
 			http.Error(w, "missing user header", http.StatusBadRequest)
 			return
 		}
@@ -49,23 +50,28 @@ func TenancyHandler(h http.Handler, tenancy Tenancy, symphLogger log.Logger) htt
 		roles := r.Header.Get(RoleHeader)
 		groups := r.Header.Get(GroupHeader)
 
-		logger.Debug(r.Context(),"getting tenancy client for %+v", zap.String("tenant", tenant))
+		logger.Debug(r.Context(), "getting tenancy client for %+v", zap.String("tenant", tenant))
 
-		client, err := tenancy.ClientFor(r.Context(), tenant, symphLogger.For(r.Context()))
+		client, driver, err := tenancy.ClientFor(r.Context(), tenant, symphLogger.For(r.Context()))
 		if err != nil {
 			const msg = "cannot get tenancy client"
-			logger.Warn(r.Context(), msg + "error: %+v", zap.Error(err))
+			logger.Warn(r.Context(), msg+"error: %+v", zap.Error(err))
 			http.Error(w, msg, http.StatusServiceUnavailable)
 			return
 		}
 
-		var ctx  = ent.NewContext(r.Context(), client)
+		var ctx = ent.NewContext(r.Context(), client)
+		ctx = context.WithValue(ctx, "driver", driver)
+
+		// This is how to get the driver out
+		//var drive2 dialect.Driver = ctx.Value("driver").(dialect.Driver)
+		//drive2.Query(...)
 
 		ctx = schema.WithIdentity(ctx, tenant, user, roles, groups)
 		identity, _ := schema.GetIdentity(ctx)
 		marshal, err := json.Marshal(identity)
 		if err != nil {
-			logger.Warn(r.Context(),"Cannot marshall identity %+v", zap.Error(err))
+			logger.Warn(r.Context(), "Cannot marshall identity %+v", zap.Error(err))
 			http.Error(w, "marshalling identity", http.StatusServiceUnavailable)
 			return
 		}
@@ -78,7 +84,7 @@ func TenancyHandler(h http.Handler, tenancy Tenancy, symphLogger log.Logger) htt
 
 var (
 	GroupAttribute = "viewer.group"
-	KeyGroup    = tag.MustNewKey(GroupAttribute)
+	KeyGroup       = tag.MustNewKey(GroupAttribute)
 )
 
 func traceAttrs(v *schema.Identity) []trace.Attribute {
