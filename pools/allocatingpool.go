@@ -178,8 +178,13 @@ func (pool AllocatingPool) Capacity() (float64, float64, error) {
 		return 0, 0, errors.Wrapf(err,
 			"Unable to retrieve allocation-strategy for pool %d, allocation strategy loading error", pool.ID)
 	}
-
-	currentResources, err1 := pool.loadClaimedResources()
+	tx, err := pool.client.Tx(pool.ctx)
+	if err != nil {
+		log.Error(pool.ctx, err, "Unable to open new read transaction for pool %d", pool.ID)
+		return 0, 0, errors.Wrapf(err,
+			"Unable to open new read transaction for pool %d", pool.ID)
+	}
+	currentResources, err1 := pool.loadClaimedResources(tx)
 
 	if err1 != nil {
 		log.Error(pool.ctx, err, "Unable to load resources for pool %d", pool.ID)
@@ -263,7 +268,14 @@ func (pool AllocatingPool) ClaimResource(userInput map[string]interface{}, descr
 	var resourcePool model.ResourcePoolInput
 	resourcePool.ResourcePoolName = pool.Name
 
-	currentResources, err := pool.loadClaimedResources()
+	transaction := pool.ctx.Value(ent.TxCtxKey{})
+	if transaction == nil {
+		log.Error(pool.ctx, err, "Unable retrieve already opened transaction for pool with ID: %d", pool.ID)
+		return nil, errors.Wrapf(err,
+			"Unable retrieve already opened transaction for pool with ID: %d", pool.ID)
+	}
+	tx := transaction.(*ent.Tx)
+	currentResources, err := pool.loadClaimedResources(tx)
 	if err != nil {
 		log.Error(pool.ctx, err, "Unable retrieve already claimed resources for pool with ID: %d", pool.ID)
 		return nil, errors.Wrapf(err,
@@ -368,10 +380,10 @@ func convertProperties(ps []*ent.Property) (map[string]interface{}, error) {
 	return result, nil
 }
 
-func (pool AllocatingPool) loadClaimedResources() ([]*model.ResourceInput, error) {
+func (pool AllocatingPool) loadClaimedResources(tx *ent.Tx) ([]*model.ResourceInput, error) {
 	var currentResources []*model.ResourceInput
-	claimedResources, err := pool.findResources().WithProperties(
-		func(propertyQuery *ent.PropertyQuery) { propertyQuery.WithType() }).All(pool.ctx)
+
+	claimedResources, err := ResourcePropertyPropertyTypeJoins(pool.ctx, pool.ID, tx)
 	if err != nil {
 		log.Error(pool.ctx, err, "Unable to get claimed resources from pool %d", pool.ID)
 		return nil, errors.Wrapf(err,

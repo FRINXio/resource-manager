@@ -122,7 +122,7 @@ func NewHandler(cfg HandlerConfig) (http.Handler, error) {
 	)
 
 	srv.Use(entgql.Transactioner{
-		TxOpener: entgql.TxOpenerFunc(OpenTxFromContext),
+		TxOpener: entgql.TxOpenerFunc(openAndExposeTx),
 	})
 
 	srv.SetErrorPresenter(errorPresenter(cfg.Logger))
@@ -148,6 +148,15 @@ func NewHandler(cfg HandlerConfig) (http.Handler, error) {
 		)
 
 	return router, nil
+}
+
+func openAndExposeTx(ctx context.Context) (context.Context, driver.Tx, error) {
+	fromContext, tx, err := OpenTxFromContext(ctx)
+	if tx != nil {
+		// Expose TX under "tx" key
+		return context.WithValue(fromContext, ent.TxCtxKey{}, tx), tx, err
+	}
+	return fromContext, tx, err
 }
 
 func errorPresenter(logger log.Logger) graphql.ErrorPresenterFunc {
