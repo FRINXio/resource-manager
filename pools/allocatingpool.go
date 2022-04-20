@@ -16,6 +16,10 @@ import (
 	"github.com/pkg/errors"
 )
 
+var manualSqlExecutionStrategies = map[string]bool{
+	"unique_id": true,
+}
+
 func DeletePoolProperties(ctx context.Context, client *ent.Client, poolId int) error {
 	poolProperties, err1 := client.PoolProperties.Query().Where(poolproperties.HasPoolWith(resourcePool.ID(poolId))).WithProperties().Only(ctx)
 
@@ -178,13 +182,23 @@ func (pool AllocatingPool) Capacity() (float64, float64, error) {
 		return 0, 0, errors.Wrapf(err,
 			"Unable to retrieve allocation-strategy for pool %d, allocation strategy loading error", pool.ID)
 	}
+	var currentResources []*model.ResourceInput
 
-	currentResources, err1 := pool.loadClaimedResources()
-
-	if err1 != nil {
-		log.Error(pool.ctx, err, "Unable to load resources for pool %d", pool.ID)
-		return 0, 0, errors.Wrapf(err1,
-			"Unable to load resources for pool %d, resource loading error", pool.ID)
+	if !manualSqlExecutionStrategies[strat.Name] {
+		currentResources, err = getFullListOfResources(pool)
+		if err != nil {
+			log.Error(pool.ctx, err, "Unable to load resources for pool %d", pool.ID)
+			return 0, 0, errors.Wrapf(err,
+				"Unable to load resources for pool %d, resource loading error", pool.ID)
+		}
+	} else {
+		// The query call doesn't create a transaction, so we have to create it manually
+		tx, err := pool.client.Tx(pool.ctx)
+		if err != nil {
+			log.Error(pool.ctx, err, "Unable to open new read transaction for pool %d", pool.ID)
+			return 0, 0, errors.Wrapf(err, "Unable to open new read transaction for pool %d", pool.ID)
+		}
+		pool.ctx = context.WithValue(pool.ctx, ent.TxCtxKey{}, tx)
 	}
 
 	ps, err := pool.PoolProperties()
@@ -203,11 +217,11 @@ func (pool AllocatingPool) Capacity() (float64, float64, error) {
 	}
 
 	var emptyMap = map[string]interface{}{}
-	result, _, err := InvokeAllocationStrategy(
-		pool.invoker, strat, emptyMap, model.ResourcePoolInput{
-			PoolProperties:   emptyMap,
-			ResourcePoolName: pool.Name,
-		}, currentResources, propMap, "capacity()")
+	result, _, err := InvokeAllocationStrategy(pool.ctx, pool.invoker, strat, emptyMap, model.ResourcePoolInput{
+		ResourcePoolID:   pool.ID,
+		PoolProperties:   emptyMap,
+		ResourcePoolName: pool.Name,
+	}, currentResources, propMap, "capacity()")
 	if err != nil || result == nil {
 		log.Error(pool.ctx, err, "Invoking allocation strategy failed")
 		return 0, 0, errors.Wrapf(err,
@@ -262,14 +276,17 @@ func (pool AllocatingPool) ClaimResource(userInput map[string]interface{}, descr
 
 	var resourcePool model.ResourcePoolInput
 	resourcePool.ResourcePoolName = pool.Name
+	resourcePool.ResourcePoolID = pool.ID
+	var currentResources []*model.ResourceInput
 
-	currentResources, err := pool.loadClaimedResources()
-	if err != nil {
-		log.Error(pool.ctx, err, "Unable retrieve already claimed resources for pool with ID: %d", pool.ID)
-		return nil, errors.Wrapf(err,
-			"Unable to claim resource from pool #%d, resource loading error ", pool.ID)
+	if !manualSqlExecutionStrategies[strat.Name] {
+		currentResources, err = getFullListOfResources(pool)
+		if err != nil {
+			log.Error(pool.ctx, err, "Unable retrieve already claimed resources for pool with ID: %d", pool.ID)
+			return nil, errors.Wrapf(err,
+				"Unable to claim resource from pool #%d, resource loading error ", pool.ID)
+		}
 	}
-
 	var functionName string
 
 	if strat.Lang == allocationstrategy.LangPy {
@@ -277,9 +294,8 @@ func (pool AllocatingPool) ClaimResource(userInput map[string]interface{}, descr
 	} else {
 		functionName = "invoke()"
 	}
-
 	resourceProperties, _ /*TODO do something with logs */, err := InvokeAllocationStrategy(
-		pool.invoker, strat, userInput, resourcePool, currentResources, propMap, functionName)
+		pool.ctx, pool.invoker, strat, userInput, resourcePool, currentResources, propMap, functionName)
 	if err != nil {
 		log.Error(pool.ctx, err, "Unable to claim resource with pool with ID: %d, invoking strategy failed", pool.ID)
 		return nil, errors.Wrapf(err,
@@ -351,6 +367,10 @@ func (pool AllocatingPool) ClaimResource(userInput map[string]interface{}, descr
 		return nil, errors.Wrapf(err, "Cannot update resource #%d", res.ID)
 	}
 	return res, nil
+}
+
+func getFullListOfResources(pool AllocatingPool) ([]*model.ResourceInput, error) {
+	return pool.loadClaimedResources()
 }
 
 func convertProperties(ps []*ent.Property) (map[string]interface{}, error) {

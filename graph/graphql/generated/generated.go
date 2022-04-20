@@ -1518,6 +1518,7 @@ input TagOr {
 Convenience entity representing the identity of a pool in some calls
 """
 input ResourcePoolInput {
+    ResourcePoolID: ID!
     ResourcePoolName: String!
     poolProperties: Map!
 }
@@ -8355,6 +8356,14 @@ func (ec *executionContext) unmarshalInputResourcePoolInput(ctx context.Context,
 
 	for k, v := range asMap {
 		switch k {
+		case "ResourcePoolID":
+			var err error
+
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("ResourcePoolID"))
+			it.ResourcePoolID, err = ec.unmarshalNID2int(ctx, v)
+			if err != nil {
+				return it, err
+			}
 		case "ResourcePoolName":
 			var err error
 

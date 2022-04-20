@@ -114,6 +114,17 @@ export async function createIpv4PrefixRootPool() {
         {prefix: 8, address: "10.0.0.0"},);
 }
 
+export async function createUniqueIdPool() {
+    let resourceTypeId = await findResourceTypeId('unique_id');
+    let strategyId = await findAllocationStrategyId('unique_id');
+    return await createAllocationPool(
+        getUniqueName('unique_id'),
+        resourceTypeId,
+        strategyId,
+        {from: "int", to: "int", idFormat: "string"},
+        {from: 1, to: 15, idFormat: "{counter}"});
+}
+
 export async function createIpv4NestedPool(parentResourceId) {
     let resourceTypeId = await findResourceTypeId('ipv4');
     let strategyId = await findAllocationStrategyId('ipv4');

@@ -182,6 +182,7 @@ input TagOr {
 Convenience entity representing the identity of a pool in some calls
 """
 input ResourcePoolInput {
+    ResourcePoolID: ID!
     ResourcePoolName: String!
     poolProperties: Map!
 }

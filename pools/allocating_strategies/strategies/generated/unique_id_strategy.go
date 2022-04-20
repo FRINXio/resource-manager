@@ -1,40 +1,72 @@
 package src
 
 import (
+	"context"
 	"encoding/json"
 	"fmt"
+	"github.com/facebook/ent/dialect/sql"
+	"github.com/net-auto/resourceManager/ent"
+	log "github.com/net-auto/resourceManager/logging"
 	"github.com/pkg/errors"
 	"strconv"
 	"strings"
 )
 
 type UniqueId struct {
-	currentResources []map[string]interface{}
+	ctx                    context.Context
+	resourcePoolID         int
 	resourcePoolProperties map[string]interface{}
-	userInput map[string]interface{}
+	userInput              map[string]interface{}
 }
 
-func NewUniqueId(currentResources []map[string]interface{},
+func NewUniqueId(ctx context.Context,
+	resourcePoolID int,
 	resourcePoolProperties map[string]interface{},
 	userInput map[string]interface{}) UniqueId {
-	return UniqueId{currentResources, resourcePoolProperties, userInput}
+	return UniqueId{ctx, resourcePoolID, resourcePoolProperties, userInput}
 }
 
-func (uniqueId *UniqueId) getNextFreeCounterAndResourcesSet(fromValue int) (float64, map[float64]bool) {
-	var start = float64(fromValue)
-	currentResourcesSet := make(map[float64]bool)
+func (uniqueId *UniqueId) getNextFreeCounter(poolId int, fromValue int, toValue int, desiredValue int,
+	ctx context.Context) (int, error) {
 
-	for _, element := range uniqueId.currentResources {
-		var properties = element["Properties"].(map[string]interface{})
-		var counter = properties["counter"].(float64)
-		currentResourcesSet[counter] = true
+	transaction := ctx.Value(ent.TxCtxKey{})
+	if transaction == nil {
+		log.Error(ctx, nil, "Unable retrieve already opened transaction for pool with ID: %d", poolId)
+		return 0, errors.New("Unable retrieve already opened transaction for pool with ID: " + strconv.Itoa(poolId))
 	}
-	for i := start; i < float64(len(uniqueId.currentResources)) + start; i++ {
-		if !currentResourcesSet[i + 1] {
-			return i + 1, currentResourcesSet
+	tx := transaction.(*ent.Tx)
+	if desiredValue >= 0 {
+		query := "WITH RECURSIVE t(n) AS (VALUES (" + strconv.Itoa(fromValue) + ") " +
+			"UNION ALL SELECT n+1 FROM t WHERE n < " + strconv.Itoa(toValue) + ") " +
+			"SELECT n FROM t LEFT OUTER JOIN ( " +
+			"SELECT properties.int_val FROM properties JOIN resources ON properties.resource_properties = resources.id " +
+			"WHERE resources.resource_pool_claims = " + strconv.Itoa(poolId) + ") " +
+			"AS pr ON n = pr.int_val WHERE pr.int_val IS null AND n = " + strconv.Itoa(desiredValue) + ";"
+		valueExist, value, err := selectValueFromDB(ctx, tx, query)
+		if err != nil {
+			return 0, err
 		}
+		if valueExist == true {
+			return int(value), nil
+		}
+		return 0, errors.New("Unable to claim unique-id " + strconv.Itoa(desiredValue) +
+			".This unique-id was already claimed.")
+	} else {
+		query := "WITH RECURSIVE t(n) AS (VALUES (" + strconv.Itoa(fromValue) + ") " +
+			"UNION ALL SELECT n+1 FROM t WHERE n < " + strconv.Itoa(toValue) + ") " +
+			"SELECT n FROM t LEFT OUTER JOIN ( " +
+			"SELECT properties.int_val FROM properties JOIN resources ON properties.resource_properties = resources.id " +
+			"WHERE resources.resource_pool_claims = " + strconv.Itoa(poolId) + ") AS pr " +
+			"ON n = pr.int_val WHERE pr.int_val IS null ORDER BY n ASC LIMIT 1;"
+		valueExist, value, err := selectValueFromDB(ctx, tx, query)
+		if err != nil {
+			return 0, err
+		}
+		if valueExist == true {
+			return int(value), nil
+		}
+		return 0, errors.New("Unable to claim unique-id. Unique-id pool " + strconv.Itoa(poolId) + " is full.")
 	}
-	return float64(len(uniqueId.currentResources)) + start + 1, currentResourcesSet
 }
 
 func (uniqueId *UniqueId) Invoke() (map[string]interface{}, error) {
@@ -45,10 +77,9 @@ func (uniqueId *UniqueId) Invoke() (map[string]interface{}, error) {
 	resourcePoolfromValue, ok := uniqueId.resourcePoolProperties["from"]
 	if ok {
 		resourcePoolfromValue, _ := NumberToInt(resourcePoolfromValue)
-		fromValue = resourcePoolfromValue.(int) - 1
+		fromValue = resourcePoolfromValue.(int)
 	}
 
-	nextFreeCounter, currentResourcesSet := uniqueId.getNextFreeCounterAndResourcesSet(fromValue)
 	idFormat, ok := uniqueId.resourcePoolProperties["idFormat"]
 	if !ok {
 		return nil, errors.New("Missing idFormat in resources")
@@ -70,29 +101,30 @@ func (uniqueId *UniqueId) Invoke() (map[string]interface{}, error) {
 			replacePoolProperties[k] = v
 		}
 	}
-
+	desiredValue := -1
 	if value, ok := uniqueId.userInput["desiredValue"]; ok {
 		value, _ = NumberToInt(value)
-		nextFreeCounter = float64(value.(int))
-		if nextFreeCounter > float64(toValue) {
+		desiredValue = value.(int)
+		if desiredValue > int(int64(toValue)) {
 			return nil, errors.New("Unable to allocate Unique-id desiredValue: " + strconv.FormatInt(int64(value.(int)), 10) + "." +
 				" Value is out of scope: " + strconv.FormatInt(int64(toValue), 10))
 		}
-		if nextFreeCounter < float64(fromValue) {
+		if desiredValue < fromValue {
 			return nil, errors.New("Unable to allocate Unique-id desiredValue: " + strconv.FormatInt(int64(value.(int)), 10) + "." +
 				" Value is out of scope: " + strconv.FormatInt(int64(fromValue), 10))
 		}
 	}
+
+	nextFreeCounter, err := uniqueId.getNextFreeCounter(uniqueId.resourcePoolID, fromValue, resourcePooltoValue.(int),
+		desiredValue, uniqueId.ctx)
+	if err != nil {
+		return nil, err
+	}
 	if prefixNumber, ok := uniqueId.resourcePoolProperties["counterFormatWidth"]; ok {
 		replacePoolProperties["counter"] = fmt.Sprintf(
-			"%0" + strconv.Itoa(prefixNumber.(int)) +"d", int(nextFreeCounter))
+			"%0"+strconv.Itoa(prefixNumber.(int))+"d", int(nextFreeCounter))
 	} else {
 		replacePoolProperties["counter"] = nextFreeCounter
-	}
-
-	if nextFreeCounter > float64(toValue) {
-		return nil, errors.New("Unable to allocate Unique-id from idFormat: \"" + idFormat.(string) + "\"." +
-			" Insufficient capacity to allocate a unique-id.")
 	}
 
 	for k, v := range replacePoolProperties {
@@ -109,10 +141,7 @@ func (uniqueId *UniqueId) Invoke() (map[string]interface{}, error) {
 			v = fmt.Sprint(intVal64)
 		}
 
-		idFormat = strings.Replace(idFormat.(string), "{" + k + "}", v.(string), 1)
-	}
-	if currentResourcesSet[nextFreeCounter] {
-		return nil, errors.New("Unique-id " + idFormat.(string) + " was already claimed." )
+		idFormat = strings.Replace(idFormat.(string), "{"+k+"}", v.(string), 1)
 	}
 
 	var result = make(map[string]interface{})
@@ -122,7 +151,15 @@ func (uniqueId *UniqueId) Invoke() (map[string]interface{}, error) {
 }
 
 func (uniqueId *UniqueId) Capacity() (map[string]interface{}, error) {
-	var allocatedCapacity = float64(len(uniqueId.currentResources))
+	ctx := uniqueId.ctx
+
+	transaction := ctx.Value(ent.TxCtxKey{})
+	if transaction == nil {
+		log.Error(ctx, nil, "Unable retrieve already opened transaction for pool with ID: %d", uniqueId.resourcePoolID)
+		return nil, errors.New("Unable retrieve already opened transaction for pool with ID: " + strconv.Itoa(uniqueId.resourcePoolID))
+	}
+	tx := transaction.(*ent.Tx)
+
 	var result = make(map[string]interface{})
 	var fromValue float64
 	var toValue float64
@@ -138,7 +175,43 @@ func (uniqueId *UniqueId) Capacity() (map[string]interface{}, error) {
 	} else {
 		fromValue = float64(0)
 	}
-	result["freeCapacity"] = toValue - allocatedCapacity - fromValue + 1
-	result["utilizedCapacity"] = allocatedCapacity
+	query := "WITH RECURSIVE t(n) AS (VALUES (" + strconv.Itoa(from.(int)) + ") " +
+		"UNION ALL SELECT n+1 FROM t WHERE n < " + strconv.Itoa(to.(int)) + ") " +
+		"SELECT COUNT(n) FROM t LEFT OUTER JOIN ( " +
+		"SELECT properties.int_val FROM properties JOIN resources ON properties.resource_properties = resources.id " +
+		"WHERE resources.resource_pool_claims = " + strconv.Itoa(uniqueId.resourcePoolID) + ") AS pr " +
+		"ON n = pr.int_val WHERE pr.int_val IS null;"
+	valueExist, value, err := selectValueFromDB(ctx, tx, query)
+	if err != nil {
+		return nil, errors.Wrap(err, "Unable get result from db for pool: "+strconv.Itoa(uniqueId.resourcePoolID))
+	}
+	if valueExist == true {
+		result["freeCapacity"] = float64(value)
+		result["utilizedCapacity"] = toValue - float64(value) - fromValue + 1
+	}
 	return result, nil
+}
+
+func selectValueFromDB(ctx context.Context, tx *ent.Tx, query string) (valueExist bool, resultValue int64, error error) {
+	rows := &sql.Rows{}
+	var args []interface{}
+	err := tx.UnderlyingTx().Query(ctx, query, args, rows)
+	if err != nil {
+		log.Error(ctx, err, "Error while executing query: %v", err)
+		return false, 0, errors.Wrap(err, "Error while executing query: "+query)
+	}
+	defer rows.Close()
+	type value struct {
+		intValue sql.NullInt64
+	}
+	var result value
+	for rows.Next() {
+		err = rows.Scan(&result.intValue)
+		if err != nil {
+			log.Error(ctx, err, "Error while scanning results: %v", err)
+			return false, 0, errors.Wrap(err, "Error while scanning results from db.")
+		}
+	}
+
+	return result.intValue.Valid, result.intValue.Int64, err
 }
