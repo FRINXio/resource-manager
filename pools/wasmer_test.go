@@ -87,7 +87,7 @@ func TestVlanInvokeGo(t *testing.T) {
 	userInput := make(map[string]interface{})
 	var resourcePool model.ResourcePoolInput
 	resourcePool.ResourcePoolName = "svlan"
-
+	resourcePool.ResourcePoolID = 1
 	now := time.Now()
 	var r0 model.ResourceInput
 	r0.Properties = map[string]interface{}{"vlan": 0}
@@ -99,7 +99,7 @@ func TestVlanInvokeGo(t *testing.T) {
 
 	var resourcePoolResources = map[string]interface{}{"from": 0, "to": 4095}
 
-	actual, logString, err := invokeGo(strat, userInput, resourcePool, currentResources, resourcePoolResources, "invoke()")
+	actual, logString, err := invokeGo(ctx, strat, userInput, resourcePool, currentResources, resourcePoolResources, "invoke()")
 	if err != nil {
 		t.Fatalf("Unable run - %s", err)
 	}
@@ -131,6 +131,7 @@ func TestUniqueIdInvokeGo(t *testing.T) {
 	userInput := make(map[string]interface{})
 	var resourcePool model.ResourcePoolInput
 	resourcePool.ResourcePoolName = "svlan"
+	resourcePool.ResourcePoolID = 1
 
 	now := time.Now()
 	var r0 model.ResourceInput
@@ -143,7 +144,7 @@ func TestUniqueIdInvokeGo(t *testing.T) {
 
 	var resourcePoolResources = map[string]interface{}{"from": 1000, "idFormat": "{counter}"}
 
-	actual, logString, err := invokeGo(strat, userInput, resourcePool, currentResources, resourcePoolResources, "invoke()")
+	actual, logString, err := invokeGo(ctx, strat, userInput, resourcePool, currentResources, resourcePoolResources, "invoke()")
 	if err != nil {
 		t.Fatalf("Unable run - %s", err)
 	}

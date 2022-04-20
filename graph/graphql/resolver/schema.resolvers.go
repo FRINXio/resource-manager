@@ -146,7 +146,7 @@ func (r *mutationResolver) TestAllocationStrategy(ctx context.Context, allocatio
 		functionName = "invoke()"
 	}
 
-	parsedOutputFromStrat, stdErr, err := p.InvokeAllocationStrategy(wasmer, strat, userInput, resourcePool, currentResources, poolPropertiesMaps, functionName)
+	parsedOutputFromStrat, stdErr, err := p.InvokeAllocationStrategy(ctx, wasmer, strat, userInput, resourcePool, currentResources, poolPropertiesMaps, functionName)
 	if err != nil {
 		log.Error(ctx, err, "Error while running script on pool \"%s\" strategy ID %d", resourcePool.ResourcePoolName, allocationStrategyID)
 		return nil, gqlerror.Errorf("Error while running the script: %v", err)

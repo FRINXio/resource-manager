@@ -276,18 +276,20 @@ export async function createNestedAllocationPool(poolName, resourceTypeId, strat
     .catch(error => console.log(error));
 }
 
-export async function testStrategy(allocationStrategyId, poolProperties, poolName, currentResources, userInput, suppressErrors = false) {
+export async function testStrategy(allocationStrategyId, poolProperties, poolName, poolId, currentResources, userInput, suppressErrors = false) {
     return client.mutate({
         mutation: gql`
             mutation testStrategy(
                 $allocationStrategyId: ID!,
                 $poolProperties: Map!,
                 $poolName: String!,
+                $poolId: ID!,
                 $currentResources: [ResourceInput!]!,
                 $userInput: Map!) {
                 TestAllocationStrategy(
                     allocationStrategyId: $allocationStrategyId
                     resourcePool: {
+                        ResourcePoolID: $poolId
                         poolProperties: $poolProperties
                         ResourcePoolName: $poolName
                     }
@@ -302,6 +304,7 @@ export async function testStrategy(allocationStrategyId, poolProperties, poolNam
             poolName: poolName,
             currentResources: currentResources,
             userInput: userInput,
+            poolId: poolId
         }
     })
     .then(result => result.data.TestAllocationStrategy)

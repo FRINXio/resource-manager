@@ -102,6 +102,7 @@ type ScriptInvoker interface {
 }
 
 func InvokeAllocationStrategy(
+	ctx context.Context,
 	invoker ScriptInvoker,
 	strat *ent.AllocationStrategy,
 	userInput map[string]interface{},
@@ -117,7 +118,7 @@ func InvokeAllocationStrategy(
 	case allocationstrategy.LangPy:
 		return invoker.invokePy(strat.Script, userInput, resourcePool, currentResources, poolPropertiesMaps, functionName)
 	case allocationstrategy.LangGo:
-		return invokeGo(strat, userInput, resourcePool, currentResources, poolPropertiesMaps, functionName)
+		return invokeGo(ctx, strat, userInput, resourcePool, currentResources, poolPropertiesMaps, functionName)
 	default:
 		err := errors.Errorf("Unknown language \"%s\" for strategy \"%s\"", strat.Lang, strat.Name)
 		log.Error(nil, err, "Unknown strategy language")
@@ -162,6 +163,7 @@ func runStrategy(goStrategy GoStrategy, functionName string) (map[string]interfa
 }
 
 func invokeGo(
+	ctx context.Context,
 	strategy *ent.AllocationStrategy,
 	userInput map[string]interface{},
 	resourcePool model.ResourcePoolInput,
@@ -184,8 +186,7 @@ func invokeGo(
 		vlan := strategies.NewVlan(currentResourcesArray, poolPropertiesMaps)
 		goStrategy = &vlan
 	case "unique_id":
-		// TODO: Pass currentResourcesArray as pointer
-		id := strategies.NewUniqueId(currentResourcesArray, poolPropertiesMaps, userInput)
+		id := strategies.NewUniqueId(ctx, resourcePool.ResourcePoolID, poolPropertiesMaps, userInput)
 		goStrategy = &id
 	case "ipv4":
 		// TODO: Pass currentResourcesArray as pointer
@@ -305,8 +306,8 @@ func (wasmer Wasmer) invoke(name string, arg ...string) (map[string]interface{},
 	if err := json.Unmarshal(stdout, &m); err != nil {
 		log.Error(nil, err, "Parsing error")
 		return nil, stderr, errors.Wrapf(err,
-			"Unable to parse allocation function output as flat JSON: \"%s\". " +
-			"Error output: \"%s\"", string(stdout), stderr)
+			"Unable to parse allocation function output as flat JSON: \"%s\". "+
+				"Error output: \"%s\"", string(stdout), stderr)
 	}
 	return m, stderr, nil
 }

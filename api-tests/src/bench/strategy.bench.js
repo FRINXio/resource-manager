@@ -5,24 +5,28 @@ import { getUniqueName } from '../test-helpers.js';
 async function initAndGetJsTestFunction(histograms) {
     return record(histograms, 'setup', async () => {
         let poolName = getUniqueName('testJSstrategy');
+        let poolId = 0;
         let strategyId = await createAllocationStrategy(
             poolName,
             'function invoke() {return {vlan: userInput.desiredVlan};}',
             'js');
         return async () => record(histograms, 'testStrategy', async () =>
-            await testStrategy(strategyId, { ResourcePoolName: 'testpool' }, poolName, [], { desiredVlan: 85 }));
+            await testStrategy(strategyId, { ResourcePoolName: 'testpool' }, poolName, poolId,
+                [], { desiredVlan: 85 }));
     });
 }
 
 async function initAndGetPyTestFunction(histograms) {
     return record(histograms, 'setup', async () => {
         let poolName = getUniqueName('testPYstrategy');
+        let poolId = 0;
         let strategyId = await createAllocationStrategy(
             poolName,
             'return {\'vlan\': userInput[\'desiredVlan\']}',
             'py');
         return async () => record(histograms, 'testStrategy', async () =>
-            await testStrategy(strategyId, { ResourcePoolName: poolName }, poolName, [], { desiredVlan: 85 }));
+            await testStrategy(strategyId, { ResourcePoolName: poolName }, poolName, poolId,
+                [], { desiredVlan: 85 }));
     });
 }
 

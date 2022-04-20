@@ -192,6 +192,7 @@ type ResourceInput struct {
 
 // Convenience entity representing the identity of a pool in some calls
 type ResourcePoolInput struct {
+	ResourcePoolID   int                    `json:"ResourcePoolID"`
 	ResourcePoolName string                 `json:"ResourcePoolName"`
 	PoolProperties   map[string]interface{} `json:"poolProperties"`
 }
