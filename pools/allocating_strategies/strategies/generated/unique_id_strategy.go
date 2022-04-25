@@ -32,25 +32,22 @@ func (uniqueId *UniqueId) getNextFreeCounter(poolId int, fromValue int, toValue 
 	transaction := ctx.Value(ent.TxCtxKey{})
 	if transaction == nil {
 		log.Error(ctx, nil, "Unable retrieve already opened transaction for pool with ID: %d", poolId)
-		return 0, errors.New("Unable retrieve already opened transaction for pool with ID: " + strconv.Itoa(poolId))
+		return -1, errors.Wrapf(nil, "Unable retrieve already opened transaction for pool with ID: %d", poolId)
 	}
 	tx := transaction.(*ent.Tx)
 	if desiredValue >= 0 {
-		query := "WITH RECURSIVE t(n) AS (VALUES (" + strconv.Itoa(fromValue) + ") " +
-			"UNION ALL SELECT n+1 FROM t WHERE n < " + strconv.Itoa(toValue) + ") " +
-			"SELECT n FROM t LEFT OUTER JOIN ( " +
-			"SELECT properties.int_val FROM properties JOIN resources ON properties.resource_properties = resources.id " +
-			"WHERE resources.resource_pool_claims = " + strconv.Itoa(poolId) + ") " +
-			"AS pr ON n = pr.int_val WHERE pr.int_val IS null AND n = " + strconv.Itoa(desiredValue) + ";"
+		query := "SELECT properties.int_val FROM properties JOIN resources " +
+			"ON properties.resource_properties = resources.id WHERE " +
+			"resources.resource_pool_claims = " + strconv.Itoa(poolId) +
+			" AND properties.int_val = " + strconv.Itoa(desiredValue) + ";"
 		valueExist, value, err := selectValueFromDB(ctx, tx, query)
 		if err != nil {
 			return 0, err
 		}
 		if valueExist == true {
-			return int(value), nil
+			return 0, errors.New("Unique-id " + strconv.Itoa(int(value)) + " was already claimed.")
 		}
-		return 0, errors.New("Unable to claim unique-id " + strconv.Itoa(desiredValue) +
-			".This unique-id was already claimed.")
+		return desiredValue, nil
 	} else {
 		query := "WITH RECURSIVE t(n) AS (VALUES (" + strconv.Itoa(fromValue) + ") " +
 			"UNION ALL SELECT n+1 FROM t WHERE n < " + strconv.Itoa(toValue) + ") " +
@@ -65,7 +62,7 @@ func (uniqueId *UniqueId) getNextFreeCounter(poolId int, fromValue int, toValue 
 		if valueExist == true {
 			return int(value), nil
 		}
-		return 0, errors.New("Unable to claim unique-id. Unique-id pool " + strconv.Itoa(poolId) + " is full.")
+		return 0, errors.New("Unique-id pool " + strconv.Itoa(poolId) + " is full.")
 	}
 }
 
@@ -155,8 +152,8 @@ func (uniqueId *UniqueId) Capacity() (map[string]interface{}, error) {
 
 	transaction := ctx.Value(ent.TxCtxKey{})
 	if transaction == nil {
-		log.Error(ctx, nil, "Unable retrieve already opened transaction for pool with ID: %d", uniqueId.resourcePoolID)
-		return nil, errors.New("Unable retrieve already opened transaction for pool with ID: " + strconv.Itoa(uniqueId.resourcePoolID))
+		log.Error(ctx, nil, "Unable retrieve already opened transaction for pool with ID: %d", 1)
+		return nil, errors.Wrapf(nil, "Unable retrieve already opened transaction for pool with ID: %d", 1)
 	}
 	tx := transaction.(*ent.Tx)
 
@@ -175,19 +172,16 @@ func (uniqueId *UniqueId) Capacity() (map[string]interface{}, error) {
 	} else {
 		fromValue = float64(0)
 	}
-	query := "WITH RECURSIVE t(n) AS (VALUES (" + strconv.Itoa(from.(int)) + ") " +
-		"UNION ALL SELECT n+1 FROM t WHERE n < " + strconv.Itoa(to.(int)) + ") " +
-		"SELECT COUNT(n) FROM t LEFT OUTER JOIN ( " +
-		"SELECT properties.int_val FROM properties JOIN resources ON properties.resource_properties = resources.id " +
-		"WHERE resources.resource_pool_claims = " + strconv.Itoa(uniqueId.resourcePoolID) + ") AS pr " +
-		"ON n = pr.int_val WHERE pr.int_val IS null;"
+	query := "SELECT COUNT(properties.int_val) FROM properties JOIN resources " +
+		"ON properties.resource_properties = resources.id WHERE resources.resource_pool_claims = " +
+		strconv.Itoa(uniqueId.resourcePoolID) + " AND properties.int_val IS NOT null;"
 	valueExist, value, err := selectValueFromDB(ctx, tx, query)
 	if err != nil {
-		return nil, errors.Wrap(err, "Unable get result from db for pool: "+strconv.Itoa(uniqueId.resourcePoolID))
+		return nil, err
 	}
 	if valueExist == true {
-		result["freeCapacity"] = float64(value)
-		result["utilizedCapacity"] = toValue - float64(value) - fromValue + 1
+		result["freeCapacity"] = toValue - float64(value) - fromValue + 1
+		result["utilizedCapacity"] = float64(value)
 	}
 	return result, nil
 }
@@ -198,9 +192,10 @@ func selectValueFromDB(ctx context.Context, tx *ent.Tx, query string) (valueExis
 	err := tx.UnderlyingTx().Query(ctx, query, args, rows)
 	if err != nil {
 		log.Error(ctx, err, "Error while executing query: %v", err)
-		return false, 0, errors.Wrap(err, "Error while executing query: "+query)
+		return false, 0, err
 	}
 	defer rows.Close()
+
 	type value struct {
 		intValue sql.NullInt64
 	}
@@ -209,9 +204,13 @@ func selectValueFromDB(ctx context.Context, tx *ent.Tx, query string) (valueExis
 		err = rows.Scan(&result.intValue)
 		if err != nil {
 			log.Error(ctx, err, "Error while scanning results: %v", err)
-			return false, 0, errors.Wrap(err, "Error while scanning results from db.")
+			return false, 0, err
 		}
 	}
 
+	if err != nil {
+		log.Error(ctx, err, "Failed to execute query: %v", err)
+		return false, 0, err
+	}
 	return result.intValue.Valid, result.intValue.Int64, err
 }
