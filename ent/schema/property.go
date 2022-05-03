@@ -103,9 +103,8 @@ func (PropertyType) Edges() []ent.Edge {
 }
 
 func (PropertyType) Policy() ent.Policy {
-	return RBAC;
+	return RBAC
 }
-
 
 // Property defines the property schema.
 type Property struct {
@@ -168,9 +167,11 @@ func (Property) Indexes() []ent.Index {
 			Edges("resources"),
 		index.
 			Edges("type"),
+		index.
+			Fields("int_val"),
 	}
 }
 
 func (Property) Policy() ent.Policy {
-	return ALWAYS_ALLOWED;
+	return ALWAYS_ALLOWED
 }
