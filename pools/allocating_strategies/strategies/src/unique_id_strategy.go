@@ -49,12 +49,11 @@ func (uniqueId *UniqueId) getNextFreeCounter(poolId int, fromValue int, toValue 
 		}
 		return desiredValue, nil
 	} else {
-		query := "WITH RECURSIVE t(n) AS (VALUES (" + strconv.Itoa(fromValue) + ") " +
-			"UNION ALL SELECT n+1 FROM t WHERE n < " + strconv.Itoa(toValue) + ") " +
-			"SELECT n FROM t LEFT OUTER JOIN ( " +
-			"SELECT properties.int_val FROM properties JOIN resources ON properties.resource_properties = resources.id " +
+		query := "WITH t as (SELECT generate_series(" + strconv.Itoa(fromValue) + ", " + strconv.Itoa(toValue) +
+			") AS N) SELECT n FROM t LEFT OUTER JOIN ( SELECT properties.int_val FROM properties " +
+			"JOIN resources ON properties.resource_properties = resources.id " +
 			"WHERE resources.resource_pool_claims = " + strconv.Itoa(poolId) + ") AS pr " +
-			"ON n = pr.int_val WHERE pr.int_val IS null ORDER BY n ASC LIMIT 1;"
+			"ON n = pr.int_val WHERE pr.int_val IS null LIMIT 1;"
 		valueExist, value, err := selectValueFromDB(ctx, tx, query)
 		if err != nil {
 			return 0, err
