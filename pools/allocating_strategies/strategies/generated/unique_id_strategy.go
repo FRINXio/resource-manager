@@ -74,6 +74,9 @@ func (uniqueId *UniqueId) Invoke() (map[string]interface{}, error) {
 	if ok {
 		resourcePoolfromValue, _ := NumberToInt(resourcePoolfromValue)
 		fromValue = resourcePoolfromValue.(int)
+	} else {
+		return nil, errors.New("Missing property 'from' in resource pool " +
+			strconv.Itoa(uniqueId.resourcePoolID) + " UniqueId")
 	}
 
 	idFormat, ok := uniqueId.resourcePoolProperties["idFormat"]
@@ -89,6 +92,9 @@ func (uniqueId *UniqueId) Invoke() (map[string]interface{}, error) {
 	if ok {
 		resourcePooltoValue, _ := NumberToInt(resourcePooltoValue)
 		toValue = uint(resourcePooltoValue.(int))
+	} else {
+		return nil, errors.New("Missing property 'to' in resource pool " +
+			strconv.Itoa(uniqueId.resourcePoolID) + " UniqueId")
 	}
 
 	replacePoolProperties := make(map[string]interface{})
