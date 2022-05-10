@@ -109,8 +109,7 @@ func (generalRBACPolicy) EvalMutation(ctx context.Context, m ent.Mutation) error
 	if isAllowed(identity) {
 		return nil
 	} else {
-		return fmt.Errorf("User: %q unauthorized to mutate: %q. Must be role: %s or group: %s",
-			identity, m.Type(), adminRoles, adminGroups)
+		return fmt.Errorf("User unauthorized to mutate: %q", m.Type())
 	}
 }
 
