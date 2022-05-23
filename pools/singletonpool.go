@@ -5,6 +5,7 @@ import (
 	"github.com/net-auto/resourceManager/ent/resource"
 	log "github.com/net-auto/resourceManager/logging"
 	"github.com/pkg/errors"
+	"strconv"
 
 	"github.com/net-auto/resourceManager/ent"
 	resourcePool "github.com/net-auto/resourceManager/ent/resourcepool"
@@ -72,15 +73,14 @@ func (pool SingletonPool) FreeResource(raw RawResourceProps) error {
 	return nil
 }
 
-func (pool SingletonPool) Capacity() (float64, float64, error) {
+func (pool SingletonPool) Capacity() (string, string, error) {
 	claimedResources, err := pool.QueryResources()
 
 	if err != nil {
 		log.Error(pool.ctx, err, "Unable to retrieve resources in pool ID %d", pool.ID)
-		return 0, 0, err
+		return "0", "0", err
 	}
-
-	return float64(1 - len(claimedResources)), float64(len(claimedResources)), nil
+	return strconv.Itoa(1 - len(claimedResources)), strconv.Itoa(len(claimedResources)), nil
 }
 
 // QueryResource returns always the same resource

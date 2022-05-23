@@ -19,7 +19,7 @@ type Pool interface {
 	QueryResources() (ent.Resources, error)
 	Destroy() error
 	ResourceType() (*ent.ResourceType, error)
-	Capacity() (float64, float64, error)
+	Capacity() (string, string, error)
 }
 
 type poolBase struct {

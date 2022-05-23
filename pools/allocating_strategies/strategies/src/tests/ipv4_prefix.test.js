@@ -1,5 +1,5 @@
 const strat = require('../ipv4_prefix_strategy')
-import {parsePrefix} from "../ipv4utils";
+import {parsePrefix} from "../ipv4-utils";
 
 test("single allocation pool", () => {
     for (let i = 1; i <= 8; i++) {
@@ -39,7 +39,7 @@ test("ipv6-prefix capacity 24 mask", () => {
         {});
 
     expect(capacity)
-        .toStrictEqual({freeCapacity: 240, utilizedCapacity: 14})
+        .toStrictEqual({freeCapacity: "240", utilizedCapacity: "14"})
 })
 
 test("ipv4 prefix allocation subnet vs. pool", () => {

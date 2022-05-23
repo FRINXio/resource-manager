@@ -4,7 +4,7 @@ import {
     inet_ntoa,
     prefixToStr,
     subnetAddresses
-} from "./ipv4utils";
+} from "./ipv4-utils";
 
 // framework managed constants
 var currentResources = []
@@ -63,7 +63,10 @@ function capacity() {
         allocatedCapacity += hostsInMask(resource.Properties.address, resource.Properties.prefix);
     }
 
-    return { freeCapacity: totalCapacity - allocatedCapacity + subnetItself, utilizedCapacity: allocatedCapacity };
+    return {
+        freeCapacity: String(totalCapacity - allocatedCapacity + subnetItself),
+        utilizedCapacity: String(allocatedCapacity)
+    };
 }
 
 // log utilisation stats

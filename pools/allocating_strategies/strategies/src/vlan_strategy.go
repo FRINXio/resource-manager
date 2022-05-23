@@ -2,6 +2,7 @@ package src
 
 import (
 	"encoding/json"
+	"fmt"
 	"github.com/pkg/errors"
 	"regexp"
 	"strconv"
@@ -23,7 +24,7 @@ func UtilizedCapacity(allocatedRanges []map[string]interface{}, newlyAllocatedVl
 	return float64(len(allocatedRanges)) + newlyAllocatedVlan
 }
 
-func FreeCapacity(vlanRange map[string]interface{}, utilisedCapacity float64) float64 {
+func (vlan *Vlan) FreeCapacity(vlanRange map[string]interface{}, utilisedCapacity float64) float64 {
 	return float64(vlanRange["to"].(int) - vlanRange["from"].(int) + 1 - int(utilisedCapacity))
 }
 
@@ -131,7 +132,8 @@ func (vlan *Vlan) Invoke() (map[string]interface{}, error) {
 
 func (vlan *Vlan) Capacity() (map[string]interface{}, error) {
 	var result = make(map[string]interface{})
-	result["freeCapacity"] = FreeCapacity(vlan.resourcePoolProperties, float64(len(vlan.currentResources)))
-	result["utilizedCapacity"] = float64(len(vlan.currentResources))
+	freeCapacity := vlan.FreeCapacity(vlan.resourcePoolProperties, float64(len(vlan.currentResources)))
+	result["freeCapacity"] = fmt.Sprintf("%v", freeCapacity)
+	result["utilizedCapacity"] = strconv.Itoa(len(vlan.currentResources))
 	return result, nil
 }

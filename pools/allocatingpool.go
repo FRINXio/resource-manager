@@ -174,12 +174,12 @@ func (pool AllocatingPool) PoolProperties() ([]*ent.Property, error) {
 	return pool.QueryPoolProperties().QueryProperties().WithType().All(pool.ctx)
 }
 
-func (pool AllocatingPool) Capacity() (float64, float64, error) {
+func (pool AllocatingPool) Capacity() (string, string, error) {
 
 	strat, err := pool.AllocationStrategy()
 	if err != nil {
 		log.Error(pool.ctx, err, "Unable to retrieve allocation-strategy for pool %d", pool.ID)
-		return 0, 0, errors.Wrapf(err,
+		return "0", "0", errors.Wrapf(err,
 			"Unable to retrieve allocation-strategy for pool %d, allocation strategy loading error", pool.ID)
 	}
 	var currentResources []*model.ResourceInput
@@ -188,7 +188,7 @@ func (pool AllocatingPool) Capacity() (float64, float64, error) {
 		currentResources, err = getFullListOfResources(pool)
 		if err != nil {
 			log.Error(pool.ctx, err, "Unable to load resources for pool %d", pool.ID)
-			return 0, 0, errors.Wrapf(err,
+			return "0", "0", errors.Wrapf(err,
 				"Unable to load resources for pool %d, resource loading error", pool.ID)
 		}
 	} else {
@@ -196,7 +196,7 @@ func (pool AllocatingPool) Capacity() (float64, float64, error) {
 		tx, err := pool.client.Tx(pool.ctx)
 		if err != nil {
 			log.Error(pool.ctx, err, "Unable to open new read transaction for pool %d", pool.ID)
-			return 0, 0, errors.Wrapf(err, "Unable to open new read transaction for pool %d", pool.ID)
+			return "0", "0", errors.Wrapf(err, "Unable to open new read transaction for pool %d", pool.ID)
 		}
 		pool.ctx = context.WithValue(pool.ctx, ent.TxCtxKey{}, tx)
 	}
@@ -205,7 +205,7 @@ func (pool AllocatingPool) Capacity() (float64, float64, error) {
 
 	if err != nil {
 		log.Error(pool.ctx, err, "Unable to load resources for pool %d", pool.ID)
-		return 0, 0, errors.Wrapf(err,
+		return "0", "0", errors.Wrapf(err,
 			"Unable to get properties from pool #%d, resource type loading error ", pool.ID)
 	}
 
@@ -213,7 +213,7 @@ func (pool AllocatingPool) Capacity() (float64, float64, error) {
 
 	if propErr != nil {
 		log.Error(pool.ctx, propErr, "Unable to convert value from property")
-		return 0, 0, errors.Wrapf(propErr, "Unable to convert value from property")
+		return "0", "0", errors.Wrapf(propErr, "Unable to convert value from property")
 	}
 
 	var emptyMap = map[string]interface{}{}
@@ -224,19 +224,19 @@ func (pool AllocatingPool) Capacity() (float64, float64, error) {
 	}, currentResources, propMap, "capacity()")
 	if err != nil || result == nil {
 		log.Error(pool.ctx, err, "Invoking allocation strategy failed")
-		return 0, 0, errors.Wrapf(err,
+		return "0", "0", errors.Wrapf(err,
 			"Unable to compute capacity pool #%d, allocation strategy \"%s\" failed", pool.ID, strat.Name)
 	}
 
-	var resultFreeCapacity float64 = 0
-	var resultUtilizedCapacity float64 = 0
+	var resultFreeCapacity = "0"
+	var resultUtilizedCapacity = "0"
 
 	if result["freeCapacity"] != nil {
-		resultFreeCapacity = result["freeCapacity"].(float64)
+		resultFreeCapacity = result["freeCapacity"].(string)
 	}
 
 	if result["utilizedCapacity"] != nil {
-		resultUtilizedCapacity = result["utilizedCapacity"].(float64)
+		resultUtilizedCapacity = result["utilizedCapacity"].(string)
 	}
 
 	return resultFreeCapacity, resultUtilizedCapacity, nil

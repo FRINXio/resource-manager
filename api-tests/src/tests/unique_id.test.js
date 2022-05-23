@@ -47,21 +47,21 @@ test('unique_id pool capacity', async (t) => {
     await claimResource(pool.id, {}, "");
     await claimResource(pool.id, {}, "");
     let capacity = await getCapacityForPool(pool.id);
-    t.equal(capacity.utilizedCapacity, 3);
-    t.equal(capacity.freeCapacity, 12);
+    t.equal(capacity.utilizedCapacity, "3");
+    t.equal(capacity.freeCapacity, "12");
 
     await claimResource(pool.id, {}, "");
     await claimResource(pool.id, {}, "");
     capacity = await getCapacityForPool(pool.id);
-    t.equal(capacity.utilizedCapacity, 5);
-    t.equal(capacity.freeCapacity, 10);
+    t.equal(capacity.utilizedCapacity, "5");
+    t.equal(capacity.freeCapacity, "10");
 
     for (let i = 1; i <= 10; i++) {
         await claimResource(pool.id, {}, "");
     }
     capacity = await getCapacityForPool(pool.id);
-    t.equal(capacity.utilizedCapacity, 15);
-    t.equal(capacity.freeCapacity, 0);
+    t.equal(capacity.utilizedCapacity, "15");
+    t.equal(capacity.freeCapacity, "0");
 
     let resource16 = await claimResource(pool.id, {}, "Unique-id pool is full");
     t.notOk(resource16)

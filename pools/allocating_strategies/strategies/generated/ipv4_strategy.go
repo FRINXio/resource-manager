@@ -1,13 +1,15 @@
 package src
 
 import (
+	"fmt"
 	"github.com/pkg/errors"
+	"strconv"
 )
 
 type Ipv4 struct {
-	currentResources []map[string]interface{}
+	currentResources       []map[string]interface{}
 	resourcePoolProperties map[string]interface{}
-	userInput map[string]interface{}
+	userInput              map[string]interface{}
 }
 
 func NewIpv4(currentResources []map[string]interface{},
@@ -31,7 +33,7 @@ func (ipv4 *Ipv4) FreeCapacity(address string, mask int, utilisedCapacity float6
 	return float64(hostsInMask(address, mask)) - utilisedCapacity + float64(subnetItself)
 }
 
-func (ipv4 *Ipv4) Capacity() (map[string]interface{}, error){
+func (ipv4 *Ipv4) Capacity() (map[string]interface{}, error) {
 	var result = make(map[string]interface{})
 	rootAddressStr, ok := ipv4.resourcePoolProperties["address"]
 	if !ok {
@@ -41,8 +43,9 @@ func (ipv4 *Ipv4) Capacity() (map[string]interface{}, error){
 	if !ok {
 		return nil, errors.New("Unable to extract prefix resources")
 	}
-	result["freeCapacity"] = ipv4.FreeCapacity(rootAddressStr.(string), rootMask.(int), float64(len(ipv4.currentResources)))
-	result["utilizedCapacity"] = float64(len(ipv4.currentResources))
+	freeCapacity := ipv4.FreeCapacity(rootAddressStr.(string), rootMask.(int), float64(len(ipv4.currentResources)))
+	result["freeCapacity"] = fmt.Sprintf("%v", freeCapacity)
+	result["utilizedCapacity"] = strconv.Itoa(len(ipv4.currentResources))
 	return result, nil
 }
 
@@ -102,12 +105,12 @@ func (ipv4 *Ipv4) Invoke() (map[string]interface{}, error) {
 		if desiredValueNum >= firstPossibleAddr && desiredValueNum < lastPossibleAddr {
 			desiredIpv4Address := inetNtoa(desiredValueNum)
 			if currentResourcesSet[desiredIpv4Address] {
-				return nil, errors.New("Ipv4 address " + value.(string) + " was already claimed." )
+				return nil, errors.New("Ipv4 address " + value.(string) + " was already claimed.")
 			}
 			result["address"] = value.(string)
 			return result, nil
 		} else {
-			return nil, errors.New("Ipv4 address " + value.(string) + " is out of " + rootPrefixStr )
+			return nil, errors.New("Ipv4 address " + value.(string) + " is out of " + rootPrefixStr)
 		}
 	}
 

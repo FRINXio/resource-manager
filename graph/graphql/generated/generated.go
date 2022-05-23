@@ -1668,8 +1668,8 @@ type CreateNestedAllocatingPoolPayload {
 Entity representing capacity of a pool
 """
 type PoolCapacityPayload {
-    freeCapacity: Float!
-    utilizedCapacity: Float!
+    freeCapacity: String!
+    utilizedCapacity: String!
 }
 
 type Query {
@@ -4444,9 +4444,9 @@ func (ec *executionContext) _PoolCapacityPayload_freeCapacity(ctx context.Contex
 		}
 		return graphql.Null
 	}
-	res := resTmp.(float64)
+	res := resTmp.(string)
 	fc.Result = res
-	return ec.marshalNFloat2float64(ctx, field.Selections, res)
+	return ec.marshalNString2string(ctx, field.Selections, res)
 }
 
 func (ec *executionContext) _PoolCapacityPayload_utilizedCapacity(ctx context.Context, field graphql.CollectedField, obj *model.PoolCapacityPayload) (ret graphql.Marshaler) {
@@ -4479,9 +4479,9 @@ func (ec *executionContext) _PoolCapacityPayload_utilizedCapacity(ctx context.Co
 		}
 		return graphql.Null
 	}
-	res := resTmp.(float64)
+	res := resTmp.(string)
 	fc.Result = res
-	return ec.marshalNFloat2float64(ctx, field.Selections, res)
+	return ec.marshalNString2string(ctx, field.Selections, res)
 }
 
 func (ec *executionContext) _PropertyType_FloatVal(ctx context.Context, field graphql.CollectedField, obj *ent.PropertyType) (ret graphql.Marshaler) {
@@ -10580,21 +10580,6 @@ func (ec *executionContext) marshalNDeleteTagPayload2ᚖgithubᚗcomᚋnetᚑaut
 		return graphql.Null
 	}
 	return ec._DeleteTagPayload(ctx, sel, v)
-}
-
-func (ec *executionContext) unmarshalNFloat2float64(ctx context.Context, v interface{}) (float64, error) {
-	res, err := graphql.UnmarshalFloat(v)
-	return res, graphql.ErrorOnPath(ctx, err)
-}
-
-func (ec *executionContext) marshalNFloat2float64(ctx context.Context, sel ast.SelectionSet, v float64) graphql.Marshaler {
-	res := graphql.MarshalFloat(v)
-	if res == graphql.Null {
-		if !graphql.HasFieldError(ctx, graphql.GetFieldContext(ctx)) {
-			ec.Errorf(ctx, "must not be null")
-		}
-	}
-	return res
 }
 
 func (ec *executionContext) unmarshalNFloat2ᚖfloat64(ctx context.Context, v interface{}) (*float64, error) {

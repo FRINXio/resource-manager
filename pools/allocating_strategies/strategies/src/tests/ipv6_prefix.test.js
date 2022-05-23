@@ -104,7 +104,7 @@ test("capacity test", () => {
         { 'prefix': 120, 'address': "dead::"},
         {});
     expect(capacity)
-        .toStrictEqual({freeCapacity: 256, utilizedCapacity: 0})
+        .toStrictEqual({freeCapacity: "256", utilizedCapacity: "0"})
 })
 
 

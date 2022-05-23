@@ -332,8 +332,8 @@ type CreateNestedAllocatingPoolPayload {
 Entity representing capacity of a pool
 """
 type PoolCapacityPayload {
-    freeCapacity: Float!
-    utilizedCapacity: Float!
+    freeCapacity: String!
+    utilizedCapacity: String!
 }
 
 type Query {
