@@ -5,7 +5,7 @@ import {
     parsePrefix,
     prefixToStr,
     subnetAddresses
-} from "./ipv6utils";
+} from "./ipv6-utils";
 
 // framework managed constants
 var currentResources = []

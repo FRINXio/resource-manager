@@ -94,7 +94,7 @@ func loadIpv6Prefix(ctx context.Context, client *ent.Tx) error {
 
 	_, err = client.AllocationStrategy.Create().
 		SetName("ipv6_prefix").
-		SetLang(allocationstrategy.LangJs).
+		SetLang(allocationstrategy.LangGo).
 		SetScript(IPV6_PREFIX).
 		Save(ctx)
 	if err != nil {
@@ -168,7 +168,7 @@ func loadIpv6(ctx context.Context, client *ent.Tx) error {
 
 	_, err = client.AllocationStrategy.Create().
 		SetName("ipv6").
-		SetLang(allocationstrategy.LangJs).
+		SetLang(allocationstrategy.LangGo).
 		SetScript(IPV6).
 		Save(ctx)
 	if err != nil {

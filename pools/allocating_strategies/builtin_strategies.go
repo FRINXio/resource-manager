@@ -115,7 +115,10 @@ function capacity() {
         allocatedCapacity += hostsInMask(resource.Properties.address, resource.Properties.prefix);
     }
 
-    return { freeCapacity: totalCapacity - allocatedCapacity + subnetItself, utilizedCapacity: allocatedCapacity };
+    return {
+        freeCapacity: String(totalCapacity - allocatedCapacity + subnetItself),
+        utilizedCapacity: String(allocatedCapacity)
+    };
 }
 
 // log utilisation stats
@@ -353,7 +356,11 @@ function freeCapacity(address, mask, utilisedCapacity) {
 }
 
 function capacity() {
-    return { freeCapacity: freeCapacity(resourcePoolProperties.address, resourcePoolProperties.prefix, currentResources.length), utilizedCapacity: currentResources.length };
+    return {
+        freeCapacity: String(
+            freeCapacity(resourcePoolProperties.address, resourcePoolProperties.prefix, currentResources.length)),
+        utilizedCapacity: String(currentResources.length)
+    };
 }
 
 // log utilisation stats
@@ -612,7 +619,10 @@ function capacity() {
         allocatedCapacity += hostsInMask(resource.Properties.address, resource.Properties.prefix);
     }
 
-    return { freeCapacity: Number(totalCapacity - allocatedCapacity + subnetItself), utilizedCapacity: Number(allocatedCapacity) };
+    return {
+        freeCapacity: String(totalCapacity - allocatedCapacity + subnetItself),
+        utilizedCapacity: String(allocatedCapacity)
+    };
 }
 
 // log utilisation stats
@@ -926,7 +936,10 @@ function freeCapacity(parentPrefix, utilisedCapacity) {
 function capacity() {
     let subnetItself = userInput.subnet ? BigInt(1) : BigInt(0);
     let freeInTotal = hostsInMask(resourcePoolProperties.address, resourcePoolProperties.prefix) + subnetItself;
-    return { freeCapacity: Number(freeInTotal - BigInt(currentResources.length)), utilizedCapacity: currentResources.length };
+    return {
+        freeCapacity: String(freeInTotal - BigInt(currentResources.length)),
+        utilizedCapacity: String(currentResources.length)
+    };
 }
 
 // log utilisation stats
@@ -1089,7 +1102,10 @@ function rangeToStr(range) {
 }
 
 function capacity() {
-    return { freeCapacity: freeCapacity(resourcePoolProperties, currentResources.length), utilizedCapacity: currentResources.length };
+    return {
+        freeCapacity: String(freeCapacity(resourcePoolProperties, currentResources.length)),
+        utilizedCapacity: String(currentResources.length)
+    };
 }
 
 
@@ -1268,7 +1284,7 @@ function invoke() {
 }
 
 function capacity() {
-    return { freeCapacity: Number(rangeCapacity()), utilizedCapacity: currentResources.length };
+    return { freeCapacity: String(rangeCapacity()), utilizedCapacity: String(currentResources.length)};
 }
 
 
@@ -1278,8 +1294,8 @@ const UNIQUE_ID = `
 'use strict';
 
 // framework managed constants
-var currentResources = [];
-var resourcePoolProperties = {};
+//;
+//;
 // framework managed constants
 
 // STRATEGY_START
@@ -1335,7 +1351,7 @@ function invoke() {
 function capacity() {
     let allocatedCapacity = getNextFreeCounter(resourcePoolProperties) - 1;
     let freeCapacity = Number.MAX_SAFE_INTEGER - allocatedCapacity;
-    return { freeCapacity: freeCapacity, utilizedCapacity: allocatedCapacity };
+    return { freeCapacity: String(freeCapacity), utilizedCapacity: String(allocatedCapacity) };
 }
 
 
@@ -1492,7 +1508,10 @@ function capacity() {
     for (resource of currentResources) {
         allocatedCapacity += rangeCapacity(resource.Properties);
     }
-    return { freeCapacity: freeCapacity(resourcePoolProperties, allocatedCapacity), utilizedCapacity: allocatedCapacity };
+    return {
+        freeCapacity: String(freeCapacity(resourcePoolProperties, allocatedCapacity)),
+        utilizedCapacity: String(allocatedCapacity)
+    };
 }
 
 
@@ -1579,8 +1598,12 @@ function invoke() {
 }
 
 function capacity() {
-    return { freeCapacity: freeCapacity(resourcePoolProperties, currentResources.length), utilizedCapacity: currentResources.length };
+    return {
+        freeCapacity: String(freeCapacity(resourcePoolProperties, currentResources.length)),
+        utilizedCapacity: String(currentResources.length)
+    };
 }
 
 
 `
+
