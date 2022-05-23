@@ -1,8 +1,8 @@
 'use strict';
 
 // framework managed constants
-var currentResources = [];
-var resourcePoolProperties = {};
+//;
+//;
 // framework managed constants
 
 // STRATEGY_START
@@ -58,7 +58,7 @@ function invoke() {
 function capacity() {
     let allocatedCapacity = getNextFreeCounter(resourcePoolProperties) - 1;
     let freeCapacity = Number.MAX_SAFE_INTEGER - allocatedCapacity;
-    return { freeCapacity: freeCapacity, utilizedCapacity: allocatedCapacity };
+    return { freeCapacity: String(freeCapacity), utilizedCapacity: String(allocatedCapacity) };
 }
 
 // STRATEGY_END

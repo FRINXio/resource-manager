@@ -15,7 +15,7 @@ test("unique id output and capacity", () => {
 
     let capacity = strat.invokeWithParamsCapacity(allocated, resource_pool, {});
     expect(capacity)
-        .toStrictEqual({freeCapacity: Number.MAX_SAFE_INTEGER - 3, utilizedCapacity: 3});
+        .toStrictEqual({freeCapacity: "9007199254740988", utilizedCapacity: "3"});
 })
 
 test("params without resourcePool", () => {
@@ -42,7 +42,7 @@ test("simple l3vpn counter", () => {
 
     let capacity = strat.invokeWithParamsCapacity([uniqueId(output.counter, output.text)],
         {someProperty: "L3VPN", idFormat: "{someProperty}{counter}"}, {});
-    expect(capacity).toStrictEqual({freeCapacity: Number.MAX_SAFE_INTEGER - 1, utilizedCapacity: 1});
+    expect(capacity).toStrictEqual({freeCapacity: "9007199254740990", utilizedCapacity: "1"});
 
     let next_output = strat.invokeWithParams([uniqueId(output.counter, output.text)],
         {someProperty: "L3VPN", idFormat: "{someProperty}{counter}"}, {});
@@ -51,7 +51,7 @@ test("simple l3vpn counter", () => {
     let next_capacity = strat.invokeWithParamsCapacity(
         [uniqueId(output.counter, output.text), uniqueId(next_output.counter, next_output.text)],
         {someProperty: "L3VPN", idFormat: "{someProperty}{counter}"}, {});
-    expect(next_capacity).toStrictEqual({freeCapacity: Number.MAX_SAFE_INTEGER - 2, utilizedCapacity: 2});
+    expect(next_capacity).toStrictEqual({freeCapacity: "9007199254740989", utilizedCapacity: "2"});
 })
 
 test("multiple l3vpn counters", () => {
@@ -67,7 +67,7 @@ test("multiple l3vpn counters", () => {
     let capacity = strat.invokeWithParamsCapacity(outputs,
         {someProperty: "L3VPN", idFormat: "{someProperty}{counter}"},
         {});
-    expect(capacity).toStrictEqual({freeCapacity: Number.MAX_SAFE_INTEGER - 10, utilizedCapacity: 10});
+    expect(capacity).toStrictEqual({freeCapacity: "9007199254740981", utilizedCapacity: "10"});
 })
 
 test("simple range counter",() =>{

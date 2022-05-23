@@ -11,6 +11,7 @@ import (
 	"github.com/net-auto/resourceManager/ent/schema"
 	log "github.com/net-auto/resourceManager/logging"
 	"github.com/pkg/errors"
+	"strconv"
 	"time"
 )
 
@@ -125,22 +126,22 @@ func (pool SetPool) ClaimResource(userInput map[string]interface{}, description 
 	return unclaimedRes, err
 }
 
-func (pool SetPool) Capacity() (float64, float64, error) {
+func (pool SetPool) Capacity() (string, string, error) {
 	claimedResources, err := pool.QueryResources()
 
 	if err != nil {
 		log.Error(pool.ctx, err, "Unable to retrieve resources for pool ID %d", pool.ID)
-		return 0, 0, err
+		return "0", "0", err
 	}
 
 	resources, err := pool.client.Resource.Query().Where(resource.HasPoolWith(resourcePool.ID(pool.ID))).All(pool.ctx)
 
 	if err != nil {
 		log.Error(pool.ctx, err, "Unable to retrieve resources for pool ID %d", pool.ID)
-		return 0, 0, err
+		return "0", "0", err
 	}
 
-	return float64(len(resources) - len(claimedResources)), float64(len(claimedResources)), nil
+	return strconv.Itoa(len(resources) - len(claimedResources)), strconv.Itoa(len(claimedResources)), nil
 }
 
 // FreeResource deallocates the resource identified by its properties

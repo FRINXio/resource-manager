@@ -71,7 +71,10 @@ function capacity() {
         allocatedCapacity += hostsInMask(resource.Properties.address, resource.Properties.prefix);
     }
 
-    return { freeCapacity: Number(totalCapacity - allocatedCapacity + subnetItself), utilizedCapacity: Number(allocatedCapacity) };
+    return {
+        freeCapacity: String(totalCapacity - allocatedCapacity + subnetItself),
+        utilizedCapacity: String(allocatedCapacity)
+    };
 }
 
 // log utilisation stats

@@ -95,7 +95,7 @@ func TestAllocateAllAddresses19(t *testing.T) {
 	var resourcePool = map[string]interface{}{"prefix": 19, "address": "192.168.0.0"}
 	var userInput = map[string]interface{}{"subnet": true}
 	ipv4Struct := src.NewIpv4(allocated, resourcePool, userInput)
-	for  i := 0; i < 32; i++ {
+	for i := 0; i < 32; i++ {
 		for j := 0; j < 256; j++ {
 			if i == 0 && j == 0 {
 				// First subnet addr: reserved
@@ -176,7 +176,7 @@ func TestIpv4Capacity24Mask(t *testing.T) {
 	var userInput = map[string]interface{}{"subnet": true}
 	ipv4Struct := src.NewIpv4(allocated, resourcePool, userInput)
 	output, err := ipv4Struct.Capacity()
-	expectedOutput := map[string]interface{}{"freeCapacity": float64(254), "utilizedCapacity": float64(1)}
+	expectedOutput := map[string]interface{}{"freeCapacity": "254", "utilizedCapacity": "1"}
 	if eq := reflect.DeepEqual(output, expectedOutput); !eq {
 		t.Fatalf("different output of %s expected, got: %s", expectedOutput, output)
 	}
@@ -191,7 +191,7 @@ func TestIpv4Capacity16Mask(t *testing.T) {
 	var userInput map[string]interface{}
 	ipv4Struct := src.NewIpv4(allocated, resourcePool, userInput)
 	output, err := ipv4Struct.Capacity()
-	expectedOutput := map[string]interface{}{"freeCapacity": float64(65533), "utilizedCapacity": float64(1)}
+	expectedOutput := map[string]interface{}{"freeCapacity": "65533", "utilizedCapacity": "1"}
 	if eq := reflect.DeepEqual(output, expectedOutput); !eq {
 		t.Fatalf("different output of %s expected, got: %s", expectedOutput, output)
 	}

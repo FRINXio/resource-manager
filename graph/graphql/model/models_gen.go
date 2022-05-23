@@ -179,8 +179,8 @@ type DeleteTagPayload struct {
 
 // Entity representing capacity of a pool
 type PoolCapacityPayload struct {
-	FreeCapacity     float64 `json:"freeCapacity"`
-	UtilizedCapacity float64 `json:"utilizedCapacity"`
+	FreeCapacity     string `json:"freeCapacity"`
+	UtilizedCapacity string `json:"utilizedCapacity"`
 }
 
 // Alternative representation of identity of a resource (i.e. alternative to resource ID)

@@ -162,8 +162,8 @@ test('capacity for allocating vlan-range pool', async (t) => {
     await claimResource(poolId, {desiredSize: 3});
 
     const capacity = await getCapacityForPool(poolId);
-    t.equal(capacity.utilizedCapacity, 5);
-    t.equal(capacity.freeCapacity, 4091);
+    t.equal(capacity.utilizedCapacity, "5");
+    t.equal(capacity.freeCapacity, "4091");
 
     await cleanup()
     t.end();
@@ -177,8 +177,8 @@ test('capacity for allocating vlan pool', async (t) => {
     await claimResource(poolId, {});
 
     const capacity = await getCapacityForPool(poolId);
-    t.equal(capacity.utilizedCapacity, 3);
-    t.equal(capacity.freeCapacity, 4093);
+    t.equal(capacity.utilizedCapacity, "3");
+    t.equal(capacity.freeCapacity, "4093");
 
     await cleanup()
     t.end();
@@ -193,8 +193,8 @@ test('capacity for allocating ipv6-prefix pool', async (t) => {
     await claimResource(poolId, {desiredSize: 4});
 
     const capacity = await getCapacityForPool(poolId);
-    t.equal(capacity.utilizedCapacity, 16);
-    t.equal(capacity.freeCapacity, 240);
+    t.equal(capacity.utilizedCapacity, "16");
+    t.equal(capacity.freeCapacity, "240");
 
     await cleanup()
     t.end();
@@ -209,8 +209,8 @@ test('capacity for allocating ipv6 pool', async (t) => {
     await claimResource(poolId, {});
 
     const capacity = await getCapacityForPool(poolId);
-    t.equal(capacity.utilizedCapacity, 4);
-    t.equal(capacity.freeCapacity, 5.192296858534828e+33);
+    t.equal(capacity.utilizedCapacity, "4");
+    t.equal(capacity.freeCapacity, "5192296858534827628530496329220092");
 
     await cleanup()
     t.end();
@@ -223,8 +223,8 @@ test('capacity for allocating ipv4 pool', async (t) => {
     await claimResource(poolId, {});
 
     const capacity = await getCapacityForPool(poolId);
-    t.equal(capacity.utilizedCapacity, 2);
-    t.equal(capacity.freeCapacity, 65532);
+    t.equal(capacity.utilizedCapacity, "2");
+    t.equal(capacity.freeCapacity, "65532");
 
     await cleanup()
     t.end();
@@ -237,8 +237,8 @@ test('capacity for random pool', async (t) => {
     await claimResource(poolId, {});
 
     const capacity = await getCapacityForPool(poolId);
-    t.equal(capacity.utilizedCapacity, 2);
-    t.equal(capacity.freeCapacity, 997);
+    t.equal(capacity.utilizedCapacity, "2");
+    t.equal(capacity.freeCapacity, "997");
 
     await cleanup()
     t.end();
@@ -251,8 +251,8 @@ test('capacity for allocating ipv4-prefix pool', async (t) => {
     await claimResource(poolId, {desiredSize: 2});
 
     const capacity = await getCapacityForPool(poolId);
-    t.equal(capacity.utilizedCapacity, 4);
-    t.equal(capacity.freeCapacity, 16777210);
+    t.equal(capacity.utilizedCapacity, "4");
+    t.equal(capacity.freeCapacity, "16777210");
 
     await cleanup()
     t.end();
@@ -266,8 +266,8 @@ test('capacity for allocating RD pool', async (t) => {
     await claimResource(rdPoolId, {asNumber: 47, assignedNumber: 47});
 
     const capacity = await getCapacityForPool(rdPoolId);
-    t.equal(capacity.utilizedCapacity, 3);
-    t.equal(capacity.freeCapacity, 281474976710656);
+    t.equal(capacity.utilizedCapacity, "3");
+    t.equal(capacity.freeCapacity, "281474976710656");
 
     await cleanup()
     t.end();
@@ -286,8 +286,8 @@ test('capacity for set pool', async (t) => {
     await claimResource(poolId, {});
 
     const capacity = await getCapacityForPool(poolId);
-    t.equal(capacity.utilizedCapacity, 3);
-    t.equal(capacity.freeCapacity, 1);
+    t.equal(capacity.utilizedCapacity, "3");
+    t.equal(capacity.freeCapacity, "1");
 
     await cleanup()
     t.end();
@@ -304,8 +304,8 @@ test('capacity for singleton pool', async (t) => {
     await claimResource(poolId, {});
 
     const capacity = await getCapacityForPool(poolId);
-    t.equal(capacity.utilizedCapacity, 1);
-    t.equal(capacity.freeCapacity, 0);
+    t.equal(capacity.utilizedCapacity, "1");
+    t.equal(capacity.freeCapacity, "0");
 
     await cleanup()
     t.end();

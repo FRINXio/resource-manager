@@ -78,7 +78,10 @@ function invoke() {
 }
 
 function capacity() {
-    return { freeCapacity: freeCapacity(resourcePoolProperties, currentResources.length), utilizedCapacity: currentResources.length };
+    return {
+        freeCapacity: String(freeCapacity(resourcePoolProperties, currentResources.length)),
+        utilizedCapacity: String(currentResources.length)
+    };
 }
 
 // STRATEGY_END

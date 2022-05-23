@@ -6,7 +6,7 @@ import {
     parsePrefix,
     prefixToStr,
     subnetAddresses
-} from "./ipv4utils";
+} from "./ipv4-utils";
 
 // framework managed constants
 var currentResources = []
@@ -39,7 +39,11 @@ function freeCapacity(address, mask, utilisedCapacity) {
 }
 
 function capacity() {
-    return { freeCapacity: freeCapacity(resourcePoolProperties.address, resourcePoolProperties.prefix, currentResources.length), utilizedCapacity: currentResources.length };
+    return {
+        freeCapacity: String(
+            freeCapacity(resourcePoolProperties.address, resourcePoolProperties.prefix, currentResources.length)),
+        utilizedCapacity: String(currentResources.length)
+    };
 }
 
 // log utilisation stats

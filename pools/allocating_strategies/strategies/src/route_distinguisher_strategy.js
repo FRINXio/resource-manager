@@ -169,7 +169,7 @@ function invoke() {
 }
 
 function capacity() {
-    return { freeCapacity: Number(rangeCapacity()), utilizedCapacity: currentResources.length };
+    return { freeCapacity: String(rangeCapacity()), utilizedCapacity: String(currentResources.length)};
 }
 
 // STRATEGY_END

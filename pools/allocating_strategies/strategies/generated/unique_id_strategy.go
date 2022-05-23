@@ -185,8 +185,9 @@ func (uniqueId *UniqueId) Capacity() (map[string]interface{}, error) {
 		return nil, err
 	}
 	if valueExist == true {
-		result["freeCapacity"] = toValue - float64(value) - fromValue + 1
-		result["utilizedCapacity"] = float64(value)
+		freeCapacity := toValue - float64(value) - fromValue + 1
+		result["freeCapacity"] = fmt.Sprintf("%v", freeCapacity)
+		result["utilizedCapacity"] = strconv.Itoa(int(value))
 	}
 	return result, nil
 }
