@@ -192,6 +192,10 @@ func invokeGo(
 		// TODO: Pass currentResourcesArray as pointer
 		id := strategies.NewIpv4(currentResourcesArray, poolPropertiesMaps, userInput)
 		goStrategy = &id
+	case "vlan_range":
+		// TODO: Pass currentResourcesArray as pointer
+		id := strategies.NewVlanRange(currentResourcesArray, poolPropertiesMaps, userInput)
+		goStrategy = &id
 	default:
 		return nil, "", errors.New("Not known go strategy")
 	}
