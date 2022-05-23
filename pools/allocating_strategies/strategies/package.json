@@ -6,7 +6,7 @@
   "scripts": {
     "test": "jest --reporters=jest-silent-reporter",
     "generate": "./node_modules/.bin/rollup -c -i ",
-    "generate:all": "npm-run-all --sequential ipv4-prefix ipv4 ipv6-prefix ipv6 random_S_int32 rd vlan-range vlan unique-id replace vlan_go unique-id_go ipv4_go ipv4-utils_go",
+    "generate:all": "npm-run-all --sequential ipv4-prefix ipv4 ipv6-prefix ipv6 random_S_int32 rd vlan-range vlan unique-id replace vlan_go unique-id_go ipv4_go ipv4-utils_go ipv6_go ipv6-utils_go ipv6_prefix_go",
     "replace": "./node_modules/.bin/replace-in-file --configFile=./replace.config.js",
     "ipv4-prefix": "yarn generate src/ipv4_prefix_strategy.js",
     "ipv4": "yarn generate src/ipv4_strategy.js",
@@ -20,7 +20,10 @@
     "vlan_go": "cp src/vlan_strategy.go generated",
     "unique-id_go": "cp src/unique_id_strategy.go generated",
     "ipv4_go": "cp src/ipv4_strategy.go generated",
-    "ipv4-utils_go": "cp src/ipv4-utils.go generated"
+    "ipv4-utils_go": "cp src/ipv4-utils.go generated",
+    "ipv6_go": "cp src/ipv6_strategy.go generated",
+    "ipv6-utils_go": "cp src/ipv6-utils.go generated",
+    "ipv6_prefix_go": "cp src/ipv6_prefix_strategy.go generated"
   },
   "dependencies": {
     "@babel/core": "^7.10.1",
