@@ -2,12 +2,16 @@ package resolver
 
 import (
 	"context"
+	"github.com/facebook/ent/dialect/sql"
+	"github.com/facebook/ent/dialect/sql/sqljson"
 	"github.com/net-auto/resourceManager/ent"
 	"github.com/net-auto/resourceManager/ent/predicate"
 	"github.com/net-auto/resourceManager/ent/resourcepool"
 	resourcePool "github.com/net-auto/resourceManager/ent/resourcepool"
 	"github.com/net-auto/resourceManager/ent/tag"
 	"github.com/net-auto/resourceManager/graph/graphql/model"
+	log "github.com/net-auto/resourceManager/logging"
+	"github.com/pkg/errors"
 	"github.com/vektah/gqlparser/v2/gqlerror"
 )
 
@@ -150,4 +154,40 @@ func createTag(ctx context.Context, client *ent.Client, newTag string) (*ent.Tag
 
 func tagFromDb(ctx context.Context, client *ent.Client, tagValue string) (*ent.Tag, error) {
 	return client.Tag.Query().Where(tag.Tag(tagValue)).Only(ctx)
+}
+
+// QueryResourcesByAltId returns paginate resources if alt Id matches
+func QueryResourcesByAltId(ctx context.Context, client *ent.Client, alternativeId map[string]interface{}, first *int,
+						   last *int, before *string, after *string) (*ent.ResourceConnection, error) {
+
+	afterCursor, errA := decodeCursor(after)
+	if errA != nil {
+		log.Error(ctx, errA, "Unable to decode after value (\"%s\") for pagination", *after)
+		return nil, errA
+	}
+
+	beforeCursor, errB := decodeCursor(before)
+	if errB != nil {
+		log.Error(ctx, errB, "Unable to decode before value (\"%s\") for pagination", *before)
+		return nil, errB
+	}
+
+	res, err := client.Resource.Query().
+		Where(func(selector *sql.Selector) {
+			for k, v := range alternativeId {
+				selector.Where(sqljson.ValueEQ("alternate_id", v, sqljson.Path(k)))
+			}
+		}).
+		Paginate(ctx, afterCursor, first, beforeCursor, last)
+	if err != nil {
+		log.Error(ctx, err, "Unable to retrieve resources with alternative ID %v", alternativeId)
+		return nil, gqlerror.Errorf("Unable to query resources: %v", err)
+	}
+
+	if res != nil {
+		return res, nil
+	}
+
+	log.Error(ctx, nil, "There is not such resource with alternative ID %v", alternativeId)
+	return nil, errors.New("No such resource with given alternative ID")
 }

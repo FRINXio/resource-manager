@@ -7,8 +7,6 @@ import (
 	"context"
 	"time"
 
-	"github.com/facebook/ent/dialect/sql"
-	"github.com/facebook/ent/dialect/sql/sqljson"
 	"github.com/net-auto/resourceManager/ent"
 	"github.com/net-auto/resourceManager/ent/allocationstrategy"
 	"github.com/net-auto/resourceManager/ent/predicate"
@@ -527,37 +525,40 @@ func (r *queryResolver) QueryResource(ctx context.Context, input map[string]inte
 	return pool.QueryResource(input)
 }
 
-func (r *queryResolver) QueryResources(ctx context.Context, poolID int) ([]*ent.Resource, error) {
+func (r *queryResolver) QueryResources(ctx context.Context, poolID int, first *int, last *int, before *string, after *string) (*ent.ResourceConnection, error) {
 	pool, err := p.ExistingPoolFromId(ctx, r.ClientFrom(ctx), poolID)
 	if err != nil {
 		return nil, gqlerror.Errorf("Unable to query resources: %v", err)
 	}
-	return pool.QueryResources()
+
+	afterCursor, errA := decodeCursor(after)
+	if errA != nil {
+		log.Error(ctx, errA, "Unable to decode after value (\"%s\") for pagination", *after)
+		return nil, errA
+	}
+
+	beforeCursor, errB := decodeCursor(before)
+	if errB != nil {
+		log.Error(ctx, errB, "Unable to decode before value (\"%s\") for pagination", *before)
+		return nil, errB
+	}
+	return pool.QueryPaginatedResources(first, last, afterCursor, beforeCursor)
 }
 
-func (r *queryResolver) QueryResourcesByAltID(ctx context.Context, input map[string]interface{}, poolID *int) ([]*ent.Resource, error) {
+func (r *queryResolver) QueryResourcesByAltID(ctx context.Context, input map[string]interface{}, poolID *int, first *int, last *int, before *string, after *string) (*ent.ResourceConnection, error) {
+	typeFixedAlternativeId, err := p.ConvertValuesToFloat64(ctx, input)
+	if err != nil {
+		return nil, gqlerror.Errorf("Unable to process input data", err)
+	}
+
 	if poolID != nil {
-		pool, err := p.ExistingPoolFromId(ctx, r.ClientFrom(ctx), *poolID)
+		_, err := p.ExistingPoolFromId(ctx, r.ClientFrom(ctx), *poolID)
 		if err != nil {
 			return nil, gqlerror.Errorf("Unable to query resources: %v", err)
 		}
-		typeFixedAlternativeId, errFix := p.ConvertValuesToFloat64(ctx, input)
-		if errFix != nil {
-			return nil, gqlerror.Errorf("Unable to process input data", err)
-		}
-		return pool.QueryResourcesByAltId(typeFixedAlternativeId)
 	}
 
-	res, err := r.ClientFrom(ctx).Resource.Query().
-		Where(func(selector *sql.Selector) {
-			for k, v := range input {
-				selector.Where(sqljson.ValueEQ("alternate_id", v, sqljson.Path(k)))
-			}
-		}).All(ctx)
-	if err != nil {
-		log.Error(ctx, err, "Unable to retrieve resources with alternative ID %v", input)
-		return nil, gqlerror.Errorf("Unable to query resources: %v", err)
-	}
+	res, err := QueryResourcesByAltId(ctx, r.ClientFrom(ctx), typeFixedAlternativeId, first, last, before, after)
 
 	if res != nil {
 		return res, nil
@@ -661,15 +662,29 @@ func (r *queryResolver) QueryResourcePools(ctx context.Context, resourceTypeID *
 	}
 }
 
-func (r *queryResolver) QueryRecentlyActiveResourcePools(ctx context.Context, fromDatetime string, toDatetime *string) ([]*ent.ResourcePool, error) {
+func (r *queryResolver) QueryRecentlyActiveResources(ctx context.Context, fromDatetime string, toDatetime *string, first *int, last *int, before *string, after *string) (*ent.ResourceConnection, error) {
 	client := r.ClientFrom(ctx)
-	query := client.ResourcePool.Query()
+	query := client.Resource.Query()
 	dateFrom, err := time.Parse("2006-01-02-15", fromDatetime)
 	if err != nil {
 		log.Error(ctx, err, "Unable to parse date from: "+fromDatetime+". Must be in format: YYYY-MM-DD-hh.")
 		return nil, gqlerror.Errorf("Unable to parse date from: "+fromDatetime+
 			". Must be in format: YYYY-MM-DD-hh. Error: %v", err)
 	}
+
+	afterCursor, errA := decodeCursor(after)
+	if errA != nil {
+		log.Error(ctx, errA, "Unable to decode after value (\"%s\") for pagination", *after)
+		return nil, errA
+	}
+
+	beforeCursor, errB := decodeCursor(before)
+	if errB != nil {
+		log.Error(ctx, errB, "Unable to decode before value (\"%s\") for pagination", *before)
+		return nil, errB
+	}
+
+	var resources *ent.ResourceConnection
 
 	if toDatetime != nil && len(*toDatetime) != 0 {
 		dateTo, err := time.Parse("2006-01-02-15", *toDatetime)
@@ -678,20 +693,20 @@ func (r *queryResolver) QueryRecentlyActiveResourcePools(ctx context.Context, fr
 			return nil, gqlerror.Errorf("Unable to parse date to: "+*toDatetime+
 				". Must be in format: YYYY-MM-DD-hh. Error: %v", err)
 		}
-		query.Where(resourcePool.HasClaimsWith(resource.And(
-			resource.UpdatedAtGTE(dateFrom), resource.UpdatedAtLTE(dateTo))))
+		resources, err = query.Where(resource.And(resource.UpdatedAtGTE(dateFrom), resource.UpdatedAtLTE(dateTo))).
+			Paginate(ctx, afterCursor, first, beforeCursor, last)
+		if err != nil {
+			return nil, err
+		}
 	} else {
 		currentDate := time.Now()
-		query.Where(resourcePool.HasClaimsWith(resource.And(
-			resource.UpdatedAtGTE(dateFrom), resource.UpdatedAtLTE(currentDate))))
+		resources, err = query.Where(resource.And(resource.UpdatedAtGTE(dateFrom), resource.UpdatedAtLTE(currentDate))).
+			Paginate(ctx, afterCursor, first, beforeCursor, last)
+		if err != nil {
+			return nil, err
+		}
 	}
-
-	if resourcePools, err := query.All(ctx); err != nil {
-		log.Error(ctx, err, "Unable to retrieve resource pools")
-		return nil, gqlerror.Errorf("Unable to query resource pools: %v", err)
-	} else {
-		return resourcePools, nil
-	}
+	return resources, nil
 }
 
 func (r *queryResolver) QueryResourcePoolHierarchyPath(ctx context.Context, poolID int) ([]*ent.ResourcePool, error) {

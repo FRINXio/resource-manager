@@ -147,29 +147,20 @@ export async function getResourcePool(poolId, before, after, first, last) {
     .catch(error => console.log(error));
 }
 
-export async function getResourcePoolsByDatetimeRange(fromDatetime, toDatetime) {
+export async function getResourcesByDatetimeRange(fromDatetime, toDatetime) {
     return client.query({
         query: gql`
-            query getRecentlyActiveResourcePools($fromDatetime: String!, $toDatetime: String) {
-                QueryRecentlyActiveResourcePools(fromDatetime:$fromDatetime, toDatetime:$toDatetime) {
-                    id
-                    Name
-                    AllocationStrategy {
-                        id
-                        Name
-                        Description
-                    }
-                    ResourceType {
-                        id
-                        Name
-                    }
-                    Resources{
-                        id
-                        Properties
-                        NestedPool {
+            query QueryRecentlyActiveResources($fromDatetime: String!, $toDatetime: String) {
+                QueryRecentlyActiveResources(fromDatetime:$fromDatetime, toDatetime:$toDatetime) {
+                    edges {
+                        node {
                             id
-                            Name
-                            PoolType
+                            Properties
+                            NestedPool {
+                                id
+                                Name
+                                PoolType
+                            }
                         }
                     }
                 }
@@ -180,7 +171,7 @@ export async function getResourcePoolsByDatetimeRange(fromDatetime, toDatetime) 
             toDatetime: toDatetime,
         }
     })
-    .then(result => result.data.QueryRecentlyActiveResourcePools)
+    .then(result => result.data.QueryRecentlyActiveResources)
     .catch(error => console.log(error));
 }
 
@@ -189,18 +180,56 @@ export async function getResourcesForPool(poolId){
         query: gql`
             query getResources($poolId: ID!) {
                  QueryResources(poolId: $poolId) {
-                     id
-                     Properties
-                     NestedPool {
-                         id
-                         Name
-                         PoolType
+                     edges {
+                         node {
+                             id
+                             Properties
+                             NestedPool {
+                                 id
+                                 Name
+                                 PoolType
+                             }
+                         }
                      }
                  }
             }
         `,
         variables: {
             poolId: poolId,
+        }
+    })
+    .then(result => result.data.QueryResources)
+    .catch(error => console.log(error));
+}
+
+export async function getPaginatedResourcesForPool(poolId, first, last, before, after){
+    return client.query({
+        query: gql`
+            query getResources($poolId: ID!, $first: Int, $last: Int, $before: String, $after: String) {
+                QueryResources(poolId: $poolId,  first: $first, last: $last, before: $before, after: $after) {
+                    edges {
+                        node {
+                            id
+                            Properties
+                            NestedPool {
+                                id
+                                Name
+                                PoolType
+                            }
+                        }
+                        cursor{
+                            ID
+                        }
+                    }
+                }
+            }
+        `,
+        variables: {
+            poolId: poolId,
+            first: first,
+            last: last,
+            before: before,
+            after: after
         }
     })
     .then(result => result.data.QueryResources)
@@ -700,14 +729,18 @@ export async function queryResourcesByAltId(poolId, params){
         query: gql`
             query QueryResourcesByAltId($poolId: ID, $input: Map!) {
                 QueryResourcesByAltId(input: $input, poolId: $poolId) {
-                    id
-                    Properties
-                    NestedPool {
-                        id
-                        Name
-                        PoolType
+                    edges {
+                        node {
+                            id
+                            Properties
+                            NestedPool {
+                                id
+                                Name
+                                PoolType
+                            }
+                            AlternativeId
+                        }
                     }
-                    AlternativeId
                 }
             }
         `,

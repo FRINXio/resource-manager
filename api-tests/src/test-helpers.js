@@ -147,7 +147,7 @@ export async function createIpv4PrefixNestedPool(parentResourceId) {
 
 export async function get2ChildrenIds(poolId) {
     let resourceForPool = await getResourcesForPool(poolId);
-    return [resourceForPool[0].NestedPool.id, resourceForPool[1].NestedPool.id]
+    return [resourceForPool.edges[0].node.NestedPool.id, resourceForPool.edges[1].node.NestedPool.id]
 }
 
 export async function createSingletonIpv4PrefixNestedPool(parentResourceId) {
