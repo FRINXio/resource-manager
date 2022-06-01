@@ -341,8 +341,9 @@ type Query {
     QueryPoolCapacity(poolId: ID!): PoolCapacityPayload!
     QueryPoolTypes: [PoolType!]!
     QueryResource(input: Map!, poolId: ID!): Resource!
-    QueryResources(poolId: ID!): [Resource!]!
-    QueryResourcesByAltId(input: Map!, poolId: ID): [Resource!]!
+    QueryResources(poolId: ID!, first: Int, last: Int, before: String, after: String): ResourceConnection!
+    QueryResourcesByAltId(input: Map!, poolId: ID,
+        first: Int, last: Int, before: String, after: String): ResourceConnection!
     QueryAllocationStrategy(allocationStrategyId: ID!): AllocationStrategy!
     QueryAllocationStrategies(byName: String): [AllocationStrategy!]!
     QueryResourceTypes(byName: String): [ResourceType!]!
@@ -351,7 +352,8 @@ type Query {
 
     QueryEmptyResourcePools(resourceTypeId: ID): [ResourcePool!]!
     QueryResourcePools(resourceTypeId: ID, tags: TagOr): [ResourcePool!]!
-    QueryRecentlyActiveResourcePools(fromDatetime: String!, toDatetime: String): [ResourcePool!]!
+    QueryRecentlyActiveResources(fromDatetime: String!, toDatetime: String,
+        first: Int, last: Int, before: String, after: String): ResourceConnection!
     QueryResourcePoolHierarchyPath(poolId: ID!): [ResourcePool!]!
     QueryRootResourcePools(resourceTypeId: ID, tags: TagOr): [ResourcePool!]!
     QueryLeafResourcePools(resourceTypeId: ID, tags: TagOr): [ResourcePool!]!

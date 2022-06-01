@@ -2,8 +2,6 @@ package pools
 
 import (
 	"context"
-	"github.com/facebook/ent/dialect/sql"
-	"github.com/facebook/ent/dialect/sql/sqljson"
 	"github.com/net-auto/resourceManager/ent"
 	"github.com/net-auto/resourceManager/ent/predicate"
 	resource "github.com/net-auto/resourceManager/ent/resource"
@@ -295,25 +293,14 @@ func (pool SetPool) QueryResources() (ent.Resources, error) {
 	return res, err
 }
 
-// QueryResourcesByAltId returns resources if alt Id matches
-func (pool SetPool) QueryResourcesByAltId(alternativeId map[string]interface{}) ([]*ent.Resource, error) {
-	res, err := pool.client.Resource.Query().
-		Where(func(selector *sql.Selector) {
-			for k, v := range alternativeId {
-				selector.Where(sqljson.ValueEQ("alternate_id", v, sqljson.Path(k)))
-			}
-		}).All(pool.ctx)
+// QueryPaginatedResources returns pagination allocated resources
+func (pool SetPool) QueryPaginatedResources(first *int, last *int, after *ent.Cursor, before *ent.Cursor) (*ent.ResourceConnection, error) {
+	res, err := pool.findResources().Where(resource.StatusEQ(resource.StatusClaimed)).
+		Paginate(pool.ctx, after, first, before, last)
 
 	if err != nil {
-		log.Error(pool.ctx, err, "Unable to retrieve resources in pool ID %d", pool.ID)
-		return nil, err
+		log.Error(pool.ctx, err, "Unable retrieve resources for pool ID %d", pool.ID)
 	}
 
-	if res != nil {
-		return res, nil
-	}
-
-	log.Warn(pool.ctx, "There is not such resource with alternative ID %v for pool ID %d", alternativeId, pool.ID)
-
-	return nil, errors.New("No such resource with given alternative ID")
+	return res, err
 }

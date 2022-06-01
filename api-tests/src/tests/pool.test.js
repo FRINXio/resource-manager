@@ -14,9 +14,10 @@ import {
     tagPool,
     getCapacityForPool,
     getResourcePool,
-    getResourcePoolsByDatetimeRange,
+    getResourcesByDatetimeRange,
     updateResourceAltId,
-    getEmptyPools
+    getEmptyPools,
+    getPaginatedResourcesForPool
 } from "../graphql-queries.js";
 import {
     cleanup,
@@ -41,12 +42,12 @@ test('singleton claim and free resource', async (t) => {
     );
     let resource = await claimResource(poolId, {});
     let rs = await getResourcesForPool(poolId);
-    t.equal(rs.length, 1);
-    t.equal(rs[0].Properties.address, ipAddress)
+    t.equal(rs.edges.length, 1);
+    t.equal(rs.edges[0].node.Properties.address, ipAddress)
     await freeResource(poolId, resource.Properties);
 
     rs = await getResourcesForPool(poolId);
-    t.equal(rs.length, 0);
+    t.equal(rs.edges.length, 0);
 
     await cleanup()
     t.end();
@@ -90,26 +91,24 @@ test('get pools by range of datetime', async (t) => {
 
     let today = new Date().toISOString().slice(0, 13);
     today = today.replace("T", "-");
-    let pools = await getResourcePoolsByDatetimeRange(today, "");
-    //from today 00:00 to current moment expected 1 pool and 2 resources
-    t.equal(pools.length, 1);
-    t.equal(pools[0].Resources.length, 2)
+    let pools = await getResourcesByDatetimeRange(today, "");
+    //from today 00:00 to current moment expected 2 resources
+    t.equal(pools.edges.length, 2);
 
     let tomorrow = new Date()
     tomorrow.setDate(new Date().getDate() + 1)
     tomorrow = tomorrow.toISOString().slice(0,13)
     tomorrow = tomorrow.replace("T", "-");
-    pools = await getResourcePoolsByDatetimeRange(today, tomorrow);
-    //from today 00:00 to tomorrow expected 1 pool and 2 resources
-    t.equal(pools.length, 1);
-    t.equal(pools[0].Resources.length, 2);
+    pools = await getResourcesByDatetimeRange(today, tomorrow);
+    //from today 00:00 to tomorrow expected 2 resources
+    t.equal(pools.edges.length, 2);
 
     let yesterday = new Date()
     yesterday.setDate(new Date().getDate() - 1)
     yesterday = yesterday.toISOString().slice(0,13)
     yesterday = yesterday.replace("T", "-");
-    pools = await getResourcePoolsByDatetimeRange(yesterday, today);
-    t.equal(pools.length, 0);
+    pools = await getResourcesByDatetimeRange(yesterday, today);
+    t.equal(pools.edges.length, 0);
 
     await cleanup()
     t.end();
@@ -124,10 +123,10 @@ test('create and delete resources in set pool', async (t) => {
     );
     let resource = await claimResource(poolId, {});
     let rs = await getResourcesForPool(poolId);
-    t.equal(rs.length, 1);
+    t.equal(rs.edges.length, 1);
     await freeResource(poolId, resource.Properties)
     rs = await getResourcesForPool(poolId);
-    t.equal(rs.length, 0);
+    t.equal(rs.edges.length, 0);
 
     await cleanup()
     t.end();
@@ -371,9 +370,9 @@ test('allocation pool test alternative ID', async (t) => {
 
     let res3 = await queryResourcesByAltId(poolId, altId3);
 
-    t.equal(res3[0].Properties.vlan, 3);
-    t.equal(res3[0].AlternativeId.vlanAltId, altId3.vlanAltId)
-    t.equal(res3[0].AlternativeId.order, altId3.order)
+    t.equal(res3.edges[0].node.Properties.vlan, 3);
+    t.equal(res3.edges[0].node.AlternativeId.vlanAltId, altId3.vlanAltId)
+    t.equal(res3.edges[0].node.AlternativeId.order, altId3.order)
 
     //test nothing found
     let res = await queryResourcesByAltId(poolId, {someKey: 'this does not exist :('});
@@ -381,11 +380,34 @@ test('allocation pool test alternative ID', async (t) => {
 
     //test string-only comparison
     res = await queryResourcesByAltId(poolId, altId);
-    t.equal(res[0].Properties.vlan, 1);
+    t.equal(res.edges[0].node.Properties.vlan, 1);
 
     //test string-and-number comparison
     res = await queryResourcesByAltId(poolId, altId2);
-    t.equal(res[0].Properties.vlan, 2);
+    t.equal(res.edges[0].node.Properties.vlan, 2);
+
+    await cleanup()
+    t.end();
+});
+
+test('test pagination resources', async (t) => {
+    const poolId = await createVlanRootPool();
+    await claimResourceWithAltId(poolId, {}, {vlanAltId: getUniqueName('first allocation vlan'), order: getUniqueName('first')});
+
+    let altId = {vlanAltId: getUniqueName('second allocation vlan'), order: getUniqueName('second')};
+    await claimResourceWithAltId(poolId, {}, altId);
+
+    let altId2 = {vlanAltId: Math.floor(Math.random() * 100000), order: getUniqueName('third')};
+    await claimResourceWithAltId(poolId, {}, altId2);
+
+    let altId3 = {vlanAltId: Math.floor(Math.random() * 100000), order: getUniqueName('third')};
+    await claimResourceWithAltId(poolId, {}, altId3);
+
+    let resources = await getPaginatedResourcesForPool(poolId, 1, null, null, null);
+    t.equal(resources.edges[0].node.Properties.vlan, 0);
+
+    resources = await getPaginatedResourcesForPool(poolId, null, 1, null, null);
+    t.equal(resources.edges[0].node.Properties.vlan, 3);
 
     await cleanup()
     t.end();
@@ -402,7 +424,7 @@ test('set pool test alternative ID', async (t) => {
 
     await claimResourceWithAltId(poolId, {}, altId);
     let res = await queryResourcesByAltId(poolId, altId);
-    t.equal(res[0].Properties.avalue, 1)
+    t.equal(res.edges[0].node.Properties.avalue, 1)
 
     let duplicate = await claimResourceWithAltId(poolId, {}, altId, null, true);
     t.ok(duplicate);

@@ -15,8 +15,8 @@ type Pool interface {
 	ClaimResource(userInput map[string]interface{}, description *string, alternativeId map[string]interface{}) (*ent.Resource, error)
 	FreeResource(RawResourceProps) error
 	QueryResource(RawResourceProps) (*ent.Resource, error)
-	QueryResourcesByAltId(map[string]interface{}) ([]*ent.Resource, error)
 	QueryResources() (ent.Resources, error)
+	QueryPaginatedResources(*int, *int, *ent.Cursor, *ent.Cursor) (*ent.ResourceConnection, error)
 	Destroy() error
 	ResourceType() (*ent.ResourceType, error)
 	Capacity() (string, string, error)
