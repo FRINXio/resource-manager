@@ -466,12 +466,8 @@ func (r *mutationResolver) UpdateResourceAltID(ctx context.Context, input map[st
 		return nil, gqlerror.Errorf("Unable to query resource: %v", err)
 	}
 	var client = r.ClientFrom(ctx)
-	for k, _ := range queryResource.AlternateID {
-		for k2, v2 := range alternativeID {
-			if k == k2 {
-				queryResource.AlternateID[k] = v2
-			}
-		}
+	for k, v := range alternativeID {
+		queryResource.AlternateID[k] = v
 	}
 	if _, err := client.Resource.UpdateOne(queryResource).SetAlternateID(queryResource.AlternateID).Save(ctx); err != nil {
 		log.Error(ctx, err, "Unable to update resource alternative ID %v", alternativeID)
