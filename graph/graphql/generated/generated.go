@@ -1396,32 +1396,6 @@ type PageInfo
     startCursor: OutputCursor!
 }
 
-#"""
-#Holds the order direction for pagination
-#"""
-#enum OrderDirection
-#@goModel(model: "github.com/net-auto/resourceManager/ent.OrderDirection"){
-#    ASC
-#    DESC
-#}
-#
-#"""
-#A Relay-specific entity that holds fields with which we can order the result
-#"""
-#enum ResourceOrderField
-#@goModel(model: "github.com/net-auto/resourceManager/ent.ResourceOrderField"){
-#    ID
-#}
-#
-#"""
-#A Relay-specific entity that holds ordering for pagination page
-#"""
-#input ResourceOrder
-#@goModel(model: "github.com/net-auto/resourceManager/ent.ResourceOrder"){
-#    direction: OrderDirection!
-#    field: ResourceOrderField
-#}
-
 """
 A Relay-specific entity that holds information about the requested pagination page
 """

@@ -107,6 +107,13 @@ func newAllocatingPoolWithMetaInternal(
 	poolDealocationSafetyPeriod int,
 	poolProperties *ent.PoolProperties) (Pool, *ent.ResourcePool, error) {
 
+	query, _ := client.ResourcePool.Query().Where(resourcePool.NameEQ(poolName)).Only(ctx)
+	if query != nil {
+		log.Error(ctx, nil, "Unable to create a resource pool: resource pool with name "+query.Name+" already exists.")
+		return nil, nil, errors.New("Unable to create a resource pool: resource pool with name " + query.Name + " already exists. " +
+			"Resource pool name must be unique, use another name.")
+	}
+
 	pool, err := client.ResourcePool.Create().
 		SetName(poolName).
 		SetNillableDescription(description).

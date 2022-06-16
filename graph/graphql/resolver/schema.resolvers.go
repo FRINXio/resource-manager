@@ -330,6 +330,10 @@ func (r *mutationResolver) CreateAllocatingPool(ctx context.Context, input *mode
 	_, rp, err := p.NewAllocatingPoolWithMeta(ctx, client, resType, allocationStrat,
 		input.PoolName, input.Description, input.PoolDealocationSafetyPeriod, poolProperties)
 
+	if err != nil {
+		return &emptyRetVal, err
+	}
+
 	if err := createTagsAndTagPool(ctx, client, rp, input.Tags); err != nil {
 		log.Error(ctx, err, "Unable to tag the pool with tags: %v", input.Tags)
 		return nil, err
