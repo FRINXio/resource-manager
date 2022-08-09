@@ -50,6 +50,10 @@ func (ipv6 *Ipv6) Capacity() (map[string]interface{}, error) {
 	} else {
 		subnetItself = big.NewInt(0)
 	}
+	rootMask, err := NumberToInt(rootMask)
+	if err != nil {
+		return nil, err
+	}
 	freeInTotal := ipv6HostsInMask(rootAddressStr.(string), rootMask.(int))
 	freeInTotal.Add(freeInTotal, subnetItself)
 
@@ -152,6 +156,9 @@ func NumberToBigInt(number interface{}) (*big.Int, error) {
 		return big.NewInt(number.(int64)), nil
 	case *big.Int:
 		return number.(*big.Int), nil
+	case string:
+		capacityInt, _ := new(big.Int).SetString(number.(string), 10)
+		return capacityInt, nil
 	}
 	return big.NewInt(1), errors.New("Unable to convert number: " + number.(string) + " to a known type")
 }

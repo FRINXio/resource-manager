@@ -156,6 +156,9 @@ func NumberToBigInt(number interface{}) (*big.Int, error) {
 		return big.NewInt(number.(int64)), nil
 	case *big.Int:
 		return number.(*big.Int), nil
+	case string:
+		capacityInt, _ := new(big.Int).SetString(number.(string), 10)
+		return capacityInt, nil
 	}
 	return big.NewInt(1), errors.New("Unable to convert number: " + number.(string) + " to a known type")
 }

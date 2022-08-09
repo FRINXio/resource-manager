@@ -104,6 +104,11 @@ var (
 				Unique:  false,
 				Columns: []*schema.Column{PropertiesColumns[10]},
 			},
+			{
+				Name:    "property_int_val",
+				Unique:  false,
+				Columns: []*schema.Column{PropertiesColumns[1]},
+			},
 		},
 	}
 	// PropertyTypesColumns holds the columns for the "property_types" table.
