@@ -176,7 +176,7 @@ func TestIpv4Capacity24Mask(t *testing.T) {
 	var userInput = map[string]interface{}{"subnet": true}
 	ipv4Struct := src.NewIpv4(allocated, resourcePool, userInput)
 	output, err := ipv4Struct.Capacity()
-	expectedOutput := map[string]interface{}{"freeCapacity": "254", "utilizedCapacity": "1"}
+	expectedOutput := map[string]interface{}{"freeCapacity": "256", "utilizedCapacity": "1"}
 	if eq := reflect.DeepEqual(output, expectedOutput); !eq {
 		t.Fatalf("different output of %s expected, got: %s", expectedOutput, output)
 	}
@@ -191,7 +191,7 @@ func TestIpv4Capacity16Mask(t *testing.T) {
 	var userInput map[string]interface{}
 	ipv4Struct := src.NewIpv4(allocated, resourcePool, userInput)
 	output, err := ipv4Struct.Capacity()
-	expectedOutput := map[string]interface{}{"freeCapacity": "65533", "utilizedCapacity": "1"}
+	expectedOutput := map[string]interface{}{"freeCapacity": "65535", "utilizedCapacity": "1"}
 	if eq := reflect.DeepEqual(output, expectedOutput); !eq {
 		t.Fatalf("different output of %s expected, got: %s", expectedOutput, output)
 	}

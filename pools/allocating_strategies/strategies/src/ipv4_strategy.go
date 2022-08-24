@@ -30,7 +30,7 @@ func (ipv4 *Ipv4) FreeCapacity(address string, mask int, utilisedCapacity float6
 	} else {
 		subnetItself = 0
 	}
-	return float64(hostsInMask(address, mask)) - utilisedCapacity + float64(subnetItself)
+	return float64(hostsInMask(address, mask)+2) - utilisedCapacity + float64(subnetItself)
 }
 
 func (ipv4 *Ipv4) Capacity() (map[string]interface{}, error) {

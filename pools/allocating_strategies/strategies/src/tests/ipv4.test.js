@@ -96,7 +96,7 @@ test("ipv4 capacity 24 mask", () => {
         { 'prefix': 24, 'address': "192.168.1.0"},
         {subnet: true});
     expect(capacity)
-        .toStrictEqual({freeCapacity: "254", utilizedCapacity: "1"})
+        .toStrictEqual({freeCapacity: "256", utilizedCapacity: "1"})
 })
 
 test("ipv4 capacity 16 mask", () => {
@@ -105,7 +105,7 @@ test("ipv4 capacity 16 mask", () => {
         { 'prefix': 16, 'address': "192.168.1.0"},
         {});
     expect(capacity)
-        .toStrictEqual({freeCapacity: "65533", utilizedCapacity: "1"})
+        .toStrictEqual({freeCapacity: "65535", utilizedCapacity: "1"})
 })
 
 function addr(ip) {

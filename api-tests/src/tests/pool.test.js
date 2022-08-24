@@ -223,7 +223,7 @@ test('capacity for allocating ipv4 pool', async (t) => {
 
     const capacity = await getCapacityForPool(poolId);
     t.equal(capacity.utilizedCapacity, "2");
-    t.equal(capacity.freeCapacity, "65532");
+    t.equal(capacity.freeCapacity, "65534");
 
     await cleanup()
     t.end();

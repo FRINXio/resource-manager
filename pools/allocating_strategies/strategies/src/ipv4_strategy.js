@@ -35,7 +35,7 @@ function utilizedCapacity(allocatedAddresses, newlyAllocatedRangeCapacity) {
 // calculate free capacity based on previously allocated prefixes
 function freeCapacity(address, mask, utilisedCapacity) {
     let subnetItself = userInput.subnet ? 1 : 0;
-    return hostsInMask(address, mask) - utilisedCapacity + subnetItself;
+    return hostsInMask(address, mask) + 2 - utilisedCapacity + subnetItself;
 }
 
 function capacity() {
