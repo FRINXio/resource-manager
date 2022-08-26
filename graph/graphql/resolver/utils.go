@@ -2,6 +2,7 @@ package resolver
 
 import (
 	"context"
+	"fmt"
 	"github.com/facebook/ent/dialect/sql"
 	"github.com/facebook/ent/dialect/sql/sqljson"
 	"github.com/net-auto/resourceManager/ent"
@@ -13,6 +14,7 @@ import (
 	log "github.com/net-auto/resourceManager/logging"
 	"github.com/pkg/errors"
 	"github.com/vektah/gqlparser/v2/gqlerror"
+	"reflect"
 )
 
 func decodeCursor(cursorAsString *string) (*ent.Cursor, error) {
@@ -158,7 +160,7 @@ func tagFromDb(ctx context.Context, client *ent.Client, tagValue string) (*ent.T
 
 // QueryResourcesByAltId returns paginate resources if alt Id matches
 func QueryResourcesByAltId(ctx context.Context, client *ent.Client, alternativeId map[string]interface{}, first *int,
-						   last *int, before *string, after *string) (*ent.ResourceConnection, error) {
+	last *int, before *string, after *string) (*ent.ResourceConnection, error) {
 
 	afterCursor, errA := decodeCursor(after)
 	if errA != nil {
@@ -172,13 +174,26 @@ func QueryResourcesByAltId(ctx context.Context, client *ent.Client, alternativeI
 		return nil, errB
 	}
 
+	//TODO Add filter by one of values from input array
 	res, err := client.Resource.Query().
 		Where(func(selector *sql.Selector) {
 			for k, v := range alternativeId {
-				selector.Where(sqljson.ValueEQ("alternate_id", v, sqljson.Path(k)))
+				switch reflect.TypeOf(v).Kind() {
+				case reflect.Slice:
+					values := reflect.ValueOf(v)
+					value := "[\"" + fmt.Sprintf("%v", values.Index(0)) + "\""
+					for i := 1; i < values.Len(); i++ {
+						str := fmt.Sprintf("%v", values.Index(i))
+						value = value + ", \"" + str + "\""
+					}
+					value = value + "]"
+					log.Error(ctx, nil, value)
+					selector.Where(sqljson.ValueEQ("alternate_id", value, sqljson.Path(k)))
+				default:
+					selector.Where(sqljson.ValueEQ("alternate_id", v, sqljson.Path(k)))
+				}
 			}
-		}).
-		Paginate(ctx, afterCursor, first, beforeCursor, last)
+		}).Paginate(ctx, afterCursor, first, beforeCursor, last)
 	if err != nil {
 		log.Error(ctx, err, "Unable to retrieve resources with alternative ID %v", alternativeId)
 		return nil, gqlerror.Errorf("Unable to query resources: %v", err)
