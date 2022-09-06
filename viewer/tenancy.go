@@ -217,7 +217,6 @@ func NewTenancyContext(parent context.Context, tenancy Tenancy) context.Context 
 
 func (m *PsqlTenancy) migrate(ctx context.Context, client *ent.Client, logger *zap.Logger) error {
 	if err := client.Schema.Create(ctx,
-		migrate.WithFixture(false),
 		migrate.WithGlobalUniqueID(true),
 	); err != nil {
 		logger.Error("tenancy migrate", zap.Error(err))

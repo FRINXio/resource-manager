@@ -33,6 +33,11 @@ type PoolPropertiesEdges struct {
 	// loadedTypes holds the information for reporting if a
 	// type was loaded (or requested) in eager-loading or not.
 	loadedTypes [3]bool
+	// totalCount holds the count of the edges above.
+	totalCount [3]map[string]int
+
+	namedResourceType map[string][]*ResourceType
+	namedProperties   map[string][]*Property
 }
 
 // PoolOrErr returns the Pool value or an error if the edge
@@ -148,6 +153,54 @@ func (pp *PoolProperties) String() string {
 	builder.WriteString(fmt.Sprintf("id=%v", pp.ID))
 	builder.WriteByte(')')
 	return builder.String()
+}
+
+// NamedResourceType returns the ResourceType named value or an error if the edge was not
+// loaded in eager-loading with this name.
+func (pp *PoolProperties) NamedResourceType(name string) ([]*ResourceType, error) {
+	if pp.Edges.namedResourceType == nil {
+		return nil, &NotLoadedError{edge: name}
+	}
+	nodes, ok := pp.Edges.namedResourceType[name]
+	if !ok {
+		return nil, &NotLoadedError{edge: name}
+	}
+	return nodes, nil
+}
+
+func (pp *PoolProperties) appendNamedResourceType(name string, edges ...*ResourceType) {
+	if pp.Edges.namedResourceType == nil {
+		pp.Edges.namedResourceType = make(map[string][]*ResourceType)
+	}
+	if len(edges) == 0 {
+		pp.Edges.namedResourceType[name] = []*ResourceType{}
+	} else {
+		pp.Edges.namedResourceType[name] = append(pp.Edges.namedResourceType[name], edges...)
+	}
+}
+
+// NamedProperties returns the Properties named value or an error if the edge was not
+// loaded in eager-loading with this name.
+func (pp *PoolProperties) NamedProperties(name string) ([]*Property, error) {
+	if pp.Edges.namedProperties == nil {
+		return nil, &NotLoadedError{edge: name}
+	}
+	nodes, ok := pp.Edges.namedProperties[name]
+	if !ok {
+		return nil, &NotLoadedError{edge: name}
+	}
+	return nodes, nil
+}
+
+func (pp *PoolProperties) appendNamedProperties(name string, edges ...*Property) {
+	if pp.Edges.namedProperties == nil {
+		pp.Edges.namedProperties = make(map[string][]*Property)
+	}
+	if len(edges) == 0 {
+		pp.Edges.namedProperties[name] = []*Property{}
+	} else {
+		pp.Edges.namedProperties[name] = append(pp.Edges.namedProperties[name], edges...)
+	}
 }
 
 // PoolPropertiesSlice is a parsable slice of PoolProperties.

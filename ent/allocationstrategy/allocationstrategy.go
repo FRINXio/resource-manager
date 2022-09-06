@@ -4,6 +4,8 @@ package allocationstrategy
 
 import (
 	"fmt"
+	"io"
+	"strconv"
 
 	"entgo.io/ent"
 )
@@ -58,6 +60,7 @@ func ValidColumn(column string) bool {
 // it should be imported in the main as follows:
 //
 //	import _ "github.com/net-auto/resourceManager/ent/runtime"
+//
 var (
 	Hooks  [1]ent.Hook
 	Policy ent.Policy
@@ -92,4 +95,22 @@ func LangValidator(l Lang) error {
 	default:
 		return fmt.Errorf("allocationstrategy: invalid enum value for lang field: %q", l)
 	}
+}
+
+// MarshalGQL implements graphql.Marshaler interface.
+func (e Lang) MarshalGQL(w io.Writer) {
+	io.WriteString(w, strconv.Quote(e.String()))
+}
+
+// UnmarshalGQL implements graphql.Unmarshaler interface.
+func (e *Lang) UnmarshalGQL(val interface{}) error {
+	str, ok := val.(string)
+	if !ok {
+		return fmt.Errorf("enum %T must be a string", val)
+	}
+	*e = Lang(str)
+	if err := LangValidator(*e); err != nil {
+		return fmt.Errorf("%s is not a valid Lang", str)
+	}
+	return nil
 }

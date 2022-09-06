@@ -52,6 +52,11 @@ type ResourcePoolEdges struct {
 	// loadedTypes holds the information for reporting if a
 	// type was loaded (or requested) in eager-loading or not.
 	loadedTypes [6]bool
+	// totalCount holds the count of the edges above.
+	totalCount [6]map[string]int
+
+	namedTags   map[string][]*Tag
+	namedClaims map[string][]*Resource
 }
 
 // ResourceTypeOrErr returns the ResourceType value or an error if the edge
@@ -279,6 +284,54 @@ func (rp *ResourcePool) String() string {
 	builder.WriteString(fmt.Sprintf("%v", rp.DealocationSafetyPeriod))
 	builder.WriteByte(')')
 	return builder.String()
+}
+
+// NamedTags returns the Tags named value or an error if the edge was not
+// loaded in eager-loading with this name.
+func (rp *ResourcePool) NamedTags(name string) ([]*Tag, error) {
+	if rp.Edges.namedTags == nil {
+		return nil, &NotLoadedError{edge: name}
+	}
+	nodes, ok := rp.Edges.namedTags[name]
+	if !ok {
+		return nil, &NotLoadedError{edge: name}
+	}
+	return nodes, nil
+}
+
+func (rp *ResourcePool) appendNamedTags(name string, edges ...*Tag) {
+	if rp.Edges.namedTags == nil {
+		rp.Edges.namedTags = make(map[string][]*Tag)
+	}
+	if len(edges) == 0 {
+		rp.Edges.namedTags[name] = []*Tag{}
+	} else {
+		rp.Edges.namedTags[name] = append(rp.Edges.namedTags[name], edges...)
+	}
+}
+
+// NamedClaims returns the Claims named value or an error if the edge was not
+// loaded in eager-loading with this name.
+func (rp *ResourcePool) NamedClaims(name string) ([]*Resource, error) {
+	if rp.Edges.namedClaims == nil {
+		return nil, &NotLoadedError{edge: name}
+	}
+	nodes, ok := rp.Edges.namedClaims[name]
+	if !ok {
+		return nil, &NotLoadedError{edge: name}
+	}
+	return nodes, nil
+}
+
+func (rp *ResourcePool) appendNamedClaims(name string, edges ...*Resource) {
+	if rp.Edges.namedClaims == nil {
+		rp.Edges.namedClaims = make(map[string][]*Resource)
+	}
+	if len(edges) == 0 {
+		rp.Edges.namedClaims[name] = []*Resource{}
+	} else {
+		rp.Edges.namedClaims[name] = append(rp.Edges.namedClaims[name], edges...)
+	}
 }
 
 // ResourcePools is a parsable slice of ResourcePool.

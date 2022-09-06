@@ -37,6 +37,10 @@ type ResourcePoolQuery struct {
 	withAllocationStrategy *AllocationStrategyQuery
 	withParentResource     *ResourceQuery
 	withFKs                bool
+	modifiers              []func(*sql.Selector)
+	loadTotal              []func(context.Context, []*ResourcePool) error
+	withNamedTags          map[string]*TagQuery
+	withNamedClaims        map[string]*ResourceQuery
 	// intermediate query (i.e. traversal path).
 	sql  *sql.Selector
 	path func(context.Context) (*sql.Selector, error)
@@ -479,6 +483,7 @@ func (rpq *ResourcePoolQuery) WithParentResource(opts ...func(*ResourceQuery)) *
 //		GroupBy(resourcepool.FieldName).
 //		Aggregate(ent.Count()).
 //		Scan(ctx, &v)
+//
 func (rpq *ResourcePoolQuery) GroupBy(field string, fields ...string) *ResourcePoolGroupBy {
 	grbuild := &ResourcePoolGroupBy{config: rpq.config}
 	grbuild.fields = append([]string{field}, fields...)
@@ -505,6 +510,7 @@ func (rpq *ResourcePoolQuery) GroupBy(field string, fields ...string) *ResourceP
 //	client.ResourcePool.Query().
 //		Select(resourcepool.FieldName).
 //		Scan(ctx, &v)
+//
 func (rpq *ResourcePoolQuery) Select(fields ...string) *ResourcePoolSelect {
 	rpq.fields = append(rpq.fields, fields...)
 	selbuild := &ResourcePoolSelect{ResourcePoolQuery: rpq}
@@ -564,6 +570,9 @@ func (rpq *ResourcePoolQuery) sqlAll(ctx context.Context, hooks ...queryHook) ([
 		node.Edges.loadedTypes = loadedTypes
 		return node.assignValues(columns, values)
 	}
+	if len(rpq.modifiers) > 0 {
+		_spec.Modifiers = rpq.modifiers
+	}
 	for i := range hooks {
 		hooks[i](ctx, _spec)
 	}
@@ -608,6 +617,25 @@ func (rpq *ResourcePoolQuery) sqlAll(ctx context.Context, hooks ...queryHook) ([
 	if query := rpq.withParentResource; query != nil {
 		if err := rpq.loadParentResource(ctx, query, nodes, nil,
 			func(n *ResourcePool, e *Resource) { n.Edges.ParentResource = e }); err != nil {
+			return nil, err
+		}
+	}
+	for name, query := range rpq.withNamedTags {
+		if err := rpq.loadTags(ctx, query, nodes,
+			func(n *ResourcePool) { n.appendNamedTags(name) },
+			func(n *ResourcePool, e *Tag) { n.appendNamedTags(name, e) }); err != nil {
+			return nil, err
+		}
+	}
+	for name, query := range rpq.withNamedClaims {
+		if err := rpq.loadClaims(ctx, query, nodes,
+			func(n *ResourcePool) { n.appendNamedClaims(name) },
+			func(n *ResourcePool, e *Resource) { n.appendNamedClaims(name, e) }); err != nil {
+			return nil, err
+		}
+	}
+	for i := range rpq.loadTotal {
+		if err := rpq.loadTotal[i](ctx, nodes); err != nil {
 			return nil, err
 		}
 	}
@@ -821,6 +849,9 @@ func (rpq *ResourcePoolQuery) loadParentResource(ctx context.Context, query *Res
 
 func (rpq *ResourcePoolQuery) sqlCount(ctx context.Context) (int, error) {
 	_spec := rpq.querySpec()
+	if len(rpq.modifiers) > 0 {
+		_spec.Modifiers = rpq.modifiers
+	}
 	_spec.Node.Columns = rpq.fields
 	if len(rpq.fields) > 0 {
 		_spec.Unique = rpq.unique != nil && *rpq.unique
@@ -914,6 +945,34 @@ func (rpq *ResourcePoolQuery) sqlQuery(ctx context.Context) *sql.Selector {
 		selector.Limit(*limit)
 	}
 	return selector
+}
+
+// WithNamedTags tells the query-builder to eager-load the nodes that are connected to the "tags"
+// edge with the given name. The optional arguments are used to configure the query builder of the edge.
+func (rpq *ResourcePoolQuery) WithNamedTags(name string, opts ...func(*TagQuery)) *ResourcePoolQuery {
+	query := &TagQuery{config: rpq.config}
+	for _, opt := range opts {
+		opt(query)
+	}
+	if rpq.withNamedTags == nil {
+		rpq.withNamedTags = make(map[string]*TagQuery)
+	}
+	rpq.withNamedTags[name] = query
+	return rpq
+}
+
+// WithNamedClaims tells the query-builder to eager-load the nodes that are connected to the "claims"
+// edge with the given name. The optional arguments are used to configure the query builder of the edge.
+func (rpq *ResourcePoolQuery) WithNamedClaims(name string, opts ...func(*ResourceQuery)) *ResourcePoolQuery {
+	query := &ResourceQuery{config: rpq.config}
+	for _, opt := range opts {
+		opt(query)
+	}
+	if rpq.withNamedClaims == nil {
+		rpq.withNamedClaims = make(map[string]*ResourceQuery)
+	}
+	rpq.withNamedClaims[name] = query
+	return rpq
 }
 
 // ResourcePoolGroupBy is the group-by builder for ResourcePool entities.

@@ -21,15 +21,18 @@ import (
 // PropertyTypeQuery is the builder for querying PropertyType entities.
 type PropertyTypeQuery struct {
 	config
-	limit            *int
-	offset           *int
-	unique           *bool
-	order            []OrderFunc
-	fields           []string
-	predicates       []predicate.PropertyType
-	withProperties   *PropertyQuery
-	withResourceType *ResourceTypeQuery
-	withFKs          bool
+	limit               *int
+	offset              *int
+	unique              *bool
+	order               []OrderFunc
+	fields              []string
+	predicates          []predicate.PropertyType
+	withProperties      *PropertyQuery
+	withResourceType    *ResourceTypeQuery
+	withFKs             bool
+	modifiers           []func(*sql.Selector)
+	loadTotal           []func(context.Context, []*PropertyType) error
+	withNamedProperties map[string]*PropertyQuery
 	// intermediate query (i.e. traversal path).
 	sql  *sql.Selector
 	path func(context.Context) (*sql.Selector, error)
@@ -336,6 +339,7 @@ func (ptq *PropertyTypeQuery) WithResourceType(opts ...func(*ResourceTypeQuery))
 //		GroupBy(propertytype.FieldType).
 //		Aggregate(ent.Count()).
 //		Scan(ctx, &v)
+//
 func (ptq *PropertyTypeQuery) GroupBy(field string, fields ...string) *PropertyTypeGroupBy {
 	grbuild := &PropertyTypeGroupBy{config: ptq.config}
 	grbuild.fields = append([]string{field}, fields...)
@@ -362,6 +366,7 @@ func (ptq *PropertyTypeQuery) GroupBy(field string, fields ...string) *PropertyT
 //	client.PropertyType.Query().
 //		Select(propertytype.FieldType).
 //		Scan(ctx, &v)
+//
 func (ptq *PropertyTypeQuery) Select(fields ...string) *PropertyTypeSelect {
 	ptq.fields = append(ptq.fields, fields...)
 	selbuild := &PropertyTypeSelect{PropertyTypeQuery: ptq}
@@ -417,6 +422,9 @@ func (ptq *PropertyTypeQuery) sqlAll(ctx context.Context, hooks ...queryHook) ([
 		node.Edges.loadedTypes = loadedTypes
 		return node.assignValues(columns, values)
 	}
+	if len(ptq.modifiers) > 0 {
+		_spec.Modifiers = ptq.modifiers
+	}
 	for i := range hooks {
 		hooks[i](ctx, _spec)
 	}
@@ -436,6 +444,18 @@ func (ptq *PropertyTypeQuery) sqlAll(ctx context.Context, hooks ...queryHook) ([
 	if query := ptq.withResourceType; query != nil {
 		if err := ptq.loadResourceType(ctx, query, nodes, nil,
 			func(n *PropertyType, e *ResourceType) { n.Edges.ResourceType = e }); err != nil {
+			return nil, err
+		}
+	}
+	for name, query := range ptq.withNamedProperties {
+		if err := ptq.loadProperties(ctx, query, nodes,
+			func(n *PropertyType) { n.appendNamedProperties(name) },
+			func(n *PropertyType, e *Property) { n.appendNamedProperties(name, e) }); err != nil {
+			return nil, err
+		}
+	}
+	for i := range ptq.loadTotal {
+		if err := ptq.loadTotal[i](ctx, nodes); err != nil {
 			return nil, err
 		}
 	}
@@ -505,6 +525,9 @@ func (ptq *PropertyTypeQuery) loadResourceType(ctx context.Context, query *Resou
 
 func (ptq *PropertyTypeQuery) sqlCount(ctx context.Context) (int, error) {
 	_spec := ptq.querySpec()
+	if len(ptq.modifiers) > 0 {
+		_spec.Modifiers = ptq.modifiers
+	}
 	_spec.Node.Columns = ptq.fields
 	if len(ptq.fields) > 0 {
 		_spec.Unique = ptq.unique != nil && *ptq.unique
@@ -598,6 +621,20 @@ func (ptq *PropertyTypeQuery) sqlQuery(ctx context.Context) *sql.Selector {
 		selector.Limit(*limit)
 	}
 	return selector
+}
+
+// WithNamedProperties tells the query-builder to eager-load the nodes that are connected to the "properties"
+// edge with the given name. The optional arguments are used to configure the query builder of the edge.
+func (ptq *PropertyTypeQuery) WithNamedProperties(name string, opts ...func(*PropertyQuery)) *PropertyTypeQuery {
+	query := &PropertyQuery{config: ptq.config}
+	for _, opt := range opts {
+		opt(query)
+	}
+	if ptq.withNamedProperties == nil {
+		ptq.withNamedProperties = make(map[string]*PropertyQuery)
+	}
+	ptq.withNamedProperties[name] = query
+	return ptq
 }
 
 // PropertyTypeGroupBy is the group-by builder for PropertyType entities.

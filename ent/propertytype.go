@@ -67,6 +67,10 @@ type PropertyTypeEdges struct {
 	// loadedTypes holds the information for reporting if a
 	// type was loaded (or requested) in eager-loading or not.
 	loadedTypes [2]bool
+	// totalCount holds the count of the edges above.
+	totalCount [2]map[string]int
+
+	namedProperties map[string][]*Property
 }
 
 // PropertiesOrErr returns the Properties value or an error if the edge
@@ -359,6 +363,30 @@ func (pt *PropertyType) String() string {
 	builder.WriteString(pt.NodeType)
 	builder.WriteByte(')')
 	return builder.String()
+}
+
+// NamedProperties returns the Properties named value or an error if the edge was not
+// loaded in eager-loading with this name.
+func (pt *PropertyType) NamedProperties(name string) ([]*Property, error) {
+	if pt.Edges.namedProperties == nil {
+		return nil, &NotLoadedError{edge: name}
+	}
+	nodes, ok := pt.Edges.namedProperties[name]
+	if !ok {
+		return nil, &NotLoadedError{edge: name}
+	}
+	return nodes, nil
+}
+
+func (pt *PropertyType) appendNamedProperties(name string, edges ...*Property) {
+	if pt.Edges.namedProperties == nil {
+		pt.Edges.namedProperties = make(map[string][]*Property)
+	}
+	if len(edges) == 0 {
+		pt.Edges.namedProperties[name] = []*Property{}
+	} else {
+		pt.Edges.namedProperties[name] = append(pt.Edges.namedProperties[name], edges...)
+	}
 }
 
 // PropertyTypes is a parsable slice of PropertyType.

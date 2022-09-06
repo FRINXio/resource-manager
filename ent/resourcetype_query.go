@@ -22,15 +22,20 @@ import (
 // ResourceTypeQuery is the builder for querying ResourceType entities.
 type ResourceTypeQuery struct {
 	config
-	limit              *int
-	offset             *int
-	unique             *bool
-	order              []OrderFunc
-	fields             []string
-	predicates         []predicate.ResourceType
-	withPropertyTypes  *PropertyTypeQuery
-	withPools          *ResourcePoolQuery
-	withPoolProperties *PoolPropertiesQuery
+	limit                   *int
+	offset                  *int
+	unique                  *bool
+	order                   []OrderFunc
+	fields                  []string
+	predicates              []predicate.ResourceType
+	withPropertyTypes       *PropertyTypeQuery
+	withPools               *ResourcePoolQuery
+	withPoolProperties      *PoolPropertiesQuery
+	modifiers               []func(*sql.Selector)
+	loadTotal               []func(context.Context, []*ResourceType) error
+	withNamedPropertyTypes  map[string]*PropertyTypeQuery
+	withNamedPools          map[string]*ResourcePoolQuery
+	withNamedPoolProperties map[string]*PoolPropertiesQuery
 	// intermediate query (i.e. traversal path).
 	sql  *sql.Selector
 	path func(context.Context) (*sql.Selector, error)
@@ -371,6 +376,7 @@ func (rtq *ResourceTypeQuery) WithPoolProperties(opts ...func(*PoolPropertiesQue
 //		GroupBy(resourcetype.FieldName).
 //		Aggregate(ent.Count()).
 //		Scan(ctx, &v)
+//
 func (rtq *ResourceTypeQuery) GroupBy(field string, fields ...string) *ResourceTypeGroupBy {
 	grbuild := &ResourceTypeGroupBy{config: rtq.config}
 	grbuild.fields = append([]string{field}, fields...)
@@ -397,6 +403,7 @@ func (rtq *ResourceTypeQuery) GroupBy(field string, fields ...string) *ResourceT
 //	client.ResourceType.Query().
 //		Select(resourcetype.FieldName).
 //		Scan(ctx, &v)
+//
 func (rtq *ResourceTypeQuery) Select(fields ...string) *ResourceTypeSelect {
 	rtq.fields = append(rtq.fields, fields...)
 	selbuild := &ResourceTypeSelect{ResourceTypeQuery: rtq}
@@ -446,6 +453,9 @@ func (rtq *ResourceTypeQuery) sqlAll(ctx context.Context, hooks ...queryHook) ([
 		node.Edges.loadedTypes = loadedTypes
 		return node.assignValues(columns, values)
 	}
+	if len(rtq.modifiers) > 0 {
+		_spec.Modifiers = rtq.modifiers
+	}
 	for i := range hooks {
 		hooks[i](ctx, _spec)
 	}
@@ -473,6 +483,32 @@ func (rtq *ResourceTypeQuery) sqlAll(ctx context.Context, hooks ...queryHook) ([
 		if err := rtq.loadPoolProperties(ctx, query, nodes,
 			func(n *ResourceType) { n.Edges.PoolProperties = []*PoolProperties{} },
 			func(n *ResourceType, e *PoolProperties) { n.Edges.PoolProperties = append(n.Edges.PoolProperties, e) }); err != nil {
+			return nil, err
+		}
+	}
+	for name, query := range rtq.withNamedPropertyTypes {
+		if err := rtq.loadPropertyTypes(ctx, query, nodes,
+			func(n *ResourceType) { n.appendNamedPropertyTypes(name) },
+			func(n *ResourceType, e *PropertyType) { n.appendNamedPropertyTypes(name, e) }); err != nil {
+			return nil, err
+		}
+	}
+	for name, query := range rtq.withNamedPools {
+		if err := rtq.loadPools(ctx, query, nodes,
+			func(n *ResourceType) { n.appendNamedPools(name) },
+			func(n *ResourceType, e *ResourcePool) { n.appendNamedPools(name, e) }); err != nil {
+			return nil, err
+		}
+	}
+	for name, query := range rtq.withNamedPoolProperties {
+		if err := rtq.loadPoolProperties(ctx, query, nodes,
+			func(n *ResourceType) { n.appendNamedPoolProperties(name) },
+			func(n *ResourceType, e *PoolProperties) { n.appendNamedPoolProperties(name, e) }); err != nil {
+			return nil, err
+		}
+	}
+	for i := range rtq.loadTotal {
+		if err := rtq.loadTotal[i](ctx, nodes); err != nil {
 			return nil, err
 		}
 	}
@@ -602,6 +638,9 @@ func (rtq *ResourceTypeQuery) loadPoolProperties(ctx context.Context, query *Poo
 
 func (rtq *ResourceTypeQuery) sqlCount(ctx context.Context) (int, error) {
 	_spec := rtq.querySpec()
+	if len(rtq.modifiers) > 0 {
+		_spec.Modifiers = rtq.modifiers
+	}
 	_spec.Node.Columns = rtq.fields
 	if len(rtq.fields) > 0 {
 		_spec.Unique = rtq.unique != nil && *rtq.unique
@@ -695,6 +734,48 @@ func (rtq *ResourceTypeQuery) sqlQuery(ctx context.Context) *sql.Selector {
 		selector.Limit(*limit)
 	}
 	return selector
+}
+
+// WithNamedPropertyTypes tells the query-builder to eager-load the nodes that are connected to the "property_types"
+// edge with the given name. The optional arguments are used to configure the query builder of the edge.
+func (rtq *ResourceTypeQuery) WithNamedPropertyTypes(name string, opts ...func(*PropertyTypeQuery)) *ResourceTypeQuery {
+	query := &PropertyTypeQuery{config: rtq.config}
+	for _, opt := range opts {
+		opt(query)
+	}
+	if rtq.withNamedPropertyTypes == nil {
+		rtq.withNamedPropertyTypes = make(map[string]*PropertyTypeQuery)
+	}
+	rtq.withNamedPropertyTypes[name] = query
+	return rtq
+}
+
+// WithNamedPools tells the query-builder to eager-load the nodes that are connected to the "pools"
+// edge with the given name. The optional arguments are used to configure the query builder of the edge.
+func (rtq *ResourceTypeQuery) WithNamedPools(name string, opts ...func(*ResourcePoolQuery)) *ResourceTypeQuery {
+	query := &ResourcePoolQuery{config: rtq.config}
+	for _, opt := range opts {
+		opt(query)
+	}
+	if rtq.withNamedPools == nil {
+		rtq.withNamedPools = make(map[string]*ResourcePoolQuery)
+	}
+	rtq.withNamedPools[name] = query
+	return rtq
+}
+
+// WithNamedPoolProperties tells the query-builder to eager-load the nodes that are connected to the "pool_properties"
+// edge with the given name. The optional arguments are used to configure the query builder of the edge.
+func (rtq *ResourceTypeQuery) WithNamedPoolProperties(name string, opts ...func(*PoolPropertiesQuery)) *ResourceTypeQuery {
+	query := &PoolPropertiesQuery{config: rtq.config}
+	for _, opt := range opts {
+		opt(query)
+	}
+	if rtq.withNamedPoolProperties == nil {
+		rtq.withNamedPoolProperties = make(map[string]*PoolPropertiesQuery)
+	}
+	rtq.withNamedPoolProperties[name] = query
+	return rtq
 }
 
 // ResourceTypeGroupBy is the group-by builder for ResourceType entities.
