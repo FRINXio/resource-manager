@@ -43,6 +43,10 @@ type ResourceEdges struct {
 	// loadedTypes holds the information for reporting if a
 	// type was loaded (or requested) in eager-loading or not.
 	loadedTypes [3]bool
+	// totalCount holds the count of the edges above.
+	totalCount [3]map[string]int
+
+	namedProperties map[string][]*Property
 }
 
 // PoolOrErr returns the Pool value or an error if the edge
@@ -208,6 +212,30 @@ func (r *Resource) String() string {
 	builder.WriteString(r.UpdatedAt.Format(time.ANSIC))
 	builder.WriteByte(')')
 	return builder.String()
+}
+
+// NamedProperties returns the Properties named value or an error if the edge was not
+// loaded in eager-loading with this name.
+func (r *Resource) NamedProperties(name string) ([]*Property, error) {
+	if r.Edges.namedProperties == nil {
+		return nil, &NotLoadedError{edge: name}
+	}
+	nodes, ok := r.Edges.namedProperties[name]
+	if !ok {
+		return nil, &NotLoadedError{edge: name}
+	}
+	return nodes, nil
+}
+
+func (r *Resource) appendNamedProperties(name string, edges ...*Property) {
+	if r.Edges.namedProperties == nil {
+		r.Edges.namedProperties = make(map[string][]*Property)
+	}
+	if len(edges) == 0 {
+		r.Edges.namedProperties[name] = []*Property{}
+	} else {
+		r.Edges.namedProperties[name] = append(r.Edges.namedProperties[name], edges...)
+	}
 }
 
 // Resources is a parsable slice of Resource.

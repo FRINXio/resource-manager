@@ -20,13 +20,16 @@ import (
 // AllocationStrategyQuery is the builder for querying AllocationStrategy entities.
 type AllocationStrategyQuery struct {
 	config
-	limit      *int
-	offset     *int
-	unique     *bool
-	order      []OrderFunc
-	fields     []string
-	predicates []predicate.AllocationStrategy
-	withPools  *ResourcePoolQuery
+	limit          *int
+	offset         *int
+	unique         *bool
+	order          []OrderFunc
+	fields         []string
+	predicates     []predicate.AllocationStrategy
+	withPools      *ResourcePoolQuery
+	modifiers      []func(*sql.Selector)
+	loadTotal      []func(context.Context, []*AllocationStrategy) error
+	withNamedPools map[string]*ResourcePoolQuery
 	// intermediate query (i.e. traversal path).
 	sql  *sql.Selector
 	path func(context.Context) (*sql.Selector, error)
@@ -299,6 +302,7 @@ func (asq *AllocationStrategyQuery) WithPools(opts ...func(*ResourcePoolQuery)) 
 //		GroupBy(allocationstrategy.FieldName).
 //		Aggregate(ent.Count()).
 //		Scan(ctx, &v)
+//
 func (asq *AllocationStrategyQuery) GroupBy(field string, fields ...string) *AllocationStrategyGroupBy {
 	grbuild := &AllocationStrategyGroupBy{config: asq.config}
 	grbuild.fields = append([]string{field}, fields...)
@@ -325,6 +329,7 @@ func (asq *AllocationStrategyQuery) GroupBy(field string, fields ...string) *All
 //	client.AllocationStrategy.Query().
 //		Select(allocationstrategy.FieldName).
 //		Scan(ctx, &v)
+//
 func (asq *AllocationStrategyQuery) Select(fields ...string) *AllocationStrategySelect {
 	asq.fields = append(asq.fields, fields...)
 	selbuild := &AllocationStrategySelect{AllocationStrategyQuery: asq}
@@ -372,6 +377,9 @@ func (asq *AllocationStrategyQuery) sqlAll(ctx context.Context, hooks ...queryHo
 		node.Edges.loadedTypes = loadedTypes
 		return node.assignValues(columns, values)
 	}
+	if len(asq.modifiers) > 0 {
+		_spec.Modifiers = asq.modifiers
+	}
 	for i := range hooks {
 		hooks[i](ctx, _spec)
 	}
@@ -385,6 +393,18 @@ func (asq *AllocationStrategyQuery) sqlAll(ctx context.Context, hooks ...queryHo
 		if err := asq.loadPools(ctx, query, nodes,
 			func(n *AllocationStrategy) { n.Edges.Pools = []*ResourcePool{} },
 			func(n *AllocationStrategy, e *ResourcePool) { n.Edges.Pools = append(n.Edges.Pools, e) }); err != nil {
+			return nil, err
+		}
+	}
+	for name, query := range asq.withNamedPools {
+		if err := asq.loadPools(ctx, query, nodes,
+			func(n *AllocationStrategy) { n.appendNamedPools(name) },
+			func(n *AllocationStrategy, e *ResourcePool) { n.appendNamedPools(name, e) }); err != nil {
+			return nil, err
+		}
+	}
+	for i := range asq.loadTotal {
+		if err := asq.loadTotal[i](ctx, nodes); err != nil {
 			return nil, err
 		}
 	}
@@ -425,6 +445,9 @@ func (asq *AllocationStrategyQuery) loadPools(ctx context.Context, query *Resour
 
 func (asq *AllocationStrategyQuery) sqlCount(ctx context.Context) (int, error) {
 	_spec := asq.querySpec()
+	if len(asq.modifiers) > 0 {
+		_spec.Modifiers = asq.modifiers
+	}
 	_spec.Node.Columns = asq.fields
 	if len(asq.fields) > 0 {
 		_spec.Unique = asq.unique != nil && *asq.unique
@@ -518,6 +541,20 @@ func (asq *AllocationStrategyQuery) sqlQuery(ctx context.Context) *sql.Selector 
 		selector.Limit(*limit)
 	}
 	return selector
+}
+
+// WithNamedPools tells the query-builder to eager-load the nodes that are connected to the "pools"
+// edge with the given name. The optional arguments are used to configure the query builder of the edge.
+func (asq *AllocationStrategyQuery) WithNamedPools(name string, opts ...func(*ResourcePoolQuery)) *AllocationStrategyQuery {
+	query := &ResourcePoolQuery{config: asq.config}
+	for _, opt := range opts {
+		opt(query)
+	}
+	if asq.withNamedPools == nil {
+		asq.withNamedPools = make(map[string]*ResourcePoolQuery)
+	}
+	asq.withNamedPools[name] = query
+	return asq
 }
 
 // AllocationStrategyGroupBy is the group-by builder for AllocationStrategy entities.

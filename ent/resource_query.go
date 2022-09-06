@@ -21,16 +21,19 @@ import (
 // ResourceQuery is the builder for querying Resource entities.
 type ResourceQuery struct {
 	config
-	limit          *int
-	offset         *int
-	unique         *bool
-	order          []OrderFunc
-	fields         []string
-	predicates     []predicate.Resource
-	withPool       *ResourcePoolQuery
-	withProperties *PropertyQuery
-	withNestedPool *ResourcePoolQuery
-	withFKs        bool
+	limit               *int
+	offset              *int
+	unique              *bool
+	order               []OrderFunc
+	fields              []string
+	predicates          []predicate.Resource
+	withPool            *ResourcePoolQuery
+	withProperties      *PropertyQuery
+	withNestedPool      *ResourcePoolQuery
+	withFKs             bool
+	modifiers           []func(*sql.Selector)
+	loadTotal           []func(context.Context, []*Resource) error
+	withNamedProperties map[string]*PropertyQuery
 	// intermediate query (i.e. traversal path).
 	sql  *sql.Selector
 	path func(context.Context) (*sql.Selector, error)
@@ -371,6 +374,7 @@ func (rq *ResourceQuery) WithNestedPool(opts ...func(*ResourcePoolQuery)) *Resou
 //		GroupBy(resource.FieldStatus).
 //		Aggregate(ent.Count()).
 //		Scan(ctx, &v)
+//
 func (rq *ResourceQuery) GroupBy(field string, fields ...string) *ResourceGroupBy {
 	grbuild := &ResourceGroupBy{config: rq.config}
 	grbuild.fields = append([]string{field}, fields...)
@@ -397,6 +401,7 @@ func (rq *ResourceQuery) GroupBy(field string, fields ...string) *ResourceGroupB
 //	client.Resource.Query().
 //		Select(resource.FieldStatus).
 //		Scan(ctx, &v)
+//
 func (rq *ResourceQuery) Select(fields ...string) *ResourceSelect {
 	rq.fields = append(rq.fields, fields...)
 	selbuild := &ResourceSelect{ResourceQuery: rq}
@@ -453,6 +458,9 @@ func (rq *ResourceQuery) sqlAll(ctx context.Context, hooks ...queryHook) ([]*Res
 		node.Edges.loadedTypes = loadedTypes
 		return node.assignValues(columns, values)
 	}
+	if len(rq.modifiers) > 0 {
+		_spec.Modifiers = rq.modifiers
+	}
 	for i := range hooks {
 		hooks[i](ctx, _spec)
 	}
@@ -478,6 +486,18 @@ func (rq *ResourceQuery) sqlAll(ctx context.Context, hooks ...queryHook) ([]*Res
 	if query := rq.withNestedPool; query != nil {
 		if err := rq.loadNestedPool(ctx, query, nodes, nil,
 			func(n *Resource, e *ResourcePool) { n.Edges.NestedPool = e }); err != nil {
+			return nil, err
+		}
+	}
+	for name, query := range rq.withNamedProperties {
+		if err := rq.loadProperties(ctx, query, nodes,
+			func(n *Resource) { n.appendNamedProperties(name) },
+			func(n *Resource, e *Property) { n.appendNamedProperties(name, e) }); err != nil {
+			return nil, err
+		}
+	}
+	for i := range rq.loadTotal {
+		if err := rq.loadTotal[i](ctx, nodes); err != nil {
 			return nil, err
 		}
 	}
@@ -575,6 +595,9 @@ func (rq *ResourceQuery) loadNestedPool(ctx context.Context, query *ResourcePool
 
 func (rq *ResourceQuery) sqlCount(ctx context.Context) (int, error) {
 	_spec := rq.querySpec()
+	if len(rq.modifiers) > 0 {
+		_spec.Modifiers = rq.modifiers
+	}
 	_spec.Node.Columns = rq.fields
 	if len(rq.fields) > 0 {
 		_spec.Unique = rq.unique != nil && *rq.unique
@@ -668,6 +691,20 @@ func (rq *ResourceQuery) sqlQuery(ctx context.Context) *sql.Selector {
 		selector.Limit(*limit)
 	}
 	return selector
+}
+
+// WithNamedProperties tells the query-builder to eager-load the nodes that are connected to the "properties"
+// edge with the given name. The optional arguments are used to configure the query builder of the edge.
+func (rq *ResourceQuery) WithNamedProperties(name string, opts ...func(*PropertyQuery)) *ResourceQuery {
+	query := &PropertyQuery{config: rq.config}
+	for _, opt := range opts {
+		opt(query)
+	}
+	if rq.withNamedProperties == nil {
+		rq.withNamedProperties = make(map[string]*PropertyQuery)
+	}
+	rq.withNamedProperties[name] = query
+	return rq
 }
 
 // ResourceGroupBy is the group-by builder for Resource entities.

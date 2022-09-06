@@ -4,6 +4,8 @@ package propertytype
 
 import (
 	"fmt"
+	"io"
+	"strconv"
 
 	"entgo.io/ent"
 )
@@ -120,6 +122,7 @@ func ValidColumn(column string) bool {
 // it should be imported in the main as follows:
 //
 //	import _ "github.com/net-auto/resourceManager/ent/runtime"
+//
 var (
 	Hooks  [1]ent.Hook
 	Policy ent.Policy
@@ -163,4 +166,22 @@ func TypeValidator(_type Type) error {
 	default:
 		return fmt.Errorf("propertytype: invalid enum value for type field: %q", _type)
 	}
+}
+
+// MarshalGQL implements graphql.Marshaler interface.
+func (e Type) MarshalGQL(w io.Writer) {
+	io.WriteString(w, strconv.Quote(e.String()))
+}
+
+// UnmarshalGQL implements graphql.Unmarshaler interface.
+func (e *Type) UnmarshalGQL(val interface{}) error {
+	str, ok := val.(string)
+	if !ok {
+		return fmt.Errorf("enum %T must be a string", val)
+	}
+	*e = Type(str)
+	if err := TypeValidator(*e); err != nil {
+		return fmt.Errorf("%s is not a valid Type", str)
+	}
+	return nil
 }

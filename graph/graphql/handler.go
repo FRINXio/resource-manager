@@ -9,7 +9,7 @@ import (
 	"database/sql"
 	"database/sql/driver"
 	"errors"
-	"github.com/99designs/gqlgen/plugin/federation/testdata/entityresolver/generated"
+	"github.com/net-auto/resourceManager/graph/graphql/generated"
 	"github.com/net-auto/resourceManager/logging/log"
 	"github.com/net-auto/resourceManager/telemetry/ocgql"
 	"github.com/net-auto/resourceManager/viewer"

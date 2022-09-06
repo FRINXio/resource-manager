@@ -4,6 +4,8 @@ package resourcepool
 
 import (
 	"fmt"
+	"io"
+	"strconv"
 
 	"entgo.io/ent"
 )
@@ -120,6 +122,7 @@ func ValidColumn(column string) bool {
 // it should be imported in the main as follows:
 //
 //	import _ "github.com/net-auto/resourceManager/ent/runtime"
+//
 var (
 	Hooks  [1]ent.Hook
 	Policy ent.Policy
@@ -151,4 +154,22 @@ func PoolTypeValidator(pt PoolType) error {
 	default:
 		return fmt.Errorf("resourcepool: invalid enum value for pool_type field: %q", pt)
 	}
+}
+
+// MarshalGQL implements graphql.Marshaler interface.
+func (e PoolType) MarshalGQL(w io.Writer) {
+	io.WriteString(w, strconv.Quote(e.String()))
+}
+
+// UnmarshalGQL implements graphql.Unmarshaler interface.
+func (e *PoolType) UnmarshalGQL(val interface{}) error {
+	str, ok := val.(string)
+	if !ok {
+		return fmt.Errorf("enum %T must be a string", val)
+	}
+	*e = PoolType(str)
+	if err := PoolTypeValidator(*e); err != nil {
+		return fmt.Errorf("%s is not a valid PoolType", str)
+	}
+	return nil
 }

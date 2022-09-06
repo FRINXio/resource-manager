@@ -29,6 +29,10 @@ type TagEdges struct {
 	// loadedTypes holds the information for reporting if a
 	// type was loaded (or requested) in eager-loading or not.
 	loadedTypes [1]bool
+	// totalCount holds the count of the edges above.
+	totalCount [1]map[string]int
+
+	namedPools map[string][]*ResourcePool
 }
 
 // PoolsOrErr returns the Pools value or an error if the edge
@@ -113,6 +117,30 @@ func (t *Tag) String() string {
 	builder.WriteString(t.Tag)
 	builder.WriteByte(')')
 	return builder.String()
+}
+
+// NamedPools returns the Pools named value or an error if the edge was not
+// loaded in eager-loading with this name.
+func (t *Tag) NamedPools(name string) ([]*ResourcePool, error) {
+	if t.Edges.namedPools == nil {
+		return nil, &NotLoadedError{edge: name}
+	}
+	nodes, ok := t.Edges.namedPools[name]
+	if !ok {
+		return nil, &NotLoadedError{edge: name}
+	}
+	return nodes, nil
+}
+
+func (t *Tag) appendNamedPools(name string, edges ...*ResourcePool) {
+	if t.Edges.namedPools == nil {
+		t.Edges.namedPools = make(map[string][]*ResourcePool)
+	}
+	if len(edges) == 0 {
+		t.Edges.namedPools[name] = []*ResourcePool{}
+	} else {
+		t.Edges.namedPools[name] = append(t.Edges.namedPools[name], edges...)
+	}
 }
 
 // Tags is a parsable slice of Tag.

@@ -19,13 +19,16 @@ import (
 // TagQuery is the builder for querying Tag entities.
 type TagQuery struct {
 	config
-	limit      *int
-	offset     *int
-	unique     *bool
-	order      []OrderFunc
-	fields     []string
-	predicates []predicate.Tag
-	withPools  *ResourcePoolQuery
+	limit          *int
+	offset         *int
+	unique         *bool
+	order          []OrderFunc
+	fields         []string
+	predicates     []predicate.Tag
+	withPools      *ResourcePoolQuery
+	modifiers      []func(*sql.Selector)
+	loadTotal      []func(context.Context, []*Tag) error
+	withNamedPools map[string]*ResourcePoolQuery
 	// intermediate query (i.e. traversal path).
 	sql  *sql.Selector
 	path func(context.Context) (*sql.Selector, error)
@@ -298,6 +301,7 @@ func (tq *TagQuery) WithPools(opts ...func(*ResourcePoolQuery)) *TagQuery {
 //		GroupBy(tag.FieldTag).
 //		Aggregate(ent.Count()).
 //		Scan(ctx, &v)
+//
 func (tq *TagQuery) GroupBy(field string, fields ...string) *TagGroupBy {
 	grbuild := &TagGroupBy{config: tq.config}
 	grbuild.fields = append([]string{field}, fields...)
@@ -324,6 +328,7 @@ func (tq *TagQuery) GroupBy(field string, fields ...string) *TagGroupBy {
 //	client.Tag.Query().
 //		Select(tag.FieldTag).
 //		Scan(ctx, &v)
+//
 func (tq *TagQuery) Select(fields ...string) *TagSelect {
 	tq.fields = append(tq.fields, fields...)
 	selbuild := &TagSelect{TagQuery: tq}
@@ -365,6 +370,9 @@ func (tq *TagQuery) sqlAll(ctx context.Context, hooks ...queryHook) ([]*Tag, err
 		node.Edges.loadedTypes = loadedTypes
 		return node.assignValues(columns, values)
 	}
+	if len(tq.modifiers) > 0 {
+		_spec.Modifiers = tq.modifiers
+	}
 	for i := range hooks {
 		hooks[i](ctx, _spec)
 	}
@@ -378,6 +386,18 @@ func (tq *TagQuery) sqlAll(ctx context.Context, hooks ...queryHook) ([]*Tag, err
 		if err := tq.loadPools(ctx, query, nodes,
 			func(n *Tag) { n.Edges.Pools = []*ResourcePool{} },
 			func(n *Tag, e *ResourcePool) { n.Edges.Pools = append(n.Edges.Pools, e) }); err != nil {
+			return nil, err
+		}
+	}
+	for name, query := range tq.withNamedPools {
+		if err := tq.loadPools(ctx, query, nodes,
+			func(n *Tag) { n.appendNamedPools(name) },
+			func(n *Tag, e *ResourcePool) { n.appendNamedPools(name, e) }); err != nil {
+			return nil, err
+		}
+	}
+	for i := range tq.loadTotal {
+		if err := tq.loadTotal[i](ctx, nodes); err != nil {
 			return nil, err
 		}
 	}
@@ -445,6 +465,9 @@ func (tq *TagQuery) loadPools(ctx context.Context, query *ResourcePoolQuery, nod
 
 func (tq *TagQuery) sqlCount(ctx context.Context) (int, error) {
 	_spec := tq.querySpec()
+	if len(tq.modifiers) > 0 {
+		_spec.Modifiers = tq.modifiers
+	}
 	_spec.Node.Columns = tq.fields
 	if len(tq.fields) > 0 {
 		_spec.Unique = tq.unique != nil && *tq.unique
@@ -538,6 +561,20 @@ func (tq *TagQuery) sqlQuery(ctx context.Context) *sql.Selector {
 		selector.Limit(*limit)
 	}
 	return selector
+}
+
+// WithNamedPools tells the query-builder to eager-load the nodes that are connected to the "pools"
+// edge with the given name. The optional arguments are used to configure the query builder of the edge.
+func (tq *TagQuery) WithNamedPools(name string, opts ...func(*ResourcePoolQuery)) *TagQuery {
+	query := &ResourcePoolQuery{config: tq.config}
+	for _, opt := range opts {
+		opt(query)
+	}
+	if tq.withNamedPools == nil {
+		tq.withNamedPools = make(map[string]*ResourcePoolQuery)
+	}
+	tq.withNamedPools[name] = query
+	return tq
 }
 
 // TagGroupBy is the group-by builder for Tag entities.

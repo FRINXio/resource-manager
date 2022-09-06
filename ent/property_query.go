@@ -29,6 +29,8 @@ type PropertyQuery struct {
 	withType      *PropertyTypeQuery
 	withResources *ResourceQuery
 	withFKs       bool
+	modifiers     []func(*sql.Selector)
+	loadTotal     []func(context.Context, []*Property) error
 	// intermediate query (i.e. traversal path).
 	sql  *sql.Selector
 	path func(context.Context) (*sql.Selector, error)
@@ -335,6 +337,7 @@ func (pq *PropertyQuery) WithResources(opts ...func(*ResourceQuery)) *PropertyQu
 //		GroupBy(property.FieldIntVal).
 //		Aggregate(ent.Count()).
 //		Scan(ctx, &v)
+//
 func (pq *PropertyQuery) GroupBy(field string, fields ...string) *PropertyGroupBy {
 	grbuild := &PropertyGroupBy{config: pq.config}
 	grbuild.fields = append([]string{field}, fields...)
@@ -361,6 +364,7 @@ func (pq *PropertyQuery) GroupBy(field string, fields ...string) *PropertyGroupB
 //	client.Property.Query().
 //		Select(property.FieldIntVal).
 //		Scan(ctx, &v)
+//
 func (pq *PropertyQuery) Select(fields ...string) *PropertySelect {
 	pq.fields = append(pq.fields, fields...)
 	selbuild := &PropertySelect{PropertyQuery: pq}
@@ -416,6 +420,9 @@ func (pq *PropertyQuery) sqlAll(ctx context.Context, hooks ...queryHook) ([]*Pro
 		node.Edges.loadedTypes = loadedTypes
 		return node.assignValues(columns, values)
 	}
+	if len(pq.modifiers) > 0 {
+		_spec.Modifiers = pq.modifiers
+	}
 	for i := range hooks {
 		hooks[i](ctx, _spec)
 	}
@@ -434,6 +441,11 @@ func (pq *PropertyQuery) sqlAll(ctx context.Context, hooks ...queryHook) ([]*Pro
 	if query := pq.withResources; query != nil {
 		if err := pq.loadResources(ctx, query, nodes, nil,
 			func(n *Property, e *Resource) { n.Edges.Resources = e }); err != nil {
+			return nil, err
+		}
+	}
+	for i := range pq.loadTotal {
+		if err := pq.loadTotal[i](ctx, nodes); err != nil {
 			return nil, err
 		}
 	}
@@ -501,6 +513,9 @@ func (pq *PropertyQuery) loadResources(ctx context.Context, query *ResourceQuery
 
 func (pq *PropertyQuery) sqlCount(ctx context.Context) (int, error) {
 	_spec := pq.querySpec()
+	if len(pq.modifiers) > 0 {
+		_spec.Modifiers = pq.modifiers
+	}
 	_spec.Node.Columns = pq.fields
 	if len(pq.fields) > 0 {
 		_spec.Unique = pq.unique != nil && *pq.unique

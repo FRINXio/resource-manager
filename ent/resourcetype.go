@@ -33,6 +33,12 @@ type ResourceTypeEdges struct {
 	// loadedTypes holds the information for reporting if a
 	// type was loaded (or requested) in eager-loading or not.
 	loadedTypes [3]bool
+	// totalCount holds the count of the edges above.
+	totalCount [3]map[string]int
+
+	namedPropertyTypes  map[string][]*PropertyType
+	namedPools          map[string][]*ResourcePool
+	namedPoolProperties map[string][]*PoolProperties
 }
 
 // PropertyTypesOrErr returns the PropertyTypes value or an error if the edge
@@ -145,6 +151,78 @@ func (rt *ResourceType) String() string {
 	builder.WriteString(rt.Name)
 	builder.WriteByte(')')
 	return builder.String()
+}
+
+// NamedPropertyTypes returns the PropertyTypes named value or an error if the edge was not
+// loaded in eager-loading with this name.
+func (rt *ResourceType) NamedPropertyTypes(name string) ([]*PropertyType, error) {
+	if rt.Edges.namedPropertyTypes == nil {
+		return nil, &NotLoadedError{edge: name}
+	}
+	nodes, ok := rt.Edges.namedPropertyTypes[name]
+	if !ok {
+		return nil, &NotLoadedError{edge: name}
+	}
+	return nodes, nil
+}
+
+func (rt *ResourceType) appendNamedPropertyTypes(name string, edges ...*PropertyType) {
+	if rt.Edges.namedPropertyTypes == nil {
+		rt.Edges.namedPropertyTypes = make(map[string][]*PropertyType)
+	}
+	if len(edges) == 0 {
+		rt.Edges.namedPropertyTypes[name] = []*PropertyType{}
+	} else {
+		rt.Edges.namedPropertyTypes[name] = append(rt.Edges.namedPropertyTypes[name], edges...)
+	}
+}
+
+// NamedPools returns the Pools named value or an error if the edge was not
+// loaded in eager-loading with this name.
+func (rt *ResourceType) NamedPools(name string) ([]*ResourcePool, error) {
+	if rt.Edges.namedPools == nil {
+		return nil, &NotLoadedError{edge: name}
+	}
+	nodes, ok := rt.Edges.namedPools[name]
+	if !ok {
+		return nil, &NotLoadedError{edge: name}
+	}
+	return nodes, nil
+}
+
+func (rt *ResourceType) appendNamedPools(name string, edges ...*ResourcePool) {
+	if rt.Edges.namedPools == nil {
+		rt.Edges.namedPools = make(map[string][]*ResourcePool)
+	}
+	if len(edges) == 0 {
+		rt.Edges.namedPools[name] = []*ResourcePool{}
+	} else {
+		rt.Edges.namedPools[name] = append(rt.Edges.namedPools[name], edges...)
+	}
+}
+
+// NamedPoolProperties returns the PoolProperties named value or an error if the edge was not
+// loaded in eager-loading with this name.
+func (rt *ResourceType) NamedPoolProperties(name string) ([]*PoolProperties, error) {
+	if rt.Edges.namedPoolProperties == nil {
+		return nil, &NotLoadedError{edge: name}
+	}
+	nodes, ok := rt.Edges.namedPoolProperties[name]
+	if !ok {
+		return nil, &NotLoadedError{edge: name}
+	}
+	return nodes, nil
+}
+
+func (rt *ResourceType) appendNamedPoolProperties(name string, edges ...*PoolProperties) {
+	if rt.Edges.namedPoolProperties == nil {
+		rt.Edges.namedPoolProperties = make(map[string][]*PoolProperties)
+	}
+	if len(edges) == 0 {
+		rt.Edges.namedPoolProperties[name] = []*PoolProperties{}
+	} else {
+		rt.Edges.namedPoolProperties[name] = append(rt.Edges.namedPoolProperties[name], edges...)
+	}
 }
 
 // ResourceTypes is a parsable slice of ResourceType.

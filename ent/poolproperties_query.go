@@ -22,16 +22,20 @@ import (
 // PoolPropertiesQuery is the builder for querying PoolProperties entities.
 type PoolPropertiesQuery struct {
 	config
-	limit            *int
-	offset           *int
-	unique           *bool
-	order            []OrderFunc
-	fields           []string
-	predicates       []predicate.PoolProperties
-	withPool         *ResourcePoolQuery
-	withResourceType *ResourceTypeQuery
-	withProperties   *PropertyQuery
-	withFKs          bool
+	limit                 *int
+	offset                *int
+	unique                *bool
+	order                 []OrderFunc
+	fields                []string
+	predicates            []predicate.PoolProperties
+	withPool              *ResourcePoolQuery
+	withResourceType      *ResourceTypeQuery
+	withProperties        *PropertyQuery
+	withFKs               bool
+	modifiers             []func(*sql.Selector)
+	loadTotal             []func(context.Context, []*PoolProperties) error
+	withNamedResourceType map[string]*ResourceTypeQuery
+	withNamedProperties   map[string]*PropertyQuery
 	// intermediate query (i.e. traversal path).
 	sql  *sql.Selector
 	path func(context.Context) (*sql.Selector, error)
@@ -432,6 +436,9 @@ func (ppq *PoolPropertiesQuery) sqlAll(ctx context.Context, hooks ...queryHook) 
 		node.Edges.loadedTypes = loadedTypes
 		return node.assignValues(columns, values)
 	}
+	if len(ppq.modifiers) > 0 {
+		_spec.Modifiers = ppq.modifiers
+	}
 	for i := range hooks {
 		hooks[i](ctx, _spec)
 	}
@@ -458,6 +465,25 @@ func (ppq *PoolPropertiesQuery) sqlAll(ctx context.Context, hooks ...queryHook) 
 		if err := ppq.loadProperties(ctx, query, nodes,
 			func(n *PoolProperties) { n.Edges.Properties = []*Property{} },
 			func(n *PoolProperties, e *Property) { n.Edges.Properties = append(n.Edges.Properties, e) }); err != nil {
+			return nil, err
+		}
+	}
+	for name, query := range ppq.withNamedResourceType {
+		if err := ppq.loadResourceType(ctx, query, nodes,
+			func(n *PoolProperties) { n.appendNamedResourceType(name) },
+			func(n *PoolProperties, e *ResourceType) { n.appendNamedResourceType(name, e) }); err != nil {
+			return nil, err
+		}
+	}
+	for name, query := range ppq.withNamedProperties {
+		if err := ppq.loadProperties(ctx, query, nodes,
+			func(n *PoolProperties) { n.appendNamedProperties(name) },
+			func(n *PoolProperties, e *Property) { n.appendNamedProperties(name, e) }); err != nil {
+			return nil, err
+		}
+	}
+	for i := range ppq.loadTotal {
+		if err := ppq.loadTotal[i](ctx, nodes); err != nil {
 			return nil, err
 		}
 	}
@@ -585,6 +611,9 @@ func (ppq *PoolPropertiesQuery) loadProperties(ctx context.Context, query *Prope
 
 func (ppq *PoolPropertiesQuery) sqlCount(ctx context.Context) (int, error) {
 	_spec := ppq.querySpec()
+	if len(ppq.modifiers) > 0 {
+		_spec.Modifiers = ppq.modifiers
+	}
 	_spec.Node.Columns = ppq.fields
 	if len(ppq.fields) > 0 {
 		_spec.Unique = ppq.unique != nil && *ppq.unique
@@ -678,6 +707,34 @@ func (ppq *PoolPropertiesQuery) sqlQuery(ctx context.Context) *sql.Selector {
 		selector.Limit(*limit)
 	}
 	return selector
+}
+
+// WithNamedResourceType tells the query-builder to eager-load the nodes that are connected to the "resourceType"
+// edge with the given name. The optional arguments are used to configure the query builder of the edge.
+func (ppq *PoolPropertiesQuery) WithNamedResourceType(name string, opts ...func(*ResourceTypeQuery)) *PoolPropertiesQuery {
+	query := &ResourceTypeQuery{config: ppq.config}
+	for _, opt := range opts {
+		opt(query)
+	}
+	if ppq.withNamedResourceType == nil {
+		ppq.withNamedResourceType = make(map[string]*ResourceTypeQuery)
+	}
+	ppq.withNamedResourceType[name] = query
+	return ppq
+}
+
+// WithNamedProperties tells the query-builder to eager-load the nodes that are connected to the "properties"
+// edge with the given name. The optional arguments are used to configure the query builder of the edge.
+func (ppq *PoolPropertiesQuery) WithNamedProperties(name string, opts ...func(*PropertyQuery)) *PoolPropertiesQuery {
+	query := &PropertyQuery{config: ppq.config}
+	for _, opt := range opts {
+		opt(query)
+	}
+	if ppq.withNamedProperties == nil {
+		ppq.withNamedProperties = make(map[string]*PropertyQuery)
+	}
+	ppq.withNamedProperties[name] = query
+	return ppq
 }
 
 // PoolPropertiesGroupBy is the group-by builder for PoolProperties entities.
