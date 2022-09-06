@@ -7,8 +7,8 @@ import (
 	"errors"
 	"fmt"
 
-	"github.com/facebook/ent/dialect/sql/sqlgraph"
-	"github.com/facebook/ent/schema/field"
+	"entgo.io/ent/dialect/sql/sqlgraph"
+	"entgo.io/ent/schema/field"
 	"github.com/net-auto/resourceManager/ent/property"
 	"github.com/net-auto/resourceManager/ent/propertytype"
 	"github.com/net-auto/resourceManager/ent/resource"
@@ -21,13 +21,13 @@ type PropertyCreate struct {
 	hooks    []Hook
 }
 
-// SetIntVal sets the int_val field.
+// SetIntVal sets the "int_val" field.
 func (pc *PropertyCreate) SetIntVal(i int) *PropertyCreate {
 	pc.mutation.SetIntVal(i)
 	return pc
 }
 
-// SetNillableIntVal sets the int_val field if the given value is not nil.
+// SetNillableIntVal sets the "int_val" field if the given value is not nil.
 func (pc *PropertyCreate) SetNillableIntVal(i *int) *PropertyCreate {
 	if i != nil {
 		pc.SetIntVal(*i)
@@ -35,13 +35,13 @@ func (pc *PropertyCreate) SetNillableIntVal(i *int) *PropertyCreate {
 	return pc
 }
 
-// SetBoolVal sets the bool_val field.
+// SetBoolVal sets the "bool_val" field.
 func (pc *PropertyCreate) SetBoolVal(b bool) *PropertyCreate {
 	pc.mutation.SetBoolVal(b)
 	return pc
 }
 
-// SetNillableBoolVal sets the bool_val field if the given value is not nil.
+// SetNillableBoolVal sets the "bool_val" field if the given value is not nil.
 func (pc *PropertyCreate) SetNillableBoolVal(b *bool) *PropertyCreate {
 	if b != nil {
 		pc.SetBoolVal(*b)
@@ -49,13 +49,13 @@ func (pc *PropertyCreate) SetNillableBoolVal(b *bool) *PropertyCreate {
 	return pc
 }
 
-// SetFloatVal sets the float_val field.
+// SetFloatVal sets the "float_val" field.
 func (pc *PropertyCreate) SetFloatVal(f float64) *PropertyCreate {
 	pc.mutation.SetFloatVal(f)
 	return pc
 }
 
-// SetNillableFloatVal sets the float_val field if the given value is not nil.
+// SetNillableFloatVal sets the "float_val" field if the given value is not nil.
 func (pc *PropertyCreate) SetNillableFloatVal(f *float64) *PropertyCreate {
 	if f != nil {
 		pc.SetFloatVal(*f)
@@ -63,13 +63,13 @@ func (pc *PropertyCreate) SetNillableFloatVal(f *float64) *PropertyCreate {
 	return pc
 }
 
-// SetLatitudeVal sets the latitude_val field.
+// SetLatitudeVal sets the "latitude_val" field.
 func (pc *PropertyCreate) SetLatitudeVal(f float64) *PropertyCreate {
 	pc.mutation.SetLatitudeVal(f)
 	return pc
 }
 
-// SetNillableLatitudeVal sets the latitude_val field if the given value is not nil.
+// SetNillableLatitudeVal sets the "latitude_val" field if the given value is not nil.
 func (pc *PropertyCreate) SetNillableLatitudeVal(f *float64) *PropertyCreate {
 	if f != nil {
 		pc.SetLatitudeVal(*f)
@@ -77,13 +77,13 @@ func (pc *PropertyCreate) SetNillableLatitudeVal(f *float64) *PropertyCreate {
 	return pc
 }
 
-// SetLongitudeVal sets the longitude_val field.
+// SetLongitudeVal sets the "longitude_val" field.
 func (pc *PropertyCreate) SetLongitudeVal(f float64) *PropertyCreate {
 	pc.mutation.SetLongitudeVal(f)
 	return pc
 }
 
-// SetNillableLongitudeVal sets the longitude_val field if the given value is not nil.
+// SetNillableLongitudeVal sets the "longitude_val" field if the given value is not nil.
 func (pc *PropertyCreate) SetNillableLongitudeVal(f *float64) *PropertyCreate {
 	if f != nil {
 		pc.SetLongitudeVal(*f)
@@ -91,13 +91,13 @@ func (pc *PropertyCreate) SetNillableLongitudeVal(f *float64) *PropertyCreate {
 	return pc
 }
 
-// SetRangeFromVal sets the range_from_val field.
+// SetRangeFromVal sets the "range_from_val" field.
 func (pc *PropertyCreate) SetRangeFromVal(f float64) *PropertyCreate {
 	pc.mutation.SetRangeFromVal(f)
 	return pc
 }
 
-// SetNillableRangeFromVal sets the range_from_val field if the given value is not nil.
+// SetNillableRangeFromVal sets the "range_from_val" field if the given value is not nil.
 func (pc *PropertyCreate) SetNillableRangeFromVal(f *float64) *PropertyCreate {
 	if f != nil {
 		pc.SetRangeFromVal(*f)
@@ -105,13 +105,13 @@ func (pc *PropertyCreate) SetNillableRangeFromVal(f *float64) *PropertyCreate {
 	return pc
 }
 
-// SetRangeToVal sets the range_to_val field.
+// SetRangeToVal sets the "range_to_val" field.
 func (pc *PropertyCreate) SetRangeToVal(f float64) *PropertyCreate {
 	pc.mutation.SetRangeToVal(f)
 	return pc
 }
 
-// SetNillableRangeToVal sets the range_to_val field if the given value is not nil.
+// SetNillableRangeToVal sets the "range_to_val" field if the given value is not nil.
 func (pc *PropertyCreate) SetNillableRangeToVal(f *float64) *PropertyCreate {
 	if f != nil {
 		pc.SetRangeToVal(*f)
@@ -119,13 +119,13 @@ func (pc *PropertyCreate) SetNillableRangeToVal(f *float64) *PropertyCreate {
 	return pc
 }
 
-// SetStringVal sets the string_val field.
+// SetStringVal sets the "string_val" field.
 func (pc *PropertyCreate) SetStringVal(s string) *PropertyCreate {
 	pc.mutation.SetStringVal(s)
 	return pc
 }
 
-// SetNillableStringVal sets the string_val field if the given value is not nil.
+// SetNillableStringVal sets the "string_val" field if the given value is not nil.
 func (pc *PropertyCreate) SetNillableStringVal(s *string) *PropertyCreate {
 	if s != nil {
 		pc.SetStringVal(*s)
@@ -133,24 +133,24 @@ func (pc *PropertyCreate) SetNillableStringVal(s *string) *PropertyCreate {
 	return pc
 }
 
-// SetTypeID sets the type edge to PropertyType by id.
+// SetTypeID sets the "type" edge to the PropertyType entity by ID.
 func (pc *PropertyCreate) SetTypeID(id int) *PropertyCreate {
 	pc.mutation.SetTypeID(id)
 	return pc
 }
 
-// SetType sets the type edge to PropertyType.
+// SetType sets the "type" edge to the PropertyType entity.
 func (pc *PropertyCreate) SetType(p *PropertyType) *PropertyCreate {
 	return pc.SetTypeID(p.ID)
 }
 
-// SetResourcesID sets the resources edge to Resource by id.
+// SetResourcesID sets the "resources" edge to the Resource entity by ID.
 func (pc *PropertyCreate) SetResourcesID(id int) *PropertyCreate {
 	pc.mutation.SetResourcesID(id)
 	return pc
 }
 
-// SetNillableResourcesID sets the resources edge to Resource by id if the given value is not nil.
+// SetNillableResourcesID sets the "resources" edge to the Resource entity by ID if the given value is not nil.
 func (pc *PropertyCreate) SetNillableResourcesID(id *int) *PropertyCreate {
 	if id != nil {
 		pc = pc.SetResourcesID(*id)
@@ -158,7 +158,7 @@ func (pc *PropertyCreate) SetNillableResourcesID(id *int) *PropertyCreate {
 	return pc
 }
 
-// SetResources sets the resources edge to Resource.
+// SetResources sets the "resources" edge to the Resource entity.
 func (pc *PropertyCreate) SetResources(r *Resource) *PropertyCreate {
 	return pc.SetResourcesID(r.ID)
 }
@@ -189,16 +189,28 @@ func (pc *PropertyCreate) Save(ctx context.Context) (*Property, error) {
 				return nil, err
 			}
 			pc.mutation = mutation
-			node, err = pc.sqlSave(ctx)
+			if node, err = pc.sqlSave(ctx); err != nil {
+				return nil, err
+			}
+			mutation.id = &node.ID
 			mutation.done = true
 			return node, err
 		})
 		for i := len(pc.hooks) - 1; i >= 0; i-- {
+			if pc.hooks[i] == nil {
+				return nil, fmt.Errorf("ent: uninitialized hook (forgotten import ent/runtime?)")
+			}
 			mut = pc.hooks[i](mut)
 		}
-		if _, err := mut.Mutate(ctx, pc.mutation); err != nil {
+		v, err := mut.Mutate(ctx, pc.mutation)
+		if err != nil {
 			return nil, err
 		}
+		nv, ok := v.(*Property)
+		if !ok {
+			return nil, fmt.Errorf("unexpected node type %T returned from PropertyMutation", v)
+		}
+		node = nv
 	}
 	return node, err
 }
@@ -212,10 +224,23 @@ func (pc *PropertyCreate) SaveX(ctx context.Context) *Property {
 	return v
 }
 
+// Exec executes the query.
+func (pc *PropertyCreate) Exec(ctx context.Context) error {
+	_, err := pc.Save(ctx)
+	return err
+}
+
+// ExecX is like Exec, but panics if an error occurs.
+func (pc *PropertyCreate) ExecX(ctx context.Context) {
+	if err := pc.Exec(ctx); err != nil {
+		panic(err)
+	}
+}
+
 // check runs all checks and user-defined validators on the builder.
 func (pc *PropertyCreate) check() error {
 	if _, ok := pc.mutation.TypeID(); !ok {
-		return &ValidationError{Name: "type", err: errors.New("ent: missing required edge \"type\"")}
+		return &ValidationError{Name: "type", err: errors.New(`ent: missing required edge "Property.type"`)}
 	}
 	return nil
 }
@@ -223,8 +248,8 @@ func (pc *PropertyCreate) check() error {
 func (pc *PropertyCreate) sqlSave(ctx context.Context) (*Property, error) {
 	_node, _spec := pc.createSpec()
 	if err := sqlgraph.CreateNode(ctx, pc.driver, _spec); err != nil {
-		if cerr, ok := isSQLConstraintError(err); ok {
-			err = cerr
+		if sqlgraph.IsConstraintError(err) {
+			err = &ConstraintError{msg: err.Error(), wrap: err}
 		}
 		return nil, err
 	}
@@ -325,6 +350,7 @@ func (pc *PropertyCreate) createSpec() (*Property, *sqlgraph.CreateSpec) {
 		for _, k := range nodes {
 			edge.Target.Nodes = append(edge.Target.Nodes, k)
 		}
+		_node.property_type = &nodes[0]
 		_spec.Edges = append(_spec.Edges, edge)
 	}
 	if nodes := pc.mutation.ResourcesIDs(); len(nodes) > 0 {
@@ -344,12 +370,13 @@ func (pc *PropertyCreate) createSpec() (*Property, *sqlgraph.CreateSpec) {
 		for _, k := range nodes {
 			edge.Target.Nodes = append(edge.Target.Nodes, k)
 		}
+		_node.resource_properties = &nodes[0]
 		_spec.Edges = append(_spec.Edges, edge)
 	}
 	return _node, _spec
 }
 
-// PropertyCreateBulk is the builder for creating a bulk of Property entities.
+// PropertyCreateBulk is the builder for creating many Property entities in bulk.
 type PropertyCreateBulk struct {
 	config
 	builders []*PropertyCreate
@@ -377,19 +404,23 @@ func (pcb *PropertyCreateBulk) Save(ctx context.Context) ([]*Property, error) {
 				if i < len(mutators)-1 {
 					_, err = mutators[i+1].Mutate(root, pcb.builders[i+1].mutation)
 				} else {
+					spec := &sqlgraph.BatchCreateSpec{Nodes: specs}
 					// Invoke the actual operation on the latest mutation in the chain.
-					if err = sqlgraph.BatchCreate(ctx, pcb.driver, &sqlgraph.BatchCreateSpec{Nodes: specs}); err != nil {
-						if cerr, ok := isSQLConstraintError(err); ok {
-							err = cerr
+					if err = sqlgraph.BatchCreate(ctx, pcb.driver, spec); err != nil {
+						if sqlgraph.IsConstraintError(err) {
+							err = &ConstraintError{msg: err.Error(), wrap: err}
 						}
 					}
 				}
-				mutation.done = true
 				if err != nil {
 					return nil, err
 				}
-				id := specs[i].ID.Value.(int64)
-				nodes[i].ID = int(id)
+				mutation.id = &nodes[i].ID
+				if specs[i].ID.Value != nil {
+					id := specs[i].ID.Value.(int64)
+					nodes[i].ID = int(id)
+				}
+				mutation.done = true
 				return nodes[i], nil
 			})
 			for i := len(builder.hooks) - 1; i >= 0; i-- {
@@ -406,11 +437,24 @@ func (pcb *PropertyCreateBulk) Save(ctx context.Context) ([]*Property, error) {
 	return nodes, nil
 }
 
-// SaveX calls Save and panics if Save returns an error.
+// SaveX is like Save, but panics if an error occurs.
 func (pcb *PropertyCreateBulk) SaveX(ctx context.Context) []*Property {
 	v, err := pcb.Save(ctx)
 	if err != nil {
 		panic(err)
 	}
 	return v
+}
+
+// Exec executes the query.
+func (pcb *PropertyCreateBulk) Exec(ctx context.Context) error {
+	_, err := pcb.Save(ctx)
+	return err
+}
+
+// ExecX is like Exec, but panics if an error occurs.
+func (pcb *PropertyCreateBulk) ExecX(ctx context.Context) {
+	if err := pcb.Exec(ctx); err != nil {
+		panic(err)
+	}
 }

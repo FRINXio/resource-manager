@@ -6,7 +6,7 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/facebook/ent/dialect/sql"
+	"entgo.io/ent/dialect/sql"
 	"github.com/net-auto/resourceManager/ent/allocationstrategy"
 	"github.com/net-auto/resourceManager/ent/poolproperties"
 	"github.com/net-auto/resourceManager/ent/resource"
@@ -25,7 +25,7 @@ type ResourcePool struct {
 	Description *string `json:"description,omitempty"`
 	// PoolType holds the value of the "pool_type" field.
 	PoolType resourcepool.PoolType `json:"pool_type,omitempty"`
-	// DealocationSafetyPeriod holds the value of the "dealocation_safety_period" field.
+	// How long to keep resources unavailable after dealocation (in seconds). -1 release never, 0 release immediately
 	DealocationSafetyPeriod int `json:"dealocation_safety_period,omitempty"`
 	// Edges holds the relations/edges for other nodes in the graph.
 	// The values are being populated by the ResourcePoolQuery when eager-loading is set.
@@ -38,17 +38,17 @@ type ResourcePool struct {
 // ResourcePoolEdges holds the relations/edges for other nodes in the graph.
 type ResourcePoolEdges struct {
 	// ResourceType holds the value of the resource_type edge.
-	ResourceType *ResourceType
+	ResourceType *ResourceType `json:"resource_type,omitempty"`
 	// Tags holds the value of the tags edge.
-	Tags []*Tag
+	Tags []*Tag `json:"tags,omitempty"`
 	// Claims holds the value of the claims edge.
-	Claims []*Resource
+	Claims []*Resource `json:"claims,omitempty"`
 	// PoolProperties holds the value of the poolProperties edge.
-	PoolProperties *PoolProperties
+	PoolProperties *PoolProperties `json:"poolProperties,omitempty"`
 	// AllocationStrategy holds the value of the allocation_strategy edge.
-	AllocationStrategy *AllocationStrategy
-	// ParentResource holds the value of the parent_resource edge.
-	ParentResource *Resource
+	AllocationStrategy *AllocationStrategy `json:"allocation_strategy,omitempty"`
+	// pool hierarchies can use this link between resoruce and pool
+	ParentResource *Resource `json:"parent_resource,omitempty"`
 	// loadedTypes holds the information for reporting if a
 	// type was loaded (or requested) in eager-loading or not.
 	loadedTypes [6]bool
@@ -59,8 +59,7 @@ type ResourcePoolEdges struct {
 func (e ResourcePoolEdges) ResourceTypeOrErr() (*ResourceType, error) {
 	if e.loadedTypes[0] {
 		if e.ResourceType == nil {
-			// The edge resource_type was loaded in eager-loading,
-			// but was not found.
+			// Edge was loaded but was not found.
 			return nil, &NotFoundError{label: resourcetype.Label}
 		}
 		return e.ResourceType, nil
@@ -91,8 +90,7 @@ func (e ResourcePoolEdges) ClaimsOrErr() ([]*Resource, error) {
 func (e ResourcePoolEdges) PoolPropertiesOrErr() (*PoolProperties, error) {
 	if e.loadedTypes[3] {
 		if e.PoolProperties == nil {
-			// The edge poolProperties was loaded in eager-loading,
-			// but was not found.
+			// Edge was loaded but was not found.
 			return nil, &NotFoundError{label: poolproperties.Label}
 		}
 		return e.PoolProperties, nil
@@ -105,8 +103,7 @@ func (e ResourcePoolEdges) PoolPropertiesOrErr() (*PoolProperties, error) {
 func (e ResourcePoolEdges) AllocationStrategyOrErr() (*AllocationStrategy, error) {
 	if e.loadedTypes[4] {
 		if e.AllocationStrategy == nil {
-			// The edge allocation_strategy was loaded in eager-loading,
-			// but was not found.
+			// Edge was loaded but was not found.
 			return nil, &NotFoundError{label: allocationstrategy.Label}
 		}
 		return e.AllocationStrategy, nil
@@ -119,8 +116,7 @@ func (e ResourcePoolEdges) AllocationStrategyOrErr() (*AllocationStrategy, error
 func (e ResourcePoolEdges) ParentResourceOrErr() (*Resource, error) {
 	if e.loadedTypes[5] {
 		if e.ParentResource == nil {
-			// The edge parent_resource was loaded in eager-loading,
-			// but was not found.
+			// Edge was loaded but was not found.
 			return nil, &NotFoundError{label: resource.Label}
 		}
 		return e.ParentResource, nil
@@ -129,127 +125,137 @@ func (e ResourcePoolEdges) ParentResourceOrErr() (*Resource, error) {
 }
 
 // scanValues returns the types for scanning values from sql.Rows.
-func (*ResourcePool) scanValues() []interface{} {
-	return []interface{}{
-		&sql.NullInt64{},  // id
-		&sql.NullString{}, // name
-		&sql.NullString{}, // description
-		&sql.NullString{}, // pool_type
-		&sql.NullInt64{},  // dealocation_safety_period
+func (*ResourcePool) scanValues(columns []string) ([]any, error) {
+	values := make([]any, len(columns))
+	for i := range columns {
+		switch columns[i] {
+		case resourcepool.FieldID, resourcepool.FieldDealocationSafetyPeriod:
+			values[i] = new(sql.NullInt64)
+		case resourcepool.FieldName, resourcepool.FieldDescription, resourcepool.FieldPoolType:
+			values[i] = new(sql.NullString)
+		case resourcepool.ForeignKeys[0]: // resource_nested_pool
+			values[i] = new(sql.NullInt64)
+		case resourcepool.ForeignKeys[1]: // resource_pool_allocation_strategy
+			values[i] = new(sql.NullInt64)
+		case resourcepool.ForeignKeys[2]: // resource_type_pools
+			values[i] = new(sql.NullInt64)
+		default:
+			return nil, fmt.Errorf("unexpected column %q for type ResourcePool", columns[i])
+		}
 	}
-}
-
-// fkValues returns the types for scanning foreign-keys values from sql.Rows.
-func (*ResourcePool) fkValues() []interface{} {
-	return []interface{}{
-		&sql.NullInt64{}, // resource_nested_pool
-		&sql.NullInt64{}, // resource_pool_allocation_strategy
-		&sql.NullInt64{}, // resource_type_pools
-	}
+	return values, nil
 }
 
 // assignValues assigns the values that were returned from sql.Rows (after scanning)
 // to the ResourcePool fields.
-func (rp *ResourcePool) assignValues(values ...interface{}) error {
-	if m, n := len(values), len(resourcepool.Columns); m < n {
+func (rp *ResourcePool) assignValues(columns []string, values []any) error {
+	if m, n := len(values), len(columns); m < n {
 		return fmt.Errorf("mismatch number of scan values: %d != %d", m, n)
 	}
-	value, ok := values[0].(*sql.NullInt64)
-	if !ok {
-		return fmt.Errorf("unexpected type %T for field id", value)
-	}
-	rp.ID = int(value.Int64)
-	values = values[1:]
-	if value, ok := values[0].(*sql.NullString); !ok {
-		return fmt.Errorf("unexpected type %T for field name", values[0])
-	} else if value.Valid {
-		rp.Name = value.String
-	}
-	if value, ok := values[1].(*sql.NullString); !ok {
-		return fmt.Errorf("unexpected type %T for field description", values[1])
-	} else if value.Valid {
-		rp.Description = new(string)
-		*rp.Description = value.String
-	}
-	if value, ok := values[2].(*sql.NullString); !ok {
-		return fmt.Errorf("unexpected type %T for field pool_type", values[2])
-	} else if value.Valid {
-		rp.PoolType = resourcepool.PoolType(value.String)
-	}
-	if value, ok := values[3].(*sql.NullInt64); !ok {
-		return fmt.Errorf("unexpected type %T for field dealocation_safety_period", values[3])
-	} else if value.Valid {
-		rp.DealocationSafetyPeriod = int(value.Int64)
-	}
-	values = values[4:]
-	if len(values) == len(resourcepool.ForeignKeys) {
-		if value, ok := values[0].(*sql.NullInt64); !ok {
-			return fmt.Errorf("unexpected type %T for edge-field resource_nested_pool", value)
-		} else if value.Valid {
-			rp.resource_nested_pool = new(int)
-			*rp.resource_nested_pool = int(value.Int64)
-		}
-		if value, ok := values[1].(*sql.NullInt64); !ok {
-			return fmt.Errorf("unexpected type %T for edge-field resource_pool_allocation_strategy", value)
-		} else if value.Valid {
-			rp.resource_pool_allocation_strategy = new(int)
-			*rp.resource_pool_allocation_strategy = int(value.Int64)
-		}
-		if value, ok := values[2].(*sql.NullInt64); !ok {
-			return fmt.Errorf("unexpected type %T for edge-field resource_type_pools", value)
-		} else if value.Valid {
-			rp.resource_type_pools = new(int)
-			*rp.resource_type_pools = int(value.Int64)
+	for i := range columns {
+		switch columns[i] {
+		case resourcepool.FieldID:
+			value, ok := values[i].(*sql.NullInt64)
+			if !ok {
+				return fmt.Errorf("unexpected type %T for field id", value)
+			}
+			rp.ID = int(value.Int64)
+		case resourcepool.FieldName:
+			if value, ok := values[i].(*sql.NullString); !ok {
+				return fmt.Errorf("unexpected type %T for field name", values[i])
+			} else if value.Valid {
+				rp.Name = value.String
+			}
+		case resourcepool.FieldDescription:
+			if value, ok := values[i].(*sql.NullString); !ok {
+				return fmt.Errorf("unexpected type %T for field description", values[i])
+			} else if value.Valid {
+				rp.Description = new(string)
+				*rp.Description = value.String
+			}
+		case resourcepool.FieldPoolType:
+			if value, ok := values[i].(*sql.NullString); !ok {
+				return fmt.Errorf("unexpected type %T for field pool_type", values[i])
+			} else if value.Valid {
+				rp.PoolType = resourcepool.PoolType(value.String)
+			}
+		case resourcepool.FieldDealocationSafetyPeriod:
+			if value, ok := values[i].(*sql.NullInt64); !ok {
+				return fmt.Errorf("unexpected type %T for field dealocation_safety_period", values[i])
+			} else if value.Valid {
+				rp.DealocationSafetyPeriod = int(value.Int64)
+			}
+		case resourcepool.ForeignKeys[0]:
+			if value, ok := values[i].(*sql.NullInt64); !ok {
+				return fmt.Errorf("unexpected type %T for edge-field resource_nested_pool", value)
+			} else if value.Valid {
+				rp.resource_nested_pool = new(int)
+				*rp.resource_nested_pool = int(value.Int64)
+			}
+		case resourcepool.ForeignKeys[1]:
+			if value, ok := values[i].(*sql.NullInt64); !ok {
+				return fmt.Errorf("unexpected type %T for edge-field resource_pool_allocation_strategy", value)
+			} else if value.Valid {
+				rp.resource_pool_allocation_strategy = new(int)
+				*rp.resource_pool_allocation_strategy = int(value.Int64)
+			}
+		case resourcepool.ForeignKeys[2]:
+			if value, ok := values[i].(*sql.NullInt64); !ok {
+				return fmt.Errorf("unexpected type %T for edge-field resource_type_pools", value)
+			} else if value.Valid {
+				rp.resource_type_pools = new(int)
+				*rp.resource_type_pools = int(value.Int64)
+			}
 		}
 	}
 	return nil
 }
 
-// QueryResourceType queries the resource_type edge of the ResourcePool.
+// QueryResourceType queries the "resource_type" edge of the ResourcePool entity.
 func (rp *ResourcePool) QueryResourceType() *ResourceTypeQuery {
 	return (&ResourcePoolClient{config: rp.config}).QueryResourceType(rp)
 }
 
-// QueryTags queries the tags edge of the ResourcePool.
+// QueryTags queries the "tags" edge of the ResourcePool entity.
 func (rp *ResourcePool) QueryTags() *TagQuery {
 	return (&ResourcePoolClient{config: rp.config}).QueryTags(rp)
 }
 
-// QueryClaims queries the claims edge of the ResourcePool.
+// QueryClaims queries the "claims" edge of the ResourcePool entity.
 func (rp *ResourcePool) QueryClaims() *ResourceQuery {
 	return (&ResourcePoolClient{config: rp.config}).QueryClaims(rp)
 }
 
-// QueryPoolProperties queries the poolProperties edge of the ResourcePool.
+// QueryPoolProperties queries the "poolProperties" edge of the ResourcePool entity.
 func (rp *ResourcePool) QueryPoolProperties() *PoolPropertiesQuery {
 	return (&ResourcePoolClient{config: rp.config}).QueryPoolProperties(rp)
 }
 
-// QueryAllocationStrategy queries the allocation_strategy edge of the ResourcePool.
+// QueryAllocationStrategy queries the "allocation_strategy" edge of the ResourcePool entity.
 func (rp *ResourcePool) QueryAllocationStrategy() *AllocationStrategyQuery {
 	return (&ResourcePoolClient{config: rp.config}).QueryAllocationStrategy(rp)
 }
 
-// QueryParentResource queries the parent_resource edge of the ResourcePool.
+// QueryParentResource queries the "parent_resource" edge of the ResourcePool entity.
 func (rp *ResourcePool) QueryParentResource() *ResourceQuery {
 	return (&ResourcePoolClient{config: rp.config}).QueryParentResource(rp)
 }
 
 // Update returns a builder for updating this ResourcePool.
-// Note that, you need to call ResourcePool.Unwrap() before calling this method, if this ResourcePool
+// Note that you need to call ResourcePool.Unwrap() before calling this method if this ResourcePool
 // was returned from a transaction, and the transaction was committed or rolled back.
 func (rp *ResourcePool) Update() *ResourcePoolUpdateOne {
 	return (&ResourcePoolClient{config: rp.config}).UpdateOne(rp)
 }
 
-// Unwrap unwraps the entity that was returned from a transaction after it was closed,
-// so that all next queries will be executed through the driver which created the transaction.
+// Unwrap unwraps the ResourcePool entity that was returned from a transaction after it was closed,
+// so that all future queries will be executed through the driver which created the transaction.
 func (rp *ResourcePool) Unwrap() *ResourcePool {
-	tx, ok := rp.config.driver.(*txDriver)
+	_tx, ok := rp.config.driver.(*txDriver)
 	if !ok {
 		panic("ent: ResourcePool is not a transactional entity")
 	}
-	rp.config.driver = tx.drv
+	rp.config.driver = _tx.drv
 	return rp
 }
 
@@ -257,16 +263,19 @@ func (rp *ResourcePool) Unwrap() *ResourcePool {
 func (rp *ResourcePool) String() string {
 	var builder strings.Builder
 	builder.WriteString("ResourcePool(")
-	builder.WriteString(fmt.Sprintf("id=%v", rp.ID))
-	builder.WriteString(", name=")
+	builder.WriteString(fmt.Sprintf("id=%v, ", rp.ID))
+	builder.WriteString("name=")
 	builder.WriteString(rp.Name)
+	builder.WriteString(", ")
 	if v := rp.Description; v != nil {
-		builder.WriteString(", description=")
+		builder.WriteString("description=")
 		builder.WriteString(*v)
 	}
-	builder.WriteString(", pool_type=")
+	builder.WriteString(", ")
+	builder.WriteString("pool_type=")
 	builder.WriteString(fmt.Sprintf("%v", rp.PoolType))
-	builder.WriteString(", dealocation_safety_period=")
+	builder.WriteString(", ")
+	builder.WriteString("dealocation_safety_period=")
 	builder.WriteString(fmt.Sprintf("%v", rp.DealocationSafetyPeriod))
 	builder.WriteByte(')')
 	return builder.String()

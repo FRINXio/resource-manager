@@ -2,14 +2,16 @@ package resolver
 
 import (
 	"context"
-	"github.com/facebook/ent/dialect/sql"
-	"github.com/facebook/ent/dialect/sql/sqljson"
+	"entgo.io/ent/dialect/sql"
+	"entgo.io/ent/dialect/sql/sqljson"
 	"github.com/net-auto/resourceManager/ent"
 	"github.com/net-auto/resourceManager/ent/predicate"
 	"github.com/net-auto/resourceManager/ent/resourcepool"
 	resourcePool "github.com/net-auto/resourceManager/ent/resourcepool"
 	"github.com/net-auto/resourceManager/ent/tag"
 	"github.com/net-auto/resourceManager/graph/graphql/model"
+
+	//"github.com/net-auto/resourceManager/graph/graphql/model"
 	log "github.com/net-auto/resourceManager/logging"
 	"github.com/pkg/errors"
 	"github.com/vektah/gqlparser/v2/gqlerror"
@@ -158,7 +160,7 @@ func tagFromDb(ctx context.Context, client *ent.Client, tagValue string) (*ent.T
 
 // QueryResourcesByAltId returns paginate resources if alt Id matches
 func QueryResourcesByAltId(ctx context.Context, client *ent.Client, alternativeId map[string]interface{}, first *int,
-						   last *int, before *string, after *string) (*ent.ResourceConnection, error) {
+	last *int, before *string, after *string) (*ent.ResourceConnection, error) {
 
 	afterCursor, errA := decodeCursor(after)
 	if errA != nil {
@@ -175,7 +177,7 @@ func QueryResourcesByAltId(ctx context.Context, client *ent.Client, alternativeI
 	res, err := client.Resource.Query().
 		Where(func(selector *sql.Selector) {
 			for k, v := range alternativeId {
-				selector.Where(sqljson.ValueEQ("alternate_id", v, sqljson.Path(k)))
+				selector.Where(sqljson.ValueContains("alternate_id", v, sqljson.Path(k)))
 			}
 		}).
 		Paginate(ctx, afterCursor, first, beforeCursor, last)

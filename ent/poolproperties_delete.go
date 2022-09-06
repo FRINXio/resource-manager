@@ -6,9 +6,9 @@ import (
 	"context"
 	"fmt"
 
-	"github.com/facebook/ent/dialect/sql"
-	"github.com/facebook/ent/dialect/sql/sqlgraph"
-	"github.com/facebook/ent/schema/field"
+	"entgo.io/ent/dialect/sql"
+	"entgo.io/ent/dialect/sql/sqlgraph"
+	"entgo.io/ent/schema/field"
 	"github.com/net-auto/resourceManager/ent/poolproperties"
 	"github.com/net-auto/resourceManager/ent/predicate"
 )
@@ -20,9 +20,9 @@ type PoolPropertiesDelete struct {
 	mutation *PoolPropertiesMutation
 }
 
-// Where adds a new predicate to the delete builder.
+// Where appends a list predicates to the PoolPropertiesDelete builder.
 func (ppd *PoolPropertiesDelete) Where(ps ...predicate.PoolProperties) *PoolPropertiesDelete {
-	ppd.mutation.predicates = append(ppd.mutation.predicates, ps...)
+	ppd.mutation.Where(ps...)
 	return ppd
 }
 
@@ -46,6 +46,9 @@ func (ppd *PoolPropertiesDelete) Exec(ctx context.Context) (int, error) {
 			return affected, err
 		})
 		for i := len(ppd.hooks) - 1; i >= 0; i-- {
+			if ppd.hooks[i] == nil {
+				return 0, fmt.Errorf("ent: uninitialized hook (forgotten import ent/runtime?)")
+			}
 			mut = ppd.hooks[i](mut)
 		}
 		if _, err := mut.Mutate(ctx, ppd.mutation); err != nil {
@@ -81,7 +84,11 @@ func (ppd *PoolPropertiesDelete) sqlExec(ctx context.Context) (int, error) {
 			}
 		}
 	}
-	return sqlgraph.DeleteNodes(ctx, ppd.driver, _spec)
+	affected, err := sqlgraph.DeleteNodes(ctx, ppd.driver, _spec)
+	if err != nil && sqlgraph.IsConstraintError(err) {
+		err = &ConstraintError{msg: err.Error(), wrap: err}
+	}
+	return affected, err
 }
 
 // PoolPropertiesDeleteOne is the builder for deleting a single PoolProperties entity.

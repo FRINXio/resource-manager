@@ -3,8 +3,8 @@ package src
 import (
 	"context"
 	"encoding/json"
+	"entgo.io/ent/dialect/sql"
 	"fmt"
-	"github.com/facebook/ent/dialect/sql"
 	"github.com/net-auto/resourceManager/ent"
 	log "github.com/net-auto/resourceManager/logging"
 	"github.com/pkg/errors"

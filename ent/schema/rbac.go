@@ -2,8 +2,8 @@ package schema
 
 import (
 	"context"
+	"entgo.io/ent"
 	"fmt"
-	"github.com/facebook/ent"
 	"strings"
 )
 
@@ -16,14 +16,14 @@ type Identity struct {
 
 var fullAccessIdentity = Identity{}
 
-var identityKey string;
+var identityKey string
 
 var adminRoles []string
 var adminGroups []string
 
 type RbacConfig struct {
-	AdminRoles []string `name:"rbac.admin-roles" sep:"," help:"List of user roles granting admin access"`;
-	AdminGroups []string `name:"rbac.admin-groups" sep:"," help:"List of user groups granting admin access"`;
+	AdminRoles  []string `name:"rbac.admin-roles" sep:"," help:"List of user roles granting admin access"`
+	AdminGroups []string `name:"rbac.admin-groups" sep:"," help:"List of user groups granting admin access"`
 }
 
 type generalRBACPolicy struct {
@@ -33,6 +33,7 @@ type generalRBACPolicy struct {
 // RBAC grants all access to queries, but only admins can invoke mutations
 // admins are identified from roles/groups configured via InitializeAdminRoles, InitializeAdminGroups
 var RBAC = generalRBACPolicy{false}
+
 // ALWAYS_ALLOWED grants all access to queries and mutations
 var ALWAYS_ALLOWED = generalRBACPolicy{true}
 
@@ -114,7 +115,7 @@ func (generalRBACPolicy) EvalMutation(ctx context.Context, m ent.Mutation) error
 }
 
 func isAllowed(identity *Identity) bool {
-	if (identity == &fullAccessIdentity) {
+	if identity == &fullAccessIdentity {
 		// Full access
 		return true
 	}

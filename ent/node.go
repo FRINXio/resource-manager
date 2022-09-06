@@ -9,10 +9,10 @@ import (
 	"sync"
 	"sync/atomic"
 
-	"github.com/facebook/ent/dialect"
+	"entgo.io/contrib/entgql"
+	"entgo.io/ent/dialect"
 	"github.com/facebook/ent/dialect/sql"
 	"github.com/facebook/ent/dialect/sql/schema"
-	"github.com/facebookincubator/ent-contrib/entgql"
 	"github.com/hashicorp/go-multierror"
 	"github.com/net-auto/resourceManager/ent/allocationstrategy"
 	"github.com/net-auto/resourceManager/ent/poolproperties"
@@ -700,9 +700,8 @@ type NodeOptions struct {
 // Noder returns a Node by its id. If the NodeType was not provided, it will
 // be derived from the id value according to the universal-id configuration.
 //
-//		c.Noder(ctx, id)
-//		c.Noder(ctx, id, ent.WithNodeType(pet.Table))
-//
+//	c.Noder(ctx, id)
+//	c.Noder(ctx, id, ent.WithNodeType(pet.Table))
 func (c *Client) Noder(ctx context.Context, id int, opts ...NodeOption) (_ Noder, err error) {
 	defer func() {
 		if IsNotFound(err) {

@@ -4,11 +4,12 @@ package ent
 
 import (
 	"context"
+	"errors"
 	"fmt"
 
-	"github.com/facebook/ent/dialect/sql"
-	"github.com/facebook/ent/dialect/sql/sqlgraph"
-	"github.com/facebook/ent/schema/field"
+	"entgo.io/ent/dialect/sql"
+	"entgo.io/ent/dialect/sql/sqlgraph"
+	"entgo.io/ent/schema/field"
 	"github.com/net-auto/resourceManager/ent/poolproperties"
 	"github.com/net-auto/resourceManager/ent/predicate"
 	"github.com/net-auto/resourceManager/ent/property"
@@ -23,19 +24,19 @@ type PoolPropertiesUpdate struct {
 	mutation *PoolPropertiesMutation
 }
 
-// Where adds a new predicate for the builder.
+// Where appends a list predicates to the PoolPropertiesUpdate builder.
 func (ppu *PoolPropertiesUpdate) Where(ps ...predicate.PoolProperties) *PoolPropertiesUpdate {
-	ppu.mutation.predicates = append(ppu.mutation.predicates, ps...)
+	ppu.mutation.Where(ps...)
 	return ppu
 }
 
-// SetPoolID sets the pool edge to ResourcePool by id.
+// SetPoolID sets the "pool" edge to the ResourcePool entity by ID.
 func (ppu *PoolPropertiesUpdate) SetPoolID(id int) *PoolPropertiesUpdate {
 	ppu.mutation.SetPoolID(id)
 	return ppu
 }
 
-// SetNillablePoolID sets the pool edge to ResourcePool by id if the given value is not nil.
+// SetNillablePoolID sets the "pool" edge to the ResourcePool entity by ID if the given value is not nil.
 func (ppu *PoolPropertiesUpdate) SetNillablePoolID(id *int) *PoolPropertiesUpdate {
 	if id != nil {
 		ppu = ppu.SetPoolID(*id)
@@ -43,18 +44,18 @@ func (ppu *PoolPropertiesUpdate) SetNillablePoolID(id *int) *PoolPropertiesUpdat
 	return ppu
 }
 
-// SetPool sets the pool edge to ResourcePool.
+// SetPool sets the "pool" edge to the ResourcePool entity.
 func (ppu *PoolPropertiesUpdate) SetPool(r *ResourcePool) *PoolPropertiesUpdate {
 	return ppu.SetPoolID(r.ID)
 }
 
-// AddResourceTypeIDs adds the resourceType edge to ResourceType by ids.
+// AddResourceTypeIDs adds the "resourceType" edge to the ResourceType entity by IDs.
 func (ppu *PoolPropertiesUpdate) AddResourceTypeIDs(ids ...int) *PoolPropertiesUpdate {
 	ppu.mutation.AddResourceTypeIDs(ids...)
 	return ppu
 }
 
-// AddResourceType adds the resourceType edges to ResourceType.
+// AddResourceType adds the "resourceType" edges to the ResourceType entity.
 func (ppu *PoolPropertiesUpdate) AddResourceType(r ...*ResourceType) *PoolPropertiesUpdate {
 	ids := make([]int, len(r))
 	for i := range r {
@@ -63,13 +64,13 @@ func (ppu *PoolPropertiesUpdate) AddResourceType(r ...*ResourceType) *PoolProper
 	return ppu.AddResourceTypeIDs(ids...)
 }
 
-// AddPropertyIDs adds the properties edge to Property by ids.
+// AddPropertyIDs adds the "properties" edge to the Property entity by IDs.
 func (ppu *PoolPropertiesUpdate) AddPropertyIDs(ids ...int) *PoolPropertiesUpdate {
 	ppu.mutation.AddPropertyIDs(ids...)
 	return ppu
 }
 
-// AddProperties adds the properties edges to Property.
+// AddProperties adds the "properties" edges to the Property entity.
 func (ppu *PoolPropertiesUpdate) AddProperties(p ...*Property) *PoolPropertiesUpdate {
 	ids := make([]int, len(p))
 	for i := range p {
@@ -83,25 +84,25 @@ func (ppu *PoolPropertiesUpdate) Mutation() *PoolPropertiesMutation {
 	return ppu.mutation
 }
 
-// ClearPool clears the "pool" edge to type ResourcePool.
+// ClearPool clears the "pool" edge to the ResourcePool entity.
 func (ppu *PoolPropertiesUpdate) ClearPool() *PoolPropertiesUpdate {
 	ppu.mutation.ClearPool()
 	return ppu
 }
 
-// ClearResourceType clears all "resourceType" edges to type ResourceType.
+// ClearResourceType clears all "resourceType" edges to the ResourceType entity.
 func (ppu *PoolPropertiesUpdate) ClearResourceType() *PoolPropertiesUpdate {
 	ppu.mutation.ClearResourceType()
 	return ppu
 }
 
-// RemoveResourceTypeIDs removes the resourceType edge to ResourceType by ids.
+// RemoveResourceTypeIDs removes the "resourceType" edge to ResourceType entities by IDs.
 func (ppu *PoolPropertiesUpdate) RemoveResourceTypeIDs(ids ...int) *PoolPropertiesUpdate {
 	ppu.mutation.RemoveResourceTypeIDs(ids...)
 	return ppu
 }
 
-// RemoveResourceType removes resourceType edges to ResourceType.
+// RemoveResourceType removes "resourceType" edges to ResourceType entities.
 func (ppu *PoolPropertiesUpdate) RemoveResourceType(r ...*ResourceType) *PoolPropertiesUpdate {
 	ids := make([]int, len(r))
 	for i := range r {
@@ -110,19 +111,19 @@ func (ppu *PoolPropertiesUpdate) RemoveResourceType(r ...*ResourceType) *PoolPro
 	return ppu.RemoveResourceTypeIDs(ids...)
 }
 
-// ClearProperties clears all "properties" edges to type Property.
+// ClearProperties clears all "properties" edges to the Property entity.
 func (ppu *PoolPropertiesUpdate) ClearProperties() *PoolPropertiesUpdate {
 	ppu.mutation.ClearProperties()
 	return ppu
 }
 
-// RemovePropertyIDs removes the properties edge to Property by ids.
+// RemovePropertyIDs removes the "properties" edge to Property entities by IDs.
 func (ppu *PoolPropertiesUpdate) RemovePropertyIDs(ids ...int) *PoolPropertiesUpdate {
 	ppu.mutation.RemovePropertyIDs(ids...)
 	return ppu
 }
 
-// RemoveProperties removes properties edges to Property.
+// RemoveProperties removes "properties" edges to Property entities.
 func (ppu *PoolPropertiesUpdate) RemoveProperties(p ...*Property) *PoolPropertiesUpdate {
 	ids := make([]int, len(p))
 	for i := range p {
@@ -131,7 +132,7 @@ func (ppu *PoolPropertiesUpdate) RemoveProperties(p ...*Property) *PoolPropertie
 	return ppu.RemovePropertyIDs(ids...)
 }
 
-// Save executes the query and returns the number of rows/vertices matched by this operation.
+// Save executes the query and returns the number of nodes affected by the update operation.
 func (ppu *PoolPropertiesUpdate) Save(ctx context.Context) (int, error) {
 	var (
 		err      error
@@ -151,6 +152,9 @@ func (ppu *PoolPropertiesUpdate) Save(ctx context.Context) (int, error) {
 			return affected, err
 		})
 		for i := len(ppu.hooks) - 1; i >= 0; i-- {
+			if ppu.hooks[i] == nil {
+				return 0, fmt.Errorf("ent: uninitialized hook (forgotten import ent/runtime?)")
+			}
 			mut = ppu.hooks[i](mut)
 		}
 		if _, err := mut.Mutate(ctx, ppu.mutation); err != nil {
@@ -346,8 +350,8 @@ func (ppu *PoolPropertiesUpdate) sqlSave(ctx context.Context) (n int, err error)
 	if n, err = sqlgraph.UpdateNodes(ctx, ppu.driver, _spec); err != nil {
 		if _, ok := err.(*sqlgraph.NotFoundError); ok {
 			err = &NotFoundError{poolproperties.Label}
-		} else if cerr, ok := isSQLConstraintError(err); ok {
-			err = cerr
+		} else if sqlgraph.IsConstraintError(err) {
+			err = &ConstraintError{msg: err.Error(), wrap: err}
 		}
 		return 0, err
 	}
@@ -357,17 +361,18 @@ func (ppu *PoolPropertiesUpdate) sqlSave(ctx context.Context) (n int, err error)
 // PoolPropertiesUpdateOne is the builder for updating a single PoolProperties entity.
 type PoolPropertiesUpdateOne struct {
 	config
+	fields   []string
 	hooks    []Hook
 	mutation *PoolPropertiesMutation
 }
 
-// SetPoolID sets the pool edge to ResourcePool by id.
+// SetPoolID sets the "pool" edge to the ResourcePool entity by ID.
 func (ppuo *PoolPropertiesUpdateOne) SetPoolID(id int) *PoolPropertiesUpdateOne {
 	ppuo.mutation.SetPoolID(id)
 	return ppuo
 }
 
-// SetNillablePoolID sets the pool edge to ResourcePool by id if the given value is not nil.
+// SetNillablePoolID sets the "pool" edge to the ResourcePool entity by ID if the given value is not nil.
 func (ppuo *PoolPropertiesUpdateOne) SetNillablePoolID(id *int) *PoolPropertiesUpdateOne {
 	if id != nil {
 		ppuo = ppuo.SetPoolID(*id)
@@ -375,18 +380,18 @@ func (ppuo *PoolPropertiesUpdateOne) SetNillablePoolID(id *int) *PoolPropertiesU
 	return ppuo
 }
 
-// SetPool sets the pool edge to ResourcePool.
+// SetPool sets the "pool" edge to the ResourcePool entity.
 func (ppuo *PoolPropertiesUpdateOne) SetPool(r *ResourcePool) *PoolPropertiesUpdateOne {
 	return ppuo.SetPoolID(r.ID)
 }
 
-// AddResourceTypeIDs adds the resourceType edge to ResourceType by ids.
+// AddResourceTypeIDs adds the "resourceType" edge to the ResourceType entity by IDs.
 func (ppuo *PoolPropertiesUpdateOne) AddResourceTypeIDs(ids ...int) *PoolPropertiesUpdateOne {
 	ppuo.mutation.AddResourceTypeIDs(ids...)
 	return ppuo
 }
 
-// AddResourceType adds the resourceType edges to ResourceType.
+// AddResourceType adds the "resourceType" edges to the ResourceType entity.
 func (ppuo *PoolPropertiesUpdateOne) AddResourceType(r ...*ResourceType) *PoolPropertiesUpdateOne {
 	ids := make([]int, len(r))
 	for i := range r {
@@ -395,13 +400,13 @@ func (ppuo *PoolPropertiesUpdateOne) AddResourceType(r ...*ResourceType) *PoolPr
 	return ppuo.AddResourceTypeIDs(ids...)
 }
 
-// AddPropertyIDs adds the properties edge to Property by ids.
+// AddPropertyIDs adds the "properties" edge to the Property entity by IDs.
 func (ppuo *PoolPropertiesUpdateOne) AddPropertyIDs(ids ...int) *PoolPropertiesUpdateOne {
 	ppuo.mutation.AddPropertyIDs(ids...)
 	return ppuo
 }
 
-// AddProperties adds the properties edges to Property.
+// AddProperties adds the "properties" edges to the Property entity.
 func (ppuo *PoolPropertiesUpdateOne) AddProperties(p ...*Property) *PoolPropertiesUpdateOne {
 	ids := make([]int, len(p))
 	for i := range p {
@@ -415,25 +420,25 @@ func (ppuo *PoolPropertiesUpdateOne) Mutation() *PoolPropertiesMutation {
 	return ppuo.mutation
 }
 
-// ClearPool clears the "pool" edge to type ResourcePool.
+// ClearPool clears the "pool" edge to the ResourcePool entity.
 func (ppuo *PoolPropertiesUpdateOne) ClearPool() *PoolPropertiesUpdateOne {
 	ppuo.mutation.ClearPool()
 	return ppuo
 }
 
-// ClearResourceType clears all "resourceType" edges to type ResourceType.
+// ClearResourceType clears all "resourceType" edges to the ResourceType entity.
 func (ppuo *PoolPropertiesUpdateOne) ClearResourceType() *PoolPropertiesUpdateOne {
 	ppuo.mutation.ClearResourceType()
 	return ppuo
 }
 
-// RemoveResourceTypeIDs removes the resourceType edge to ResourceType by ids.
+// RemoveResourceTypeIDs removes the "resourceType" edge to ResourceType entities by IDs.
 func (ppuo *PoolPropertiesUpdateOne) RemoveResourceTypeIDs(ids ...int) *PoolPropertiesUpdateOne {
 	ppuo.mutation.RemoveResourceTypeIDs(ids...)
 	return ppuo
 }
 
-// RemoveResourceType removes resourceType edges to ResourceType.
+// RemoveResourceType removes "resourceType" edges to ResourceType entities.
 func (ppuo *PoolPropertiesUpdateOne) RemoveResourceType(r ...*ResourceType) *PoolPropertiesUpdateOne {
 	ids := make([]int, len(r))
 	for i := range r {
@@ -442,19 +447,19 @@ func (ppuo *PoolPropertiesUpdateOne) RemoveResourceType(r ...*ResourceType) *Poo
 	return ppuo.RemoveResourceTypeIDs(ids...)
 }
 
-// ClearProperties clears all "properties" edges to type Property.
+// ClearProperties clears all "properties" edges to the Property entity.
 func (ppuo *PoolPropertiesUpdateOne) ClearProperties() *PoolPropertiesUpdateOne {
 	ppuo.mutation.ClearProperties()
 	return ppuo
 }
 
-// RemovePropertyIDs removes the properties edge to Property by ids.
+// RemovePropertyIDs removes the "properties" edge to Property entities by IDs.
 func (ppuo *PoolPropertiesUpdateOne) RemovePropertyIDs(ids ...int) *PoolPropertiesUpdateOne {
 	ppuo.mutation.RemovePropertyIDs(ids...)
 	return ppuo
 }
 
-// RemoveProperties removes properties edges to Property.
+// RemoveProperties removes "properties" edges to Property entities.
 func (ppuo *PoolPropertiesUpdateOne) RemoveProperties(p ...*Property) *PoolPropertiesUpdateOne {
 	ids := make([]int, len(p))
 	for i := range p {
@@ -463,7 +468,14 @@ func (ppuo *PoolPropertiesUpdateOne) RemoveProperties(p ...*Property) *PoolPrope
 	return ppuo.RemovePropertyIDs(ids...)
 }
 
-// Save executes the query and returns the updated entity.
+// Select allows selecting one or more fields (columns) of the returned entity.
+// The default is selecting all fields defined in the entity schema.
+func (ppuo *PoolPropertiesUpdateOne) Select(field string, fields ...string) *PoolPropertiesUpdateOne {
+	ppuo.fields = append([]string{field}, fields...)
+	return ppuo
+}
+
+// Save executes the query and returns the updated PoolProperties entity.
 func (ppuo *PoolPropertiesUpdateOne) Save(ctx context.Context) (*PoolProperties, error) {
 	var (
 		err  error
@@ -483,11 +495,20 @@ func (ppuo *PoolPropertiesUpdateOne) Save(ctx context.Context) (*PoolProperties,
 			return node, err
 		})
 		for i := len(ppuo.hooks) - 1; i >= 0; i-- {
+			if ppuo.hooks[i] == nil {
+				return nil, fmt.Errorf("ent: uninitialized hook (forgotten import ent/runtime?)")
+			}
 			mut = ppuo.hooks[i](mut)
 		}
-		if _, err := mut.Mutate(ctx, ppuo.mutation); err != nil {
+		v, err := mut.Mutate(ctx, ppuo.mutation)
+		if err != nil {
 			return nil, err
 		}
+		nv, ok := v.(*PoolProperties)
+		if !ok {
+			return nil, fmt.Errorf("unexpected node type %T returned from PoolPropertiesMutation", v)
+		}
+		node = nv
 	}
 	return node, err
 }
@@ -527,9 +548,28 @@ func (ppuo *PoolPropertiesUpdateOne) sqlSave(ctx context.Context) (_node *PoolPr
 	}
 	id, ok := ppuo.mutation.ID()
 	if !ok {
-		return nil, &ValidationError{Name: "ID", err: fmt.Errorf("missing PoolProperties.ID for update")}
+		return nil, &ValidationError{Name: "id", err: errors.New(`ent: missing "PoolProperties.id" for update`)}
 	}
 	_spec.Node.ID.Value = id
+	if fields := ppuo.fields; len(fields) > 0 {
+		_spec.Node.Columns = make([]string, 0, len(fields))
+		_spec.Node.Columns = append(_spec.Node.Columns, poolproperties.FieldID)
+		for _, f := range fields {
+			if !poolproperties.ValidColumn(f) {
+				return nil, &ValidationError{Name: f, err: fmt.Errorf("ent: invalid field %q for query", f)}
+			}
+			if f != poolproperties.FieldID {
+				_spec.Node.Columns = append(_spec.Node.Columns, f)
+			}
+		}
+	}
+	if ps := ppuo.mutation.predicates; len(ps) > 0 {
+		_spec.Predicate = func(selector *sql.Selector) {
+			for i := range ps {
+				ps[i](selector)
+			}
+		}
+	}
 	if ppuo.mutation.PoolCleared() {
 		edge := &sqlgraph.EdgeSpec{
 			Rel:     sqlgraph.O2O,
@@ -675,12 +715,12 @@ func (ppuo *PoolPropertiesUpdateOne) sqlSave(ctx context.Context) (_node *PoolPr
 	}
 	_node = &PoolProperties{config: ppuo.config}
 	_spec.Assign = _node.assignValues
-	_spec.ScanValues = _node.scanValues()
+	_spec.ScanValues = _node.scanValues
 	if err = sqlgraph.UpdateNode(ctx, ppuo.driver, _spec); err != nil {
 		if _, ok := err.(*sqlgraph.NotFoundError); ok {
 			err = &NotFoundError{poolproperties.Label}
-		} else if cerr, ok := isSQLConstraintError(err); ok {
-			err = cerr
+		} else if sqlgraph.IsConstraintError(err) {
+			err = &ConstraintError{msg: err.Error(), wrap: err}
 		}
 		return nil, err
 	}

@@ -3,7 +3,7 @@
 package poolproperties
 
 import (
-	"github.com/facebook/ent"
+	"entgo.io/ent"
 )
 
 const (
@@ -11,29 +11,27 @@ const (
 	Label = "pool_properties"
 	// FieldID holds the string denoting the id field in the database.
 	FieldID = "id"
-
 	// EdgePool holds the string denoting the pool edge name in mutations.
 	EdgePool = "pool"
 	// EdgeResourceType holds the string denoting the resourcetype edge name in mutations.
 	EdgeResourceType = "resourceType"
 	// EdgeProperties holds the string denoting the properties edge name in mutations.
 	EdgeProperties = "properties"
-
 	// Table holds the table name of the poolproperties in the database.
 	Table = "pool_properties"
-	// PoolTable is the table the holds the pool relation/edge.
+	// PoolTable is the table that holds the pool relation/edge.
 	PoolTable = "pool_properties"
 	// PoolInverseTable is the table name for the ResourcePool entity.
 	// It exists in this package in order to avoid circular dependency with the "resourcepool" package.
 	PoolInverseTable = "resource_pools"
 	// PoolColumn is the table column denoting the pool relation/edge.
 	PoolColumn = "resource_pool_pool_properties"
-	// ResourceTypeTable is the table the holds the resourceType relation/edge. The primary key declared below.
+	// ResourceTypeTable is the table that holds the resourceType relation/edge. The primary key declared below.
 	ResourceTypeTable = "pool_properties_resourceType"
 	// ResourceTypeInverseTable is the table name for the ResourceType entity.
 	// It exists in this package in order to avoid circular dependency with the "resourcetype" package.
 	ResourceTypeInverseTable = "resource_types"
-	// PropertiesTable is the table the holds the properties relation/edge.
+	// PropertiesTable is the table that holds the properties relation/edge.
 	PropertiesTable = "properties"
 	// PropertiesInverseTable is the table name for the Property entity.
 	// It exists in this package in order to avoid circular dependency with the "property" package.
@@ -47,7 +45,8 @@ var Columns = []string{
 	FieldID,
 }
 
-// ForeignKeys holds the SQL foreign-keys that are owned by the PoolProperties type.
+// ForeignKeys holds the SQL foreign-keys that are owned by the "pool_properties"
+// table and are not defined as standalone fields in the schema.
 var ForeignKeys = []string{
 	"resource_pool_pool_properties",
 }
@@ -78,7 +77,6 @@ func ValidColumn(column string) bool {
 // it should be imported in the main as follows:
 //
 //	import _ "github.com/net-auto/resourceManager/ent/runtime"
-//
 var (
 	Hooks  [1]ent.Hook
 	Policy ent.Policy

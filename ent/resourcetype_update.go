@@ -4,11 +4,12 @@ package ent
 
 import (
 	"context"
+	"errors"
 	"fmt"
 
-	"github.com/facebook/ent/dialect/sql"
-	"github.com/facebook/ent/dialect/sql/sqlgraph"
-	"github.com/facebook/ent/schema/field"
+	"entgo.io/ent/dialect/sql"
+	"entgo.io/ent/dialect/sql/sqlgraph"
+	"entgo.io/ent/schema/field"
 	"github.com/net-auto/resourceManager/ent/poolproperties"
 	"github.com/net-auto/resourceManager/ent/predicate"
 	"github.com/net-auto/resourceManager/ent/propertytype"
@@ -23,25 +24,25 @@ type ResourceTypeUpdate struct {
 	mutation *ResourceTypeMutation
 }
 
-// Where adds a new predicate for the builder.
+// Where appends a list predicates to the ResourceTypeUpdate builder.
 func (rtu *ResourceTypeUpdate) Where(ps ...predicate.ResourceType) *ResourceTypeUpdate {
-	rtu.mutation.predicates = append(rtu.mutation.predicates, ps...)
+	rtu.mutation.Where(ps...)
 	return rtu
 }
 
-// SetName sets the name field.
+// SetName sets the "name" field.
 func (rtu *ResourceTypeUpdate) SetName(s string) *ResourceTypeUpdate {
 	rtu.mutation.SetName(s)
 	return rtu
 }
 
-// AddPropertyTypeIDs adds the property_types edge to PropertyType by ids.
+// AddPropertyTypeIDs adds the "property_types" edge to the PropertyType entity by IDs.
 func (rtu *ResourceTypeUpdate) AddPropertyTypeIDs(ids ...int) *ResourceTypeUpdate {
 	rtu.mutation.AddPropertyTypeIDs(ids...)
 	return rtu
 }
 
-// AddPropertyTypes adds the property_types edges to PropertyType.
+// AddPropertyTypes adds the "property_types" edges to the PropertyType entity.
 func (rtu *ResourceTypeUpdate) AddPropertyTypes(p ...*PropertyType) *ResourceTypeUpdate {
 	ids := make([]int, len(p))
 	for i := range p {
@@ -50,13 +51,13 @@ func (rtu *ResourceTypeUpdate) AddPropertyTypes(p ...*PropertyType) *ResourceTyp
 	return rtu.AddPropertyTypeIDs(ids...)
 }
 
-// AddPoolIDs adds the pools edge to ResourcePool by ids.
+// AddPoolIDs adds the "pools" edge to the ResourcePool entity by IDs.
 func (rtu *ResourceTypeUpdate) AddPoolIDs(ids ...int) *ResourceTypeUpdate {
 	rtu.mutation.AddPoolIDs(ids...)
 	return rtu
 }
 
-// AddPools adds the pools edges to ResourcePool.
+// AddPools adds the "pools" edges to the ResourcePool entity.
 func (rtu *ResourceTypeUpdate) AddPools(r ...*ResourcePool) *ResourceTypeUpdate {
 	ids := make([]int, len(r))
 	for i := range r {
@@ -65,13 +66,13 @@ func (rtu *ResourceTypeUpdate) AddPools(r ...*ResourcePool) *ResourceTypeUpdate 
 	return rtu.AddPoolIDs(ids...)
 }
 
-// AddPoolPropertyIDs adds the pool_properties edge to PoolProperties by ids.
+// AddPoolPropertyIDs adds the "pool_properties" edge to the PoolProperties entity by IDs.
 func (rtu *ResourceTypeUpdate) AddPoolPropertyIDs(ids ...int) *ResourceTypeUpdate {
 	rtu.mutation.AddPoolPropertyIDs(ids...)
 	return rtu
 }
 
-// AddPoolProperties adds the pool_properties edges to PoolProperties.
+// AddPoolProperties adds the "pool_properties" edges to the PoolProperties entity.
 func (rtu *ResourceTypeUpdate) AddPoolProperties(p ...*PoolProperties) *ResourceTypeUpdate {
 	ids := make([]int, len(p))
 	for i := range p {
@@ -85,19 +86,19 @@ func (rtu *ResourceTypeUpdate) Mutation() *ResourceTypeMutation {
 	return rtu.mutation
 }
 
-// ClearPropertyTypes clears all "property_types" edges to type PropertyType.
+// ClearPropertyTypes clears all "property_types" edges to the PropertyType entity.
 func (rtu *ResourceTypeUpdate) ClearPropertyTypes() *ResourceTypeUpdate {
 	rtu.mutation.ClearPropertyTypes()
 	return rtu
 }
 
-// RemovePropertyTypeIDs removes the property_types edge to PropertyType by ids.
+// RemovePropertyTypeIDs removes the "property_types" edge to PropertyType entities by IDs.
 func (rtu *ResourceTypeUpdate) RemovePropertyTypeIDs(ids ...int) *ResourceTypeUpdate {
 	rtu.mutation.RemovePropertyTypeIDs(ids...)
 	return rtu
 }
 
-// RemovePropertyTypes removes property_types edges to PropertyType.
+// RemovePropertyTypes removes "property_types" edges to PropertyType entities.
 func (rtu *ResourceTypeUpdate) RemovePropertyTypes(p ...*PropertyType) *ResourceTypeUpdate {
 	ids := make([]int, len(p))
 	for i := range p {
@@ -106,19 +107,19 @@ func (rtu *ResourceTypeUpdate) RemovePropertyTypes(p ...*PropertyType) *Resource
 	return rtu.RemovePropertyTypeIDs(ids...)
 }
 
-// ClearPools clears all "pools" edges to type ResourcePool.
+// ClearPools clears all "pools" edges to the ResourcePool entity.
 func (rtu *ResourceTypeUpdate) ClearPools() *ResourceTypeUpdate {
 	rtu.mutation.ClearPools()
 	return rtu
 }
 
-// RemovePoolIDs removes the pools edge to ResourcePool by ids.
+// RemovePoolIDs removes the "pools" edge to ResourcePool entities by IDs.
 func (rtu *ResourceTypeUpdate) RemovePoolIDs(ids ...int) *ResourceTypeUpdate {
 	rtu.mutation.RemovePoolIDs(ids...)
 	return rtu
 }
 
-// RemovePools removes pools edges to ResourcePool.
+// RemovePools removes "pools" edges to ResourcePool entities.
 func (rtu *ResourceTypeUpdate) RemovePools(r ...*ResourcePool) *ResourceTypeUpdate {
 	ids := make([]int, len(r))
 	for i := range r {
@@ -127,19 +128,19 @@ func (rtu *ResourceTypeUpdate) RemovePools(r ...*ResourcePool) *ResourceTypeUpda
 	return rtu.RemovePoolIDs(ids...)
 }
 
-// ClearPoolProperties clears all "pool_properties" edges to type PoolProperties.
+// ClearPoolProperties clears all "pool_properties" edges to the PoolProperties entity.
 func (rtu *ResourceTypeUpdate) ClearPoolProperties() *ResourceTypeUpdate {
 	rtu.mutation.ClearPoolProperties()
 	return rtu
 }
 
-// RemovePoolPropertyIDs removes the pool_properties edge to PoolProperties by ids.
+// RemovePoolPropertyIDs removes the "pool_properties" edge to PoolProperties entities by IDs.
 func (rtu *ResourceTypeUpdate) RemovePoolPropertyIDs(ids ...int) *ResourceTypeUpdate {
 	rtu.mutation.RemovePoolPropertyIDs(ids...)
 	return rtu
 }
 
-// RemovePoolProperties removes pool_properties edges to PoolProperties.
+// RemovePoolProperties removes "pool_properties" edges to PoolProperties entities.
 func (rtu *ResourceTypeUpdate) RemovePoolProperties(p ...*PoolProperties) *ResourceTypeUpdate {
 	ids := make([]int, len(p))
 	for i := range p {
@@ -148,7 +149,7 @@ func (rtu *ResourceTypeUpdate) RemovePoolProperties(p ...*PoolProperties) *Resou
 	return rtu.RemovePoolPropertyIDs(ids...)
 }
 
-// Save executes the query and returns the number of rows/vertices matched by this operation.
+// Save executes the query and returns the number of nodes affected by the update operation.
 func (rtu *ResourceTypeUpdate) Save(ctx context.Context) (int, error) {
 	var (
 		err      error
@@ -174,6 +175,9 @@ func (rtu *ResourceTypeUpdate) Save(ctx context.Context) (int, error) {
 			return affected, err
 		})
 		for i := len(rtu.hooks) - 1; i >= 0; i-- {
+			if rtu.hooks[i] == nil {
+				return 0, fmt.Errorf("ent: uninitialized hook (forgotten import ent/runtime?)")
+			}
 			mut = rtu.hooks[i](mut)
 		}
 		if _, err := mut.Mutate(ctx, rtu.mutation); err != nil {
@@ -209,7 +213,7 @@ func (rtu *ResourceTypeUpdate) ExecX(ctx context.Context) {
 func (rtu *ResourceTypeUpdate) check() error {
 	if v, ok := rtu.mutation.Name(); ok {
 		if err := resourcetype.NameValidator(v); err != nil {
-			return &ValidationError{Name: "name", err: fmt.Errorf("ent: validator failed for field \"name\": %w", err)}
+			return &ValidationError{Name: "name", err: fmt.Errorf(`ent: validator failed for field "ResourceType.name": %w`, err)}
 		}
 	}
 	return nil
@@ -405,8 +409,8 @@ func (rtu *ResourceTypeUpdate) sqlSave(ctx context.Context) (n int, err error) {
 	if n, err = sqlgraph.UpdateNodes(ctx, rtu.driver, _spec); err != nil {
 		if _, ok := err.(*sqlgraph.NotFoundError); ok {
 			err = &NotFoundError{resourcetype.Label}
-		} else if cerr, ok := isSQLConstraintError(err); ok {
-			err = cerr
+		} else if sqlgraph.IsConstraintError(err) {
+			err = &ConstraintError{msg: err.Error(), wrap: err}
 		}
 		return 0, err
 	}
@@ -416,23 +420,24 @@ func (rtu *ResourceTypeUpdate) sqlSave(ctx context.Context) (n int, err error) {
 // ResourceTypeUpdateOne is the builder for updating a single ResourceType entity.
 type ResourceTypeUpdateOne struct {
 	config
+	fields   []string
 	hooks    []Hook
 	mutation *ResourceTypeMutation
 }
 
-// SetName sets the name field.
+// SetName sets the "name" field.
 func (rtuo *ResourceTypeUpdateOne) SetName(s string) *ResourceTypeUpdateOne {
 	rtuo.mutation.SetName(s)
 	return rtuo
 }
 
-// AddPropertyTypeIDs adds the property_types edge to PropertyType by ids.
+// AddPropertyTypeIDs adds the "property_types" edge to the PropertyType entity by IDs.
 func (rtuo *ResourceTypeUpdateOne) AddPropertyTypeIDs(ids ...int) *ResourceTypeUpdateOne {
 	rtuo.mutation.AddPropertyTypeIDs(ids...)
 	return rtuo
 }
 
-// AddPropertyTypes adds the property_types edges to PropertyType.
+// AddPropertyTypes adds the "property_types" edges to the PropertyType entity.
 func (rtuo *ResourceTypeUpdateOne) AddPropertyTypes(p ...*PropertyType) *ResourceTypeUpdateOne {
 	ids := make([]int, len(p))
 	for i := range p {
@@ -441,13 +446,13 @@ func (rtuo *ResourceTypeUpdateOne) AddPropertyTypes(p ...*PropertyType) *Resourc
 	return rtuo.AddPropertyTypeIDs(ids...)
 }
 
-// AddPoolIDs adds the pools edge to ResourcePool by ids.
+// AddPoolIDs adds the "pools" edge to the ResourcePool entity by IDs.
 func (rtuo *ResourceTypeUpdateOne) AddPoolIDs(ids ...int) *ResourceTypeUpdateOne {
 	rtuo.mutation.AddPoolIDs(ids...)
 	return rtuo
 }
 
-// AddPools adds the pools edges to ResourcePool.
+// AddPools adds the "pools" edges to the ResourcePool entity.
 func (rtuo *ResourceTypeUpdateOne) AddPools(r ...*ResourcePool) *ResourceTypeUpdateOne {
 	ids := make([]int, len(r))
 	for i := range r {
@@ -456,13 +461,13 @@ func (rtuo *ResourceTypeUpdateOne) AddPools(r ...*ResourcePool) *ResourceTypeUpd
 	return rtuo.AddPoolIDs(ids...)
 }
 
-// AddPoolPropertyIDs adds the pool_properties edge to PoolProperties by ids.
+// AddPoolPropertyIDs adds the "pool_properties" edge to the PoolProperties entity by IDs.
 func (rtuo *ResourceTypeUpdateOne) AddPoolPropertyIDs(ids ...int) *ResourceTypeUpdateOne {
 	rtuo.mutation.AddPoolPropertyIDs(ids...)
 	return rtuo
 }
 
-// AddPoolProperties adds the pool_properties edges to PoolProperties.
+// AddPoolProperties adds the "pool_properties" edges to the PoolProperties entity.
 func (rtuo *ResourceTypeUpdateOne) AddPoolProperties(p ...*PoolProperties) *ResourceTypeUpdateOne {
 	ids := make([]int, len(p))
 	for i := range p {
@@ -476,19 +481,19 @@ func (rtuo *ResourceTypeUpdateOne) Mutation() *ResourceTypeMutation {
 	return rtuo.mutation
 }
 
-// ClearPropertyTypes clears all "property_types" edges to type PropertyType.
+// ClearPropertyTypes clears all "property_types" edges to the PropertyType entity.
 func (rtuo *ResourceTypeUpdateOne) ClearPropertyTypes() *ResourceTypeUpdateOne {
 	rtuo.mutation.ClearPropertyTypes()
 	return rtuo
 }
 
-// RemovePropertyTypeIDs removes the property_types edge to PropertyType by ids.
+// RemovePropertyTypeIDs removes the "property_types" edge to PropertyType entities by IDs.
 func (rtuo *ResourceTypeUpdateOne) RemovePropertyTypeIDs(ids ...int) *ResourceTypeUpdateOne {
 	rtuo.mutation.RemovePropertyTypeIDs(ids...)
 	return rtuo
 }
 
-// RemovePropertyTypes removes property_types edges to PropertyType.
+// RemovePropertyTypes removes "property_types" edges to PropertyType entities.
 func (rtuo *ResourceTypeUpdateOne) RemovePropertyTypes(p ...*PropertyType) *ResourceTypeUpdateOne {
 	ids := make([]int, len(p))
 	for i := range p {
@@ -497,19 +502,19 @@ func (rtuo *ResourceTypeUpdateOne) RemovePropertyTypes(p ...*PropertyType) *Reso
 	return rtuo.RemovePropertyTypeIDs(ids...)
 }
 
-// ClearPools clears all "pools" edges to type ResourcePool.
+// ClearPools clears all "pools" edges to the ResourcePool entity.
 func (rtuo *ResourceTypeUpdateOne) ClearPools() *ResourceTypeUpdateOne {
 	rtuo.mutation.ClearPools()
 	return rtuo
 }
 
-// RemovePoolIDs removes the pools edge to ResourcePool by ids.
+// RemovePoolIDs removes the "pools" edge to ResourcePool entities by IDs.
 func (rtuo *ResourceTypeUpdateOne) RemovePoolIDs(ids ...int) *ResourceTypeUpdateOne {
 	rtuo.mutation.RemovePoolIDs(ids...)
 	return rtuo
 }
 
-// RemovePools removes pools edges to ResourcePool.
+// RemovePools removes "pools" edges to ResourcePool entities.
 func (rtuo *ResourceTypeUpdateOne) RemovePools(r ...*ResourcePool) *ResourceTypeUpdateOne {
 	ids := make([]int, len(r))
 	for i := range r {
@@ -518,19 +523,19 @@ func (rtuo *ResourceTypeUpdateOne) RemovePools(r ...*ResourcePool) *ResourceType
 	return rtuo.RemovePoolIDs(ids...)
 }
 
-// ClearPoolProperties clears all "pool_properties" edges to type PoolProperties.
+// ClearPoolProperties clears all "pool_properties" edges to the PoolProperties entity.
 func (rtuo *ResourceTypeUpdateOne) ClearPoolProperties() *ResourceTypeUpdateOne {
 	rtuo.mutation.ClearPoolProperties()
 	return rtuo
 }
 
-// RemovePoolPropertyIDs removes the pool_properties edge to PoolProperties by ids.
+// RemovePoolPropertyIDs removes the "pool_properties" edge to PoolProperties entities by IDs.
 func (rtuo *ResourceTypeUpdateOne) RemovePoolPropertyIDs(ids ...int) *ResourceTypeUpdateOne {
 	rtuo.mutation.RemovePoolPropertyIDs(ids...)
 	return rtuo
 }
 
-// RemovePoolProperties removes pool_properties edges to PoolProperties.
+// RemovePoolProperties removes "pool_properties" edges to PoolProperties entities.
 func (rtuo *ResourceTypeUpdateOne) RemovePoolProperties(p ...*PoolProperties) *ResourceTypeUpdateOne {
 	ids := make([]int, len(p))
 	for i := range p {
@@ -539,7 +544,14 @@ func (rtuo *ResourceTypeUpdateOne) RemovePoolProperties(p ...*PoolProperties) *R
 	return rtuo.RemovePoolPropertyIDs(ids...)
 }
 
-// Save executes the query and returns the updated entity.
+// Select allows selecting one or more fields (columns) of the returned entity.
+// The default is selecting all fields defined in the entity schema.
+func (rtuo *ResourceTypeUpdateOne) Select(field string, fields ...string) *ResourceTypeUpdateOne {
+	rtuo.fields = append([]string{field}, fields...)
+	return rtuo
+}
+
+// Save executes the query and returns the updated ResourceType entity.
 func (rtuo *ResourceTypeUpdateOne) Save(ctx context.Context) (*ResourceType, error) {
 	var (
 		err  error
@@ -565,11 +577,20 @@ func (rtuo *ResourceTypeUpdateOne) Save(ctx context.Context) (*ResourceType, err
 			return node, err
 		})
 		for i := len(rtuo.hooks) - 1; i >= 0; i-- {
+			if rtuo.hooks[i] == nil {
+				return nil, fmt.Errorf("ent: uninitialized hook (forgotten import ent/runtime?)")
+			}
 			mut = rtuo.hooks[i](mut)
 		}
-		if _, err := mut.Mutate(ctx, rtuo.mutation); err != nil {
+		v, err := mut.Mutate(ctx, rtuo.mutation)
+		if err != nil {
 			return nil, err
 		}
+		nv, ok := v.(*ResourceType)
+		if !ok {
+			return nil, fmt.Errorf("unexpected node type %T returned from ResourceTypeMutation", v)
+		}
+		node = nv
 	}
 	return node, err
 }
@@ -600,7 +621,7 @@ func (rtuo *ResourceTypeUpdateOne) ExecX(ctx context.Context) {
 func (rtuo *ResourceTypeUpdateOne) check() error {
 	if v, ok := rtuo.mutation.Name(); ok {
 		if err := resourcetype.NameValidator(v); err != nil {
-			return &ValidationError{Name: "name", err: fmt.Errorf("ent: validator failed for field \"name\": %w", err)}
+			return &ValidationError{Name: "name", err: fmt.Errorf(`ent: validator failed for field "ResourceType.name": %w`, err)}
 		}
 	}
 	return nil
@@ -619,9 +640,28 @@ func (rtuo *ResourceTypeUpdateOne) sqlSave(ctx context.Context) (_node *Resource
 	}
 	id, ok := rtuo.mutation.ID()
 	if !ok {
-		return nil, &ValidationError{Name: "ID", err: fmt.Errorf("missing ResourceType.ID for update")}
+		return nil, &ValidationError{Name: "id", err: errors.New(`ent: missing "ResourceType.id" for update`)}
 	}
 	_spec.Node.ID.Value = id
+	if fields := rtuo.fields; len(fields) > 0 {
+		_spec.Node.Columns = make([]string, 0, len(fields))
+		_spec.Node.Columns = append(_spec.Node.Columns, resourcetype.FieldID)
+		for _, f := range fields {
+			if !resourcetype.ValidColumn(f) {
+				return nil, &ValidationError{Name: f, err: fmt.Errorf("ent: invalid field %q for query", f)}
+			}
+			if f != resourcetype.FieldID {
+				_spec.Node.Columns = append(_spec.Node.Columns, f)
+			}
+		}
+	}
+	if ps := rtuo.mutation.predicates; len(ps) > 0 {
+		_spec.Predicate = func(selector *sql.Selector) {
+			for i := range ps {
+				ps[i](selector)
+			}
+		}
+	}
 	if value, ok := rtuo.mutation.Name(); ok {
 		_spec.Fields.Set = append(_spec.Fields.Set, &sqlgraph.FieldSpec{
 			Type:   field.TypeString,
@@ -793,12 +833,12 @@ func (rtuo *ResourceTypeUpdateOne) sqlSave(ctx context.Context) (_node *Resource
 	}
 	_node = &ResourceType{config: rtuo.config}
 	_spec.Assign = _node.assignValues
-	_spec.ScanValues = _node.scanValues()
+	_spec.ScanValues = _node.scanValues
 	if err = sqlgraph.UpdateNode(ctx, rtuo.driver, _spec); err != nil {
 		if _, ok := err.(*sqlgraph.NotFoundError); ok {
 			err = &NotFoundError{resourcetype.Label}
-		} else if cerr, ok := isSQLConstraintError(err); ok {
-			err = cerr
+		} else if sqlgraph.IsConstraintError(err) {
+			err = &ConstraintError{msg: err.Error(), wrap: err}
 		}
 		return nil, err
 	}

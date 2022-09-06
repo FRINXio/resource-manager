@@ -7,21 +7,20 @@ package main
 import (
 	"context"
 	"github.com/alecthomas/kong"
-	"github.com/facebookincubator/symphony/pkg/server/metrics"
 	"github.com/net-auto/resourceManager/ent/schema"
 	logger "github.com/net-auto/resourceManager/logging"
+	"github.com/net-auto/resourceManager/server"
+	"github.com/net-auto/resourceManager/server/metrics"
+	"github.com/net-auto/resourceManager/telemetry"
+	"github.com/net-auto/resourceManager/viewer"
 	stdlog "log"
 	"net/url"
 	"os"
 	"syscall"
 
-	"github.com/facebookincubator/symphony/pkg/ctxgroup"
-	"github.com/facebookincubator/symphony/pkg/ctxutil"
-	"github.com/facebookincubator/symphony/pkg/server"
-	"github.com/facebookincubator/symphony/pkg/telemetry"
-	"github.com/facebookincubator/symphony/pkg/viewer"
-
 	_ "github.com/net-auto/resourceManager/ent/runtime"
+	"github.com/net-auto/resourceManager/pkg/ctxgroup"
+	"github.com/net-auto/resourceManager/pkg/ctxutil"
 	"go.uber.org/zap"
 )
 

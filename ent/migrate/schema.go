@@ -3,8 +3,8 @@
 package migrate
 
 import (
-	"github.com/facebook/ent/dialect/sql/schema"
-	"github.com/facebook/ent/schema/field"
+	"entgo.io/ent/dialect/sql/schema"
+	"entgo.io/ent/schema/field"
 )
 
 var (
@@ -18,10 +18,9 @@ var (
 	}
 	// AllocationStrategiesTable holds the schema information for the "allocation_strategies" table.
 	AllocationStrategiesTable = &schema.Table{
-		Name:        "allocation_strategies",
-		Columns:     AllocationStrategiesColumns,
-		PrimaryKey:  []*schema.Column{AllocationStrategiesColumns[0]},
-		ForeignKeys: []*schema.ForeignKey{},
+		Name:       "allocation_strategies",
+		Columns:    AllocationStrategiesColumns,
+		PrimaryKey: []*schema.Column{AllocationStrategiesColumns[0]},
 	}
 	// PoolPropertiesColumns holds the columns for the "pool_properties" table.
 	PoolPropertiesColumns = []*schema.Column{
@@ -35,9 +34,8 @@ var (
 		PrimaryKey: []*schema.Column{PoolPropertiesColumns[0]},
 		ForeignKeys: []*schema.ForeignKey{
 			{
-				Symbol:  "pool_properties_resource_pools_poolProperties",
-				Columns: []*schema.Column{PoolPropertiesColumns[1]},
-
+				Symbol:     "pool_properties_resource_pools_poolProperties",
+				Columns:    []*schema.Column{PoolPropertiesColumns[1]},
 				RefColumns: []*schema.Column{ResourcePoolsColumns[0]},
 				OnDelete:   schema.SetNull,
 			},
@@ -62,7 +60,7 @@ var (
 		{Name: "range_to_val", Type: field.TypeFloat64, Nullable: true},
 		{Name: "string_val", Type: field.TypeString, Nullable: true},
 		{Name: "pool_properties_properties", Type: field.TypeInt, Nullable: true},
-		{Name: "property_type", Type: field.TypeInt, Nullable: true},
+		{Name: "property_type", Type: field.TypeInt},
 		{Name: "resource_properties", Type: field.TypeInt, Nullable: true},
 	}
 	// PropertiesTable holds the schema information for the "properties" table.
@@ -72,23 +70,20 @@ var (
 		PrimaryKey: []*schema.Column{PropertiesColumns[0]},
 		ForeignKeys: []*schema.ForeignKey{
 			{
-				Symbol:  "properties_pool_properties_properties",
-				Columns: []*schema.Column{PropertiesColumns[9]},
-
+				Symbol:     "properties_pool_properties_properties",
+				Columns:    []*schema.Column{PropertiesColumns[9]},
 				RefColumns: []*schema.Column{PoolPropertiesColumns[0]},
 				OnDelete:   schema.SetNull,
 			},
 			{
-				Symbol:  "properties_property_types_type",
-				Columns: []*schema.Column{PropertiesColumns[10]},
-
+				Symbol:     "properties_property_types_type",
+				Columns:    []*schema.Column{PropertiesColumns[10]},
 				RefColumns: []*schema.Column{PropertyTypesColumns[0]},
-				OnDelete:   schema.SetNull,
+				OnDelete:   schema.NoAction,
 			},
 			{
-				Symbol:  "properties_resources_properties",
-				Columns: []*schema.Column{PropertiesColumns[11]},
-
+				Symbol:     "properties_resources_properties",
+				Columns:    []*schema.Column{PropertiesColumns[11]},
 				RefColumns: []*schema.Column{ResourcesColumns[0]},
 				OnDelete:   schema.SetNull,
 			},
@@ -129,8 +124,8 @@ var (
 		{Name: "range_to_val", Type: field.TypeFloat64, Nullable: true},
 		{Name: "is_instance_property", Type: field.TypeBool, Default: true},
 		{Name: "editable", Type: field.TypeBool, Default: true},
-		{Name: "mandatory", Type: field.TypeBool},
-		{Name: "deleted", Type: field.TypeBool},
+		{Name: "mandatory", Type: field.TypeBool, Default: false},
+		{Name: "deleted", Type: field.TypeBool, Default: false},
 		{Name: "node_type", Type: field.TypeString, Nullable: true},
 		{Name: "resource_type_property_types", Type: field.TypeInt, Nullable: true},
 	}
@@ -141,9 +136,8 @@ var (
 		PrimaryKey: []*schema.Column{PropertyTypesColumns[0]},
 		ForeignKeys: []*schema.ForeignKey{
 			{
-				Symbol:  "property_types_resource_types_property_types",
-				Columns: []*schema.Column{PropertyTypesColumns[19]},
-
+				Symbol:     "property_types_resource_types_property_types",
+				Columns:    []*schema.Column{PropertyTypesColumns[19]},
 				RefColumns: []*schema.Column{ResourceTypesColumns[0]},
 				OnDelete:   schema.SetNull,
 			},
@@ -165,9 +159,8 @@ var (
 		PrimaryKey: []*schema.Column{ResourcesColumns[0]},
 		ForeignKeys: []*schema.ForeignKey{
 			{
-				Symbol:  "resources_resource_pools_claims",
-				Columns: []*schema.Column{ResourcesColumns[5]},
-
+				Symbol:     "resources_resource_pools_claims",
+				Columns:    []*schema.Column{ResourcesColumns[5]},
 				RefColumns: []*schema.Column{ResourcePoolsColumns[0]},
 				OnDelete:   schema.SetNull,
 			},
@@ -186,7 +179,7 @@ var (
 		{Name: "name", Type: field.TypeString, Unique: true},
 		{Name: "description", Type: field.TypeString, Nullable: true, Size: 2147483647},
 		{Name: "pool_type", Type: field.TypeEnum, Enums: []string{"singleton", "set", "allocating"}},
-		{Name: "dealocation_safety_period", Type: field.TypeInt},
+		{Name: "dealocation_safety_period", Type: field.TypeInt, Default: 0},
 		{Name: "resource_nested_pool", Type: field.TypeInt, Unique: true, Nullable: true},
 		{Name: "resource_pool_allocation_strategy", Type: field.TypeInt, Nullable: true},
 		{Name: "resource_type_pools", Type: field.TypeInt, Nullable: true},
@@ -198,23 +191,20 @@ var (
 		PrimaryKey: []*schema.Column{ResourcePoolsColumns[0]},
 		ForeignKeys: []*schema.ForeignKey{
 			{
-				Symbol:  "resource_pools_resources_nested_pool",
-				Columns: []*schema.Column{ResourcePoolsColumns[5]},
-
+				Symbol:     "resource_pools_resources_nested_pool",
+				Columns:    []*schema.Column{ResourcePoolsColumns[5]},
 				RefColumns: []*schema.Column{ResourcesColumns[0]},
 				OnDelete:   schema.SetNull,
 			},
 			{
-				Symbol:  "resource_pools_allocation_strategies_allocation_strategy",
-				Columns: []*schema.Column{ResourcePoolsColumns[6]},
-
+				Symbol:     "resource_pools_allocation_strategies_allocation_strategy",
+				Columns:    []*schema.Column{ResourcePoolsColumns[6]},
 				RefColumns: []*schema.Column{AllocationStrategiesColumns[0]},
 				OnDelete:   schema.SetNull,
 			},
 			{
-				Symbol:  "resource_pools_resource_types_pools",
-				Columns: []*schema.Column{ResourcePoolsColumns[7]},
-
+				Symbol:     "resource_pools_resource_types_pools",
+				Columns:    []*schema.Column{ResourcePoolsColumns[7]},
 				RefColumns: []*schema.Column{ResourceTypesColumns[0]},
 				OnDelete:   schema.SetNull,
 			},
@@ -234,10 +224,9 @@ var (
 	}
 	// ResourceTypesTable holds the schema information for the "resource_types" table.
 	ResourceTypesTable = &schema.Table{
-		Name:        "resource_types",
-		Columns:     ResourceTypesColumns,
-		PrimaryKey:  []*schema.Column{ResourceTypesColumns[0]},
-		ForeignKeys: []*schema.ForeignKey{},
+		Name:       "resource_types",
+		Columns:    ResourceTypesColumns,
+		PrimaryKey: []*schema.Column{ResourceTypesColumns[0]},
 	}
 	// TagsColumns holds the columns for the "tags" table.
 	TagsColumns = []*schema.Column{
@@ -246,10 +235,9 @@ var (
 	}
 	// TagsTable holds the schema information for the "tags" table.
 	TagsTable = &schema.Table{
-		Name:        "tags",
-		Columns:     TagsColumns,
-		PrimaryKey:  []*schema.Column{TagsColumns[0]},
-		ForeignKeys: []*schema.ForeignKey{},
+		Name:       "tags",
+		Columns:    TagsColumns,
+		PrimaryKey: []*schema.Column{TagsColumns[0]},
 	}
 	// PoolPropertiesResourceTypeColumns holds the columns for the "pool_properties_resourceType" table.
 	PoolPropertiesResourceTypeColumns = []*schema.Column{
@@ -263,16 +251,14 @@ var (
 		PrimaryKey: []*schema.Column{PoolPropertiesResourceTypeColumns[0], PoolPropertiesResourceTypeColumns[1]},
 		ForeignKeys: []*schema.ForeignKey{
 			{
-				Symbol:  "pool_properties_resourceType_pool_properties_id",
-				Columns: []*schema.Column{PoolPropertiesResourceTypeColumns[0]},
-
+				Symbol:     "pool_properties_resourceType_pool_properties_id",
+				Columns:    []*schema.Column{PoolPropertiesResourceTypeColumns[0]},
 				RefColumns: []*schema.Column{PoolPropertiesColumns[0]},
 				OnDelete:   schema.Cascade,
 			},
 			{
-				Symbol:  "pool_properties_resourceType_resource_type_id",
-				Columns: []*schema.Column{PoolPropertiesResourceTypeColumns[1]},
-
+				Symbol:     "pool_properties_resourceType_resource_type_id",
+				Columns:    []*schema.Column{PoolPropertiesResourceTypeColumns[1]},
 				RefColumns: []*schema.Column{ResourceTypesColumns[0]},
 				OnDelete:   schema.Cascade,
 			},
@@ -290,16 +276,14 @@ var (
 		PrimaryKey: []*schema.Column{TagPoolsColumns[0], TagPoolsColumns[1]},
 		ForeignKeys: []*schema.ForeignKey{
 			{
-				Symbol:  "tag_pools_tag_id",
-				Columns: []*schema.Column{TagPoolsColumns[0]},
-
+				Symbol:     "tag_pools_tag_id",
+				Columns:    []*schema.Column{TagPoolsColumns[0]},
 				RefColumns: []*schema.Column{TagsColumns[0]},
 				OnDelete:   schema.Cascade,
 			},
 			{
-				Symbol:  "tag_pools_resource_pool_id",
-				Columns: []*schema.Column{TagPoolsColumns[1]},
-
+				Symbol:     "tag_pools_resource_pool_id",
+				Columns:    []*schema.Column{TagPoolsColumns[1]},
 				RefColumns: []*schema.Column{ResourcePoolsColumns[0]},
 				OnDelete:   schema.Cascade,
 			},

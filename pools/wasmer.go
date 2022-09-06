@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"context"
 	"encoding/json"
+	"github.com/net-auto/resourceManager/graph/graphql/model"
 	strategies "github.com/net-auto/resourceManager/pools/allocating_strategies/strategies/generated"
 	"os"
 	"os/exec"
@@ -15,7 +16,6 @@ import (
 
 	"github.com/net-auto/resourceManager/ent"
 	"github.com/net-auto/resourceManager/ent/allocationstrategy"
-	"github.com/net-auto/resourceManager/graph/graphql/model"
 	"github.com/pkg/errors"
 )
 

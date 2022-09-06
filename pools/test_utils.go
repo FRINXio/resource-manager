@@ -2,13 +2,12 @@ package pools
 
 import (
 	"context"
+
 	"github.com/net-auto/resourceManager/ent/schema"
 	"log"
 	"reflect"
 	"testing"
 
-	"github.com/facebookincubator/symphony/pkg/authz"
-	"github.com/facebookincubator/symphony/pkg/authz/models"
 	_ "github.com/mattn/go-sqlite3"
 	"github.com/net-auto/resourceManager/ent"
 	"github.com/net-auto/resourceManager/ent/resource"
@@ -111,11 +110,4 @@ func OpenTestDb(ctx context.Context) *ent.Client {
 	}
 
 	return client
-}
-
-func GetContext() context.Context {
-	ctx := context.Background()
-	ctx = authz.NewContext(ctx, &models.PermissionSettings{
-		WorkforcePolicy: authz.NewWorkforcePolicy(true, true)})
-	return ctx
 }

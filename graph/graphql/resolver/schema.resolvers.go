@@ -21,6 +21,7 @@ import (
 	"github.com/vektah/gqlparser/v2/gqlerror"
 )
 
+// CreateTag is the resolver for the CreateTag field.
 func (r *mutationResolver) CreateTag(ctx context.Context, input model.CreateTagInput) (*model.CreateTagPayload, error) {
 	var client = r.ClientFrom(ctx)
 	tagEnt, err := createTag(ctx, client, input.TagText)
@@ -33,6 +34,7 @@ func (r *mutationResolver) CreateTag(ctx context.Context, input model.CreateTagI
 	return &model.CreateTagPayload{Tag: tagEnt}, nil
 }
 
+// UpdateTag is the resolver for the UpdateTag field.
 func (r *mutationResolver) UpdateTag(ctx context.Context, input model.UpdateTagInput) (*model.UpdateTagPayload, error) {
 	var client = r.ClientFrom(ctx)
 	tagEnt, err := client.Tag.UpdateOneID(input.TagID).SetTag(input.TagText).Save(ctx)
@@ -43,6 +45,7 @@ func (r *mutationResolver) UpdateTag(ctx context.Context, input model.UpdateTagI
 	return &model.UpdateTagPayload{Tag: tagEnt}, nil
 }
 
+// DeleteTag is the resolver for the DeleteTag field.
 func (r *mutationResolver) DeleteTag(ctx context.Context, input model.DeleteTagInput) (*model.DeleteTagPayload, error) {
 	var client = r.ClientFrom(ctx)
 	err := client.Tag.DeleteOneID(input.TagID).Exec(ctx)
@@ -54,6 +57,7 @@ func (r *mutationResolver) DeleteTag(ctx context.Context, input model.DeleteTagI
 	return &model.DeleteTagPayload{TagID: input.TagID}, nil
 }
 
+// TagPool is the resolver for the TagPool field.
 func (r *mutationResolver) TagPool(ctx context.Context, input model.TagPoolInput) (*model.TagPoolPayload, error) {
 	var client = r.ClientFrom(ctx)
 	tag, err := client.Tag.UpdateOneID(input.TagID).AddPoolIDs(input.PoolID).Save(ctx)
@@ -64,6 +68,7 @@ func (r *mutationResolver) TagPool(ctx context.Context, input model.TagPoolInput
 	return &model.TagPoolPayload{Tag: tag}, nil
 }
 
+// UntagPool is the resolver for the UntagPool field.
 func (r *mutationResolver) UntagPool(ctx context.Context, input model.UntagPoolInput) (*model.UntagPoolPayload, error) {
 	var client = r.ClientFrom(ctx)
 	tag, err := client.Tag.UpdateOneID(input.TagID).RemovePoolIDs(input.PoolID).Save(ctx)
@@ -74,6 +79,7 @@ func (r *mutationResolver) UntagPool(ctx context.Context, input model.UntagPoolI
 	return &model.UntagPoolPayload{Tag: tag}, nil
 }
 
+// CreateAllocationStrategy is the resolver for the CreateAllocationStrategy field.
 func (r *mutationResolver) CreateAllocationStrategy(ctx context.Context, input *model.CreateAllocationStrategyInput) (*model.CreateAllocationStrategyPayload, error) {
 	var client = r.ClientFrom(ctx)
 	strat, err := client.AllocationStrategy.Create().
@@ -90,6 +96,7 @@ func (r *mutationResolver) CreateAllocationStrategy(ctx context.Context, input *
 	return &model.CreateAllocationStrategyPayload{Strategy: strat}, nil
 }
 
+// DeleteAllocationStrategy is the resolver for the DeleteAllocationStrategy field.
 func (r *mutationResolver) DeleteAllocationStrategy(ctx context.Context, input *model.DeleteAllocationStrategyInput) (*model.DeleteAllocationStrategyPayload, error) {
 	var client = r.ClientFrom(ctx)
 	emptyRetVal := model.DeleteAllocationStrategyPayload{Strategy: nil}
@@ -115,6 +122,7 @@ func (r *mutationResolver) DeleteAllocationStrategy(ctx context.Context, input *
 	}
 }
 
+// TestAllocationStrategy is the resolver for the TestAllocationStrategy field.
 func (r *mutationResolver) TestAllocationStrategy(ctx context.Context, allocationStrategyID int, resourcePool model.ResourcePoolInput, currentResources []*model.ResourceInput, userInput map[string]interface{}) (map[string]interface{}, error) {
 	var client = r.ClientFrom(ctx)
 	strat, err := client.AllocationStrategy.Query().
@@ -155,10 +163,12 @@ func (r *mutationResolver) TestAllocationStrategy(ctx context.Context, allocatio
 	return result, nil
 }
 
+// ClaimResource is the resolver for the ClaimResource field.
 func (r *mutationResolver) ClaimResource(ctx context.Context, poolID int, description *string, userInput map[string]interface{}) (*ent.Resource, error) {
 	return r.ClaimResourceWithAltID(ctx, poolID, description, userInput, nil)
 }
 
+// ClaimResourceWithAltID is the resolver for the ClaimResourceWithAltId field.
 func (r *mutationResolver) ClaimResourceWithAltID(ctx context.Context, poolID int, description *string, userInput map[string]interface{}, alternativeID map[string]interface{}) (*ent.Resource, error) {
 	pool, err := p.ExistingPoolFromId(ctx, r.ClientFrom(ctx), poolID)
 	if err != nil {
@@ -172,6 +182,7 @@ func (r *mutationResolver) ClaimResourceWithAltID(ctx context.Context, poolID in
 	}
 }
 
+// FreeResource is the resolver for the FreeResource field.
 func (r *mutationResolver) FreeResource(ctx context.Context, input map[string]interface{}, poolID int) (string, error) {
 	pool, err := p.ExistingPoolFromId(ctx, r.ClientFrom(ctx), poolID)
 	if err != nil {
@@ -186,6 +197,7 @@ func (r *mutationResolver) FreeResource(ctx context.Context, input map[string]in
 	return "", gqlerror.Errorf("Unable to free resource: %v", err)
 }
 
+// CreateSetPool is the resolver for the CreateSetPool field.
 func (r *mutationResolver) CreateSetPool(ctx context.Context, input model.CreateSetPoolInput) (*model.CreateSetPoolPayload, error) {
 	var client = r.ClientFrom(ctx)
 
@@ -208,6 +220,7 @@ func (r *mutationResolver) CreateSetPool(ctx context.Context, input model.Create
 	return &model.CreateSetPoolPayload{Pool: rp}, nil
 }
 
+// CreateNestedSetPool is the resolver for the CreateNestedSetPool field.
 func (r *mutationResolver) CreateNestedSetPool(ctx context.Context, input model.CreateNestedSetPoolInput) (*model.CreateNestedSetPoolPayload, error) {
 	var client = r.ClientFrom(ctx)
 
@@ -231,6 +244,7 @@ func (r *mutationResolver) CreateNestedSetPool(ctx context.Context, input model.
 	return &model.CreateNestedSetPoolPayload{Pool: pool}, err2
 }
 
+// CreateSingletonPool is the resolver for the CreateSingletonPool field.
 func (r *mutationResolver) CreateSingletonPool(ctx context.Context, input *model.CreateSingletonPoolInput) (*model.CreateSingletonPoolPayload, error) {
 	var client = r.ClientFrom(ctx)
 
@@ -260,6 +274,7 @@ func (r *mutationResolver) CreateSingletonPool(ctx context.Context, input *model
 	}
 }
 
+// CreateNestedSingletonPool is the resolver for the CreateNestedSingletonPool field.
 func (r *mutationResolver) CreateNestedSingletonPool(ctx context.Context, input model.CreateNestedSingletonPoolInput) (*model.CreateNestedSingletonPoolPayload, error) {
 	var client = r.ClientFrom(ctx)
 
@@ -283,6 +298,7 @@ func (r *mutationResolver) CreateNestedSingletonPool(ctx context.Context, input 
 	return &model.CreateNestedSingletonPoolPayload{Pool: nestedPool}, err2
 }
 
+// CreateAllocatingPool is the resolver for the CreateAllocatingPool field.
 func (r *mutationResolver) CreateAllocatingPool(ctx context.Context, input *model.CreateAllocatingPoolInput) (*model.CreateAllocatingPoolPayload, error) {
 	var client = r.ClientFrom(ctx)
 	emptyRetVal := model.CreateAllocatingPoolPayload{Pool: nil}
@@ -346,6 +362,7 @@ func (r *mutationResolver) CreateAllocatingPool(ctx context.Context, input *mode
 	return &model.CreateAllocatingPoolPayload{Pool: rp}, err
 }
 
+// CreateNestedAllocatingPool is the resolver for the CreateNestedAllocatingPool field.
 func (r *mutationResolver) CreateNestedAllocatingPool(ctx context.Context, input model.CreateNestedAllocatingPoolInput) (*model.CreateNestedAllocatingPoolPayload, error) {
 	var client = r.ClientFrom(ctx)
 
@@ -369,6 +386,7 @@ func (r *mutationResolver) CreateNestedAllocatingPool(ctx context.Context, input
 	return &model.CreateNestedAllocatingPoolPayload{Pool: pool}, err2
 }
 
+// DeleteResourcePool is the resolver for the DeleteResourcePool field.
 func (r *mutationResolver) DeleteResourcePool(ctx context.Context, input model.DeleteResourcePoolInput) (*model.DeleteResourcePoolPayload, error) {
 	client := r.ClientFrom(ctx)
 	retVal := model.DeleteResourcePoolPayload{ResourcePoolID: input.ResourcePoolID}
@@ -388,6 +406,7 @@ func (r *mutationResolver) DeleteResourcePool(ctx context.Context, input model.D
 	return &retVal, nil
 }
 
+// CreateResourceType is the resolver for the CreateResourceType field.
 func (r *mutationResolver) CreateResourceType(ctx context.Context, input model.CreateResourceTypeInput) (*model.CreateResourceTypePayload, error) {
 	var client = r.ClientFrom(ctx)
 
@@ -412,6 +431,7 @@ func (r *mutationResolver) CreateResourceType(ctx context.Context, input model.C
 	return &model.CreateResourceTypePayload{ResourceType: resType}, nil
 }
 
+// DeleteResourceType is the resolver for the DeleteResourceType field.
 func (r *mutationResolver) DeleteResourceType(ctx context.Context, input model.DeleteResourceTypeInput) (*model.DeleteResourceTypePayload, error) {
 	client := r.ClientFrom(ctx)
 	resourceType, err := client.ResourceType.Get(ctx, input.ResourceTypeID)
@@ -449,6 +469,7 @@ func (r *mutationResolver) DeleteResourceType(ctx context.Context, input model.D
 	}
 }
 
+// UpdateResourceTypeName is the resolver for the UpdateResourceTypeName field.
 func (r *mutationResolver) UpdateResourceTypeName(ctx context.Context, input model.UpdateResourceTypeNameInput) (*model.UpdateResourceTypeNamePayload, error) {
 	var client = r.ClientFrom(ctx)
 	retValue := &model.UpdateResourceTypeNamePayload{ResourceTypeID: input.ResourceTypeID}
@@ -460,6 +481,7 @@ func (r *mutationResolver) UpdateResourceTypeName(ctx context.Context, input mod
 	}
 }
 
+// UpdateResourceAltID is the resolver for the UpdateResourceAltId field.
 func (r *mutationResolver) UpdateResourceAltID(ctx context.Context, input map[string]interface{}, poolID int, alternativeID map[string]interface{}) (*ent.Resource, error) {
 	pool, err := p.ExistingPoolFromId(ctx, r.ClientFrom(ctx), poolID)
 	if err != nil {
@@ -480,16 +502,19 @@ func (r *mutationResolver) UpdateResourceAltID(ctx context.Context, input map[st
 	return queryResource, nil
 }
 
+// ID is the resolver for the ID field.
 func (r *outputCursorResolver) ID(ctx context.Context, obj *ent.Cursor) (string, error) {
 	//this will never be called because ent.Cursor will use its msgpack annotation
 	return "", nil
 }
 
+// Type is the resolver for the Type field.
 func (r *propertyTypeResolver) Type(ctx context.Context, obj *ent.PropertyType) (string, error) {
 	// Just converts enum to string
 	return obj.Type.String(), nil
 }
 
+// QueryPoolCapacity is the resolver for the QueryPoolCapacity field.
 func (r *queryResolver) QueryPoolCapacity(ctx context.Context, poolID int) (*model.PoolCapacityPayload, error) {
 	pool, err := p.ExistingPoolFromId(ctx, r.ClientFrom(ctx), poolID)
 
@@ -509,6 +534,7 @@ func (r *queryResolver) QueryPoolCapacity(ctx context.Context, poolID int) (*mod
 	}, nil
 }
 
+// QueryPoolTypes is the resolver for the QueryPoolTypes field.
 func (r *queryResolver) QueryPoolTypes(ctx context.Context) ([]resourcePool.PoolType, error) {
 	poolTypes := []resourcePool.PoolType{
 		resourcePool.PoolTypeSingleton,
@@ -517,6 +543,7 @@ func (r *queryResolver) QueryPoolTypes(ctx context.Context) ([]resourcePool.Pool
 	return poolTypes, nil
 }
 
+// QueryResource is the resolver for the QueryResource field.
 func (r *queryResolver) QueryResource(ctx context.Context, input map[string]interface{}, poolID int) (*ent.Resource, error) {
 	pool, err := p.ExistingPoolFromId(ctx, r.ClientFrom(ctx), poolID)
 	if err != nil {
@@ -525,6 +552,7 @@ func (r *queryResolver) QueryResource(ctx context.Context, input map[string]inte
 	return pool.QueryResource(input)
 }
 
+// QueryResources is the resolver for the QueryResources field.
 func (r *queryResolver) QueryResources(ctx context.Context, poolID int, first *int, last *int, before *string, after *string) (*ent.ResourceConnection, error) {
 	pool, err := p.ExistingPoolFromId(ctx, r.ClientFrom(ctx), poolID)
 	if err != nil {
@@ -545,6 +573,7 @@ func (r *queryResolver) QueryResources(ctx context.Context, poolID int, first *i
 	return pool.QueryPaginatedResources(first, last, afterCursor, beforeCursor)
 }
 
+// QueryResourcesByAltID is the resolver for the QueryResourcesByAltId field.
 func (r *queryResolver) QueryResourcesByAltID(ctx context.Context, input map[string]interface{}, poolID *int, first *int, last *int, before *string, after *string) (*ent.ResourceConnection, error) {
 	typeFixedAlternativeId, err := p.ConvertValuesToFloat64(ctx, input)
 	if err != nil {
@@ -568,6 +597,7 @@ func (r *queryResolver) QueryResourcesByAltID(ctx context.Context, input map[str
 	return nil, gqlerror.Errorf("Unable to query resources: %v", err)
 }
 
+// QueryAllocationStrategy is the resolver for the QueryAllocationStrategy field.
 func (r *queryResolver) QueryAllocationStrategy(ctx context.Context, allocationStrategyID int) (*ent.AllocationStrategy, error) {
 	client := r.ClientFrom(ctx)
 	if strats, err := client.AllocationStrategy.Query().Where(allocationstrategy.ID(allocationStrategyID)).Only(ctx); err != nil {
@@ -578,6 +608,7 @@ func (r *queryResolver) QueryAllocationStrategy(ctx context.Context, allocationS
 	}
 }
 
+// QueryAllocationStrategies is the resolver for the QueryAllocationStrategies field.
 func (r *queryResolver) QueryAllocationStrategies(ctx context.Context, byName *string) ([]*ent.AllocationStrategy, error) {
 	client := r.ClientFrom(ctx)
 	query := client.AllocationStrategy.Query()
@@ -594,6 +625,7 @@ func (r *queryResolver) QueryAllocationStrategies(ctx context.Context, byName *s
 	}
 }
 
+// QueryResourceTypes is the resolver for the QueryResourceTypes field.
 func (r *queryResolver) QueryResourceTypes(ctx context.Context, byName *string) ([]*ent.ResourceType, error) {
 	client := r.ClientFrom(ctx)
 	query := client.ResourceType.Query()
@@ -613,6 +645,7 @@ func (r *queryResolver) QueryResourceTypes(ctx context.Context, byName *string) 
 	}
 }
 
+// QueryResourcePool is the resolver for the QueryResourcePool field.
 func (r *queryResolver) QueryResourcePool(ctx context.Context, poolID int) (*ent.ResourcePool, error) {
 	rp, err := r.ClientFrom(ctx).ResourcePool.Get(ctx, poolID)
 
@@ -623,6 +656,7 @@ func (r *queryResolver) QueryResourcePool(ctx context.Context, poolID int) (*ent
 	return rp, err
 }
 
+// QueryEmptyResourcePools is the resolver for the QueryEmptyResourcePools field.
 func (r *queryResolver) QueryEmptyResourcePools(ctx context.Context, resourceTypeID *int) ([]*ent.ResourcePool, error) {
 	client := r.ClientFrom(ctx)
 	query := client.ResourcePool.Query()
@@ -641,6 +675,7 @@ func (r *queryResolver) QueryEmptyResourcePools(ctx context.Context, resourceTyp
 	}
 }
 
+// QueryResourcePools is the resolver for the QueryResourcePools field.
 func (r *queryResolver) QueryResourcePools(ctx context.Context, resourceTypeID *int, tags *model.TagOr) ([]*ent.ResourcePool, error) {
 	client := r.ClientFrom(ctx)
 	query := client.ResourcePool.Query()
@@ -662,6 +697,7 @@ func (r *queryResolver) QueryResourcePools(ctx context.Context, resourceTypeID *
 	}
 }
 
+// QueryRecentlyActiveResources is the resolver for the QueryRecentlyActiveResources field.
 func (r *queryResolver) QueryRecentlyActiveResources(ctx context.Context, fromDatetime string, toDatetime *string, first *int, last *int, before *string, after *string) (*ent.ResourceConnection, error) {
 	client := r.ClientFrom(ctx)
 	query := client.Resource.Query()
@@ -709,6 +745,7 @@ func (r *queryResolver) QueryRecentlyActiveResources(ctx context.Context, fromDa
 	return resources, nil
 }
 
+// QueryResourcePoolHierarchyPath is the resolver for the QueryResourcePoolHierarchyPath field.
 func (r *queryResolver) QueryResourcePoolHierarchyPath(ctx context.Context, poolID int) ([]*ent.ResourcePool, error) {
 	client := r.ClientFrom(ctx)
 	currentPool, err := queryPoolWithParent(ctx, poolID, client)
@@ -731,6 +768,7 @@ func (r *queryResolver) QueryResourcePoolHierarchyPath(ctx context.Context, pool
 	return hierarchy, nil
 }
 
+// QueryRootResourcePools is the resolver for the QueryRootResourcePools field.
 func (r *queryResolver) QueryRootResourcePools(ctx context.Context, resourceTypeID *int, tags *model.TagOr) ([]*ent.ResourcePool, error) {
 	client := r.ClientFrom(ctx)
 	query := client.ResourcePool.
@@ -754,6 +792,7 @@ func (r *queryResolver) QueryRootResourcePools(ctx context.Context, resourceType
 	}
 }
 
+// QueryLeafResourcePools is the resolver for the QueryLeafResourcePools field.
 func (r *queryResolver) QueryLeafResourcePools(ctx context.Context, resourceTypeID *int, tags *model.TagOr) ([]*ent.ResourcePool, error) {
 	client := r.ClientFrom(ctx)
 	query := client.ResourcePool.
@@ -778,6 +817,7 @@ func (r *queryResolver) QueryLeafResourcePools(ctx context.Context, resourceType
 	}
 }
 
+// SearchPoolsByTags is the resolver for the SearchPoolsByTags field.
 func (r *queryResolver) SearchPoolsByTags(ctx context.Context, tags *model.TagOr) ([]*ent.ResourcePool, error) {
 	var client = r.ClientFrom(ctx)
 
@@ -805,6 +845,7 @@ func (r *queryResolver) SearchPoolsByTags(ctx context.Context, tags *model.TagOr
 	return matchedPools, nil
 }
 
+// QueryTags is the resolver for the QueryTags field.
 func (r *queryResolver) QueryTags(ctx context.Context) ([]*ent.Tag, error) {
 	var client = r.ClientFrom(ctx)
 	tags, err := client.Tag.Query().All(ctx)
@@ -815,6 +856,7 @@ func (r *queryResolver) QueryTags(ctx context.Context) ([]*ent.Tag, error) {
 	return tags, nil
 }
 
+// Node is the resolver for the node field.
 func (r *queryResolver) Node(ctx context.Context, id int) (ent.Noder, error) {
 	var client = r.ClientFrom(ctx)
 	node, err := client.Noder(ctx, id)
@@ -826,6 +868,7 @@ func (r *queryResolver) Node(ctx context.Context, id int) (ent.Noder, error) {
 	return node, err
 }
 
+// NestedPool is the resolver for the NestedPool field.
 func (r *resourceResolver) NestedPool(ctx context.Context, obj *ent.Resource) (*ent.ResourcePool, error) {
 	if es, err := obj.Edges.NestedPoolOrErr(); !ent.IsNotLoaded(err) {
 		log.Error(ctx, err, "Unable to retrieve nested pool for resource with ID %d", obj.ID)
@@ -842,6 +885,7 @@ func (r *resourceResolver) NestedPool(ctx context.Context, obj *ent.Resource) (*
 	}
 }
 
+// ParentPool is the resolver for the ParentPool field.
 func (r *resourceResolver) ParentPool(ctx context.Context, obj *ent.Resource) (*ent.ResourcePool, error) {
 	if es, err := obj.Edges.PoolOrErr(); !ent.IsNotLoaded(err) {
 		log.Error(ctx, err, "Unable to retrieve pool for resource with ID %d", obj.ID)
@@ -855,6 +899,7 @@ func (r *resourceResolver) ParentPool(ctx context.Context, obj *ent.Resource) (*
 	}
 }
 
+// Properties is the resolver for the Properties field.
 func (r *resourceResolver) Properties(ctx context.Context, obj *ent.Resource) (map[string]interface{}, error) {
 	props, err := obj.QueryProperties().WithType().All(ctx)
 	if err != nil {
@@ -870,10 +915,12 @@ func (r *resourceResolver) Properties(ctx context.Context, obj *ent.Resource) (m
 	}
 }
 
+// AlternativeID is the resolver for the AlternativeId field.
 func (r *resourceResolver) AlternativeID(ctx context.Context, obj *ent.Resource) (map[string]interface{}, error) {
 	return obj.AlternateID, nil
 }
 
+// AllocationStrategy is the resolver for the AllocationStrategy field.
 func (r *resourcePoolResolver) AllocationStrategy(ctx context.Context, obj *ent.ResourcePool) (*ent.AllocationStrategy, error) {
 	if obj.PoolType != resourcePool.PoolTypeAllocating {
 		log.Warn(ctx, "Pool with ID %d does not have an allocation strategy", obj.ID)
@@ -892,10 +939,12 @@ func (r *resourcePoolResolver) AllocationStrategy(ctx context.Context, obj *ent.
 	return strategy, err
 }
 
+// Capacity is the resolver for the Capacity field.
 func (r *resourcePoolResolver) Capacity(ctx context.Context, obj *ent.ResourcePool) (*model.PoolCapacityPayload, error) {
 	return r.Query().QueryPoolCapacity(ctx, obj.ID)
 }
 
+// ParentResource is the resolver for the ParentResource field.
 func (r *resourcePoolResolver) ParentResource(ctx context.Context, obj *ent.ResourcePool) (*ent.Resource, error) {
 	if es, err := obj.Edges.ParentResourceOrErr(); !ent.IsNotLoaded(err) {
 		log.Error(ctx, err, "Loading parent resource for pool ID %d failed", obj.ID)
@@ -910,6 +959,7 @@ func (r *resourcePoolResolver) ParentResource(ctx context.Context, obj *ent.Reso
 	}
 }
 
+// PoolProperties is the resolver for the PoolProperties field.
 func (r *resourcePoolResolver) PoolProperties(ctx context.Context, obj *ent.ResourcePool) (map[string]interface{}, error) {
 	var (
 		props *ent.PoolProperties
@@ -947,6 +997,7 @@ func (r *resourcePoolResolver) PoolProperties(ctx context.Context, obj *ent.Reso
 	}
 }
 
+// ResourceType is the resolver for the ResourceType field.
 func (r *resourcePoolResolver) ResourceType(ctx context.Context, obj *ent.ResourcePool) (*ent.ResourceType, error) {
 	if es, err := obj.Edges.ResourceTypeOrErr(); !ent.IsNotLoaded(err) {
 		log.Error(ctx, err, "Unable to retrieve resource type for pool with ID %d", obj.ID)
@@ -961,6 +1012,7 @@ func (r *resourcePoolResolver) ResourceType(ctx context.Context, obj *ent.Resour
 	return rt, err
 }
 
+// Resources is the resolver for the Resources field.
 func (r *resourcePoolResolver) Resources(ctx context.Context, obj *ent.ResourcePool) ([]*ent.Resource, error) {
 	resources, err := p.GetResourceFromPool(ctx, obj)
 
@@ -971,6 +1023,7 @@ func (r *resourcePoolResolver) Resources(ctx context.Context, obj *ent.ResourceP
 	return resources, err
 }
 
+// Tags is the resolver for the Tags field.
 func (r *resourcePoolResolver) Tags(ctx context.Context, obj *ent.ResourcePool) ([]*ent.Tag, error) {
 	if es, err := obj.Edges.TagsOrErr(); !ent.IsNotLoaded(err) {
 		log.Error(ctx, err, "Loading tags for pool ID %d failed", obj.ID)
@@ -986,6 +1039,7 @@ func (r *resourcePoolResolver) Tags(ctx context.Context, obj *ent.ResourcePool) 
 	return tags, err
 }
 
+// AllocatedResources is the resolver for the allocatedResources field.
 func (r *resourcePoolResolver) AllocatedResources(ctx context.Context, obj *ent.ResourcePool, first *int, last *int, before *string, after *string) (*ent.ResourceConnection, error) {
 	//pagination https://relay.dev/graphql/connections.htm
 
@@ -1015,6 +1069,7 @@ func (r *resourcePoolResolver) AllocatedResources(ctx context.Context, obj *ent.
 	return resourceConnection, err
 }
 
+// Pools is the resolver for the Pools field.
 func (r *resourceTypeResolver) Pools(ctx context.Context, obj *ent.ResourceType) ([]*ent.ResourcePool, error) {
 	if es, err := obj.Edges.PoolsOrErr(); !ent.IsNotLoaded(err) {
 		log.Error(ctx, err, "Loading resource pools for resource type %d failed", obj.ID)
@@ -1029,6 +1084,7 @@ func (r *resourceTypeResolver) Pools(ctx context.Context, obj *ent.ResourceType)
 	return pools, err
 }
 
+// PropertyTypes is the resolver for the PropertyTypes field.
 func (r *resourceTypeResolver) PropertyTypes(ctx context.Context, obj *ent.ResourceType) ([]*ent.PropertyType, error) {
 	if es, err := obj.Edges.PropertyTypesOrErr(); !ent.IsNotLoaded(err) {
 		return es, err
@@ -1036,6 +1092,7 @@ func (r *resourceTypeResolver) PropertyTypes(ctx context.Context, obj *ent.Resou
 	return obj.QueryPropertyTypes().All(ctx)
 }
 
+// Pools is the resolver for the Pools field.
 func (r *tagResolver) Pools(ctx context.Context, obj *ent.Tag) ([]*ent.ResourcePool, error) {
 	if es, err := obj.Edges.PoolsOrErr(); !ent.IsNotLoaded(err) {
 		log.Error(ctx, err, "Loading resource pools for tag ID %d failed", obj.ID)

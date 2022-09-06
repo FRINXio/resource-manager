@@ -5,17 +5,13 @@
 package schema
 
 import (
-	"github.com/facebook/ent/schema/index"
-	"github.com/facebookincubator/ent-contrib/entgql"
+	"entgo.io/contrib/entgql"
+	"entgo.io/ent/schema/index"
 	"time"
 
-	"github.com/facebook/ent"
-	"github.com/facebook/ent/schema/edge"
-	"github.com/facebook/ent/schema/field"
-	// "github.com/facebookincubator/symphony/pkg/authz"
-	// "github.com/net-auto/resourceManager/ent/privacy"
-	// "github.com/net-auto/resourceManager/ent/privacy"
-	// "github.com/facebookincubator/symphony/pkg/viewer"
+	"entgo.io/ent"
+	"entgo.io/ent/schema/edge"
+	"entgo.io/ent/schema/field"
 )
 
 // ResourceType holds the schema definition for the ResourceType entity.
@@ -44,7 +40,7 @@ func (ResourceType) Edges() []ent.Edge {
 }
 
 func (ResourceType) Policy() ent.Policy {
-	return RBAC;
+	return RBAC
 }
 
 type Tag struct {
@@ -95,8 +91,9 @@ func (AllocationStrategy) Edges() []ent.Edge {
 }
 
 func (AllocationStrategy) Policy() ent.Policy {
-	return RBAC;
+	return RBAC
 }
+
 // ResourcePool holds the schema definition for the Resource pool entity.
 type ResourcePool struct {
 	ent.Schema
@@ -154,7 +151,7 @@ func (ResourcePool) Indexes() []ent.Index {
 }
 
 func (ResourcePool) Policy() ent.Policy {
-	return RBAC;
+	return RBAC
 }
 
 // Resource holds the schema definition for the Resource entity.
@@ -201,7 +198,7 @@ func (Resource) Indexes() []ent.Index {
 }
 
 func (Resource) Policy() ent.Policy {
-	return ALWAYS_ALLOWED;
+	return ALWAYS_ALLOWED
 }
 
 // PoolProperties hold information on the current pool
@@ -230,5 +227,5 @@ func (PoolProperties) Indexes() []ent.Index {
 }
 
 func (PoolProperties) Policy() ent.Policy {
-	return RBAC;
+	return RBAC
 }

@@ -9,9 +9,9 @@ import (
 	"fmt"
 	"math"
 
-	"github.com/facebook/ent/dialect/sql"
-	"github.com/facebook/ent/dialect/sql/sqlgraph"
-	"github.com/facebook/ent/schema/field"
+	"entgo.io/ent/dialect/sql"
+	"entgo.io/ent/dialect/sql/sqlgraph"
+	"entgo.io/ent/schema/field"
 	"github.com/net-auto/resourceManager/ent/poolproperties"
 	"github.com/net-auto/resourceManager/ent/predicate"
 	"github.com/net-auto/resourceManager/ent/propertytype"
@@ -22,12 +22,12 @@ import (
 // ResourceTypeQuery is the builder for querying ResourceType entities.
 type ResourceTypeQuery struct {
 	config
-	limit      *int
-	offset     *int
-	order      []OrderFunc
-	unique     []string
-	predicates []predicate.ResourceType
-	// eager-loading edges.
+	limit              *int
+	offset             *int
+	unique             *bool
+	order              []OrderFunc
+	fields             []string
+	predicates         []predicate.ResourceType
 	withPropertyTypes  *PropertyTypeQuery
 	withPools          *ResourcePoolQuery
 	withPoolProperties *PoolPropertiesQuery
@@ -36,7 +36,7 @@ type ResourceTypeQuery struct {
 	path func(context.Context) (*sql.Selector, error)
 }
 
-// Where adds a new predicate for the builder.
+// Where adds a new predicate for the ResourceTypeQuery builder.
 func (rtq *ResourceTypeQuery) Where(ps ...predicate.ResourceType) *ResourceTypeQuery {
 	rtq.predicates = append(rtq.predicates, ps...)
 	return rtq
@@ -54,20 +54,27 @@ func (rtq *ResourceTypeQuery) Offset(offset int) *ResourceTypeQuery {
 	return rtq
 }
 
+// Unique configures the query builder to filter duplicate records on query.
+// By default, unique is set to true, and can be disabled using this method.
+func (rtq *ResourceTypeQuery) Unique(unique bool) *ResourceTypeQuery {
+	rtq.unique = &unique
+	return rtq
+}
+
 // Order adds an order step to the query.
 func (rtq *ResourceTypeQuery) Order(o ...OrderFunc) *ResourceTypeQuery {
 	rtq.order = append(rtq.order, o...)
 	return rtq
 }
 
-// QueryPropertyTypes chains the current query on the property_types edge.
+// QueryPropertyTypes chains the current query on the "property_types" edge.
 func (rtq *ResourceTypeQuery) QueryPropertyTypes() *PropertyTypeQuery {
 	query := &PropertyTypeQuery{config: rtq.config}
 	query.path = func(ctx context.Context) (fromU *sql.Selector, err error) {
 		if err := rtq.prepareQuery(ctx); err != nil {
 			return nil, err
 		}
-		selector := rtq.sqlQuery()
+		selector := rtq.sqlQuery(ctx)
 		if err := selector.Err(); err != nil {
 			return nil, err
 		}
@@ -82,14 +89,14 @@ func (rtq *ResourceTypeQuery) QueryPropertyTypes() *PropertyTypeQuery {
 	return query
 }
 
-// QueryPools chains the current query on the pools edge.
+// QueryPools chains the current query on the "pools" edge.
 func (rtq *ResourceTypeQuery) QueryPools() *ResourcePoolQuery {
 	query := &ResourcePoolQuery{config: rtq.config}
 	query.path = func(ctx context.Context) (fromU *sql.Selector, err error) {
 		if err := rtq.prepareQuery(ctx); err != nil {
 			return nil, err
 		}
-		selector := rtq.sqlQuery()
+		selector := rtq.sqlQuery(ctx)
 		if err := selector.Err(); err != nil {
 			return nil, err
 		}
@@ -104,14 +111,14 @@ func (rtq *ResourceTypeQuery) QueryPools() *ResourcePoolQuery {
 	return query
 }
 
-// QueryPoolProperties chains the current query on the pool_properties edge.
+// QueryPoolProperties chains the current query on the "pool_properties" edge.
 func (rtq *ResourceTypeQuery) QueryPoolProperties() *PoolPropertiesQuery {
 	query := &PoolPropertiesQuery{config: rtq.config}
 	query.path = func(ctx context.Context) (fromU *sql.Selector, err error) {
 		if err := rtq.prepareQuery(ctx); err != nil {
 			return nil, err
 		}
-		selector := rtq.sqlQuery()
+		selector := rtq.sqlQuery(ctx)
 		if err := selector.Err(); err != nil {
 			return nil, err
 		}
@@ -126,7 +133,8 @@ func (rtq *ResourceTypeQuery) QueryPoolProperties() *PoolPropertiesQuery {
 	return query
 }
 
-// First returns the first ResourceType entity in the query. Returns *NotFoundError when no resourcetype was found.
+// First returns the first ResourceType entity from the query.
+// Returns a *NotFoundError when no ResourceType was found.
 func (rtq *ResourceTypeQuery) First(ctx context.Context) (*ResourceType, error) {
 	nodes, err := rtq.Limit(1).All(ctx)
 	if err != nil {
@@ -147,7 +155,8 @@ func (rtq *ResourceTypeQuery) FirstX(ctx context.Context) *ResourceType {
 	return node
 }
 
-// FirstID returns the first ResourceType id in the query. Returns *NotFoundError when no id was found.
+// FirstID returns the first ResourceType ID from the query.
+// Returns a *NotFoundError when no ResourceType ID was found.
 func (rtq *ResourceTypeQuery) FirstID(ctx context.Context) (id int, err error) {
 	var ids []int
 	if ids, err = rtq.Limit(1).IDs(ctx); err != nil {
@@ -169,7 +178,9 @@ func (rtq *ResourceTypeQuery) FirstIDX(ctx context.Context) int {
 	return id
 }
 
-// Only returns the only ResourceType entity in the query, returns an error if not exactly one entity was returned.
+// Only returns a single ResourceType entity found by the query, ensuring it only returns one.
+// Returns a *NotSingularError when more than one ResourceType entity is found.
+// Returns a *NotFoundError when no ResourceType entities are found.
 func (rtq *ResourceTypeQuery) Only(ctx context.Context) (*ResourceType, error) {
 	nodes, err := rtq.Limit(2).All(ctx)
 	if err != nil {
@@ -194,7 +205,9 @@ func (rtq *ResourceTypeQuery) OnlyX(ctx context.Context) *ResourceType {
 	return node
 }
 
-// OnlyID returns the only ResourceType id in the query, returns an error if not exactly one id was returned.
+// OnlyID is like Only, but returns the only ResourceType ID in the query.
+// Returns a *NotSingularError when more than one ResourceType ID is found.
+// Returns a *NotFoundError when no entities are found.
 func (rtq *ResourceTypeQuery) OnlyID(ctx context.Context) (id int, err error) {
 	var ids []int
 	if ids, err = rtq.Limit(2).IDs(ctx); err != nil {
@@ -237,7 +250,7 @@ func (rtq *ResourceTypeQuery) AllX(ctx context.Context) []*ResourceType {
 	return nodes
 }
 
-// IDs executes the query and returns a list of ResourceType ids.
+// IDs executes the query and returns a list of ResourceType IDs.
 func (rtq *ResourceTypeQuery) IDs(ctx context.Context) ([]int, error) {
 	var ids []int
 	if err := rtq.Select(resourcetype.FieldID).Scan(ctx, &ids); err != nil {
@@ -289,24 +302,30 @@ func (rtq *ResourceTypeQuery) ExistX(ctx context.Context) bool {
 	return exist
 }
 
-// Clone returns a duplicate of the query builder, including all associated steps. It can be
+// Clone returns a duplicate of the ResourceTypeQuery builder, including all associated steps. It can be
 // used to prepare common query builders and use them differently after the clone is made.
 func (rtq *ResourceTypeQuery) Clone() *ResourceTypeQuery {
+	if rtq == nil {
+		return nil
+	}
 	return &ResourceTypeQuery{
-		config:     rtq.config,
-		limit:      rtq.limit,
-		offset:     rtq.offset,
-		order:      append([]OrderFunc{}, rtq.order...),
-		unique:     append([]string{}, rtq.unique...),
-		predicates: append([]predicate.ResourceType{}, rtq.predicates...),
+		config:             rtq.config,
+		limit:              rtq.limit,
+		offset:             rtq.offset,
+		order:              append([]OrderFunc{}, rtq.order...),
+		predicates:         append([]predicate.ResourceType{}, rtq.predicates...),
+		withPropertyTypes:  rtq.withPropertyTypes.Clone(),
+		withPools:          rtq.withPools.Clone(),
+		withPoolProperties: rtq.withPoolProperties.Clone(),
 		// clone intermediate query.
-		sql:  rtq.sql.Clone(),
-		path: rtq.path,
+		sql:    rtq.sql.Clone(),
+		path:   rtq.path,
+		unique: rtq.unique,
 	}
 }
 
-//  WithPropertyTypes tells the query-builder to eager-loads the nodes that are connected to
-// the "property_types" edge. The optional arguments used to configure the query builder of the edge.
+// WithPropertyTypes tells the query-builder to eager-load the nodes that are connected to
+// the "property_types" edge. The optional arguments are used to configure the query builder of the edge.
 func (rtq *ResourceTypeQuery) WithPropertyTypes(opts ...func(*PropertyTypeQuery)) *ResourceTypeQuery {
 	query := &PropertyTypeQuery{config: rtq.config}
 	for _, opt := range opts {
@@ -316,8 +335,8 @@ func (rtq *ResourceTypeQuery) WithPropertyTypes(opts ...func(*PropertyTypeQuery)
 	return rtq
 }
 
-//  WithPools tells the query-builder to eager-loads the nodes that are connected to
-// the "pools" edge. The optional arguments used to configure the query builder of the edge.
+// WithPools tells the query-builder to eager-load the nodes that are connected to
+// the "pools" edge. The optional arguments are used to configure the query builder of the edge.
 func (rtq *ResourceTypeQuery) WithPools(opts ...func(*ResourcePoolQuery)) *ResourceTypeQuery {
 	query := &ResourcePoolQuery{config: rtq.config}
 	for _, opt := range opts {
@@ -327,8 +346,8 @@ func (rtq *ResourceTypeQuery) WithPools(opts ...func(*ResourcePoolQuery)) *Resou
 	return rtq
 }
 
-//  WithPoolProperties tells the query-builder to eager-loads the nodes that are connected to
-// the "pool_properties" edge. The optional arguments used to configure the query builder of the edge.
+// WithPoolProperties tells the query-builder to eager-load the nodes that are connected to
+// the "pool_properties" edge. The optional arguments are used to configure the query builder of the edge.
 func (rtq *ResourceTypeQuery) WithPoolProperties(opts ...func(*PoolPropertiesQuery)) *ResourceTypeQuery {
 	query := &PoolPropertiesQuery{config: rtq.config}
 	for _, opt := range opts {
@@ -338,7 +357,7 @@ func (rtq *ResourceTypeQuery) WithPoolProperties(opts ...func(*PoolPropertiesQue
 	return rtq
 }
 
-// GroupBy used to group vertices by one or more fields/columns.
+// GroupBy is used to group vertices by one or more fields/columns.
 // It is often used with aggregate functions, like: count, max, mean, min, sum.
 //
 // Example:
@@ -352,20 +371,22 @@ func (rtq *ResourceTypeQuery) WithPoolProperties(opts ...func(*PoolPropertiesQue
 //		GroupBy(resourcetype.FieldName).
 //		Aggregate(ent.Count()).
 //		Scan(ctx, &v)
-//
 func (rtq *ResourceTypeQuery) GroupBy(field string, fields ...string) *ResourceTypeGroupBy {
-	group := &ResourceTypeGroupBy{config: rtq.config}
-	group.fields = append([]string{field}, fields...)
-	group.path = func(ctx context.Context) (prev *sql.Selector, err error) {
+	grbuild := &ResourceTypeGroupBy{config: rtq.config}
+	grbuild.fields = append([]string{field}, fields...)
+	grbuild.path = func(ctx context.Context) (prev *sql.Selector, err error) {
 		if err := rtq.prepareQuery(ctx); err != nil {
 			return nil, err
 		}
-		return rtq.sqlQuery(), nil
+		return rtq.sqlQuery(ctx), nil
 	}
-	return group
+	grbuild.label = resourcetype.Label
+	grbuild.flds, grbuild.scan = &grbuild.fields, grbuild.Scan
+	return grbuild
 }
 
-// Select one or more fields from the given query.
+// Select allows the selection one or more fields/columns for the given query,
+// instead of selecting all fields in the entity.
 //
 // Example:
 //
@@ -376,20 +397,20 @@ func (rtq *ResourceTypeQuery) GroupBy(field string, fields ...string) *ResourceT
 //	client.ResourceType.Query().
 //		Select(resourcetype.FieldName).
 //		Scan(ctx, &v)
-//
-func (rtq *ResourceTypeQuery) Select(field string, fields ...string) *ResourceTypeSelect {
-	selector := &ResourceTypeSelect{config: rtq.config}
-	selector.fields = append([]string{field}, fields...)
-	selector.path = func(ctx context.Context) (prev *sql.Selector, err error) {
-		if err := rtq.prepareQuery(ctx); err != nil {
-			return nil, err
-		}
-		return rtq.sqlQuery(), nil
-	}
-	return selector
+func (rtq *ResourceTypeQuery) Select(fields ...string) *ResourceTypeSelect {
+	rtq.fields = append(rtq.fields, fields...)
+	selbuild := &ResourceTypeSelect{ResourceTypeQuery: rtq}
+	selbuild.label = resourcetype.Label
+	selbuild.flds, selbuild.scan = &rtq.fields, selbuild.Scan
+	return selbuild
 }
 
 func (rtq *ResourceTypeQuery) prepareQuery(ctx context.Context) error {
+	for _, f := range rtq.fields {
+		if !resourcetype.ValidColumn(f) {
+			return &ValidationError{Name: f, err: fmt.Errorf("ent: invalid field %q for query", f)}
+		}
+	}
 	if rtq.path != nil {
 		prev, err := rtq.path(ctx)
 		if err != nil {
@@ -397,13 +418,16 @@ func (rtq *ResourceTypeQuery) prepareQuery(ctx context.Context) error {
 		}
 		rtq.sql = prev
 	}
+	if resourcetype.Policy == nil {
+		return errors.New("ent: uninitialized resourcetype.Policy (forgotten import ent/runtime?)")
+	}
 	if err := resourcetype.Policy.EvalQuery(ctx, rtq); err != nil {
 		return err
 	}
 	return nil
 }
 
-func (rtq *ResourceTypeQuery) sqlAll(ctx context.Context) ([]*ResourceType, error) {
+func (rtq *ResourceTypeQuery) sqlAll(ctx context.Context, hooks ...queryHook) ([]*ResourceType, error) {
 	var (
 		nodes       = []*ResourceType{}
 		_spec       = rtq.querySpec()
@@ -413,19 +437,17 @@ func (rtq *ResourceTypeQuery) sqlAll(ctx context.Context) ([]*ResourceType, erro
 			rtq.withPoolProperties != nil,
 		}
 	)
-	_spec.ScanValues = func() []interface{} {
+	_spec.ScanValues = func(columns []string) ([]any, error) {
+		return (*ResourceType).scanValues(nil, columns)
+	}
+	_spec.Assign = func(columns []string, values []any) error {
 		node := &ResourceType{config: rtq.config}
 		nodes = append(nodes, node)
-		values := node.scanValues()
-		return values
-	}
-	_spec.Assign = func(values ...interface{}) error {
-		if len(nodes) == 0 {
-			return fmt.Errorf("ent: Assign called without calling ScanValues")
-		}
-		node := nodes[len(nodes)-1]
 		node.Edges.loadedTypes = loadedTypes
-		return node.assignValues(values...)
+		return node.assignValues(columns, values)
+	}
+	for i := range hooks {
+		hooks[i](ctx, _spec)
 	}
 	if err := sqlgraph.QueryNodes(ctx, rtq.driver, _spec); err != nil {
 		return nil, err
@@ -433,141 +455,164 @@ func (rtq *ResourceTypeQuery) sqlAll(ctx context.Context) ([]*ResourceType, erro
 	if len(nodes) == 0 {
 		return nodes, nil
 	}
-
 	if query := rtq.withPropertyTypes; query != nil {
-		fks := make([]driver.Value, 0, len(nodes))
-		nodeids := make(map[int]*ResourceType)
-		for i := range nodes {
-			fks = append(fks, nodes[i].ID)
-			nodeids[nodes[i].ID] = nodes[i]
-			nodes[i].Edges.PropertyTypes = []*PropertyType{}
-		}
-		query.withFKs = true
-		query.Where(predicate.PropertyType(func(s *sql.Selector) {
-			s.Where(sql.InValues(resourcetype.PropertyTypesColumn, fks...))
-		}))
-		neighbors, err := query.All(ctx)
-		if err != nil {
+		if err := rtq.loadPropertyTypes(ctx, query, nodes,
+			func(n *ResourceType) { n.Edges.PropertyTypes = []*PropertyType{} },
+			func(n *ResourceType, e *PropertyType) { n.Edges.PropertyTypes = append(n.Edges.PropertyTypes, e) }); err != nil {
 			return nil, err
 		}
-		for _, n := range neighbors {
-			fk := n.resource_type_property_types
-			if fk == nil {
-				return nil, fmt.Errorf(`foreign-key "resource_type_property_types" is nil for node %v`, n.ID)
-			}
-			node, ok := nodeids[*fk]
-			if !ok {
-				return nil, fmt.Errorf(`unexpected foreign-key "resource_type_property_types" returned %v for node %v`, *fk, n.ID)
-			}
-			node.Edges.PropertyTypes = append(node.Edges.PropertyTypes, n)
-		}
 	}
-
 	if query := rtq.withPools; query != nil {
-		fks := make([]driver.Value, 0, len(nodes))
-		nodeids := make(map[int]*ResourceType)
-		for i := range nodes {
-			fks = append(fks, nodes[i].ID)
-			nodeids[nodes[i].ID] = nodes[i]
-			nodes[i].Edges.Pools = []*ResourcePool{}
-		}
-		query.withFKs = true
-		query.Where(predicate.ResourcePool(func(s *sql.Selector) {
-			s.Where(sql.InValues(resourcetype.PoolsColumn, fks...))
-		}))
-		neighbors, err := query.All(ctx)
-		if err != nil {
+		if err := rtq.loadPools(ctx, query, nodes,
+			func(n *ResourceType) { n.Edges.Pools = []*ResourcePool{} },
+			func(n *ResourceType, e *ResourcePool) { n.Edges.Pools = append(n.Edges.Pools, e) }); err != nil {
 			return nil, err
 		}
-		for _, n := range neighbors {
-			fk := n.resource_type_pools
-			if fk == nil {
-				return nil, fmt.Errorf(`foreign-key "resource_type_pools" is nil for node %v`, n.ID)
-			}
-			node, ok := nodeids[*fk]
-			if !ok {
-				return nil, fmt.Errorf(`unexpected foreign-key "resource_type_pools" returned %v for node %v`, *fk, n.ID)
-			}
-			node.Edges.Pools = append(node.Edges.Pools, n)
-		}
 	}
-
 	if query := rtq.withPoolProperties; query != nil {
-		fks := make([]driver.Value, 0, len(nodes))
-		ids := make(map[int]*ResourceType, len(nodes))
-		for _, node := range nodes {
-			ids[node.ID] = node
-			fks = append(fks, node.ID)
-			node.Edges.PoolProperties = []*PoolProperties{}
-		}
-		var (
-			edgeids []int
-			edges   = make(map[int][]*ResourceType)
-		)
-		_spec := &sqlgraph.EdgeQuerySpec{
-			Edge: &sqlgraph.EdgeSpec{
-				Inverse: true,
-				Table:   resourcetype.PoolPropertiesTable,
-				Columns: resourcetype.PoolPropertiesPrimaryKey,
-			},
-			Predicate: func(s *sql.Selector) {
-				s.Where(sql.InValues(resourcetype.PoolPropertiesPrimaryKey[1], fks...))
-			},
-
-			ScanValues: func() [2]interface{} {
-				return [2]interface{}{&sql.NullInt64{}, &sql.NullInt64{}}
-			},
-			Assign: func(out, in interface{}) error {
-				eout, ok := out.(*sql.NullInt64)
-				if !ok || eout == nil {
-					return fmt.Errorf("unexpected id value for edge-out")
-				}
-				ein, ok := in.(*sql.NullInt64)
-				if !ok || ein == nil {
-					return fmt.Errorf("unexpected id value for edge-in")
-				}
-				outValue := int(eout.Int64)
-				inValue := int(ein.Int64)
-				node, ok := ids[outValue]
-				if !ok {
-					return fmt.Errorf("unexpected node id in edges: %v", outValue)
-				}
-				edgeids = append(edgeids, inValue)
-				edges[inValue] = append(edges[inValue], node)
-				return nil
-			},
-		}
-		if err := sqlgraph.QueryEdges(ctx, rtq.driver, _spec); err != nil {
-			return nil, fmt.Errorf(`query edges "pool_properties": %v`, err)
-		}
-		query.Where(poolproperties.IDIn(edgeids...))
-		neighbors, err := query.All(ctx)
-		if err != nil {
+		if err := rtq.loadPoolProperties(ctx, query, nodes,
+			func(n *ResourceType) { n.Edges.PoolProperties = []*PoolProperties{} },
+			func(n *ResourceType, e *PoolProperties) { n.Edges.PoolProperties = append(n.Edges.PoolProperties, e) }); err != nil {
 			return nil, err
 		}
-		for _, n := range neighbors {
-			nodes, ok := edges[n.ID]
-			if !ok {
-				return nil, fmt.Errorf(`unexpected "pool_properties" node returned %v`, n.ID)
-			}
-			for i := range nodes {
-				nodes[i].Edges.PoolProperties = append(nodes[i].Edges.PoolProperties, n)
-			}
+	}
+	return nodes, nil
+}
+
+func (rtq *ResourceTypeQuery) loadPropertyTypes(ctx context.Context, query *PropertyTypeQuery, nodes []*ResourceType, init func(*ResourceType), assign func(*ResourceType, *PropertyType)) error {
+	fks := make([]driver.Value, 0, len(nodes))
+	nodeids := make(map[int]*ResourceType)
+	for i := range nodes {
+		fks = append(fks, nodes[i].ID)
+		nodeids[nodes[i].ID] = nodes[i]
+		if init != nil {
+			init(nodes[i])
 		}
 	}
-
-	return nodes, nil
+	query.withFKs = true
+	query.Where(predicate.PropertyType(func(s *sql.Selector) {
+		s.Where(sql.InValues(resourcetype.PropertyTypesColumn, fks...))
+	}))
+	neighbors, err := query.All(ctx)
+	if err != nil {
+		return err
+	}
+	for _, n := range neighbors {
+		fk := n.resource_type_property_types
+		if fk == nil {
+			return fmt.Errorf(`foreign-key "resource_type_property_types" is nil for node %v`, n.ID)
+		}
+		node, ok := nodeids[*fk]
+		if !ok {
+			return fmt.Errorf(`unexpected foreign-key "resource_type_property_types" returned %v for node %v`, *fk, n.ID)
+		}
+		assign(node, n)
+	}
+	return nil
+}
+func (rtq *ResourceTypeQuery) loadPools(ctx context.Context, query *ResourcePoolQuery, nodes []*ResourceType, init func(*ResourceType), assign func(*ResourceType, *ResourcePool)) error {
+	fks := make([]driver.Value, 0, len(nodes))
+	nodeids := make(map[int]*ResourceType)
+	for i := range nodes {
+		fks = append(fks, nodes[i].ID)
+		nodeids[nodes[i].ID] = nodes[i]
+		if init != nil {
+			init(nodes[i])
+		}
+	}
+	query.withFKs = true
+	query.Where(predicate.ResourcePool(func(s *sql.Selector) {
+		s.Where(sql.InValues(resourcetype.PoolsColumn, fks...))
+	}))
+	neighbors, err := query.All(ctx)
+	if err != nil {
+		return err
+	}
+	for _, n := range neighbors {
+		fk := n.resource_type_pools
+		if fk == nil {
+			return fmt.Errorf(`foreign-key "resource_type_pools" is nil for node %v`, n.ID)
+		}
+		node, ok := nodeids[*fk]
+		if !ok {
+			return fmt.Errorf(`unexpected foreign-key "resource_type_pools" returned %v for node %v`, *fk, n.ID)
+		}
+		assign(node, n)
+	}
+	return nil
+}
+func (rtq *ResourceTypeQuery) loadPoolProperties(ctx context.Context, query *PoolPropertiesQuery, nodes []*ResourceType, init func(*ResourceType), assign func(*ResourceType, *PoolProperties)) error {
+	edgeIDs := make([]driver.Value, len(nodes))
+	byID := make(map[int]*ResourceType)
+	nids := make(map[int]map[*ResourceType]struct{})
+	for i, node := range nodes {
+		edgeIDs[i] = node.ID
+		byID[node.ID] = node
+		if init != nil {
+			init(node)
+		}
+	}
+	query.Where(func(s *sql.Selector) {
+		joinT := sql.Table(resourcetype.PoolPropertiesTable)
+		s.Join(joinT).On(s.C(poolproperties.FieldID), joinT.C(resourcetype.PoolPropertiesPrimaryKey[0]))
+		s.Where(sql.InValues(joinT.C(resourcetype.PoolPropertiesPrimaryKey[1]), edgeIDs...))
+		columns := s.SelectedColumns()
+		s.Select(joinT.C(resourcetype.PoolPropertiesPrimaryKey[1]))
+		s.AppendSelect(columns...)
+		s.SetDistinct(false)
+	})
+	if err := query.prepareQuery(ctx); err != nil {
+		return err
+	}
+	neighbors, err := query.sqlAll(ctx, func(_ context.Context, spec *sqlgraph.QuerySpec) {
+		assign := spec.Assign
+		values := spec.ScanValues
+		spec.ScanValues = func(columns []string) ([]any, error) {
+			values, err := values(columns[1:])
+			if err != nil {
+				return nil, err
+			}
+			return append([]any{new(sql.NullInt64)}, values...), nil
+		}
+		spec.Assign = func(columns []string, values []any) error {
+			outValue := int(values[0].(*sql.NullInt64).Int64)
+			inValue := int(values[1].(*sql.NullInt64).Int64)
+			if nids[inValue] == nil {
+				nids[inValue] = map[*ResourceType]struct{}{byID[outValue]: struct{}{}}
+				return assign(columns[1:], values[1:])
+			}
+			nids[inValue][byID[outValue]] = struct{}{}
+			return nil
+		}
+	})
+	if err != nil {
+		return err
+	}
+	for _, n := range neighbors {
+		nodes, ok := nids[n.ID]
+		if !ok {
+			return fmt.Errorf(`unexpected "pool_properties" node returned %v`, n.ID)
+		}
+		for kn := range nodes {
+			assign(kn, n)
+		}
+	}
+	return nil
 }
 
 func (rtq *ResourceTypeQuery) sqlCount(ctx context.Context) (int, error) {
 	_spec := rtq.querySpec()
+	_spec.Node.Columns = rtq.fields
+	if len(rtq.fields) > 0 {
+		_spec.Unique = rtq.unique != nil && *rtq.unique
+	}
 	return sqlgraph.CountNodes(ctx, rtq.driver, _spec)
 }
 
 func (rtq *ResourceTypeQuery) sqlExist(ctx context.Context) (bool, error) {
 	n, err := rtq.sqlCount(ctx)
 	if err != nil {
-		return false, fmt.Errorf("ent: check existence: %v", err)
+		return false, fmt.Errorf("ent: check existence: %w", err)
 	}
 	return n > 0, nil
 }
@@ -585,6 +630,18 @@ func (rtq *ResourceTypeQuery) querySpec() *sqlgraph.QuerySpec {
 		From:   rtq.sql,
 		Unique: true,
 	}
+	if unique := rtq.unique; unique != nil {
+		_spec.Unique = *unique
+	}
+	if fields := rtq.fields; len(fields) > 0 {
+		_spec.Node.Columns = make([]string, 0, len(fields))
+		_spec.Node.Columns = append(_spec.Node.Columns, resourcetype.FieldID)
+		for i := range fields {
+			if fields[i] != resourcetype.FieldID {
+				_spec.Node.Columns = append(_spec.Node.Columns, fields[i])
+			}
+		}
+	}
 	if ps := rtq.predicates; len(ps) > 0 {
 		_spec.Predicate = func(selector *sql.Selector) {
 			for i := range ps {
@@ -601,26 +658,33 @@ func (rtq *ResourceTypeQuery) querySpec() *sqlgraph.QuerySpec {
 	if ps := rtq.order; len(ps) > 0 {
 		_spec.Order = func(selector *sql.Selector) {
 			for i := range ps {
-				ps[i](selector, resourcetype.ValidColumn)
+				ps[i](selector)
 			}
 		}
 	}
 	return _spec
 }
 
-func (rtq *ResourceTypeQuery) sqlQuery() *sql.Selector {
+func (rtq *ResourceTypeQuery) sqlQuery(ctx context.Context) *sql.Selector {
 	builder := sql.Dialect(rtq.driver.Dialect())
 	t1 := builder.Table(resourcetype.Table)
-	selector := builder.Select(t1.Columns(resourcetype.Columns...)...).From(t1)
+	columns := rtq.fields
+	if len(columns) == 0 {
+		columns = resourcetype.Columns
+	}
+	selector := builder.Select(t1.Columns(columns...)...).From(t1)
 	if rtq.sql != nil {
 		selector = rtq.sql
-		selector.Select(selector.Columns(resourcetype.Columns...)...)
+		selector.Select(selector.Columns(columns...)...)
+	}
+	if rtq.unique != nil && *rtq.unique {
+		selector.Distinct()
 	}
 	for _, p := range rtq.predicates {
 		p(selector)
 	}
 	for _, p := range rtq.order {
-		p(selector, resourcetype.ValidColumn)
+		p(selector)
 	}
 	if offset := rtq.offset; offset != nil {
 		// limit is mandatory for offset clause. We start
@@ -633,9 +697,10 @@ func (rtq *ResourceTypeQuery) sqlQuery() *sql.Selector {
 	return selector
 }
 
-// ResourceTypeGroupBy is the builder for group-by ResourceType entities.
+// ResourceTypeGroupBy is the group-by builder for ResourceType entities.
 type ResourceTypeGroupBy struct {
 	config
+	selector
 	fields []string
 	fns    []AggregateFunc
 	// intermediate query (i.e. traversal path).
@@ -649,8 +714,8 @@ func (rtgb *ResourceTypeGroupBy) Aggregate(fns ...AggregateFunc) *ResourceTypeGr
 	return rtgb
 }
 
-// Scan applies the group-by query and scan the result into the given value.
-func (rtgb *ResourceTypeGroupBy) Scan(ctx context.Context, v interface{}) error {
+// Scan applies the group-by query and scans the result into the given value.
+func (rtgb *ResourceTypeGroupBy) Scan(ctx context.Context, v any) error {
 	query, err := rtgb.path(ctx)
 	if err != nil {
 		return err
@@ -659,202 +724,7 @@ func (rtgb *ResourceTypeGroupBy) Scan(ctx context.Context, v interface{}) error 
 	return rtgb.sqlScan(ctx, v)
 }
 
-// ScanX is like Scan, but panics if an error occurs.
-func (rtgb *ResourceTypeGroupBy) ScanX(ctx context.Context, v interface{}) {
-	if err := rtgb.Scan(ctx, v); err != nil {
-		panic(err)
-	}
-}
-
-// Strings returns list of strings from group-by. It is only allowed when querying group-by with one field.
-func (rtgb *ResourceTypeGroupBy) Strings(ctx context.Context) ([]string, error) {
-	if len(rtgb.fields) > 1 {
-		return nil, errors.New("ent: ResourceTypeGroupBy.Strings is not achievable when grouping more than 1 field")
-	}
-	var v []string
-	if err := rtgb.Scan(ctx, &v); err != nil {
-		return nil, err
-	}
-	return v, nil
-}
-
-// StringsX is like Strings, but panics if an error occurs.
-func (rtgb *ResourceTypeGroupBy) StringsX(ctx context.Context) []string {
-	v, err := rtgb.Strings(ctx)
-	if err != nil {
-		panic(err)
-	}
-	return v
-}
-
-// String returns a single string from group-by. It is only allowed when querying group-by with one field.
-func (rtgb *ResourceTypeGroupBy) String(ctx context.Context) (_ string, err error) {
-	var v []string
-	if v, err = rtgb.Strings(ctx); err != nil {
-		return
-	}
-	switch len(v) {
-	case 1:
-		return v[0], nil
-	case 0:
-		err = &NotFoundError{resourcetype.Label}
-	default:
-		err = fmt.Errorf("ent: ResourceTypeGroupBy.Strings returned %d results when one was expected", len(v))
-	}
-	return
-}
-
-// StringX is like String, but panics if an error occurs.
-func (rtgb *ResourceTypeGroupBy) StringX(ctx context.Context) string {
-	v, err := rtgb.String(ctx)
-	if err != nil {
-		panic(err)
-	}
-	return v
-}
-
-// Ints returns list of ints from group-by. It is only allowed when querying group-by with one field.
-func (rtgb *ResourceTypeGroupBy) Ints(ctx context.Context) ([]int, error) {
-	if len(rtgb.fields) > 1 {
-		return nil, errors.New("ent: ResourceTypeGroupBy.Ints is not achievable when grouping more than 1 field")
-	}
-	var v []int
-	if err := rtgb.Scan(ctx, &v); err != nil {
-		return nil, err
-	}
-	return v, nil
-}
-
-// IntsX is like Ints, but panics if an error occurs.
-func (rtgb *ResourceTypeGroupBy) IntsX(ctx context.Context) []int {
-	v, err := rtgb.Ints(ctx)
-	if err != nil {
-		panic(err)
-	}
-	return v
-}
-
-// Int returns a single int from group-by. It is only allowed when querying group-by with one field.
-func (rtgb *ResourceTypeGroupBy) Int(ctx context.Context) (_ int, err error) {
-	var v []int
-	if v, err = rtgb.Ints(ctx); err != nil {
-		return
-	}
-	switch len(v) {
-	case 1:
-		return v[0], nil
-	case 0:
-		err = &NotFoundError{resourcetype.Label}
-	default:
-		err = fmt.Errorf("ent: ResourceTypeGroupBy.Ints returned %d results when one was expected", len(v))
-	}
-	return
-}
-
-// IntX is like Int, but panics if an error occurs.
-func (rtgb *ResourceTypeGroupBy) IntX(ctx context.Context) int {
-	v, err := rtgb.Int(ctx)
-	if err != nil {
-		panic(err)
-	}
-	return v
-}
-
-// Float64s returns list of float64s from group-by. It is only allowed when querying group-by with one field.
-func (rtgb *ResourceTypeGroupBy) Float64s(ctx context.Context) ([]float64, error) {
-	if len(rtgb.fields) > 1 {
-		return nil, errors.New("ent: ResourceTypeGroupBy.Float64s is not achievable when grouping more than 1 field")
-	}
-	var v []float64
-	if err := rtgb.Scan(ctx, &v); err != nil {
-		return nil, err
-	}
-	return v, nil
-}
-
-// Float64sX is like Float64s, but panics if an error occurs.
-func (rtgb *ResourceTypeGroupBy) Float64sX(ctx context.Context) []float64 {
-	v, err := rtgb.Float64s(ctx)
-	if err != nil {
-		panic(err)
-	}
-	return v
-}
-
-// Float64 returns a single float64 from group-by. It is only allowed when querying group-by with one field.
-func (rtgb *ResourceTypeGroupBy) Float64(ctx context.Context) (_ float64, err error) {
-	var v []float64
-	if v, err = rtgb.Float64s(ctx); err != nil {
-		return
-	}
-	switch len(v) {
-	case 1:
-		return v[0], nil
-	case 0:
-		err = &NotFoundError{resourcetype.Label}
-	default:
-		err = fmt.Errorf("ent: ResourceTypeGroupBy.Float64s returned %d results when one was expected", len(v))
-	}
-	return
-}
-
-// Float64X is like Float64, but panics if an error occurs.
-func (rtgb *ResourceTypeGroupBy) Float64X(ctx context.Context) float64 {
-	v, err := rtgb.Float64(ctx)
-	if err != nil {
-		panic(err)
-	}
-	return v
-}
-
-// Bools returns list of bools from group-by. It is only allowed when querying group-by with one field.
-func (rtgb *ResourceTypeGroupBy) Bools(ctx context.Context) ([]bool, error) {
-	if len(rtgb.fields) > 1 {
-		return nil, errors.New("ent: ResourceTypeGroupBy.Bools is not achievable when grouping more than 1 field")
-	}
-	var v []bool
-	if err := rtgb.Scan(ctx, &v); err != nil {
-		return nil, err
-	}
-	return v, nil
-}
-
-// BoolsX is like Bools, but panics if an error occurs.
-func (rtgb *ResourceTypeGroupBy) BoolsX(ctx context.Context) []bool {
-	v, err := rtgb.Bools(ctx)
-	if err != nil {
-		panic(err)
-	}
-	return v
-}
-
-// Bool returns a single bool from group-by. It is only allowed when querying group-by with one field.
-func (rtgb *ResourceTypeGroupBy) Bool(ctx context.Context) (_ bool, err error) {
-	var v []bool
-	if v, err = rtgb.Bools(ctx); err != nil {
-		return
-	}
-	switch len(v) {
-	case 1:
-		return v[0], nil
-	case 0:
-		err = &NotFoundError{resourcetype.Label}
-	default:
-		err = fmt.Errorf("ent: ResourceTypeGroupBy.Bools returned %d results when one was expected", len(v))
-	}
-	return
-}
-
-// BoolX is like Bool, but panics if an error occurs.
-func (rtgb *ResourceTypeGroupBy) BoolX(ctx context.Context) bool {
-	v, err := rtgb.Bool(ctx)
-	if err != nil {
-		panic(err)
-	}
-	return v
-}
-
-func (rtgb *ResourceTypeGroupBy) sqlScan(ctx context.Context, v interface{}) error {
+func (rtgb *ResourceTypeGroupBy) sqlScan(ctx context.Context, v any) error {
 	for _, f := range rtgb.fields {
 		if !resourcetype.ValidColumn(f) {
 			return &ValidationError{Name: f, err: fmt.Errorf("invalid field %q for group-by", f)}
@@ -874,246 +744,47 @@ func (rtgb *ResourceTypeGroupBy) sqlScan(ctx context.Context, v interface{}) err
 }
 
 func (rtgb *ResourceTypeGroupBy) sqlQuery() *sql.Selector {
-	selector := rtgb.sql
-	columns := make([]string, 0, len(rtgb.fields)+len(rtgb.fns))
-	columns = append(columns, rtgb.fields...)
+	selector := rtgb.sql.Select()
+	aggregation := make([]string, 0, len(rtgb.fns))
 	for _, fn := range rtgb.fns {
-		columns = append(columns, fn(selector, resourcetype.ValidColumn))
+		aggregation = append(aggregation, fn(selector))
 	}
-	return selector.Select(columns...).GroupBy(rtgb.fields...)
+	// If no columns were selected in a custom aggregation function, the default
+	// selection is the fields used for "group-by", and the aggregation functions.
+	if len(selector.SelectedColumns()) == 0 {
+		columns := make([]string, 0, len(rtgb.fields)+len(rtgb.fns))
+		for _, f := range rtgb.fields {
+			columns = append(columns, selector.C(f))
+		}
+		columns = append(columns, aggregation...)
+		selector.Select(columns...)
+	}
+	return selector.GroupBy(selector.Columns(rtgb.fields...)...)
 }
 
-// ResourceTypeSelect is the builder for select fields of ResourceType entities.
+// ResourceTypeSelect is the builder for selecting fields of ResourceType entities.
 type ResourceTypeSelect struct {
-	config
-	fields []string
+	*ResourceTypeQuery
+	selector
 	// intermediate query (i.e. traversal path).
-	sql  *sql.Selector
-	path func(context.Context) (*sql.Selector, error)
+	sql *sql.Selector
 }
 
-// Scan applies the selector query and scan the result into the given value.
-func (rts *ResourceTypeSelect) Scan(ctx context.Context, v interface{}) error {
-	query, err := rts.path(ctx)
-	if err != nil {
+// Scan applies the selector query and scans the result into the given value.
+func (rts *ResourceTypeSelect) Scan(ctx context.Context, v any) error {
+	if err := rts.prepareQuery(ctx); err != nil {
 		return err
 	}
-	rts.sql = query
+	rts.sql = rts.ResourceTypeQuery.sqlQuery(ctx)
 	return rts.sqlScan(ctx, v)
 }
 
-// ScanX is like Scan, but panics if an error occurs.
-func (rts *ResourceTypeSelect) ScanX(ctx context.Context, v interface{}) {
-	if err := rts.Scan(ctx, v); err != nil {
-		panic(err)
-	}
-}
-
-// Strings returns list of strings from selector. It is only allowed when selecting one field.
-func (rts *ResourceTypeSelect) Strings(ctx context.Context) ([]string, error) {
-	if len(rts.fields) > 1 {
-		return nil, errors.New("ent: ResourceTypeSelect.Strings is not achievable when selecting more than 1 field")
-	}
-	var v []string
-	if err := rts.Scan(ctx, &v); err != nil {
-		return nil, err
-	}
-	return v, nil
-}
-
-// StringsX is like Strings, but panics if an error occurs.
-func (rts *ResourceTypeSelect) StringsX(ctx context.Context) []string {
-	v, err := rts.Strings(ctx)
-	if err != nil {
-		panic(err)
-	}
-	return v
-}
-
-// String returns a single string from selector. It is only allowed when selecting one field.
-func (rts *ResourceTypeSelect) String(ctx context.Context) (_ string, err error) {
-	var v []string
-	if v, err = rts.Strings(ctx); err != nil {
-		return
-	}
-	switch len(v) {
-	case 1:
-		return v[0], nil
-	case 0:
-		err = &NotFoundError{resourcetype.Label}
-	default:
-		err = fmt.Errorf("ent: ResourceTypeSelect.Strings returned %d results when one was expected", len(v))
-	}
-	return
-}
-
-// StringX is like String, but panics if an error occurs.
-func (rts *ResourceTypeSelect) StringX(ctx context.Context) string {
-	v, err := rts.String(ctx)
-	if err != nil {
-		panic(err)
-	}
-	return v
-}
-
-// Ints returns list of ints from selector. It is only allowed when selecting one field.
-func (rts *ResourceTypeSelect) Ints(ctx context.Context) ([]int, error) {
-	if len(rts.fields) > 1 {
-		return nil, errors.New("ent: ResourceTypeSelect.Ints is not achievable when selecting more than 1 field")
-	}
-	var v []int
-	if err := rts.Scan(ctx, &v); err != nil {
-		return nil, err
-	}
-	return v, nil
-}
-
-// IntsX is like Ints, but panics if an error occurs.
-func (rts *ResourceTypeSelect) IntsX(ctx context.Context) []int {
-	v, err := rts.Ints(ctx)
-	if err != nil {
-		panic(err)
-	}
-	return v
-}
-
-// Int returns a single int from selector. It is only allowed when selecting one field.
-func (rts *ResourceTypeSelect) Int(ctx context.Context) (_ int, err error) {
-	var v []int
-	if v, err = rts.Ints(ctx); err != nil {
-		return
-	}
-	switch len(v) {
-	case 1:
-		return v[0], nil
-	case 0:
-		err = &NotFoundError{resourcetype.Label}
-	default:
-		err = fmt.Errorf("ent: ResourceTypeSelect.Ints returned %d results when one was expected", len(v))
-	}
-	return
-}
-
-// IntX is like Int, but panics if an error occurs.
-func (rts *ResourceTypeSelect) IntX(ctx context.Context) int {
-	v, err := rts.Int(ctx)
-	if err != nil {
-		panic(err)
-	}
-	return v
-}
-
-// Float64s returns list of float64s from selector. It is only allowed when selecting one field.
-func (rts *ResourceTypeSelect) Float64s(ctx context.Context) ([]float64, error) {
-	if len(rts.fields) > 1 {
-		return nil, errors.New("ent: ResourceTypeSelect.Float64s is not achievable when selecting more than 1 field")
-	}
-	var v []float64
-	if err := rts.Scan(ctx, &v); err != nil {
-		return nil, err
-	}
-	return v, nil
-}
-
-// Float64sX is like Float64s, but panics if an error occurs.
-func (rts *ResourceTypeSelect) Float64sX(ctx context.Context) []float64 {
-	v, err := rts.Float64s(ctx)
-	if err != nil {
-		panic(err)
-	}
-	return v
-}
-
-// Float64 returns a single float64 from selector. It is only allowed when selecting one field.
-func (rts *ResourceTypeSelect) Float64(ctx context.Context) (_ float64, err error) {
-	var v []float64
-	if v, err = rts.Float64s(ctx); err != nil {
-		return
-	}
-	switch len(v) {
-	case 1:
-		return v[0], nil
-	case 0:
-		err = &NotFoundError{resourcetype.Label}
-	default:
-		err = fmt.Errorf("ent: ResourceTypeSelect.Float64s returned %d results when one was expected", len(v))
-	}
-	return
-}
-
-// Float64X is like Float64, but panics if an error occurs.
-func (rts *ResourceTypeSelect) Float64X(ctx context.Context) float64 {
-	v, err := rts.Float64(ctx)
-	if err != nil {
-		panic(err)
-	}
-	return v
-}
-
-// Bools returns list of bools from selector. It is only allowed when selecting one field.
-func (rts *ResourceTypeSelect) Bools(ctx context.Context) ([]bool, error) {
-	if len(rts.fields) > 1 {
-		return nil, errors.New("ent: ResourceTypeSelect.Bools is not achievable when selecting more than 1 field")
-	}
-	var v []bool
-	if err := rts.Scan(ctx, &v); err != nil {
-		return nil, err
-	}
-	return v, nil
-}
-
-// BoolsX is like Bools, but panics if an error occurs.
-func (rts *ResourceTypeSelect) BoolsX(ctx context.Context) []bool {
-	v, err := rts.Bools(ctx)
-	if err != nil {
-		panic(err)
-	}
-	return v
-}
-
-// Bool returns a single bool from selector. It is only allowed when selecting one field.
-func (rts *ResourceTypeSelect) Bool(ctx context.Context) (_ bool, err error) {
-	var v []bool
-	if v, err = rts.Bools(ctx); err != nil {
-		return
-	}
-	switch len(v) {
-	case 1:
-		return v[0], nil
-	case 0:
-		err = &NotFoundError{resourcetype.Label}
-	default:
-		err = fmt.Errorf("ent: ResourceTypeSelect.Bools returned %d results when one was expected", len(v))
-	}
-	return
-}
-
-// BoolX is like Bool, but panics if an error occurs.
-func (rts *ResourceTypeSelect) BoolX(ctx context.Context) bool {
-	v, err := rts.Bool(ctx)
-	if err != nil {
-		panic(err)
-	}
-	return v
-}
-
-func (rts *ResourceTypeSelect) sqlScan(ctx context.Context, v interface{}) error {
-	for _, f := range rts.fields {
-		if !resourcetype.ValidColumn(f) {
-			return &ValidationError{Name: f, err: fmt.Errorf("invalid field %q for selection", f)}
-		}
-	}
+func (rts *ResourceTypeSelect) sqlScan(ctx context.Context, v any) error {
 	rows := &sql.Rows{}
-	query, args := rts.sqlQuery().Query()
+	query, args := rts.sql.Query()
 	if err := rts.driver.Query(ctx, query, args, rows); err != nil {
 		return err
 	}
 	defer rows.Close()
 	return sql.ScanSlice(rows, v)
-}
-
-func (rts *ResourceTypeSelect) sqlQuery() sql.Querier {
-	selector := rts.sql
-	selector.Select(selector.Columns(rts.fields...)...)
-	return selector
 }

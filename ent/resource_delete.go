@@ -6,9 +6,9 @@ import (
 	"context"
 	"fmt"
 
-	"github.com/facebook/ent/dialect/sql"
-	"github.com/facebook/ent/dialect/sql/sqlgraph"
-	"github.com/facebook/ent/schema/field"
+	"entgo.io/ent/dialect/sql"
+	"entgo.io/ent/dialect/sql/sqlgraph"
+	"entgo.io/ent/schema/field"
 	"github.com/net-auto/resourceManager/ent/predicate"
 	"github.com/net-auto/resourceManager/ent/resource"
 )
@@ -20,9 +20,9 @@ type ResourceDelete struct {
 	mutation *ResourceMutation
 }
 
-// Where adds a new predicate to the delete builder.
+// Where appends a list predicates to the ResourceDelete builder.
 func (rd *ResourceDelete) Where(ps ...predicate.Resource) *ResourceDelete {
-	rd.mutation.predicates = append(rd.mutation.predicates, ps...)
+	rd.mutation.Where(ps...)
 	return rd
 }
 
@@ -46,6 +46,9 @@ func (rd *ResourceDelete) Exec(ctx context.Context) (int, error) {
 			return affected, err
 		})
 		for i := len(rd.hooks) - 1; i >= 0; i-- {
+			if rd.hooks[i] == nil {
+				return 0, fmt.Errorf("ent: uninitialized hook (forgotten import ent/runtime?)")
+			}
 			mut = rd.hooks[i](mut)
 		}
 		if _, err := mut.Mutate(ctx, rd.mutation); err != nil {
@@ -81,7 +84,11 @@ func (rd *ResourceDelete) sqlExec(ctx context.Context) (int, error) {
 			}
 		}
 	}
-	return sqlgraph.DeleteNodes(ctx, rd.driver, _spec)
+	affected, err := sqlgraph.DeleteNodes(ctx, rd.driver, _spec)
+	if err != nil && sqlgraph.IsConstraintError(err) {
+		err = &ConstraintError{msg: err.Error(), wrap: err}
+	}
+	return affected, err
 }
 
 // ResourceDeleteOne is the builder for deleting a single Resource entity.

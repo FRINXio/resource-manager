@@ -7,8 +7,8 @@ import (
 	"errors"
 	"fmt"
 
-	"github.com/facebook/ent/dialect/sql/sqlgraph"
-	"github.com/facebook/ent/schema/field"
+	"entgo.io/ent/dialect/sql/sqlgraph"
+	"entgo.io/ent/schema/field"
 	"github.com/net-auto/resourceManager/ent/resourcepool"
 	"github.com/net-auto/resourceManager/ent/tag"
 )
@@ -20,19 +20,19 @@ type TagCreate struct {
 	hooks    []Hook
 }
 
-// SetTag sets the tag field.
+// SetTag sets the "tag" field.
 func (tc *TagCreate) SetTag(s string) *TagCreate {
 	tc.mutation.SetTag(s)
 	return tc
 }
 
-// AddPoolIDs adds the pools edge to ResourcePool by ids.
+// AddPoolIDs adds the "pools" edge to the ResourcePool entity by IDs.
 func (tc *TagCreate) AddPoolIDs(ids ...int) *TagCreate {
 	tc.mutation.AddPoolIDs(ids...)
 	return tc
 }
 
-// AddPools adds the pools edges to ResourcePool.
+// AddPools adds the "pools" edges to the ResourcePool entity.
 func (tc *TagCreate) AddPools(r ...*ResourcePool) *TagCreate {
 	ids := make([]int, len(r))
 	for i := range r {
@@ -67,16 +67,28 @@ func (tc *TagCreate) Save(ctx context.Context) (*Tag, error) {
 				return nil, err
 			}
 			tc.mutation = mutation
-			node, err = tc.sqlSave(ctx)
+			if node, err = tc.sqlSave(ctx); err != nil {
+				return nil, err
+			}
+			mutation.id = &node.ID
 			mutation.done = true
 			return node, err
 		})
 		for i := len(tc.hooks) - 1; i >= 0; i-- {
+			if tc.hooks[i] == nil {
+				return nil, fmt.Errorf("ent: uninitialized hook (forgotten import ent/runtime?)")
+			}
 			mut = tc.hooks[i](mut)
 		}
-		if _, err := mut.Mutate(ctx, tc.mutation); err != nil {
+		v, err := mut.Mutate(ctx, tc.mutation)
+		if err != nil {
 			return nil, err
 		}
+		nv, ok := v.(*Tag)
+		if !ok {
+			return nil, fmt.Errorf("unexpected node type %T returned from TagMutation", v)
+		}
+		node = nv
 	}
 	return node, err
 }
@@ -90,14 +102,27 @@ func (tc *TagCreate) SaveX(ctx context.Context) *Tag {
 	return v
 }
 
+// Exec executes the query.
+func (tc *TagCreate) Exec(ctx context.Context) error {
+	_, err := tc.Save(ctx)
+	return err
+}
+
+// ExecX is like Exec, but panics if an error occurs.
+func (tc *TagCreate) ExecX(ctx context.Context) {
+	if err := tc.Exec(ctx); err != nil {
+		panic(err)
+	}
+}
+
 // check runs all checks and user-defined validators on the builder.
 func (tc *TagCreate) check() error {
 	if _, ok := tc.mutation.Tag(); !ok {
-		return &ValidationError{Name: "tag", err: errors.New("ent: missing required field \"tag\"")}
+		return &ValidationError{Name: "tag", err: errors.New(`ent: missing required field "Tag.tag"`)}
 	}
 	if v, ok := tc.mutation.Tag(); ok {
 		if err := tag.TagValidator(v); err != nil {
-			return &ValidationError{Name: "tag", err: fmt.Errorf("ent: validator failed for field \"tag\": %w", err)}
+			return &ValidationError{Name: "tag", err: fmt.Errorf(`ent: validator failed for field "Tag.tag": %w`, err)}
 		}
 	}
 	return nil
@@ -106,8 +131,8 @@ func (tc *TagCreate) check() error {
 func (tc *TagCreate) sqlSave(ctx context.Context) (*Tag, error) {
 	_node, _spec := tc.createSpec()
 	if err := sqlgraph.CreateNode(ctx, tc.driver, _spec); err != nil {
-		if cerr, ok := isSQLConstraintError(err); ok {
-			err = cerr
+		if sqlgraph.IsConstraintError(err) {
+			err = &ConstraintError{msg: err.Error(), wrap: err}
 		}
 		return nil, err
 	}
@@ -157,7 +182,7 @@ func (tc *TagCreate) createSpec() (*Tag, *sqlgraph.CreateSpec) {
 	return _node, _spec
 }
 
-// TagCreateBulk is the builder for creating a bulk of Tag entities.
+// TagCreateBulk is the builder for creating many Tag entities in bulk.
 type TagCreateBulk struct {
 	config
 	builders []*TagCreate
@@ -185,19 +210,23 @@ func (tcb *TagCreateBulk) Save(ctx context.Context) ([]*Tag, error) {
 				if i < len(mutators)-1 {
 					_, err = mutators[i+1].Mutate(root, tcb.builders[i+1].mutation)
 				} else {
+					spec := &sqlgraph.BatchCreateSpec{Nodes: specs}
 					// Invoke the actual operation on the latest mutation in the chain.
-					if err = sqlgraph.BatchCreate(ctx, tcb.driver, &sqlgraph.BatchCreateSpec{Nodes: specs}); err != nil {
-						if cerr, ok := isSQLConstraintError(err); ok {
-							err = cerr
+					if err = sqlgraph.BatchCreate(ctx, tcb.driver, spec); err != nil {
+						if sqlgraph.IsConstraintError(err) {
+							err = &ConstraintError{msg: err.Error(), wrap: err}
 						}
 					}
 				}
-				mutation.done = true
 				if err != nil {
 					return nil, err
 				}
-				id := specs[i].ID.Value.(int64)
-				nodes[i].ID = int(id)
+				mutation.id = &nodes[i].ID
+				if specs[i].ID.Value != nil {
+					id := specs[i].ID.Value.(int64)
+					nodes[i].ID = int(id)
+				}
+				mutation.done = true
 				return nodes[i], nil
 			})
 			for i := len(builder.hooks) - 1; i >= 0; i-- {
@@ -214,11 +243,24 @@ func (tcb *TagCreateBulk) Save(ctx context.Context) ([]*Tag, error) {
 	return nodes, nil
 }
 
-// SaveX calls Save and panics if Save returns an error.
+// SaveX is like Save, but panics if an error occurs.
 func (tcb *TagCreateBulk) SaveX(ctx context.Context) []*Tag {
 	v, err := tcb.Save(ctx)
 	if err != nil {
 		panic(err)
 	}
 	return v
+}
+
+// Exec executes the query.
+func (tcb *TagCreateBulk) Exec(ctx context.Context) error {
+	_, err := tcb.Save(ctx)
+	return err
+}
+
+// ExecX is like Exec, but panics if an error occurs.
+func (tcb *TagCreateBulk) ExecX(ctx context.Context) {
+	if err := tcb.Exec(ctx); err != nil {
+		panic(err)
+	}
 }

@@ -3,11 +3,10 @@ package pools
 import (
 	"encoding/json"
 	"github.com/net-auto/resourceManager/ent/allocationstrategy"
+	"github.com/net-auto/resourceManager/graph/graphql/model"
 	"reflect"
 	"testing"
 	"time"
-
-	"github.com/net-auto/resourceManager/graph/graphql/model"
 )
 
 func TestPrefixLines(t *testing.T) {

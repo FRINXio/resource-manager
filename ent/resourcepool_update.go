@@ -4,11 +4,12 @@ package ent
 
 import (
 	"context"
+	"errors"
 	"fmt"
 
-	"github.com/facebook/ent/dialect/sql"
-	"github.com/facebook/ent/dialect/sql/sqlgraph"
-	"github.com/facebook/ent/schema/field"
+	"entgo.io/ent/dialect/sql"
+	"entgo.io/ent/dialect/sql/sqlgraph"
+	"entgo.io/ent/schema/field"
 	"github.com/net-auto/resourceManager/ent/allocationstrategy"
 	"github.com/net-auto/resourceManager/ent/poolproperties"
 	"github.com/net-auto/resourceManager/ent/predicate"
@@ -25,25 +26,25 @@ type ResourcePoolUpdate struct {
 	mutation *ResourcePoolMutation
 }
 
-// Where adds a new predicate for the builder.
+// Where appends a list predicates to the ResourcePoolUpdate builder.
 func (rpu *ResourcePoolUpdate) Where(ps ...predicate.ResourcePool) *ResourcePoolUpdate {
-	rpu.mutation.predicates = append(rpu.mutation.predicates, ps...)
+	rpu.mutation.Where(ps...)
 	return rpu
 }
 
-// SetName sets the name field.
+// SetName sets the "name" field.
 func (rpu *ResourcePoolUpdate) SetName(s string) *ResourcePoolUpdate {
 	rpu.mutation.SetName(s)
 	return rpu
 }
 
-// SetDescription sets the description field.
+// SetDescription sets the "description" field.
 func (rpu *ResourcePoolUpdate) SetDescription(s string) *ResourcePoolUpdate {
 	rpu.mutation.SetDescription(s)
 	return rpu
 }
 
-// SetNillableDescription sets the description field if the given value is not nil.
+// SetNillableDescription sets the "description" field if the given value is not nil.
 func (rpu *ResourcePoolUpdate) SetNillableDescription(s *string) *ResourcePoolUpdate {
 	if s != nil {
 		rpu.SetDescription(*s)
@@ -51,26 +52,26 @@ func (rpu *ResourcePoolUpdate) SetNillableDescription(s *string) *ResourcePoolUp
 	return rpu
 }
 
-// ClearDescription clears the value of description.
+// ClearDescription clears the value of the "description" field.
 func (rpu *ResourcePoolUpdate) ClearDescription() *ResourcePoolUpdate {
 	rpu.mutation.ClearDescription()
 	return rpu
 }
 
-// SetPoolType sets the pool_type field.
+// SetPoolType sets the "pool_type" field.
 func (rpu *ResourcePoolUpdate) SetPoolType(rt resourcepool.PoolType) *ResourcePoolUpdate {
 	rpu.mutation.SetPoolType(rt)
 	return rpu
 }
 
-// SetDealocationSafetyPeriod sets the dealocation_safety_period field.
+// SetDealocationSafetyPeriod sets the "dealocation_safety_period" field.
 func (rpu *ResourcePoolUpdate) SetDealocationSafetyPeriod(i int) *ResourcePoolUpdate {
 	rpu.mutation.ResetDealocationSafetyPeriod()
 	rpu.mutation.SetDealocationSafetyPeriod(i)
 	return rpu
 }
 
-// SetNillableDealocationSafetyPeriod sets the dealocation_safety_period field if the given value is not nil.
+// SetNillableDealocationSafetyPeriod sets the "dealocation_safety_period" field if the given value is not nil.
 func (rpu *ResourcePoolUpdate) SetNillableDealocationSafetyPeriod(i *int) *ResourcePoolUpdate {
 	if i != nil {
 		rpu.SetDealocationSafetyPeriod(*i)
@@ -78,19 +79,19 @@ func (rpu *ResourcePoolUpdate) SetNillableDealocationSafetyPeriod(i *int) *Resou
 	return rpu
 }
 
-// AddDealocationSafetyPeriod adds i to dealocation_safety_period.
+// AddDealocationSafetyPeriod adds i to the "dealocation_safety_period" field.
 func (rpu *ResourcePoolUpdate) AddDealocationSafetyPeriod(i int) *ResourcePoolUpdate {
 	rpu.mutation.AddDealocationSafetyPeriod(i)
 	return rpu
 }
 
-// SetResourceTypeID sets the resource_type edge to ResourceType by id.
+// SetResourceTypeID sets the "resource_type" edge to the ResourceType entity by ID.
 func (rpu *ResourcePoolUpdate) SetResourceTypeID(id int) *ResourcePoolUpdate {
 	rpu.mutation.SetResourceTypeID(id)
 	return rpu
 }
 
-// SetNillableResourceTypeID sets the resource_type edge to ResourceType by id if the given value is not nil.
+// SetNillableResourceTypeID sets the "resource_type" edge to the ResourceType entity by ID if the given value is not nil.
 func (rpu *ResourcePoolUpdate) SetNillableResourceTypeID(id *int) *ResourcePoolUpdate {
 	if id != nil {
 		rpu = rpu.SetResourceTypeID(*id)
@@ -98,18 +99,18 @@ func (rpu *ResourcePoolUpdate) SetNillableResourceTypeID(id *int) *ResourcePoolU
 	return rpu
 }
 
-// SetResourceType sets the resource_type edge to ResourceType.
+// SetResourceType sets the "resource_type" edge to the ResourceType entity.
 func (rpu *ResourcePoolUpdate) SetResourceType(r *ResourceType) *ResourcePoolUpdate {
 	return rpu.SetResourceTypeID(r.ID)
 }
 
-// AddTagIDs adds the tags edge to Tag by ids.
+// AddTagIDs adds the "tags" edge to the Tag entity by IDs.
 func (rpu *ResourcePoolUpdate) AddTagIDs(ids ...int) *ResourcePoolUpdate {
 	rpu.mutation.AddTagIDs(ids...)
 	return rpu
 }
 
-// AddTags adds the tags edges to Tag.
+// AddTags adds the "tags" edges to the Tag entity.
 func (rpu *ResourcePoolUpdate) AddTags(t ...*Tag) *ResourcePoolUpdate {
 	ids := make([]int, len(t))
 	for i := range t {
@@ -118,13 +119,13 @@ func (rpu *ResourcePoolUpdate) AddTags(t ...*Tag) *ResourcePoolUpdate {
 	return rpu.AddTagIDs(ids...)
 }
 
-// AddClaimIDs adds the claims edge to Resource by ids.
+// AddClaimIDs adds the "claims" edge to the Resource entity by IDs.
 func (rpu *ResourcePoolUpdate) AddClaimIDs(ids ...int) *ResourcePoolUpdate {
 	rpu.mutation.AddClaimIDs(ids...)
 	return rpu
 }
 
-// AddClaims adds the claims edges to Resource.
+// AddClaims adds the "claims" edges to the Resource entity.
 func (rpu *ResourcePoolUpdate) AddClaims(r ...*Resource) *ResourcePoolUpdate {
 	ids := make([]int, len(r))
 	for i := range r {
@@ -133,13 +134,13 @@ func (rpu *ResourcePoolUpdate) AddClaims(r ...*Resource) *ResourcePoolUpdate {
 	return rpu.AddClaimIDs(ids...)
 }
 
-// SetPoolPropertiesID sets the poolProperties edge to PoolProperties by id.
+// SetPoolPropertiesID sets the "poolProperties" edge to the PoolProperties entity by ID.
 func (rpu *ResourcePoolUpdate) SetPoolPropertiesID(id int) *ResourcePoolUpdate {
 	rpu.mutation.SetPoolPropertiesID(id)
 	return rpu
 }
 
-// SetNillablePoolPropertiesID sets the poolProperties edge to PoolProperties by id if the given value is not nil.
+// SetNillablePoolPropertiesID sets the "poolProperties" edge to the PoolProperties entity by ID if the given value is not nil.
 func (rpu *ResourcePoolUpdate) SetNillablePoolPropertiesID(id *int) *ResourcePoolUpdate {
 	if id != nil {
 		rpu = rpu.SetPoolPropertiesID(*id)
@@ -147,18 +148,18 @@ func (rpu *ResourcePoolUpdate) SetNillablePoolPropertiesID(id *int) *ResourcePoo
 	return rpu
 }
 
-// SetPoolProperties sets the poolProperties edge to PoolProperties.
+// SetPoolProperties sets the "poolProperties" edge to the PoolProperties entity.
 func (rpu *ResourcePoolUpdate) SetPoolProperties(p *PoolProperties) *ResourcePoolUpdate {
 	return rpu.SetPoolPropertiesID(p.ID)
 }
 
-// SetAllocationStrategyID sets the allocation_strategy edge to AllocationStrategy by id.
+// SetAllocationStrategyID sets the "allocation_strategy" edge to the AllocationStrategy entity by ID.
 func (rpu *ResourcePoolUpdate) SetAllocationStrategyID(id int) *ResourcePoolUpdate {
 	rpu.mutation.SetAllocationStrategyID(id)
 	return rpu
 }
 
-// SetNillableAllocationStrategyID sets the allocation_strategy edge to AllocationStrategy by id if the given value is not nil.
+// SetNillableAllocationStrategyID sets the "allocation_strategy" edge to the AllocationStrategy entity by ID if the given value is not nil.
 func (rpu *ResourcePoolUpdate) SetNillableAllocationStrategyID(id *int) *ResourcePoolUpdate {
 	if id != nil {
 		rpu = rpu.SetAllocationStrategyID(*id)
@@ -166,18 +167,18 @@ func (rpu *ResourcePoolUpdate) SetNillableAllocationStrategyID(id *int) *Resourc
 	return rpu
 }
 
-// SetAllocationStrategy sets the allocation_strategy edge to AllocationStrategy.
+// SetAllocationStrategy sets the "allocation_strategy" edge to the AllocationStrategy entity.
 func (rpu *ResourcePoolUpdate) SetAllocationStrategy(a *AllocationStrategy) *ResourcePoolUpdate {
 	return rpu.SetAllocationStrategyID(a.ID)
 }
 
-// SetParentResourceID sets the parent_resource edge to Resource by id.
+// SetParentResourceID sets the "parent_resource" edge to the Resource entity by ID.
 func (rpu *ResourcePoolUpdate) SetParentResourceID(id int) *ResourcePoolUpdate {
 	rpu.mutation.SetParentResourceID(id)
 	return rpu
 }
 
-// SetNillableParentResourceID sets the parent_resource edge to Resource by id if the given value is not nil.
+// SetNillableParentResourceID sets the "parent_resource" edge to the Resource entity by ID if the given value is not nil.
 func (rpu *ResourcePoolUpdate) SetNillableParentResourceID(id *int) *ResourcePoolUpdate {
 	if id != nil {
 		rpu = rpu.SetParentResourceID(*id)
@@ -185,7 +186,7 @@ func (rpu *ResourcePoolUpdate) SetNillableParentResourceID(id *int) *ResourcePoo
 	return rpu
 }
 
-// SetParentResource sets the parent_resource edge to Resource.
+// SetParentResource sets the "parent_resource" edge to the Resource entity.
 func (rpu *ResourcePoolUpdate) SetParentResource(r *Resource) *ResourcePoolUpdate {
 	return rpu.SetParentResourceID(r.ID)
 }
@@ -195,25 +196,25 @@ func (rpu *ResourcePoolUpdate) Mutation() *ResourcePoolMutation {
 	return rpu.mutation
 }
 
-// ClearResourceType clears the "resource_type" edge to type ResourceType.
+// ClearResourceType clears the "resource_type" edge to the ResourceType entity.
 func (rpu *ResourcePoolUpdate) ClearResourceType() *ResourcePoolUpdate {
 	rpu.mutation.ClearResourceType()
 	return rpu
 }
 
-// ClearTags clears all "tags" edges to type Tag.
+// ClearTags clears all "tags" edges to the Tag entity.
 func (rpu *ResourcePoolUpdate) ClearTags() *ResourcePoolUpdate {
 	rpu.mutation.ClearTags()
 	return rpu
 }
 
-// RemoveTagIDs removes the tags edge to Tag by ids.
+// RemoveTagIDs removes the "tags" edge to Tag entities by IDs.
 func (rpu *ResourcePoolUpdate) RemoveTagIDs(ids ...int) *ResourcePoolUpdate {
 	rpu.mutation.RemoveTagIDs(ids...)
 	return rpu
 }
 
-// RemoveTags removes tags edges to Tag.
+// RemoveTags removes "tags" edges to Tag entities.
 func (rpu *ResourcePoolUpdate) RemoveTags(t ...*Tag) *ResourcePoolUpdate {
 	ids := make([]int, len(t))
 	for i := range t {
@@ -222,19 +223,19 @@ func (rpu *ResourcePoolUpdate) RemoveTags(t ...*Tag) *ResourcePoolUpdate {
 	return rpu.RemoveTagIDs(ids...)
 }
 
-// ClearClaims clears all "claims" edges to type Resource.
+// ClearClaims clears all "claims" edges to the Resource entity.
 func (rpu *ResourcePoolUpdate) ClearClaims() *ResourcePoolUpdate {
 	rpu.mutation.ClearClaims()
 	return rpu
 }
 
-// RemoveClaimIDs removes the claims edge to Resource by ids.
+// RemoveClaimIDs removes the "claims" edge to Resource entities by IDs.
 func (rpu *ResourcePoolUpdate) RemoveClaimIDs(ids ...int) *ResourcePoolUpdate {
 	rpu.mutation.RemoveClaimIDs(ids...)
 	return rpu
 }
 
-// RemoveClaims removes claims edges to Resource.
+// RemoveClaims removes "claims" edges to Resource entities.
 func (rpu *ResourcePoolUpdate) RemoveClaims(r ...*Resource) *ResourcePoolUpdate {
 	ids := make([]int, len(r))
 	for i := range r {
@@ -243,25 +244,25 @@ func (rpu *ResourcePoolUpdate) RemoveClaims(r ...*Resource) *ResourcePoolUpdate 
 	return rpu.RemoveClaimIDs(ids...)
 }
 
-// ClearPoolProperties clears the "poolProperties" edge to type PoolProperties.
+// ClearPoolProperties clears the "poolProperties" edge to the PoolProperties entity.
 func (rpu *ResourcePoolUpdate) ClearPoolProperties() *ResourcePoolUpdate {
 	rpu.mutation.ClearPoolProperties()
 	return rpu
 }
 
-// ClearAllocationStrategy clears the "allocation_strategy" edge to type AllocationStrategy.
+// ClearAllocationStrategy clears the "allocation_strategy" edge to the AllocationStrategy entity.
 func (rpu *ResourcePoolUpdate) ClearAllocationStrategy() *ResourcePoolUpdate {
 	rpu.mutation.ClearAllocationStrategy()
 	return rpu
 }
 
-// ClearParentResource clears the "parent_resource" edge to type Resource.
+// ClearParentResource clears the "parent_resource" edge to the Resource entity.
 func (rpu *ResourcePoolUpdate) ClearParentResource() *ResourcePoolUpdate {
 	rpu.mutation.ClearParentResource()
 	return rpu
 }
 
-// Save executes the query and returns the number of rows/vertices matched by this operation.
+// Save executes the query and returns the number of nodes affected by the update operation.
 func (rpu *ResourcePoolUpdate) Save(ctx context.Context) (int, error) {
 	var (
 		err      error
@@ -287,6 +288,9 @@ func (rpu *ResourcePoolUpdate) Save(ctx context.Context) (int, error) {
 			return affected, err
 		})
 		for i := len(rpu.hooks) - 1; i >= 0; i-- {
+			if rpu.hooks[i] == nil {
+				return 0, fmt.Errorf("ent: uninitialized hook (forgotten import ent/runtime?)")
+			}
 			mut = rpu.hooks[i](mut)
 		}
 		if _, err := mut.Mutate(ctx, rpu.mutation); err != nil {
@@ -322,12 +326,12 @@ func (rpu *ResourcePoolUpdate) ExecX(ctx context.Context) {
 func (rpu *ResourcePoolUpdate) check() error {
 	if v, ok := rpu.mutation.Name(); ok {
 		if err := resourcepool.NameValidator(v); err != nil {
-			return &ValidationError{Name: "name", err: fmt.Errorf("ent: validator failed for field \"name\": %w", err)}
+			return &ValidationError{Name: "name", err: fmt.Errorf(`ent: validator failed for field "ResourcePool.name": %w`, err)}
 		}
 	}
 	if v, ok := rpu.mutation.PoolType(); ok {
 		if err := resourcepool.PoolTypeValidator(v); err != nil {
-			return &ValidationError{Name: "pool_type", err: fmt.Errorf("ent: validator failed for field \"pool_type\": %w", err)}
+			return &ValidationError{Name: "pool_type", err: fmt.Errorf(`ent: validator failed for field "ResourcePool.pool_type": %w`, err)}
 		}
 	}
 	return nil
@@ -643,8 +647,8 @@ func (rpu *ResourcePoolUpdate) sqlSave(ctx context.Context) (n int, err error) {
 	if n, err = sqlgraph.UpdateNodes(ctx, rpu.driver, _spec); err != nil {
 		if _, ok := err.(*sqlgraph.NotFoundError); ok {
 			err = &NotFoundError{resourcepool.Label}
-		} else if cerr, ok := isSQLConstraintError(err); ok {
-			err = cerr
+		} else if sqlgraph.IsConstraintError(err) {
+			err = &ConstraintError{msg: err.Error(), wrap: err}
 		}
 		return 0, err
 	}
@@ -654,23 +658,24 @@ func (rpu *ResourcePoolUpdate) sqlSave(ctx context.Context) (n int, err error) {
 // ResourcePoolUpdateOne is the builder for updating a single ResourcePool entity.
 type ResourcePoolUpdateOne struct {
 	config
+	fields   []string
 	hooks    []Hook
 	mutation *ResourcePoolMutation
 }
 
-// SetName sets the name field.
+// SetName sets the "name" field.
 func (rpuo *ResourcePoolUpdateOne) SetName(s string) *ResourcePoolUpdateOne {
 	rpuo.mutation.SetName(s)
 	return rpuo
 }
 
-// SetDescription sets the description field.
+// SetDescription sets the "description" field.
 func (rpuo *ResourcePoolUpdateOne) SetDescription(s string) *ResourcePoolUpdateOne {
 	rpuo.mutation.SetDescription(s)
 	return rpuo
 }
 
-// SetNillableDescription sets the description field if the given value is not nil.
+// SetNillableDescription sets the "description" field if the given value is not nil.
 func (rpuo *ResourcePoolUpdateOne) SetNillableDescription(s *string) *ResourcePoolUpdateOne {
 	if s != nil {
 		rpuo.SetDescription(*s)
@@ -678,26 +683,26 @@ func (rpuo *ResourcePoolUpdateOne) SetNillableDescription(s *string) *ResourcePo
 	return rpuo
 }
 
-// ClearDescription clears the value of description.
+// ClearDescription clears the value of the "description" field.
 func (rpuo *ResourcePoolUpdateOne) ClearDescription() *ResourcePoolUpdateOne {
 	rpuo.mutation.ClearDescription()
 	return rpuo
 }
 
-// SetPoolType sets the pool_type field.
+// SetPoolType sets the "pool_type" field.
 func (rpuo *ResourcePoolUpdateOne) SetPoolType(rt resourcepool.PoolType) *ResourcePoolUpdateOne {
 	rpuo.mutation.SetPoolType(rt)
 	return rpuo
 }
 
-// SetDealocationSafetyPeriod sets the dealocation_safety_period field.
+// SetDealocationSafetyPeriod sets the "dealocation_safety_period" field.
 func (rpuo *ResourcePoolUpdateOne) SetDealocationSafetyPeriod(i int) *ResourcePoolUpdateOne {
 	rpuo.mutation.ResetDealocationSafetyPeriod()
 	rpuo.mutation.SetDealocationSafetyPeriod(i)
 	return rpuo
 }
 
-// SetNillableDealocationSafetyPeriod sets the dealocation_safety_period field if the given value is not nil.
+// SetNillableDealocationSafetyPeriod sets the "dealocation_safety_period" field if the given value is not nil.
 func (rpuo *ResourcePoolUpdateOne) SetNillableDealocationSafetyPeriod(i *int) *ResourcePoolUpdateOne {
 	if i != nil {
 		rpuo.SetDealocationSafetyPeriod(*i)
@@ -705,19 +710,19 @@ func (rpuo *ResourcePoolUpdateOne) SetNillableDealocationSafetyPeriod(i *int) *R
 	return rpuo
 }
 
-// AddDealocationSafetyPeriod adds i to dealocation_safety_period.
+// AddDealocationSafetyPeriod adds i to the "dealocation_safety_period" field.
 func (rpuo *ResourcePoolUpdateOne) AddDealocationSafetyPeriod(i int) *ResourcePoolUpdateOne {
 	rpuo.mutation.AddDealocationSafetyPeriod(i)
 	return rpuo
 }
 
-// SetResourceTypeID sets the resource_type edge to ResourceType by id.
+// SetResourceTypeID sets the "resource_type" edge to the ResourceType entity by ID.
 func (rpuo *ResourcePoolUpdateOne) SetResourceTypeID(id int) *ResourcePoolUpdateOne {
 	rpuo.mutation.SetResourceTypeID(id)
 	return rpuo
 }
 
-// SetNillableResourceTypeID sets the resource_type edge to ResourceType by id if the given value is not nil.
+// SetNillableResourceTypeID sets the "resource_type" edge to the ResourceType entity by ID if the given value is not nil.
 func (rpuo *ResourcePoolUpdateOne) SetNillableResourceTypeID(id *int) *ResourcePoolUpdateOne {
 	if id != nil {
 		rpuo = rpuo.SetResourceTypeID(*id)
@@ -725,18 +730,18 @@ func (rpuo *ResourcePoolUpdateOne) SetNillableResourceTypeID(id *int) *ResourceP
 	return rpuo
 }
 
-// SetResourceType sets the resource_type edge to ResourceType.
+// SetResourceType sets the "resource_type" edge to the ResourceType entity.
 func (rpuo *ResourcePoolUpdateOne) SetResourceType(r *ResourceType) *ResourcePoolUpdateOne {
 	return rpuo.SetResourceTypeID(r.ID)
 }
 
-// AddTagIDs adds the tags edge to Tag by ids.
+// AddTagIDs adds the "tags" edge to the Tag entity by IDs.
 func (rpuo *ResourcePoolUpdateOne) AddTagIDs(ids ...int) *ResourcePoolUpdateOne {
 	rpuo.mutation.AddTagIDs(ids...)
 	return rpuo
 }
 
-// AddTags adds the tags edges to Tag.
+// AddTags adds the "tags" edges to the Tag entity.
 func (rpuo *ResourcePoolUpdateOne) AddTags(t ...*Tag) *ResourcePoolUpdateOne {
 	ids := make([]int, len(t))
 	for i := range t {
@@ -745,13 +750,13 @@ func (rpuo *ResourcePoolUpdateOne) AddTags(t ...*Tag) *ResourcePoolUpdateOne {
 	return rpuo.AddTagIDs(ids...)
 }
 
-// AddClaimIDs adds the claims edge to Resource by ids.
+// AddClaimIDs adds the "claims" edge to the Resource entity by IDs.
 func (rpuo *ResourcePoolUpdateOne) AddClaimIDs(ids ...int) *ResourcePoolUpdateOne {
 	rpuo.mutation.AddClaimIDs(ids...)
 	return rpuo
 }
 
-// AddClaims adds the claims edges to Resource.
+// AddClaims adds the "claims" edges to the Resource entity.
 func (rpuo *ResourcePoolUpdateOne) AddClaims(r ...*Resource) *ResourcePoolUpdateOne {
 	ids := make([]int, len(r))
 	for i := range r {
@@ -760,13 +765,13 @@ func (rpuo *ResourcePoolUpdateOne) AddClaims(r ...*Resource) *ResourcePoolUpdate
 	return rpuo.AddClaimIDs(ids...)
 }
 
-// SetPoolPropertiesID sets the poolProperties edge to PoolProperties by id.
+// SetPoolPropertiesID sets the "poolProperties" edge to the PoolProperties entity by ID.
 func (rpuo *ResourcePoolUpdateOne) SetPoolPropertiesID(id int) *ResourcePoolUpdateOne {
 	rpuo.mutation.SetPoolPropertiesID(id)
 	return rpuo
 }
 
-// SetNillablePoolPropertiesID sets the poolProperties edge to PoolProperties by id if the given value is not nil.
+// SetNillablePoolPropertiesID sets the "poolProperties" edge to the PoolProperties entity by ID if the given value is not nil.
 func (rpuo *ResourcePoolUpdateOne) SetNillablePoolPropertiesID(id *int) *ResourcePoolUpdateOne {
 	if id != nil {
 		rpuo = rpuo.SetPoolPropertiesID(*id)
@@ -774,18 +779,18 @@ func (rpuo *ResourcePoolUpdateOne) SetNillablePoolPropertiesID(id *int) *Resourc
 	return rpuo
 }
 
-// SetPoolProperties sets the poolProperties edge to PoolProperties.
+// SetPoolProperties sets the "poolProperties" edge to the PoolProperties entity.
 func (rpuo *ResourcePoolUpdateOne) SetPoolProperties(p *PoolProperties) *ResourcePoolUpdateOne {
 	return rpuo.SetPoolPropertiesID(p.ID)
 }
 
-// SetAllocationStrategyID sets the allocation_strategy edge to AllocationStrategy by id.
+// SetAllocationStrategyID sets the "allocation_strategy" edge to the AllocationStrategy entity by ID.
 func (rpuo *ResourcePoolUpdateOne) SetAllocationStrategyID(id int) *ResourcePoolUpdateOne {
 	rpuo.mutation.SetAllocationStrategyID(id)
 	return rpuo
 }
 
-// SetNillableAllocationStrategyID sets the allocation_strategy edge to AllocationStrategy by id if the given value is not nil.
+// SetNillableAllocationStrategyID sets the "allocation_strategy" edge to the AllocationStrategy entity by ID if the given value is not nil.
 func (rpuo *ResourcePoolUpdateOne) SetNillableAllocationStrategyID(id *int) *ResourcePoolUpdateOne {
 	if id != nil {
 		rpuo = rpuo.SetAllocationStrategyID(*id)
@@ -793,18 +798,18 @@ func (rpuo *ResourcePoolUpdateOne) SetNillableAllocationStrategyID(id *int) *Res
 	return rpuo
 }
 
-// SetAllocationStrategy sets the allocation_strategy edge to AllocationStrategy.
+// SetAllocationStrategy sets the "allocation_strategy" edge to the AllocationStrategy entity.
 func (rpuo *ResourcePoolUpdateOne) SetAllocationStrategy(a *AllocationStrategy) *ResourcePoolUpdateOne {
 	return rpuo.SetAllocationStrategyID(a.ID)
 }
 
-// SetParentResourceID sets the parent_resource edge to Resource by id.
+// SetParentResourceID sets the "parent_resource" edge to the Resource entity by ID.
 func (rpuo *ResourcePoolUpdateOne) SetParentResourceID(id int) *ResourcePoolUpdateOne {
 	rpuo.mutation.SetParentResourceID(id)
 	return rpuo
 }
 
-// SetNillableParentResourceID sets the parent_resource edge to Resource by id if the given value is not nil.
+// SetNillableParentResourceID sets the "parent_resource" edge to the Resource entity by ID if the given value is not nil.
 func (rpuo *ResourcePoolUpdateOne) SetNillableParentResourceID(id *int) *ResourcePoolUpdateOne {
 	if id != nil {
 		rpuo = rpuo.SetParentResourceID(*id)
@@ -812,7 +817,7 @@ func (rpuo *ResourcePoolUpdateOne) SetNillableParentResourceID(id *int) *Resourc
 	return rpuo
 }
 
-// SetParentResource sets the parent_resource edge to Resource.
+// SetParentResource sets the "parent_resource" edge to the Resource entity.
 func (rpuo *ResourcePoolUpdateOne) SetParentResource(r *Resource) *ResourcePoolUpdateOne {
 	return rpuo.SetParentResourceID(r.ID)
 }
@@ -822,25 +827,25 @@ func (rpuo *ResourcePoolUpdateOne) Mutation() *ResourcePoolMutation {
 	return rpuo.mutation
 }
 
-// ClearResourceType clears the "resource_type" edge to type ResourceType.
+// ClearResourceType clears the "resource_type" edge to the ResourceType entity.
 func (rpuo *ResourcePoolUpdateOne) ClearResourceType() *ResourcePoolUpdateOne {
 	rpuo.mutation.ClearResourceType()
 	return rpuo
 }
 
-// ClearTags clears all "tags" edges to type Tag.
+// ClearTags clears all "tags" edges to the Tag entity.
 func (rpuo *ResourcePoolUpdateOne) ClearTags() *ResourcePoolUpdateOne {
 	rpuo.mutation.ClearTags()
 	return rpuo
 }
 
-// RemoveTagIDs removes the tags edge to Tag by ids.
+// RemoveTagIDs removes the "tags" edge to Tag entities by IDs.
 func (rpuo *ResourcePoolUpdateOne) RemoveTagIDs(ids ...int) *ResourcePoolUpdateOne {
 	rpuo.mutation.RemoveTagIDs(ids...)
 	return rpuo
 }
 
-// RemoveTags removes tags edges to Tag.
+// RemoveTags removes "tags" edges to Tag entities.
 func (rpuo *ResourcePoolUpdateOne) RemoveTags(t ...*Tag) *ResourcePoolUpdateOne {
 	ids := make([]int, len(t))
 	for i := range t {
@@ -849,19 +854,19 @@ func (rpuo *ResourcePoolUpdateOne) RemoveTags(t ...*Tag) *ResourcePoolUpdateOne 
 	return rpuo.RemoveTagIDs(ids...)
 }
 
-// ClearClaims clears all "claims" edges to type Resource.
+// ClearClaims clears all "claims" edges to the Resource entity.
 func (rpuo *ResourcePoolUpdateOne) ClearClaims() *ResourcePoolUpdateOne {
 	rpuo.mutation.ClearClaims()
 	return rpuo
 }
 
-// RemoveClaimIDs removes the claims edge to Resource by ids.
+// RemoveClaimIDs removes the "claims" edge to Resource entities by IDs.
 func (rpuo *ResourcePoolUpdateOne) RemoveClaimIDs(ids ...int) *ResourcePoolUpdateOne {
 	rpuo.mutation.RemoveClaimIDs(ids...)
 	return rpuo
 }
 
-// RemoveClaims removes claims edges to Resource.
+// RemoveClaims removes "claims" edges to Resource entities.
 func (rpuo *ResourcePoolUpdateOne) RemoveClaims(r ...*Resource) *ResourcePoolUpdateOne {
 	ids := make([]int, len(r))
 	for i := range r {
@@ -870,25 +875,32 @@ func (rpuo *ResourcePoolUpdateOne) RemoveClaims(r ...*Resource) *ResourcePoolUpd
 	return rpuo.RemoveClaimIDs(ids...)
 }
 
-// ClearPoolProperties clears the "poolProperties" edge to type PoolProperties.
+// ClearPoolProperties clears the "poolProperties" edge to the PoolProperties entity.
 func (rpuo *ResourcePoolUpdateOne) ClearPoolProperties() *ResourcePoolUpdateOne {
 	rpuo.mutation.ClearPoolProperties()
 	return rpuo
 }
 
-// ClearAllocationStrategy clears the "allocation_strategy" edge to type AllocationStrategy.
+// ClearAllocationStrategy clears the "allocation_strategy" edge to the AllocationStrategy entity.
 func (rpuo *ResourcePoolUpdateOne) ClearAllocationStrategy() *ResourcePoolUpdateOne {
 	rpuo.mutation.ClearAllocationStrategy()
 	return rpuo
 }
 
-// ClearParentResource clears the "parent_resource" edge to type Resource.
+// ClearParentResource clears the "parent_resource" edge to the Resource entity.
 func (rpuo *ResourcePoolUpdateOne) ClearParentResource() *ResourcePoolUpdateOne {
 	rpuo.mutation.ClearParentResource()
 	return rpuo
 }
 
-// Save executes the query and returns the updated entity.
+// Select allows selecting one or more fields (columns) of the returned entity.
+// The default is selecting all fields defined in the entity schema.
+func (rpuo *ResourcePoolUpdateOne) Select(field string, fields ...string) *ResourcePoolUpdateOne {
+	rpuo.fields = append([]string{field}, fields...)
+	return rpuo
+}
+
+// Save executes the query and returns the updated ResourcePool entity.
 func (rpuo *ResourcePoolUpdateOne) Save(ctx context.Context) (*ResourcePool, error) {
 	var (
 		err  error
@@ -914,11 +926,20 @@ func (rpuo *ResourcePoolUpdateOne) Save(ctx context.Context) (*ResourcePool, err
 			return node, err
 		})
 		for i := len(rpuo.hooks) - 1; i >= 0; i-- {
+			if rpuo.hooks[i] == nil {
+				return nil, fmt.Errorf("ent: uninitialized hook (forgotten import ent/runtime?)")
+			}
 			mut = rpuo.hooks[i](mut)
 		}
-		if _, err := mut.Mutate(ctx, rpuo.mutation); err != nil {
+		v, err := mut.Mutate(ctx, rpuo.mutation)
+		if err != nil {
 			return nil, err
 		}
+		nv, ok := v.(*ResourcePool)
+		if !ok {
+			return nil, fmt.Errorf("unexpected node type %T returned from ResourcePoolMutation", v)
+		}
+		node = nv
 	}
 	return node, err
 }
@@ -949,12 +970,12 @@ func (rpuo *ResourcePoolUpdateOne) ExecX(ctx context.Context) {
 func (rpuo *ResourcePoolUpdateOne) check() error {
 	if v, ok := rpuo.mutation.Name(); ok {
 		if err := resourcepool.NameValidator(v); err != nil {
-			return &ValidationError{Name: "name", err: fmt.Errorf("ent: validator failed for field \"name\": %w", err)}
+			return &ValidationError{Name: "name", err: fmt.Errorf(`ent: validator failed for field "ResourcePool.name": %w`, err)}
 		}
 	}
 	if v, ok := rpuo.mutation.PoolType(); ok {
 		if err := resourcepool.PoolTypeValidator(v); err != nil {
-			return &ValidationError{Name: "pool_type", err: fmt.Errorf("ent: validator failed for field \"pool_type\": %w", err)}
+			return &ValidationError{Name: "pool_type", err: fmt.Errorf(`ent: validator failed for field "ResourcePool.pool_type": %w`, err)}
 		}
 	}
 	return nil
@@ -973,9 +994,28 @@ func (rpuo *ResourcePoolUpdateOne) sqlSave(ctx context.Context) (_node *Resource
 	}
 	id, ok := rpuo.mutation.ID()
 	if !ok {
-		return nil, &ValidationError{Name: "ID", err: fmt.Errorf("missing ResourcePool.ID for update")}
+		return nil, &ValidationError{Name: "id", err: errors.New(`ent: missing "ResourcePool.id" for update`)}
 	}
 	_spec.Node.ID.Value = id
+	if fields := rpuo.fields; len(fields) > 0 {
+		_spec.Node.Columns = make([]string, 0, len(fields))
+		_spec.Node.Columns = append(_spec.Node.Columns, resourcepool.FieldID)
+		for _, f := range fields {
+			if !resourcepool.ValidColumn(f) {
+				return nil, &ValidationError{Name: f, err: fmt.Errorf("ent: invalid field %q for query", f)}
+			}
+			if f != resourcepool.FieldID {
+				_spec.Node.Columns = append(_spec.Node.Columns, f)
+			}
+		}
+	}
+	if ps := rpuo.mutation.predicates; len(ps) > 0 {
+		_spec.Predicate = func(selector *sql.Selector) {
+			for i := range ps {
+				ps[i](selector)
+			}
+		}
+	}
 	if value, ok := rpuo.mutation.Name(); ok {
 		_spec.Fields.Set = append(_spec.Fields.Set, &sqlgraph.FieldSpec{
 			Type:   field.TypeString,
@@ -1267,12 +1307,12 @@ func (rpuo *ResourcePoolUpdateOne) sqlSave(ctx context.Context) (_node *Resource
 	}
 	_node = &ResourcePool{config: rpuo.config}
 	_spec.Assign = _node.assignValues
-	_spec.ScanValues = _node.scanValues()
+	_spec.ScanValues = _node.scanValues
 	if err = sqlgraph.UpdateNode(ctx, rpuo.driver, _spec); err != nil {
 		if _, ok := err.(*sqlgraph.NotFoundError); ok {
 			err = &NotFoundError{resourcepool.Label}
-		} else if cerr, ok := isSQLConstraintError(err); ok {
-			err = cerr
+		} else if sqlgraph.IsConstraintError(err) {
+			err = &ConstraintError{msg: err.Error(), wrap: err}
 		}
 		return nil, err
 	}
