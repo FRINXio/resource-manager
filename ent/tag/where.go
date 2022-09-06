@@ -3,12 +3,12 @@
 package tag
 
 import (
-	"github.com/facebook/ent/dialect/sql"
-	"github.com/facebook/ent/dialect/sql/sqlgraph"
+	"entgo.io/ent/dialect/sql"
+	"entgo.io/ent/dialect/sql/sqlgraph"
 	"github.com/net-auto/resourceManager/ent/predicate"
 )
 
-// ID filters vertices based on their identifier.
+// ID filters vertices based on their ID field.
 func ID(id int) predicate.Tag {
 	return predicate.Tag(func(s *sql.Selector) {
 		s.Where(sql.EQ(s.C(FieldID), id))
@@ -32,13 +32,7 @@ func IDNEQ(id int) predicate.Tag {
 // IDIn applies the In predicate on the ID field.
 func IDIn(ids ...int) predicate.Tag {
 	return predicate.Tag(func(s *sql.Selector) {
-		// if not arguments were provided, append the FALSE constants,
-		// since we can't apply "IN ()". This will make this predicate falsy.
-		if len(ids) == 0 {
-			s.Where(sql.False())
-			return
-		}
-		v := make([]interface{}, len(ids))
+		v := make([]any, len(ids))
 		for i := range v {
 			v[i] = ids[i]
 		}
@@ -49,13 +43,7 @@ func IDIn(ids ...int) predicate.Tag {
 // IDNotIn applies the NotIn predicate on the ID field.
 func IDNotIn(ids ...int) predicate.Tag {
 	return predicate.Tag(func(s *sql.Selector) {
-		// if not arguments were provided, append the FALSE constants,
-		// since we can't apply "IN ()". This will make this predicate falsy.
-		if len(ids) == 0 {
-			s.Where(sql.False())
-			return
-		}
-		v := make([]interface{}, len(ids))
+		v := make([]any, len(ids))
 		for i := range v {
 			v[i] = ids[i]
 		}
@@ -114,34 +102,22 @@ func TagNEQ(v string) predicate.Tag {
 
 // TagIn applies the In predicate on the "tag" field.
 func TagIn(vs ...string) predicate.Tag {
-	v := make([]interface{}, len(vs))
+	v := make([]any, len(vs))
 	for i := range v {
 		v[i] = vs[i]
 	}
 	return predicate.Tag(func(s *sql.Selector) {
-		// if not arguments were provided, append the FALSE constants,
-		// since we can't apply "IN ()". This will make this predicate falsy.
-		if len(v) == 0 {
-			s.Where(sql.False())
-			return
-		}
 		s.Where(sql.In(s.C(FieldTag), v...))
 	})
 }
 
 // TagNotIn applies the NotIn predicate on the "tag" field.
 func TagNotIn(vs ...string) predicate.Tag {
-	v := make([]interface{}, len(vs))
+	v := make([]any, len(vs))
 	for i := range v {
 		v[i] = vs[i]
 	}
 	return predicate.Tag(func(s *sql.Selector) {
-		// if not arguments were provided, append the FALSE constants,
-		// since we can't apply "IN ()". This will make this predicate falsy.
-		if len(v) == 0 {
-			s.Where(sql.False())
-			return
-		}
 		s.Where(sql.NotIn(s.C(FieldTag), v...))
 	})
 }
@@ -237,7 +213,7 @@ func HasPoolsWith(preds ...predicate.ResourcePool) predicate.Tag {
 	})
 }
 
-// And groups list of predicates with the AND operator between them.
+// And groups predicates with the AND operator between them.
 func And(predicates ...predicate.Tag) predicate.Tag {
 	return predicate.Tag(func(s *sql.Selector) {
 		s1 := s.Clone().SetP(nil)
@@ -248,7 +224,7 @@ func And(predicates ...predicate.Tag) predicate.Tag {
 	})
 }
 
-// Or groups list of predicates with the OR operator between them.
+// Or groups predicates with the OR operator between them.
 func Or(predicates ...predicate.Tag) predicate.Tag {
 	return predicate.Tag(func(s *sql.Selector) {
 		s1 := s.Clone().SetP(nil)

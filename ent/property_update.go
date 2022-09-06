@@ -7,9 +7,9 @@ import (
 	"errors"
 	"fmt"
 
-	"github.com/facebook/ent/dialect/sql"
-	"github.com/facebook/ent/dialect/sql/sqlgraph"
-	"github.com/facebook/ent/schema/field"
+	"entgo.io/ent/dialect/sql"
+	"entgo.io/ent/dialect/sql/sqlgraph"
+	"entgo.io/ent/schema/field"
 	"github.com/net-auto/resourceManager/ent/predicate"
 	"github.com/net-auto/resourceManager/ent/property"
 	"github.com/net-auto/resourceManager/ent/propertytype"
@@ -23,20 +23,20 @@ type PropertyUpdate struct {
 	mutation *PropertyMutation
 }
 
-// Where adds a new predicate for the builder.
+// Where appends a list predicates to the PropertyUpdate builder.
 func (pu *PropertyUpdate) Where(ps ...predicate.Property) *PropertyUpdate {
-	pu.mutation.predicates = append(pu.mutation.predicates, ps...)
+	pu.mutation.Where(ps...)
 	return pu
 }
 
-// SetIntVal sets the int_val field.
+// SetIntVal sets the "int_val" field.
 func (pu *PropertyUpdate) SetIntVal(i int) *PropertyUpdate {
 	pu.mutation.ResetIntVal()
 	pu.mutation.SetIntVal(i)
 	return pu
 }
 
-// SetNillableIntVal sets the int_val field if the given value is not nil.
+// SetNillableIntVal sets the "int_val" field if the given value is not nil.
 func (pu *PropertyUpdate) SetNillableIntVal(i *int) *PropertyUpdate {
 	if i != nil {
 		pu.SetIntVal(*i)
@@ -44,25 +44,25 @@ func (pu *PropertyUpdate) SetNillableIntVal(i *int) *PropertyUpdate {
 	return pu
 }
 
-// AddIntVal adds i to int_val.
+// AddIntVal adds i to the "int_val" field.
 func (pu *PropertyUpdate) AddIntVal(i int) *PropertyUpdate {
 	pu.mutation.AddIntVal(i)
 	return pu
 }
 
-// ClearIntVal clears the value of int_val.
+// ClearIntVal clears the value of the "int_val" field.
 func (pu *PropertyUpdate) ClearIntVal() *PropertyUpdate {
 	pu.mutation.ClearIntVal()
 	return pu
 }
 
-// SetBoolVal sets the bool_val field.
+// SetBoolVal sets the "bool_val" field.
 func (pu *PropertyUpdate) SetBoolVal(b bool) *PropertyUpdate {
 	pu.mutation.SetBoolVal(b)
 	return pu
 }
 
-// SetNillableBoolVal sets the bool_val field if the given value is not nil.
+// SetNillableBoolVal sets the "bool_val" field if the given value is not nil.
 func (pu *PropertyUpdate) SetNillableBoolVal(b *bool) *PropertyUpdate {
 	if b != nil {
 		pu.SetBoolVal(*b)
@@ -70,20 +70,20 @@ func (pu *PropertyUpdate) SetNillableBoolVal(b *bool) *PropertyUpdate {
 	return pu
 }
 
-// ClearBoolVal clears the value of bool_val.
+// ClearBoolVal clears the value of the "bool_val" field.
 func (pu *PropertyUpdate) ClearBoolVal() *PropertyUpdate {
 	pu.mutation.ClearBoolVal()
 	return pu
 }
 
-// SetFloatVal sets the float_val field.
+// SetFloatVal sets the "float_val" field.
 func (pu *PropertyUpdate) SetFloatVal(f float64) *PropertyUpdate {
 	pu.mutation.ResetFloatVal()
 	pu.mutation.SetFloatVal(f)
 	return pu
 }
 
-// SetNillableFloatVal sets the float_val field if the given value is not nil.
+// SetNillableFloatVal sets the "float_val" field if the given value is not nil.
 func (pu *PropertyUpdate) SetNillableFloatVal(f *float64) *PropertyUpdate {
 	if f != nil {
 		pu.SetFloatVal(*f)
@@ -91,26 +91,26 @@ func (pu *PropertyUpdate) SetNillableFloatVal(f *float64) *PropertyUpdate {
 	return pu
 }
 
-// AddFloatVal adds f to float_val.
+// AddFloatVal adds f to the "float_val" field.
 func (pu *PropertyUpdate) AddFloatVal(f float64) *PropertyUpdate {
 	pu.mutation.AddFloatVal(f)
 	return pu
 }
 
-// ClearFloatVal clears the value of float_val.
+// ClearFloatVal clears the value of the "float_val" field.
 func (pu *PropertyUpdate) ClearFloatVal() *PropertyUpdate {
 	pu.mutation.ClearFloatVal()
 	return pu
 }
 
-// SetLatitudeVal sets the latitude_val field.
+// SetLatitudeVal sets the "latitude_val" field.
 func (pu *PropertyUpdate) SetLatitudeVal(f float64) *PropertyUpdate {
 	pu.mutation.ResetLatitudeVal()
 	pu.mutation.SetLatitudeVal(f)
 	return pu
 }
 
-// SetNillableLatitudeVal sets the latitude_val field if the given value is not nil.
+// SetNillableLatitudeVal sets the "latitude_val" field if the given value is not nil.
 func (pu *PropertyUpdate) SetNillableLatitudeVal(f *float64) *PropertyUpdate {
 	if f != nil {
 		pu.SetLatitudeVal(*f)
@@ -118,26 +118,26 @@ func (pu *PropertyUpdate) SetNillableLatitudeVal(f *float64) *PropertyUpdate {
 	return pu
 }
 
-// AddLatitudeVal adds f to latitude_val.
+// AddLatitudeVal adds f to the "latitude_val" field.
 func (pu *PropertyUpdate) AddLatitudeVal(f float64) *PropertyUpdate {
 	pu.mutation.AddLatitudeVal(f)
 	return pu
 }
 
-// ClearLatitudeVal clears the value of latitude_val.
+// ClearLatitudeVal clears the value of the "latitude_val" field.
 func (pu *PropertyUpdate) ClearLatitudeVal() *PropertyUpdate {
 	pu.mutation.ClearLatitudeVal()
 	return pu
 }
 
-// SetLongitudeVal sets the longitude_val field.
+// SetLongitudeVal sets the "longitude_val" field.
 func (pu *PropertyUpdate) SetLongitudeVal(f float64) *PropertyUpdate {
 	pu.mutation.ResetLongitudeVal()
 	pu.mutation.SetLongitudeVal(f)
 	return pu
 }
 
-// SetNillableLongitudeVal sets the longitude_val field if the given value is not nil.
+// SetNillableLongitudeVal sets the "longitude_val" field if the given value is not nil.
 func (pu *PropertyUpdate) SetNillableLongitudeVal(f *float64) *PropertyUpdate {
 	if f != nil {
 		pu.SetLongitudeVal(*f)
@@ -145,26 +145,26 @@ func (pu *PropertyUpdate) SetNillableLongitudeVal(f *float64) *PropertyUpdate {
 	return pu
 }
 
-// AddLongitudeVal adds f to longitude_val.
+// AddLongitudeVal adds f to the "longitude_val" field.
 func (pu *PropertyUpdate) AddLongitudeVal(f float64) *PropertyUpdate {
 	pu.mutation.AddLongitudeVal(f)
 	return pu
 }
 
-// ClearLongitudeVal clears the value of longitude_val.
+// ClearLongitudeVal clears the value of the "longitude_val" field.
 func (pu *PropertyUpdate) ClearLongitudeVal() *PropertyUpdate {
 	pu.mutation.ClearLongitudeVal()
 	return pu
 }
 
-// SetRangeFromVal sets the range_from_val field.
+// SetRangeFromVal sets the "range_from_val" field.
 func (pu *PropertyUpdate) SetRangeFromVal(f float64) *PropertyUpdate {
 	pu.mutation.ResetRangeFromVal()
 	pu.mutation.SetRangeFromVal(f)
 	return pu
 }
 
-// SetNillableRangeFromVal sets the range_from_val field if the given value is not nil.
+// SetNillableRangeFromVal sets the "range_from_val" field if the given value is not nil.
 func (pu *PropertyUpdate) SetNillableRangeFromVal(f *float64) *PropertyUpdate {
 	if f != nil {
 		pu.SetRangeFromVal(*f)
@@ -172,26 +172,26 @@ func (pu *PropertyUpdate) SetNillableRangeFromVal(f *float64) *PropertyUpdate {
 	return pu
 }
 
-// AddRangeFromVal adds f to range_from_val.
+// AddRangeFromVal adds f to the "range_from_val" field.
 func (pu *PropertyUpdate) AddRangeFromVal(f float64) *PropertyUpdate {
 	pu.mutation.AddRangeFromVal(f)
 	return pu
 }
 
-// ClearRangeFromVal clears the value of range_from_val.
+// ClearRangeFromVal clears the value of the "range_from_val" field.
 func (pu *PropertyUpdate) ClearRangeFromVal() *PropertyUpdate {
 	pu.mutation.ClearRangeFromVal()
 	return pu
 }
 
-// SetRangeToVal sets the range_to_val field.
+// SetRangeToVal sets the "range_to_val" field.
 func (pu *PropertyUpdate) SetRangeToVal(f float64) *PropertyUpdate {
 	pu.mutation.ResetRangeToVal()
 	pu.mutation.SetRangeToVal(f)
 	return pu
 }
 
-// SetNillableRangeToVal sets the range_to_val field if the given value is not nil.
+// SetNillableRangeToVal sets the "range_to_val" field if the given value is not nil.
 func (pu *PropertyUpdate) SetNillableRangeToVal(f *float64) *PropertyUpdate {
 	if f != nil {
 		pu.SetRangeToVal(*f)
@@ -199,25 +199,25 @@ func (pu *PropertyUpdate) SetNillableRangeToVal(f *float64) *PropertyUpdate {
 	return pu
 }
 
-// AddRangeToVal adds f to range_to_val.
+// AddRangeToVal adds f to the "range_to_val" field.
 func (pu *PropertyUpdate) AddRangeToVal(f float64) *PropertyUpdate {
 	pu.mutation.AddRangeToVal(f)
 	return pu
 }
 
-// ClearRangeToVal clears the value of range_to_val.
+// ClearRangeToVal clears the value of the "range_to_val" field.
 func (pu *PropertyUpdate) ClearRangeToVal() *PropertyUpdate {
 	pu.mutation.ClearRangeToVal()
 	return pu
 }
 
-// SetStringVal sets the string_val field.
+// SetStringVal sets the "string_val" field.
 func (pu *PropertyUpdate) SetStringVal(s string) *PropertyUpdate {
 	pu.mutation.SetStringVal(s)
 	return pu
 }
 
-// SetNillableStringVal sets the string_val field if the given value is not nil.
+// SetNillableStringVal sets the "string_val" field if the given value is not nil.
 func (pu *PropertyUpdate) SetNillableStringVal(s *string) *PropertyUpdate {
 	if s != nil {
 		pu.SetStringVal(*s)
@@ -225,30 +225,30 @@ func (pu *PropertyUpdate) SetNillableStringVal(s *string) *PropertyUpdate {
 	return pu
 }
 
-// ClearStringVal clears the value of string_val.
+// ClearStringVal clears the value of the "string_val" field.
 func (pu *PropertyUpdate) ClearStringVal() *PropertyUpdate {
 	pu.mutation.ClearStringVal()
 	return pu
 }
 
-// SetTypeID sets the type edge to PropertyType by id.
+// SetTypeID sets the "type" edge to the PropertyType entity by ID.
 func (pu *PropertyUpdate) SetTypeID(id int) *PropertyUpdate {
 	pu.mutation.SetTypeID(id)
 	return pu
 }
 
-// SetType sets the type edge to PropertyType.
+// SetType sets the "type" edge to the PropertyType entity.
 func (pu *PropertyUpdate) SetType(p *PropertyType) *PropertyUpdate {
 	return pu.SetTypeID(p.ID)
 }
 
-// SetResourcesID sets the resources edge to Resource by id.
+// SetResourcesID sets the "resources" edge to the Resource entity by ID.
 func (pu *PropertyUpdate) SetResourcesID(id int) *PropertyUpdate {
 	pu.mutation.SetResourcesID(id)
 	return pu
 }
 
-// SetNillableResourcesID sets the resources edge to Resource by id if the given value is not nil.
+// SetNillableResourcesID sets the "resources" edge to the Resource entity by ID if the given value is not nil.
 func (pu *PropertyUpdate) SetNillableResourcesID(id *int) *PropertyUpdate {
 	if id != nil {
 		pu = pu.SetResourcesID(*id)
@@ -256,7 +256,7 @@ func (pu *PropertyUpdate) SetNillableResourcesID(id *int) *PropertyUpdate {
 	return pu
 }
 
-// SetResources sets the resources edge to Resource.
+// SetResources sets the "resources" edge to the Resource entity.
 func (pu *PropertyUpdate) SetResources(r *Resource) *PropertyUpdate {
 	return pu.SetResourcesID(r.ID)
 }
@@ -266,19 +266,19 @@ func (pu *PropertyUpdate) Mutation() *PropertyMutation {
 	return pu.mutation
 }
 
-// ClearType clears the "type" edge to type PropertyType.
+// ClearType clears the "type" edge to the PropertyType entity.
 func (pu *PropertyUpdate) ClearType() *PropertyUpdate {
 	pu.mutation.ClearType()
 	return pu
 }
 
-// ClearResources clears the "resources" edge to type Resource.
+// ClearResources clears the "resources" edge to the Resource entity.
 func (pu *PropertyUpdate) ClearResources() *PropertyUpdate {
 	pu.mutation.ClearResources()
 	return pu
 }
 
-// Save executes the query and returns the number of rows/vertices matched by this operation.
+// Save executes the query and returns the number of nodes affected by the update operation.
 func (pu *PropertyUpdate) Save(ctx context.Context) (int, error) {
 	var (
 		err      error
@@ -304,6 +304,9 @@ func (pu *PropertyUpdate) Save(ctx context.Context) (int, error) {
 			return affected, err
 		})
 		for i := len(pu.hooks) - 1; i >= 0; i-- {
+			if pu.hooks[i] == nil {
+				return 0, fmt.Errorf("ent: uninitialized hook (forgotten import ent/runtime?)")
+			}
 			mut = pu.hooks[i](mut)
 		}
 		if _, err := mut.Mutate(ctx, pu.mutation); err != nil {
@@ -338,7 +341,7 @@ func (pu *PropertyUpdate) ExecX(ctx context.Context) {
 // check runs all checks and user-defined validators on the builder.
 func (pu *PropertyUpdate) check() error {
 	if _, ok := pu.mutation.TypeID(); pu.mutation.TypeCleared() && !ok {
-		return errors.New("ent: clearing a required unique edge \"type\"")
+		return errors.New(`ent: clearing a required unique edge "Property.type"`)
 	}
 	return nil
 }
@@ -580,8 +583,8 @@ func (pu *PropertyUpdate) sqlSave(ctx context.Context) (n int, err error) {
 	if n, err = sqlgraph.UpdateNodes(ctx, pu.driver, _spec); err != nil {
 		if _, ok := err.(*sqlgraph.NotFoundError); ok {
 			err = &NotFoundError{property.Label}
-		} else if cerr, ok := isSQLConstraintError(err); ok {
-			err = cerr
+		} else if sqlgraph.IsConstraintError(err) {
+			err = &ConstraintError{msg: err.Error(), wrap: err}
 		}
 		return 0, err
 	}
@@ -591,18 +594,19 @@ func (pu *PropertyUpdate) sqlSave(ctx context.Context) (n int, err error) {
 // PropertyUpdateOne is the builder for updating a single Property entity.
 type PropertyUpdateOne struct {
 	config
+	fields   []string
 	hooks    []Hook
 	mutation *PropertyMutation
 }
 
-// SetIntVal sets the int_val field.
+// SetIntVal sets the "int_val" field.
 func (puo *PropertyUpdateOne) SetIntVal(i int) *PropertyUpdateOne {
 	puo.mutation.ResetIntVal()
 	puo.mutation.SetIntVal(i)
 	return puo
 }
 
-// SetNillableIntVal sets the int_val field if the given value is not nil.
+// SetNillableIntVal sets the "int_val" field if the given value is not nil.
 func (puo *PropertyUpdateOne) SetNillableIntVal(i *int) *PropertyUpdateOne {
 	if i != nil {
 		puo.SetIntVal(*i)
@@ -610,25 +614,25 @@ func (puo *PropertyUpdateOne) SetNillableIntVal(i *int) *PropertyUpdateOne {
 	return puo
 }
 
-// AddIntVal adds i to int_val.
+// AddIntVal adds i to the "int_val" field.
 func (puo *PropertyUpdateOne) AddIntVal(i int) *PropertyUpdateOne {
 	puo.mutation.AddIntVal(i)
 	return puo
 }
 
-// ClearIntVal clears the value of int_val.
+// ClearIntVal clears the value of the "int_val" field.
 func (puo *PropertyUpdateOne) ClearIntVal() *PropertyUpdateOne {
 	puo.mutation.ClearIntVal()
 	return puo
 }
 
-// SetBoolVal sets the bool_val field.
+// SetBoolVal sets the "bool_val" field.
 func (puo *PropertyUpdateOne) SetBoolVal(b bool) *PropertyUpdateOne {
 	puo.mutation.SetBoolVal(b)
 	return puo
 }
 
-// SetNillableBoolVal sets the bool_val field if the given value is not nil.
+// SetNillableBoolVal sets the "bool_val" field if the given value is not nil.
 func (puo *PropertyUpdateOne) SetNillableBoolVal(b *bool) *PropertyUpdateOne {
 	if b != nil {
 		puo.SetBoolVal(*b)
@@ -636,20 +640,20 @@ func (puo *PropertyUpdateOne) SetNillableBoolVal(b *bool) *PropertyUpdateOne {
 	return puo
 }
 
-// ClearBoolVal clears the value of bool_val.
+// ClearBoolVal clears the value of the "bool_val" field.
 func (puo *PropertyUpdateOne) ClearBoolVal() *PropertyUpdateOne {
 	puo.mutation.ClearBoolVal()
 	return puo
 }
 
-// SetFloatVal sets the float_val field.
+// SetFloatVal sets the "float_val" field.
 func (puo *PropertyUpdateOne) SetFloatVal(f float64) *PropertyUpdateOne {
 	puo.mutation.ResetFloatVal()
 	puo.mutation.SetFloatVal(f)
 	return puo
 }
 
-// SetNillableFloatVal sets the float_val field if the given value is not nil.
+// SetNillableFloatVal sets the "float_val" field if the given value is not nil.
 func (puo *PropertyUpdateOne) SetNillableFloatVal(f *float64) *PropertyUpdateOne {
 	if f != nil {
 		puo.SetFloatVal(*f)
@@ -657,26 +661,26 @@ func (puo *PropertyUpdateOne) SetNillableFloatVal(f *float64) *PropertyUpdateOne
 	return puo
 }
 
-// AddFloatVal adds f to float_val.
+// AddFloatVal adds f to the "float_val" field.
 func (puo *PropertyUpdateOne) AddFloatVal(f float64) *PropertyUpdateOne {
 	puo.mutation.AddFloatVal(f)
 	return puo
 }
 
-// ClearFloatVal clears the value of float_val.
+// ClearFloatVal clears the value of the "float_val" field.
 func (puo *PropertyUpdateOne) ClearFloatVal() *PropertyUpdateOne {
 	puo.mutation.ClearFloatVal()
 	return puo
 }
 
-// SetLatitudeVal sets the latitude_val field.
+// SetLatitudeVal sets the "latitude_val" field.
 func (puo *PropertyUpdateOne) SetLatitudeVal(f float64) *PropertyUpdateOne {
 	puo.mutation.ResetLatitudeVal()
 	puo.mutation.SetLatitudeVal(f)
 	return puo
 }
 
-// SetNillableLatitudeVal sets the latitude_val field if the given value is not nil.
+// SetNillableLatitudeVal sets the "latitude_val" field if the given value is not nil.
 func (puo *PropertyUpdateOne) SetNillableLatitudeVal(f *float64) *PropertyUpdateOne {
 	if f != nil {
 		puo.SetLatitudeVal(*f)
@@ -684,26 +688,26 @@ func (puo *PropertyUpdateOne) SetNillableLatitudeVal(f *float64) *PropertyUpdate
 	return puo
 }
 
-// AddLatitudeVal adds f to latitude_val.
+// AddLatitudeVal adds f to the "latitude_val" field.
 func (puo *PropertyUpdateOne) AddLatitudeVal(f float64) *PropertyUpdateOne {
 	puo.mutation.AddLatitudeVal(f)
 	return puo
 }
 
-// ClearLatitudeVal clears the value of latitude_val.
+// ClearLatitudeVal clears the value of the "latitude_val" field.
 func (puo *PropertyUpdateOne) ClearLatitudeVal() *PropertyUpdateOne {
 	puo.mutation.ClearLatitudeVal()
 	return puo
 }
 
-// SetLongitudeVal sets the longitude_val field.
+// SetLongitudeVal sets the "longitude_val" field.
 func (puo *PropertyUpdateOne) SetLongitudeVal(f float64) *PropertyUpdateOne {
 	puo.mutation.ResetLongitudeVal()
 	puo.mutation.SetLongitudeVal(f)
 	return puo
 }
 
-// SetNillableLongitudeVal sets the longitude_val field if the given value is not nil.
+// SetNillableLongitudeVal sets the "longitude_val" field if the given value is not nil.
 func (puo *PropertyUpdateOne) SetNillableLongitudeVal(f *float64) *PropertyUpdateOne {
 	if f != nil {
 		puo.SetLongitudeVal(*f)
@@ -711,26 +715,26 @@ func (puo *PropertyUpdateOne) SetNillableLongitudeVal(f *float64) *PropertyUpdat
 	return puo
 }
 
-// AddLongitudeVal adds f to longitude_val.
+// AddLongitudeVal adds f to the "longitude_val" field.
 func (puo *PropertyUpdateOne) AddLongitudeVal(f float64) *PropertyUpdateOne {
 	puo.mutation.AddLongitudeVal(f)
 	return puo
 }
 
-// ClearLongitudeVal clears the value of longitude_val.
+// ClearLongitudeVal clears the value of the "longitude_val" field.
 func (puo *PropertyUpdateOne) ClearLongitudeVal() *PropertyUpdateOne {
 	puo.mutation.ClearLongitudeVal()
 	return puo
 }
 
-// SetRangeFromVal sets the range_from_val field.
+// SetRangeFromVal sets the "range_from_val" field.
 func (puo *PropertyUpdateOne) SetRangeFromVal(f float64) *PropertyUpdateOne {
 	puo.mutation.ResetRangeFromVal()
 	puo.mutation.SetRangeFromVal(f)
 	return puo
 }
 
-// SetNillableRangeFromVal sets the range_from_val field if the given value is not nil.
+// SetNillableRangeFromVal sets the "range_from_val" field if the given value is not nil.
 func (puo *PropertyUpdateOne) SetNillableRangeFromVal(f *float64) *PropertyUpdateOne {
 	if f != nil {
 		puo.SetRangeFromVal(*f)
@@ -738,26 +742,26 @@ func (puo *PropertyUpdateOne) SetNillableRangeFromVal(f *float64) *PropertyUpdat
 	return puo
 }
 
-// AddRangeFromVal adds f to range_from_val.
+// AddRangeFromVal adds f to the "range_from_val" field.
 func (puo *PropertyUpdateOne) AddRangeFromVal(f float64) *PropertyUpdateOne {
 	puo.mutation.AddRangeFromVal(f)
 	return puo
 }
 
-// ClearRangeFromVal clears the value of range_from_val.
+// ClearRangeFromVal clears the value of the "range_from_val" field.
 func (puo *PropertyUpdateOne) ClearRangeFromVal() *PropertyUpdateOne {
 	puo.mutation.ClearRangeFromVal()
 	return puo
 }
 
-// SetRangeToVal sets the range_to_val field.
+// SetRangeToVal sets the "range_to_val" field.
 func (puo *PropertyUpdateOne) SetRangeToVal(f float64) *PropertyUpdateOne {
 	puo.mutation.ResetRangeToVal()
 	puo.mutation.SetRangeToVal(f)
 	return puo
 }
 
-// SetNillableRangeToVal sets the range_to_val field if the given value is not nil.
+// SetNillableRangeToVal sets the "range_to_val" field if the given value is not nil.
 func (puo *PropertyUpdateOne) SetNillableRangeToVal(f *float64) *PropertyUpdateOne {
 	if f != nil {
 		puo.SetRangeToVal(*f)
@@ -765,25 +769,25 @@ func (puo *PropertyUpdateOne) SetNillableRangeToVal(f *float64) *PropertyUpdateO
 	return puo
 }
 
-// AddRangeToVal adds f to range_to_val.
+// AddRangeToVal adds f to the "range_to_val" field.
 func (puo *PropertyUpdateOne) AddRangeToVal(f float64) *PropertyUpdateOne {
 	puo.mutation.AddRangeToVal(f)
 	return puo
 }
 
-// ClearRangeToVal clears the value of range_to_val.
+// ClearRangeToVal clears the value of the "range_to_val" field.
 func (puo *PropertyUpdateOne) ClearRangeToVal() *PropertyUpdateOne {
 	puo.mutation.ClearRangeToVal()
 	return puo
 }
 
-// SetStringVal sets the string_val field.
+// SetStringVal sets the "string_val" field.
 func (puo *PropertyUpdateOne) SetStringVal(s string) *PropertyUpdateOne {
 	puo.mutation.SetStringVal(s)
 	return puo
 }
 
-// SetNillableStringVal sets the string_val field if the given value is not nil.
+// SetNillableStringVal sets the "string_val" field if the given value is not nil.
 func (puo *PropertyUpdateOne) SetNillableStringVal(s *string) *PropertyUpdateOne {
 	if s != nil {
 		puo.SetStringVal(*s)
@@ -791,30 +795,30 @@ func (puo *PropertyUpdateOne) SetNillableStringVal(s *string) *PropertyUpdateOne
 	return puo
 }
 
-// ClearStringVal clears the value of string_val.
+// ClearStringVal clears the value of the "string_val" field.
 func (puo *PropertyUpdateOne) ClearStringVal() *PropertyUpdateOne {
 	puo.mutation.ClearStringVal()
 	return puo
 }
 
-// SetTypeID sets the type edge to PropertyType by id.
+// SetTypeID sets the "type" edge to the PropertyType entity by ID.
 func (puo *PropertyUpdateOne) SetTypeID(id int) *PropertyUpdateOne {
 	puo.mutation.SetTypeID(id)
 	return puo
 }
 
-// SetType sets the type edge to PropertyType.
+// SetType sets the "type" edge to the PropertyType entity.
 func (puo *PropertyUpdateOne) SetType(p *PropertyType) *PropertyUpdateOne {
 	return puo.SetTypeID(p.ID)
 }
 
-// SetResourcesID sets the resources edge to Resource by id.
+// SetResourcesID sets the "resources" edge to the Resource entity by ID.
 func (puo *PropertyUpdateOne) SetResourcesID(id int) *PropertyUpdateOne {
 	puo.mutation.SetResourcesID(id)
 	return puo
 }
 
-// SetNillableResourcesID sets the resources edge to Resource by id if the given value is not nil.
+// SetNillableResourcesID sets the "resources" edge to the Resource entity by ID if the given value is not nil.
 func (puo *PropertyUpdateOne) SetNillableResourcesID(id *int) *PropertyUpdateOne {
 	if id != nil {
 		puo = puo.SetResourcesID(*id)
@@ -822,7 +826,7 @@ func (puo *PropertyUpdateOne) SetNillableResourcesID(id *int) *PropertyUpdateOne
 	return puo
 }
 
-// SetResources sets the resources edge to Resource.
+// SetResources sets the "resources" edge to the Resource entity.
 func (puo *PropertyUpdateOne) SetResources(r *Resource) *PropertyUpdateOne {
 	return puo.SetResourcesID(r.ID)
 }
@@ -832,19 +836,26 @@ func (puo *PropertyUpdateOne) Mutation() *PropertyMutation {
 	return puo.mutation
 }
 
-// ClearType clears the "type" edge to type PropertyType.
+// ClearType clears the "type" edge to the PropertyType entity.
 func (puo *PropertyUpdateOne) ClearType() *PropertyUpdateOne {
 	puo.mutation.ClearType()
 	return puo
 }
 
-// ClearResources clears the "resources" edge to type Resource.
+// ClearResources clears the "resources" edge to the Resource entity.
 func (puo *PropertyUpdateOne) ClearResources() *PropertyUpdateOne {
 	puo.mutation.ClearResources()
 	return puo
 }
 
-// Save executes the query and returns the updated entity.
+// Select allows selecting one or more fields (columns) of the returned entity.
+// The default is selecting all fields defined in the entity schema.
+func (puo *PropertyUpdateOne) Select(field string, fields ...string) *PropertyUpdateOne {
+	puo.fields = append([]string{field}, fields...)
+	return puo
+}
+
+// Save executes the query and returns the updated Property entity.
 func (puo *PropertyUpdateOne) Save(ctx context.Context) (*Property, error) {
 	var (
 		err  error
@@ -870,11 +881,20 @@ func (puo *PropertyUpdateOne) Save(ctx context.Context) (*Property, error) {
 			return node, err
 		})
 		for i := len(puo.hooks) - 1; i >= 0; i-- {
+			if puo.hooks[i] == nil {
+				return nil, fmt.Errorf("ent: uninitialized hook (forgotten import ent/runtime?)")
+			}
 			mut = puo.hooks[i](mut)
 		}
-		if _, err := mut.Mutate(ctx, puo.mutation); err != nil {
+		v, err := mut.Mutate(ctx, puo.mutation)
+		if err != nil {
 			return nil, err
 		}
+		nv, ok := v.(*Property)
+		if !ok {
+			return nil, fmt.Errorf("unexpected node type %T returned from PropertyMutation", v)
+		}
+		node = nv
 	}
 	return node, err
 }
@@ -904,7 +924,7 @@ func (puo *PropertyUpdateOne) ExecX(ctx context.Context) {
 // check runs all checks and user-defined validators on the builder.
 func (puo *PropertyUpdateOne) check() error {
 	if _, ok := puo.mutation.TypeID(); puo.mutation.TypeCleared() && !ok {
-		return errors.New("ent: clearing a required unique edge \"type\"")
+		return errors.New(`ent: clearing a required unique edge "Property.type"`)
 	}
 	return nil
 }
@@ -922,9 +942,28 @@ func (puo *PropertyUpdateOne) sqlSave(ctx context.Context) (_node *Property, err
 	}
 	id, ok := puo.mutation.ID()
 	if !ok {
-		return nil, &ValidationError{Name: "ID", err: fmt.Errorf("missing Property.ID for update")}
+		return nil, &ValidationError{Name: "id", err: errors.New(`ent: missing "Property.id" for update`)}
 	}
 	_spec.Node.ID.Value = id
+	if fields := puo.fields; len(fields) > 0 {
+		_spec.Node.Columns = make([]string, 0, len(fields))
+		_spec.Node.Columns = append(_spec.Node.Columns, property.FieldID)
+		for _, f := range fields {
+			if !property.ValidColumn(f) {
+				return nil, &ValidationError{Name: f, err: fmt.Errorf("ent: invalid field %q for query", f)}
+			}
+			if f != property.FieldID {
+				_spec.Node.Columns = append(_spec.Node.Columns, f)
+			}
+		}
+	}
+	if ps := puo.mutation.predicates; len(ps) > 0 {
+		_spec.Predicate = func(selector *sql.Selector) {
+			for i := range ps {
+				ps[i](selector)
+			}
+		}
+	}
 	if value, ok := puo.mutation.IntVal(); ok {
 		_spec.Fields.Set = append(_spec.Fields.Set, &sqlgraph.FieldSpec{
 			Type:   field.TypeInt,
@@ -1143,12 +1182,12 @@ func (puo *PropertyUpdateOne) sqlSave(ctx context.Context) (_node *Property, err
 	}
 	_node = &Property{config: puo.config}
 	_spec.Assign = _node.assignValues
-	_spec.ScanValues = _node.scanValues()
+	_spec.ScanValues = _node.scanValues
 	if err = sqlgraph.UpdateNode(ctx, puo.driver, _spec); err != nil {
 		if _, ok := err.(*sqlgraph.NotFoundError); ok {
 			err = &NotFoundError{property.Label}
-		} else if cerr, ok := isSQLConstraintError(err); ok {
-			err = cerr
+		} else if sqlgraph.IsConstraintError(err) {
+			err = &ConstraintError{msg: err.Error(), wrap: err}
 		}
 		return nil, err
 	}

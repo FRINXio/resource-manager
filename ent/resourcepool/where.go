@@ -3,12 +3,12 @@
 package resourcepool
 
 import (
-	"github.com/facebook/ent/dialect/sql"
-	"github.com/facebook/ent/dialect/sql/sqlgraph"
+	"entgo.io/ent/dialect/sql"
+	"entgo.io/ent/dialect/sql/sqlgraph"
 	"github.com/net-auto/resourceManager/ent/predicate"
 )
 
-// ID filters vertices based on their identifier.
+// ID filters vertices based on their ID field.
 func ID(id int) predicate.ResourcePool {
 	return predicate.ResourcePool(func(s *sql.Selector) {
 		s.Where(sql.EQ(s.C(FieldID), id))
@@ -32,13 +32,7 @@ func IDNEQ(id int) predicate.ResourcePool {
 // IDIn applies the In predicate on the ID field.
 func IDIn(ids ...int) predicate.ResourcePool {
 	return predicate.ResourcePool(func(s *sql.Selector) {
-		// if not arguments were provided, append the FALSE constants,
-		// since we can't apply "IN ()". This will make this predicate falsy.
-		if len(ids) == 0 {
-			s.Where(sql.False())
-			return
-		}
-		v := make([]interface{}, len(ids))
+		v := make([]any, len(ids))
 		for i := range v {
 			v[i] = ids[i]
 		}
@@ -49,13 +43,7 @@ func IDIn(ids ...int) predicate.ResourcePool {
 // IDNotIn applies the NotIn predicate on the ID field.
 func IDNotIn(ids ...int) predicate.ResourcePool {
 	return predicate.ResourcePool(func(s *sql.Selector) {
-		// if not arguments were provided, append the FALSE constants,
-		// since we can't apply "IN ()". This will make this predicate falsy.
-		if len(ids) == 0 {
-			s.Where(sql.False())
-			return
-		}
-		v := make([]interface{}, len(ids))
+		v := make([]any, len(ids))
 		for i := range v {
 			v[i] = ids[i]
 		}
@@ -128,34 +116,22 @@ func NameNEQ(v string) predicate.ResourcePool {
 
 // NameIn applies the In predicate on the "name" field.
 func NameIn(vs ...string) predicate.ResourcePool {
-	v := make([]interface{}, len(vs))
+	v := make([]any, len(vs))
 	for i := range v {
 		v[i] = vs[i]
 	}
 	return predicate.ResourcePool(func(s *sql.Selector) {
-		// if not arguments were provided, append the FALSE constants,
-		// since we can't apply "IN ()". This will make this predicate falsy.
-		if len(v) == 0 {
-			s.Where(sql.False())
-			return
-		}
 		s.Where(sql.In(s.C(FieldName), v...))
 	})
 }
 
 // NameNotIn applies the NotIn predicate on the "name" field.
 func NameNotIn(vs ...string) predicate.ResourcePool {
-	v := make([]interface{}, len(vs))
+	v := make([]any, len(vs))
 	for i := range v {
 		v[i] = vs[i]
 	}
 	return predicate.ResourcePool(func(s *sql.Selector) {
-		// if not arguments were provided, append the FALSE constants,
-		// since we can't apply "IN ()". This will make this predicate falsy.
-		if len(v) == 0 {
-			s.Where(sql.False())
-			return
-		}
 		s.Where(sql.NotIn(s.C(FieldName), v...))
 	})
 }
@@ -239,34 +215,22 @@ func DescriptionNEQ(v string) predicate.ResourcePool {
 
 // DescriptionIn applies the In predicate on the "description" field.
 func DescriptionIn(vs ...string) predicate.ResourcePool {
-	v := make([]interface{}, len(vs))
+	v := make([]any, len(vs))
 	for i := range v {
 		v[i] = vs[i]
 	}
 	return predicate.ResourcePool(func(s *sql.Selector) {
-		// if not arguments were provided, append the FALSE constants,
-		// since we can't apply "IN ()". This will make this predicate falsy.
-		if len(v) == 0 {
-			s.Where(sql.False())
-			return
-		}
 		s.Where(sql.In(s.C(FieldDescription), v...))
 	})
 }
 
 // DescriptionNotIn applies the NotIn predicate on the "description" field.
 func DescriptionNotIn(vs ...string) predicate.ResourcePool {
-	v := make([]interface{}, len(vs))
+	v := make([]any, len(vs))
 	for i := range v {
 		v[i] = vs[i]
 	}
 	return predicate.ResourcePool(func(s *sql.Selector) {
-		// if not arguments were provided, append the FALSE constants,
-		// since we can't apply "IN ()". This will make this predicate falsy.
-		if len(v) == 0 {
-			s.Where(sql.False())
-			return
-		}
 		s.Where(sql.NotIn(s.C(FieldDescription), v...))
 	})
 }
@@ -364,34 +328,22 @@ func PoolTypeNEQ(v PoolType) predicate.ResourcePool {
 
 // PoolTypeIn applies the In predicate on the "pool_type" field.
 func PoolTypeIn(vs ...PoolType) predicate.ResourcePool {
-	v := make([]interface{}, len(vs))
+	v := make([]any, len(vs))
 	for i := range v {
 		v[i] = vs[i]
 	}
 	return predicate.ResourcePool(func(s *sql.Selector) {
-		// if not arguments were provided, append the FALSE constants,
-		// since we can't apply "IN ()". This will make this predicate falsy.
-		if len(v) == 0 {
-			s.Where(sql.False())
-			return
-		}
 		s.Where(sql.In(s.C(FieldPoolType), v...))
 	})
 }
 
 // PoolTypeNotIn applies the NotIn predicate on the "pool_type" field.
 func PoolTypeNotIn(vs ...PoolType) predicate.ResourcePool {
-	v := make([]interface{}, len(vs))
+	v := make([]any, len(vs))
 	for i := range v {
 		v[i] = vs[i]
 	}
 	return predicate.ResourcePool(func(s *sql.Selector) {
-		// if not arguments were provided, append the FALSE constants,
-		// since we can't apply "IN ()". This will make this predicate falsy.
-		if len(v) == 0 {
-			s.Where(sql.False())
-			return
-		}
 		s.Where(sql.NotIn(s.C(FieldPoolType), v...))
 	})
 }
@@ -412,34 +364,22 @@ func DealocationSafetyPeriodNEQ(v int) predicate.ResourcePool {
 
 // DealocationSafetyPeriodIn applies the In predicate on the "dealocation_safety_period" field.
 func DealocationSafetyPeriodIn(vs ...int) predicate.ResourcePool {
-	v := make([]interface{}, len(vs))
+	v := make([]any, len(vs))
 	for i := range v {
 		v[i] = vs[i]
 	}
 	return predicate.ResourcePool(func(s *sql.Selector) {
-		// if not arguments were provided, append the FALSE constants,
-		// since we can't apply "IN ()". This will make this predicate falsy.
-		if len(v) == 0 {
-			s.Where(sql.False())
-			return
-		}
 		s.Where(sql.In(s.C(FieldDealocationSafetyPeriod), v...))
 	})
 }
 
 // DealocationSafetyPeriodNotIn applies the NotIn predicate on the "dealocation_safety_period" field.
 func DealocationSafetyPeriodNotIn(vs ...int) predicate.ResourcePool {
-	v := make([]interface{}, len(vs))
+	v := make([]any, len(vs))
 	for i := range v {
 		v[i] = vs[i]
 	}
 	return predicate.ResourcePool(func(s *sql.Selector) {
-		// if not arguments were provided, append the FALSE constants,
-		// since we can't apply "IN ()". This will make this predicate falsy.
-		if len(v) == 0 {
-			s.Where(sql.False())
-			return
-		}
 		s.Where(sql.NotIn(s.C(FieldDealocationSafetyPeriod), v...))
 	})
 }
@@ -640,7 +580,7 @@ func HasParentResourceWith(preds ...predicate.Resource) predicate.ResourcePool {
 	})
 }
 
-// And groups list of predicates with the AND operator between them.
+// And groups predicates with the AND operator between them.
 func And(predicates ...predicate.ResourcePool) predicate.ResourcePool {
 	return predicate.ResourcePool(func(s *sql.Selector) {
 		s1 := s.Clone().SetP(nil)
@@ -651,7 +591,7 @@ func And(predicates ...predicate.ResourcePool) predicate.ResourcePool {
 	})
 }
 
-// Or groups list of predicates with the OR operator between them.
+// Or groups predicates with the OR operator between them.
 func Or(predicates ...predicate.ResourcePool) predicate.ResourcePool {
 	return predicate.ResourcePool(func(s *sql.Selector) {
 		s1 := s.Clone().SetP(nil)

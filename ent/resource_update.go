@@ -4,12 +4,13 @@ package ent
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"time"
 
-	"github.com/facebook/ent/dialect/sql"
-	"github.com/facebook/ent/dialect/sql/sqlgraph"
-	"github.com/facebook/ent/schema/field"
+	"entgo.io/ent/dialect/sql"
+	"entgo.io/ent/dialect/sql/sqlgraph"
+	"entgo.io/ent/schema/field"
 	"github.com/net-auto/resourceManager/ent/predicate"
 	"github.com/net-auto/resourceManager/ent/property"
 	"github.com/net-auto/resourceManager/ent/resource"
@@ -23,25 +24,25 @@ type ResourceUpdate struct {
 	mutation *ResourceMutation
 }
 
-// Where adds a new predicate for the builder.
+// Where appends a list predicates to the ResourceUpdate builder.
 func (ru *ResourceUpdate) Where(ps ...predicate.Resource) *ResourceUpdate {
-	ru.mutation.predicates = append(ru.mutation.predicates, ps...)
+	ru.mutation.Where(ps...)
 	return ru
 }
 
-// SetStatus sets the status field.
+// SetStatus sets the "status" field.
 func (ru *ResourceUpdate) SetStatus(r resource.Status) *ResourceUpdate {
 	ru.mutation.SetStatus(r)
 	return ru
 }
 
-// SetDescription sets the description field.
+// SetDescription sets the "description" field.
 func (ru *ResourceUpdate) SetDescription(s string) *ResourceUpdate {
 	ru.mutation.SetDescription(s)
 	return ru
 }
 
-// SetNillableDescription sets the description field if the given value is not nil.
+// SetNillableDescription sets the "description" field if the given value is not nil.
 func (ru *ResourceUpdate) SetNillableDescription(s *string) *ResourceUpdate {
 	if s != nil {
 		ru.SetDescription(*s)
@@ -49,37 +50,37 @@ func (ru *ResourceUpdate) SetNillableDescription(s *string) *ResourceUpdate {
 	return ru
 }
 
-// ClearDescription clears the value of description.
+// ClearDescription clears the value of the "description" field.
 func (ru *ResourceUpdate) ClearDescription() *ResourceUpdate {
 	ru.mutation.ClearDescription()
 	return ru
 }
 
-// SetAlternateID sets the alternate_id field.
+// SetAlternateID sets the "alternate_id" field.
 func (ru *ResourceUpdate) SetAlternateID(m map[string]interface{}) *ResourceUpdate {
 	ru.mutation.SetAlternateID(m)
 	return ru
 }
 
-// ClearAlternateID clears the value of alternate_id.
+// ClearAlternateID clears the value of the "alternate_id" field.
 func (ru *ResourceUpdate) ClearAlternateID() *ResourceUpdate {
 	ru.mutation.ClearAlternateID()
 	return ru
 }
 
-// SetUpdatedAt sets the updated_at field.
+// SetUpdatedAt sets the "updated_at" field.
 func (ru *ResourceUpdate) SetUpdatedAt(t time.Time) *ResourceUpdate {
 	ru.mutation.SetUpdatedAt(t)
 	return ru
 }
 
-// SetPoolID sets the pool edge to ResourcePool by id.
+// SetPoolID sets the "pool" edge to the ResourcePool entity by ID.
 func (ru *ResourceUpdate) SetPoolID(id int) *ResourceUpdate {
 	ru.mutation.SetPoolID(id)
 	return ru
 }
 
-// SetNillablePoolID sets the pool edge to ResourcePool by id if the given value is not nil.
+// SetNillablePoolID sets the "pool" edge to the ResourcePool entity by ID if the given value is not nil.
 func (ru *ResourceUpdate) SetNillablePoolID(id *int) *ResourceUpdate {
 	if id != nil {
 		ru = ru.SetPoolID(*id)
@@ -87,18 +88,18 @@ func (ru *ResourceUpdate) SetNillablePoolID(id *int) *ResourceUpdate {
 	return ru
 }
 
-// SetPool sets the pool edge to ResourcePool.
+// SetPool sets the "pool" edge to the ResourcePool entity.
 func (ru *ResourceUpdate) SetPool(r *ResourcePool) *ResourceUpdate {
 	return ru.SetPoolID(r.ID)
 }
 
-// AddPropertyIDs adds the properties edge to Property by ids.
+// AddPropertyIDs adds the "properties" edge to the Property entity by IDs.
 func (ru *ResourceUpdate) AddPropertyIDs(ids ...int) *ResourceUpdate {
 	ru.mutation.AddPropertyIDs(ids...)
 	return ru
 }
 
-// AddProperties adds the properties edges to Property.
+// AddProperties adds the "properties" edges to the Property entity.
 func (ru *ResourceUpdate) AddProperties(p ...*Property) *ResourceUpdate {
 	ids := make([]int, len(p))
 	for i := range p {
@@ -107,13 +108,13 @@ func (ru *ResourceUpdate) AddProperties(p ...*Property) *ResourceUpdate {
 	return ru.AddPropertyIDs(ids...)
 }
 
-// SetNestedPoolID sets the nested_pool edge to ResourcePool by id.
+// SetNestedPoolID sets the "nested_pool" edge to the ResourcePool entity by ID.
 func (ru *ResourceUpdate) SetNestedPoolID(id int) *ResourceUpdate {
 	ru.mutation.SetNestedPoolID(id)
 	return ru
 }
 
-// SetNillableNestedPoolID sets the nested_pool edge to ResourcePool by id if the given value is not nil.
+// SetNillableNestedPoolID sets the "nested_pool" edge to the ResourcePool entity by ID if the given value is not nil.
 func (ru *ResourceUpdate) SetNillableNestedPoolID(id *int) *ResourceUpdate {
 	if id != nil {
 		ru = ru.SetNestedPoolID(*id)
@@ -121,7 +122,7 @@ func (ru *ResourceUpdate) SetNillableNestedPoolID(id *int) *ResourceUpdate {
 	return ru
 }
 
-// SetNestedPool sets the nested_pool edge to ResourcePool.
+// SetNestedPool sets the "nested_pool" edge to the ResourcePool entity.
 func (ru *ResourceUpdate) SetNestedPool(r *ResourcePool) *ResourceUpdate {
 	return ru.SetNestedPoolID(r.ID)
 }
@@ -131,25 +132,25 @@ func (ru *ResourceUpdate) Mutation() *ResourceMutation {
 	return ru.mutation
 }
 
-// ClearPool clears the "pool" edge to type ResourcePool.
+// ClearPool clears the "pool" edge to the ResourcePool entity.
 func (ru *ResourceUpdate) ClearPool() *ResourceUpdate {
 	ru.mutation.ClearPool()
 	return ru
 }
 
-// ClearProperties clears all "properties" edges to type Property.
+// ClearProperties clears all "properties" edges to the Property entity.
 func (ru *ResourceUpdate) ClearProperties() *ResourceUpdate {
 	ru.mutation.ClearProperties()
 	return ru
 }
 
-// RemovePropertyIDs removes the properties edge to Property by ids.
+// RemovePropertyIDs removes the "properties" edge to Property entities by IDs.
 func (ru *ResourceUpdate) RemovePropertyIDs(ids ...int) *ResourceUpdate {
 	ru.mutation.RemovePropertyIDs(ids...)
 	return ru
 }
 
-// RemoveProperties removes properties edges to Property.
+// RemoveProperties removes "properties" edges to Property entities.
 func (ru *ResourceUpdate) RemoveProperties(p ...*Property) *ResourceUpdate {
 	ids := make([]int, len(p))
 	for i := range p {
@@ -158,19 +159,21 @@ func (ru *ResourceUpdate) RemoveProperties(p ...*Property) *ResourceUpdate {
 	return ru.RemovePropertyIDs(ids...)
 }
 
-// ClearNestedPool clears the "nested_pool" edge to type ResourcePool.
+// ClearNestedPool clears the "nested_pool" edge to the ResourcePool entity.
 func (ru *ResourceUpdate) ClearNestedPool() *ResourceUpdate {
 	ru.mutation.ClearNestedPool()
 	return ru
 }
 
-// Save executes the query and returns the number of rows/vertices matched by this operation.
+// Save executes the query and returns the number of nodes affected by the update operation.
 func (ru *ResourceUpdate) Save(ctx context.Context) (int, error) {
 	var (
 		err      error
 		affected int
 	)
-	ru.defaults()
+	if err := ru.defaults(); err != nil {
+		return 0, err
+	}
 	if len(ru.hooks) == 0 {
 		if err = ru.check(); err != nil {
 			return 0, err
@@ -191,6 +194,9 @@ func (ru *ResourceUpdate) Save(ctx context.Context) (int, error) {
 			return affected, err
 		})
 		for i := len(ru.hooks) - 1; i >= 0; i-- {
+			if ru.hooks[i] == nil {
+				return 0, fmt.Errorf("ent: uninitialized hook (forgotten import ent/runtime?)")
+			}
 			mut = ru.hooks[i](mut)
 		}
 		if _, err := mut.Mutate(ctx, ru.mutation); err != nil {
@@ -223,18 +229,22 @@ func (ru *ResourceUpdate) ExecX(ctx context.Context) {
 }
 
 // defaults sets the default values of the builder before save.
-func (ru *ResourceUpdate) defaults() {
+func (ru *ResourceUpdate) defaults() error {
 	if _, ok := ru.mutation.UpdatedAt(); !ok {
+		if resource.UpdateDefaultUpdatedAt == nil {
+			return fmt.Errorf("ent: uninitialized resource.UpdateDefaultUpdatedAt (forgotten import ent/runtime?)")
+		}
 		v := resource.UpdateDefaultUpdatedAt()
 		ru.mutation.SetUpdatedAt(v)
 	}
+	return nil
 }
 
 // check runs all checks and user-defined validators on the builder.
 func (ru *ResourceUpdate) check() error {
 	if v, ok := ru.mutation.Status(); ok {
 		if err := resource.StatusValidator(v); err != nil {
-			return &ValidationError{Name: "status", err: fmt.Errorf("ent: validator failed for field \"status\": %w", err)}
+			return &ValidationError{Name: "status", err: fmt.Errorf(`ent: validator failed for field "Resource.status": %w`, err)}
 		}
 	}
 	return nil
@@ -425,8 +435,8 @@ func (ru *ResourceUpdate) sqlSave(ctx context.Context) (n int, err error) {
 	if n, err = sqlgraph.UpdateNodes(ctx, ru.driver, _spec); err != nil {
 		if _, ok := err.(*sqlgraph.NotFoundError); ok {
 			err = &NotFoundError{resource.Label}
-		} else if cerr, ok := isSQLConstraintError(err); ok {
-			err = cerr
+		} else if sqlgraph.IsConstraintError(err) {
+			err = &ConstraintError{msg: err.Error(), wrap: err}
 		}
 		return 0, err
 	}
@@ -436,23 +446,24 @@ func (ru *ResourceUpdate) sqlSave(ctx context.Context) (n int, err error) {
 // ResourceUpdateOne is the builder for updating a single Resource entity.
 type ResourceUpdateOne struct {
 	config
+	fields   []string
 	hooks    []Hook
 	mutation *ResourceMutation
 }
 
-// SetStatus sets the status field.
+// SetStatus sets the "status" field.
 func (ruo *ResourceUpdateOne) SetStatus(r resource.Status) *ResourceUpdateOne {
 	ruo.mutation.SetStatus(r)
 	return ruo
 }
 
-// SetDescription sets the description field.
+// SetDescription sets the "description" field.
 func (ruo *ResourceUpdateOne) SetDescription(s string) *ResourceUpdateOne {
 	ruo.mutation.SetDescription(s)
 	return ruo
 }
 
-// SetNillableDescription sets the description field if the given value is not nil.
+// SetNillableDescription sets the "description" field if the given value is not nil.
 func (ruo *ResourceUpdateOne) SetNillableDescription(s *string) *ResourceUpdateOne {
 	if s != nil {
 		ruo.SetDescription(*s)
@@ -460,37 +471,37 @@ func (ruo *ResourceUpdateOne) SetNillableDescription(s *string) *ResourceUpdateO
 	return ruo
 }
 
-// ClearDescription clears the value of description.
+// ClearDescription clears the value of the "description" field.
 func (ruo *ResourceUpdateOne) ClearDescription() *ResourceUpdateOne {
 	ruo.mutation.ClearDescription()
 	return ruo
 }
 
-// SetAlternateID sets the alternate_id field.
+// SetAlternateID sets the "alternate_id" field.
 func (ruo *ResourceUpdateOne) SetAlternateID(m map[string]interface{}) *ResourceUpdateOne {
 	ruo.mutation.SetAlternateID(m)
 	return ruo
 }
 
-// ClearAlternateID clears the value of alternate_id.
+// ClearAlternateID clears the value of the "alternate_id" field.
 func (ruo *ResourceUpdateOne) ClearAlternateID() *ResourceUpdateOne {
 	ruo.mutation.ClearAlternateID()
 	return ruo
 }
 
-// SetUpdatedAt sets the updated_at field.
+// SetUpdatedAt sets the "updated_at" field.
 func (ruo *ResourceUpdateOne) SetUpdatedAt(t time.Time) *ResourceUpdateOne {
 	ruo.mutation.SetUpdatedAt(t)
 	return ruo
 }
 
-// SetPoolID sets the pool edge to ResourcePool by id.
+// SetPoolID sets the "pool" edge to the ResourcePool entity by ID.
 func (ruo *ResourceUpdateOne) SetPoolID(id int) *ResourceUpdateOne {
 	ruo.mutation.SetPoolID(id)
 	return ruo
 }
 
-// SetNillablePoolID sets the pool edge to ResourcePool by id if the given value is not nil.
+// SetNillablePoolID sets the "pool" edge to the ResourcePool entity by ID if the given value is not nil.
 func (ruo *ResourceUpdateOne) SetNillablePoolID(id *int) *ResourceUpdateOne {
 	if id != nil {
 		ruo = ruo.SetPoolID(*id)
@@ -498,18 +509,18 @@ func (ruo *ResourceUpdateOne) SetNillablePoolID(id *int) *ResourceUpdateOne {
 	return ruo
 }
 
-// SetPool sets the pool edge to ResourcePool.
+// SetPool sets the "pool" edge to the ResourcePool entity.
 func (ruo *ResourceUpdateOne) SetPool(r *ResourcePool) *ResourceUpdateOne {
 	return ruo.SetPoolID(r.ID)
 }
 
-// AddPropertyIDs adds the properties edge to Property by ids.
+// AddPropertyIDs adds the "properties" edge to the Property entity by IDs.
 func (ruo *ResourceUpdateOne) AddPropertyIDs(ids ...int) *ResourceUpdateOne {
 	ruo.mutation.AddPropertyIDs(ids...)
 	return ruo
 }
 
-// AddProperties adds the properties edges to Property.
+// AddProperties adds the "properties" edges to the Property entity.
 func (ruo *ResourceUpdateOne) AddProperties(p ...*Property) *ResourceUpdateOne {
 	ids := make([]int, len(p))
 	for i := range p {
@@ -518,13 +529,13 @@ func (ruo *ResourceUpdateOne) AddProperties(p ...*Property) *ResourceUpdateOne {
 	return ruo.AddPropertyIDs(ids...)
 }
 
-// SetNestedPoolID sets the nested_pool edge to ResourcePool by id.
+// SetNestedPoolID sets the "nested_pool" edge to the ResourcePool entity by ID.
 func (ruo *ResourceUpdateOne) SetNestedPoolID(id int) *ResourceUpdateOne {
 	ruo.mutation.SetNestedPoolID(id)
 	return ruo
 }
 
-// SetNillableNestedPoolID sets the nested_pool edge to ResourcePool by id if the given value is not nil.
+// SetNillableNestedPoolID sets the "nested_pool" edge to the ResourcePool entity by ID if the given value is not nil.
 func (ruo *ResourceUpdateOne) SetNillableNestedPoolID(id *int) *ResourceUpdateOne {
 	if id != nil {
 		ruo = ruo.SetNestedPoolID(*id)
@@ -532,7 +543,7 @@ func (ruo *ResourceUpdateOne) SetNillableNestedPoolID(id *int) *ResourceUpdateOn
 	return ruo
 }
 
-// SetNestedPool sets the nested_pool edge to ResourcePool.
+// SetNestedPool sets the "nested_pool" edge to the ResourcePool entity.
 func (ruo *ResourceUpdateOne) SetNestedPool(r *ResourcePool) *ResourceUpdateOne {
 	return ruo.SetNestedPoolID(r.ID)
 }
@@ -542,25 +553,25 @@ func (ruo *ResourceUpdateOne) Mutation() *ResourceMutation {
 	return ruo.mutation
 }
 
-// ClearPool clears the "pool" edge to type ResourcePool.
+// ClearPool clears the "pool" edge to the ResourcePool entity.
 func (ruo *ResourceUpdateOne) ClearPool() *ResourceUpdateOne {
 	ruo.mutation.ClearPool()
 	return ruo
 }
 
-// ClearProperties clears all "properties" edges to type Property.
+// ClearProperties clears all "properties" edges to the Property entity.
 func (ruo *ResourceUpdateOne) ClearProperties() *ResourceUpdateOne {
 	ruo.mutation.ClearProperties()
 	return ruo
 }
 
-// RemovePropertyIDs removes the properties edge to Property by ids.
+// RemovePropertyIDs removes the "properties" edge to Property entities by IDs.
 func (ruo *ResourceUpdateOne) RemovePropertyIDs(ids ...int) *ResourceUpdateOne {
 	ruo.mutation.RemovePropertyIDs(ids...)
 	return ruo
 }
 
-// RemoveProperties removes properties edges to Property.
+// RemoveProperties removes "properties" edges to Property entities.
 func (ruo *ResourceUpdateOne) RemoveProperties(p ...*Property) *ResourceUpdateOne {
 	ids := make([]int, len(p))
 	for i := range p {
@@ -569,19 +580,28 @@ func (ruo *ResourceUpdateOne) RemoveProperties(p ...*Property) *ResourceUpdateOn
 	return ruo.RemovePropertyIDs(ids...)
 }
 
-// ClearNestedPool clears the "nested_pool" edge to type ResourcePool.
+// ClearNestedPool clears the "nested_pool" edge to the ResourcePool entity.
 func (ruo *ResourceUpdateOne) ClearNestedPool() *ResourceUpdateOne {
 	ruo.mutation.ClearNestedPool()
 	return ruo
 }
 
-// Save executes the query and returns the updated entity.
+// Select allows selecting one or more fields (columns) of the returned entity.
+// The default is selecting all fields defined in the entity schema.
+func (ruo *ResourceUpdateOne) Select(field string, fields ...string) *ResourceUpdateOne {
+	ruo.fields = append([]string{field}, fields...)
+	return ruo
+}
+
+// Save executes the query and returns the updated Resource entity.
 func (ruo *ResourceUpdateOne) Save(ctx context.Context) (*Resource, error) {
 	var (
 		err  error
 		node *Resource
 	)
-	ruo.defaults()
+	if err := ruo.defaults(); err != nil {
+		return nil, err
+	}
 	if len(ruo.hooks) == 0 {
 		if err = ruo.check(); err != nil {
 			return nil, err
@@ -602,11 +622,20 @@ func (ruo *ResourceUpdateOne) Save(ctx context.Context) (*Resource, error) {
 			return node, err
 		})
 		for i := len(ruo.hooks) - 1; i >= 0; i-- {
+			if ruo.hooks[i] == nil {
+				return nil, fmt.Errorf("ent: uninitialized hook (forgotten import ent/runtime?)")
+			}
 			mut = ruo.hooks[i](mut)
 		}
-		if _, err := mut.Mutate(ctx, ruo.mutation); err != nil {
+		v, err := mut.Mutate(ctx, ruo.mutation)
+		if err != nil {
 			return nil, err
 		}
+		nv, ok := v.(*Resource)
+		if !ok {
+			return nil, fmt.Errorf("unexpected node type %T returned from ResourceMutation", v)
+		}
+		node = nv
 	}
 	return node, err
 }
@@ -634,18 +663,22 @@ func (ruo *ResourceUpdateOne) ExecX(ctx context.Context) {
 }
 
 // defaults sets the default values of the builder before save.
-func (ruo *ResourceUpdateOne) defaults() {
+func (ruo *ResourceUpdateOne) defaults() error {
 	if _, ok := ruo.mutation.UpdatedAt(); !ok {
+		if resource.UpdateDefaultUpdatedAt == nil {
+			return fmt.Errorf("ent: uninitialized resource.UpdateDefaultUpdatedAt (forgotten import ent/runtime?)")
+		}
 		v := resource.UpdateDefaultUpdatedAt()
 		ruo.mutation.SetUpdatedAt(v)
 	}
+	return nil
 }
 
 // check runs all checks and user-defined validators on the builder.
 func (ruo *ResourceUpdateOne) check() error {
 	if v, ok := ruo.mutation.Status(); ok {
 		if err := resource.StatusValidator(v); err != nil {
-			return &ValidationError{Name: "status", err: fmt.Errorf("ent: validator failed for field \"status\": %w", err)}
+			return &ValidationError{Name: "status", err: fmt.Errorf(`ent: validator failed for field "Resource.status": %w`, err)}
 		}
 	}
 	return nil
@@ -664,9 +697,28 @@ func (ruo *ResourceUpdateOne) sqlSave(ctx context.Context) (_node *Resource, err
 	}
 	id, ok := ruo.mutation.ID()
 	if !ok {
-		return nil, &ValidationError{Name: "ID", err: fmt.Errorf("missing Resource.ID for update")}
+		return nil, &ValidationError{Name: "id", err: errors.New(`ent: missing "Resource.id" for update`)}
 	}
 	_spec.Node.ID.Value = id
+	if fields := ruo.fields; len(fields) > 0 {
+		_spec.Node.Columns = make([]string, 0, len(fields))
+		_spec.Node.Columns = append(_spec.Node.Columns, resource.FieldID)
+		for _, f := range fields {
+			if !resource.ValidColumn(f) {
+				return nil, &ValidationError{Name: f, err: fmt.Errorf("ent: invalid field %q for query", f)}
+			}
+			if f != resource.FieldID {
+				_spec.Node.Columns = append(_spec.Node.Columns, f)
+			}
+		}
+	}
+	if ps := ruo.mutation.predicates; len(ps) > 0 {
+		_spec.Predicate = func(selector *sql.Selector) {
+			for i := range ps {
+				ps[i](selector)
+			}
+		}
+	}
 	if value, ok := ruo.mutation.Status(); ok {
 		_spec.Fields.Set = append(_spec.Fields.Set, &sqlgraph.FieldSpec{
 			Type:   field.TypeEnum,
@@ -833,12 +885,12 @@ func (ruo *ResourceUpdateOne) sqlSave(ctx context.Context) (_node *Resource, err
 	}
 	_node = &Resource{config: ruo.config}
 	_spec.Assign = _node.assignValues
-	_spec.ScanValues = _node.scanValues()
+	_spec.ScanValues = _node.scanValues
 	if err = sqlgraph.UpdateNode(ctx, ruo.driver, _spec); err != nil {
 		if _, ok := err.(*sqlgraph.NotFoundError); ok {
 			err = &NotFoundError{resource.Label}
-		} else if cerr, ok := isSQLConstraintError(err); ok {
-			err = cerr
+		} else if sqlgraph.IsConstraintError(err) {
+			err = &ConstraintError{msg: err.Error(), wrap: err}
 		}
 		return nil, err
 	}

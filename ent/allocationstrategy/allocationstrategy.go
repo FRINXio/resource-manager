@@ -4,10 +4,8 @@ package allocationstrategy
 
 import (
 	"fmt"
-	"io"
-	"strconv"
 
-	"github.com/facebook/ent"
+	"entgo.io/ent"
 )
 
 const (
@@ -23,13 +21,11 @@ const (
 	FieldLang = "lang"
 	// FieldScript holds the string denoting the script field in the database.
 	FieldScript = "script"
-
 	// EdgePools holds the string denoting the pools edge name in mutations.
 	EdgePools = "pools"
-
 	// Table holds the table name of the allocationstrategy in the database.
 	Table = "allocation_strategies"
-	// PoolsTable is the table the holds the pools relation/edge.
+	// PoolsTable is the table that holds the pools relation/edge.
 	PoolsTable = "resource_pools"
 	// PoolsInverseTable is the table name for the ResourcePool entity.
 	// It exists in this package in order to avoid circular dependency with the "resourcepool" package.
@@ -62,7 +58,6 @@ func ValidColumn(column string) bool {
 // it should be imported in the main as follows:
 //
 //	import _ "github.com/net-auto/resourceManager/ent/runtime"
-//
 var (
 	Hooks  [1]ent.Hook
 	Policy ent.Policy
@@ -72,10 +67,10 @@ var (
 	ScriptValidator func(string) error
 )
 
-// Lang defines the type for the lang enum field.
+// Lang defines the type for the "lang" enum field.
 type Lang string
 
-// LangJs is the default Lang.
+// LangJs is the default value of the Lang enum.
 const DefaultLang = LangJs
 
 // Lang values.
@@ -97,22 +92,4 @@ func LangValidator(l Lang) error {
 	default:
 		return fmt.Errorf("allocationstrategy: invalid enum value for lang field: %q", l)
 	}
-}
-
-// MarshalGQL implements graphql.Marshaler interface.
-func (l Lang) MarshalGQL(w io.Writer) {
-	io.WriteString(w, strconv.Quote(l.String()))
-}
-
-// UnmarshalGQL implements graphql.Unmarshaler interface.
-func (l *Lang) UnmarshalGQL(val interface{}) error {
-	str, ok := val.(string)
-	if !ok {
-		return fmt.Errorf("enum %T must be a string", val)
-	}
-	*l = Lang(str)
-	if err := LangValidator(*l); err != nil {
-		return fmt.Errorf("%s is not a valid Lang", str)
-	}
-	return nil
 }

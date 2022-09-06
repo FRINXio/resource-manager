@@ -208,7 +208,6 @@ func HasFields(field string, fields ...string) Condition {
 // If executes the given hook under condition.
 //
 //	hook.If(ComputeAverage, And(HasFields(...), HasAddedFields(...)))
-//
 func If(hk ent.Hook, cond Condition) ent.Hook {
 	return func(next ent.Mutator) ent.Mutator {
 		return ent.MutateFunc(func(ctx context.Context, m ent.Mutation) (ent.Value, error) {
@@ -223,7 +222,6 @@ func If(hk ent.Hook, cond Condition) ent.Hook {
 // On executes the given hook only for the given operation.
 //
 //	hook.On(Log, ent.Delete|ent.Create)
-//
 func On(hk ent.Hook, op ent.Op) ent.Hook {
 	return If(hk, HasOp(op))
 }
@@ -231,9 +229,17 @@ func On(hk ent.Hook, op ent.Op) ent.Hook {
 // Unless skips the given hook only for the given operation.
 //
 //	hook.Unless(Log, ent.Update|ent.UpdateOne)
-//
 func Unless(hk ent.Hook, op ent.Op) ent.Hook {
 	return If(hk, Not(HasOp(op)))
+}
+
+// FixedError is a hook returning a fixed error.
+func FixedError(err error) ent.Hook {
+	return func(ent.Mutator) ent.Mutator {
+		return ent.MutateFunc(func(context.Context, ent.Mutation) (ent.Value, error) {
+			return nil, err
+		})
+	}
 }
 
 // Reject returns a hook that rejects all operations that match op.
@@ -243,13 +249,8 @@ func Unless(hk ent.Hook, op ent.Op) ent.Hook {
 //			Reject(ent.Delete|ent.Update),
 //		}
 //	}
-//
 func Reject(op ent.Op) ent.Hook {
-	hk := func(ent.Mutator) ent.Mutator {
-		return ent.MutateFunc(func(_ context.Context, m ent.Mutation) (ent.Value, error) {
-			return nil, fmt.Errorf("%s operation is not allowed", m.Op())
-		})
-	}
+	hk := FixedError(fmt.Errorf("%s operation is not allowed", op))
 	return On(hk, op)
 }
 

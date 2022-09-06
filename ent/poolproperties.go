@@ -6,7 +6,7 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/facebook/ent/dialect/sql"
+	"entgo.io/ent/dialect/sql"
 	"github.com/net-auto/resourceManager/ent/poolproperties"
 	"github.com/net-auto/resourceManager/ent/resourcepool"
 )
@@ -25,11 +25,11 @@ type PoolProperties struct {
 // PoolPropertiesEdges holds the relations/edges for other nodes in the graph.
 type PoolPropertiesEdges struct {
 	// Pool holds the value of the pool edge.
-	Pool *ResourcePool
+	Pool *ResourcePool `json:"pool,omitempty"`
 	// ResourceType holds the value of the resourceType edge.
-	ResourceType []*ResourceType
+	ResourceType []*ResourceType `json:"resourceType,omitempty"`
 	// Properties holds the value of the properties edge.
-	Properties []*Property
+	Properties []*Property `json:"properties,omitempty"`
 	// loadedTypes holds the information for reporting if a
 	// type was loaded (or requested) in eager-loading or not.
 	loadedTypes [3]bool
@@ -40,8 +40,7 @@ type PoolPropertiesEdges struct {
 func (e PoolPropertiesEdges) PoolOrErr() (*ResourcePool, error) {
 	if e.loadedTypes[0] {
 		if e.Pool == nil {
-			// The edge pool was loaded in eager-loading,
-			// but was not found.
+			// Edge was loaded but was not found.
 			return nil, &NotFoundError{label: resourcepool.Label}
 		}
 		return e.Pool, nil
@@ -68,72 +67,77 @@ func (e PoolPropertiesEdges) PropertiesOrErr() ([]*Property, error) {
 }
 
 // scanValues returns the types for scanning values from sql.Rows.
-func (*PoolProperties) scanValues() []interface{} {
-	return []interface{}{
-		&sql.NullInt64{}, // id
+func (*PoolProperties) scanValues(columns []string) ([]any, error) {
+	values := make([]any, len(columns))
+	for i := range columns {
+		switch columns[i] {
+		case poolproperties.FieldID:
+			values[i] = new(sql.NullInt64)
+		case poolproperties.ForeignKeys[0]: // resource_pool_pool_properties
+			values[i] = new(sql.NullInt64)
+		default:
+			return nil, fmt.Errorf("unexpected column %q for type PoolProperties", columns[i])
+		}
 	}
-}
-
-// fkValues returns the types for scanning foreign-keys values from sql.Rows.
-func (*PoolProperties) fkValues() []interface{} {
-	return []interface{}{
-		&sql.NullInt64{}, // resource_pool_pool_properties
-	}
+	return values, nil
 }
 
 // assignValues assigns the values that were returned from sql.Rows (after scanning)
 // to the PoolProperties fields.
-func (pp *PoolProperties) assignValues(values ...interface{}) error {
-	if m, n := len(values), len(poolproperties.Columns); m < n {
+func (pp *PoolProperties) assignValues(columns []string, values []any) error {
+	if m, n := len(values), len(columns); m < n {
 		return fmt.Errorf("mismatch number of scan values: %d != %d", m, n)
 	}
-	value, ok := values[0].(*sql.NullInt64)
-	if !ok {
-		return fmt.Errorf("unexpected type %T for field id", value)
-	}
-	pp.ID = int(value.Int64)
-	values = values[1:]
-	if len(values) == len(poolproperties.ForeignKeys) {
-		if value, ok := values[0].(*sql.NullInt64); !ok {
-			return fmt.Errorf("unexpected type %T for edge-field resource_pool_pool_properties", value)
-		} else if value.Valid {
-			pp.resource_pool_pool_properties = new(int)
-			*pp.resource_pool_pool_properties = int(value.Int64)
+	for i := range columns {
+		switch columns[i] {
+		case poolproperties.FieldID:
+			value, ok := values[i].(*sql.NullInt64)
+			if !ok {
+				return fmt.Errorf("unexpected type %T for field id", value)
+			}
+			pp.ID = int(value.Int64)
+		case poolproperties.ForeignKeys[0]:
+			if value, ok := values[i].(*sql.NullInt64); !ok {
+				return fmt.Errorf("unexpected type %T for edge-field resource_pool_pool_properties", value)
+			} else if value.Valid {
+				pp.resource_pool_pool_properties = new(int)
+				*pp.resource_pool_pool_properties = int(value.Int64)
+			}
 		}
 	}
 	return nil
 }
 
-// QueryPool queries the pool edge of the PoolProperties.
+// QueryPool queries the "pool" edge of the PoolProperties entity.
 func (pp *PoolProperties) QueryPool() *ResourcePoolQuery {
 	return (&PoolPropertiesClient{config: pp.config}).QueryPool(pp)
 }
 
-// QueryResourceType queries the resourceType edge of the PoolProperties.
+// QueryResourceType queries the "resourceType" edge of the PoolProperties entity.
 func (pp *PoolProperties) QueryResourceType() *ResourceTypeQuery {
 	return (&PoolPropertiesClient{config: pp.config}).QueryResourceType(pp)
 }
 
-// QueryProperties queries the properties edge of the PoolProperties.
+// QueryProperties queries the "properties" edge of the PoolProperties entity.
 func (pp *PoolProperties) QueryProperties() *PropertyQuery {
 	return (&PoolPropertiesClient{config: pp.config}).QueryProperties(pp)
 }
 
 // Update returns a builder for updating this PoolProperties.
-// Note that, you need to call PoolProperties.Unwrap() before calling this method, if this PoolProperties
+// Note that you need to call PoolProperties.Unwrap() before calling this method if this PoolProperties
 // was returned from a transaction, and the transaction was committed or rolled back.
 func (pp *PoolProperties) Update() *PoolPropertiesUpdateOne {
 	return (&PoolPropertiesClient{config: pp.config}).UpdateOne(pp)
 }
 
-// Unwrap unwraps the entity that was returned from a transaction after it was closed,
-// so that all next queries will be executed through the driver which created the transaction.
+// Unwrap unwraps the PoolProperties entity that was returned from a transaction after it was closed,
+// so that all future queries will be executed through the driver which created the transaction.
 func (pp *PoolProperties) Unwrap() *PoolProperties {
-	tx, ok := pp.config.driver.(*txDriver)
+	_tx, ok := pp.config.driver.(*txDriver)
 	if !ok {
 		panic("ent: PoolProperties is not a transactional entity")
 	}
-	pp.config.driver = tx.drv
+	pp.config.driver = _tx.drv
 	return pp
 }
 

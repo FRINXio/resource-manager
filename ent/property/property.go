@@ -3,7 +3,7 @@
 package property
 
 import (
-	"github.com/facebook/ent"
+	"entgo.io/ent"
 )
 
 const (
@@ -27,22 +27,20 @@ const (
 	FieldRangeToVal = "range_to_val"
 	// FieldStringVal holds the string denoting the string_val field in the database.
 	FieldStringVal = "string_val"
-
 	// EdgeType holds the string denoting the type edge name in mutations.
 	EdgeType = "type"
 	// EdgeResources holds the string denoting the resources edge name in mutations.
 	EdgeResources = "resources"
-
 	// Table holds the table name of the property in the database.
 	Table = "properties"
-	// TypeTable is the table the holds the type relation/edge.
+	// TypeTable is the table that holds the type relation/edge.
 	TypeTable = "properties"
 	// TypeInverseTable is the table name for the PropertyType entity.
 	// It exists in this package in order to avoid circular dependency with the "propertytype" package.
 	TypeInverseTable = "property_types"
 	// TypeColumn is the table column denoting the type relation/edge.
 	TypeColumn = "property_type"
-	// ResourcesTable is the table the holds the resources relation/edge.
+	// ResourcesTable is the table that holds the resources relation/edge.
 	ResourcesTable = "properties"
 	// ResourcesInverseTable is the table name for the Resource entity.
 	// It exists in this package in order to avoid circular dependency with the "resource" package.
@@ -64,7 +62,8 @@ var Columns = []string{
 	FieldStringVal,
 }
 
-// ForeignKeys holds the SQL foreign-keys that are owned by the Property type.
+// ForeignKeys holds the SQL foreign-keys that are owned by the "properties"
+// table and are not defined as standalone fields in the schema.
 var ForeignKeys = []string{
 	"pool_properties_properties",
 	"property_type",
@@ -91,7 +90,6 @@ func ValidColumn(column string) bool {
 // it should be imported in the main as follows:
 //
 //	import _ "github.com/net-auto/resourceManager/ent/runtime"
-//
 var (
 	Hooks  [1]ent.Hook
 	Policy ent.Policy

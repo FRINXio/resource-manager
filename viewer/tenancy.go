@@ -10,19 +10,19 @@ import (
 	"context"
 	"database/sql"
 	"fmt"
+	"github.com/net-auto/resourceManager/logging/log"
 	"net/url"
 	"runtime"
 	"strings"
 	"sync"
 
-	"github.com/facebookincubator/symphony/pkg/log"
 	"github.com/net-auto/resourceManager/ent/migrate"
 	pools "github.com/net-auto/resourceManager/pools/allocating_strategies"
 	"github.com/net-auto/resourceManager/psql"
 	"go.uber.org/zap"
 
-	"github.com/facebook/ent/dialect"
-	entsql "github.com/facebook/ent/dialect/sql"
+	"entgo.io/ent/dialect"
+	entsql "entgo.io/ent/dialect/sql"
 	"github.com/net-auto/resourceManager/ent"
 
 	"gocloud.dev/server/health"

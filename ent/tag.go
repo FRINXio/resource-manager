@@ -6,7 +6,7 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/facebook/ent/dialect/sql"
+	"entgo.io/ent/dialect/sql"
 	"github.com/net-auto/resourceManager/ent/tag"
 )
 
@@ -25,7 +25,7 @@ type Tag struct {
 // TagEdges holds the relations/edges for other nodes in the graph.
 type TagEdges struct {
 	// Pools holds the value of the pools edge.
-	Pools []*ResourcePool
+	Pools []*ResourcePool `json:"pools,omitempty"`
 	// loadedTypes holds the information for reporting if a
 	// type was loaded (or requested) in eager-loading or not.
 	loadedTypes [1]bool
@@ -41,53 +41,66 @@ func (e TagEdges) PoolsOrErr() ([]*ResourcePool, error) {
 }
 
 // scanValues returns the types for scanning values from sql.Rows.
-func (*Tag) scanValues() []interface{} {
-	return []interface{}{
-		&sql.NullInt64{},  // id
-		&sql.NullString{}, // tag
+func (*Tag) scanValues(columns []string) ([]any, error) {
+	values := make([]any, len(columns))
+	for i := range columns {
+		switch columns[i] {
+		case tag.FieldID:
+			values[i] = new(sql.NullInt64)
+		case tag.FieldTag:
+			values[i] = new(sql.NullString)
+		default:
+			return nil, fmt.Errorf("unexpected column %q for type Tag", columns[i])
+		}
 	}
+	return values, nil
 }
 
 // assignValues assigns the values that were returned from sql.Rows (after scanning)
 // to the Tag fields.
-func (t *Tag) assignValues(values ...interface{}) error {
-	if m, n := len(values), len(tag.Columns); m < n {
+func (t *Tag) assignValues(columns []string, values []any) error {
+	if m, n := len(values), len(columns); m < n {
 		return fmt.Errorf("mismatch number of scan values: %d != %d", m, n)
 	}
-	value, ok := values[0].(*sql.NullInt64)
-	if !ok {
-		return fmt.Errorf("unexpected type %T for field id", value)
-	}
-	t.ID = int(value.Int64)
-	values = values[1:]
-	if value, ok := values[0].(*sql.NullString); !ok {
-		return fmt.Errorf("unexpected type %T for field tag", values[0])
-	} else if value.Valid {
-		t.Tag = value.String
+	for i := range columns {
+		switch columns[i] {
+		case tag.FieldID:
+			value, ok := values[i].(*sql.NullInt64)
+			if !ok {
+				return fmt.Errorf("unexpected type %T for field id", value)
+			}
+			t.ID = int(value.Int64)
+		case tag.FieldTag:
+			if value, ok := values[i].(*sql.NullString); !ok {
+				return fmt.Errorf("unexpected type %T for field tag", values[i])
+			} else if value.Valid {
+				t.Tag = value.String
+			}
+		}
 	}
 	return nil
 }
 
-// QueryPools queries the pools edge of the Tag.
+// QueryPools queries the "pools" edge of the Tag entity.
 func (t *Tag) QueryPools() *ResourcePoolQuery {
 	return (&TagClient{config: t.config}).QueryPools(t)
 }
 
 // Update returns a builder for updating this Tag.
-// Note that, you need to call Tag.Unwrap() before calling this method, if this Tag
+// Note that you need to call Tag.Unwrap() before calling this method if this Tag
 // was returned from a transaction, and the transaction was committed or rolled back.
 func (t *Tag) Update() *TagUpdateOne {
 	return (&TagClient{config: t.config}).UpdateOne(t)
 }
 
-// Unwrap unwraps the entity that was returned from a transaction after it was closed,
-// so that all next queries will be executed through the driver which created the transaction.
+// Unwrap unwraps the Tag entity that was returned from a transaction after it was closed,
+// so that all future queries will be executed through the driver which created the transaction.
 func (t *Tag) Unwrap() *Tag {
-	tx, ok := t.config.driver.(*txDriver)
+	_tx, ok := t.config.driver.(*txDriver)
 	if !ok {
 		panic("ent: Tag is not a transactional entity")
 	}
-	t.config.driver = tx.drv
+	t.config.driver = _tx.drv
 	return t
 }
 
@@ -95,8 +108,8 @@ func (t *Tag) Unwrap() *Tag {
 func (t *Tag) String() string {
 	var builder strings.Builder
 	builder.WriteString("Tag(")
-	builder.WriteString(fmt.Sprintf("id=%v", t.ID))
-	builder.WriteString(", tag=")
+	builder.WriteString(fmt.Sprintf("id=%v, ", t.ID))
+	builder.WriteString("tag=")
 	builder.WriteString(t.Tag)
 	builder.WriteByte(')')
 	return builder.String()

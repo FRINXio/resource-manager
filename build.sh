@@ -7,9 +7,11 @@ GITHUB_TOKEN=${GITHUB_TOKEN_EXTERNAL:-${GITHUB_TOKEN_FILE}}
 
 # symphony is a private repo, you need a github access token to access it
 export GOPRIVATE="github.com/FRINXio"
-git config --global url."https://${GITHUB_TOKEN}:x-oauth-basic@github.com/FRINXio".insteadOf "https://github.com/FRINXio"
 
 go generate ./pools/...
+go get entgo.io/ent/cmd/ent@v0.11.3-0.20220830071904-3b1b75b9d7a9
+go get entgo.io/ent/cmd/internal/printer@v0.11.3-0.20220830071904-3b1b75b9d7a9
+go get -d github.com/99designs/gqlgen@v0.17.16
 go generate ./ent
 go generate ./graph/graphql
 

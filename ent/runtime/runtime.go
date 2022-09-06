@@ -16,8 +16,8 @@ import (
 	"github.com/net-auto/resourceManager/ent/schema"
 	"github.com/net-auto/resourceManager/ent/tag"
 
-	"github.com/facebook/ent"
-	"github.com/facebook/ent/privacy"
+	"entgo.io/ent"
+	"entgo.io/ent/privacy"
 )
 
 // The init function reads all schema descriptors with runtime code
@@ -148,6 +148,6 @@ func init() {
 }
 
 const (
-	Version = "v0.4.4-0.20201019115128-98aeb19013f1"            // Version of ent codegen.
-	Sum     = "h1:fUz6h13o1ZlCy2PJwm/pVXCe6msMEs6CIaJnjJvIRpU=" // Sum of ent codegen.
+	Version = "v0.11.3-0.20220830071904-3b1b75b9d7a9"           // Version of ent codegen.
+	Sum     = "h1:dxyBYasfOuLgAT0IuqSXNgDDJ9ra5C+Jc8a6VqVywWo=" // Sum of ent codegen.
 )

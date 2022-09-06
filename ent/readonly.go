@@ -5,14 +5,13 @@ package ent
 import (
 	"context"
 
-	"github.com/facebook/ent/dialect"
+	"entgo.io/ent/dialect"
 	"github.com/net-auto/resourceManager/ent/migrate"
 )
 
 // ReadOnly returns a new readonly-client.
 //
 //	client := client.ReadOnly()
-//
 func (c *Client) ReadOnly() *Client {
 	cfg := config{driver: &readonly{Driver: c.driver}, log: c.log}
 	return &Client{

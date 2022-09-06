@@ -8,16 +8,16 @@ import (
 
 	"github.com/net-auto/resourceManager/ent"
 
-	"github.com/facebook/ent/privacy"
+	"entgo.io/ent/privacy"
 )
 
 var (
 	// Allow may be returned by rules to indicate that the policy
-	// evaluation should terminate with an allow decision.
+	// evaluation should terminate with allow decision.
 	Allow = privacy.Allow
 
 	// Deny may be returned by rules to indicate that the policy
-	// evaluation should terminate with an deny decision.
+	// evaluation should terminate with deny decision.
 	Deny = privacy.Deny
 
 	// Skip may be returned by rules to indicate that the policy
@@ -26,17 +26,17 @@ var (
 )
 
 // Allowf returns an formatted wrapped Allow decision.
-func Allowf(format string, a ...interface{}) error {
+func Allowf(format string, a ...any) error {
 	return fmt.Errorf(format+": %w", append(a, Allow)...)
 }
 
 // Denyf returns an formatted wrapped Deny decision.
-func Denyf(format string, a ...interface{}) error {
+func Denyf(format string, a ...any) error {
 	return fmt.Errorf(format+": %w", append(a, Deny)...)
 }
 
 // Skipf returns an formatted wrapped Skip decision.
-func Skipf(format string, a ...interface{}) error {
+func Skipf(format string, a ...any) error {
 	return fmt.Errorf(format+": %w", append(a, Skip)...)
 }
 
@@ -52,11 +52,20 @@ func DecisionFromContext(ctx context.Context) (error, bool) {
 }
 
 type (
+	// Policy groups query and mutation policies.
+	Policy = privacy.Policy
+
 	// QueryRule defines the interface deciding whether a
 	// query is allowed and optionally modify it.
 	QueryRule = privacy.QueryRule
 	// QueryPolicy combines multiple query rules into a single policy.
 	QueryPolicy = privacy.QueryPolicy
+
+	// MutationRule defines the interface which decides whether a
+	// mutation is allowed and optionally modifies it.
+	MutationRule = privacy.MutationRule
+	// MutationPolicy combines multiple mutation rules into a single policy.
+	MutationPolicy = privacy.MutationPolicy
 )
 
 // QueryRuleFunc type is an adapter to allow the use of
@@ -68,15 +77,7 @@ func (f QueryRuleFunc) EvalQuery(ctx context.Context, q ent.Query) error {
 	return f(ctx, q)
 }
 
-type (
-	// MutationRule defines the interface deciding whether a
-	// mutation is allowed and optionally modify it.
-	MutationRule = privacy.MutationRule
-	// MutationPolicy combines multiple mutation rules into a single policy.
-	MutationPolicy = privacy.MutationPolicy
-)
-
-// MutationRuleFunc type is an adapter to allow the use of
+// MutationRuleFunc type is an adapter which allows the use of
 // ordinary functions as mutation rules.
 type MutationRuleFunc func(context.Context, ent.Mutation) error
 
@@ -85,23 +86,7 @@ func (f MutationRuleFunc) EvalMutation(ctx context.Context, m ent.Mutation) erro
 	return f(ctx, m)
 }
 
-// Policy groups query and mutation policies.
-type Policy struct {
-	Query    QueryPolicy
-	Mutation MutationPolicy
-}
-
-// EvalQuery forwards evaluation to query policy.
-func (policy Policy) EvalQuery(ctx context.Context, q ent.Query) error {
-	return policy.Query.EvalQuery(ctx, q)
-}
-
-// EvalMutation forwards evaluation to mutation policy.
-func (policy Policy) EvalMutation(ctx context.Context, m ent.Mutation) error {
-	return policy.Mutation.EvalMutation(ctx, m)
-}
-
-// QueryMutationRule is the interface that groups query and mutation rules.
+// QueryMutationRule is an interface which groups query and mutation rules.
 type QueryMutationRule interface {
 	QueryRule
 	MutationRule

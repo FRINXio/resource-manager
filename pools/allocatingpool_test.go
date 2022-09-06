@@ -3,6 +3,7 @@ package pools
 import (
 	"context"
 	"fmt"
+	"github.com/net-auto/resourceManager/graph/graphql/model"
 	"reflect"
 	"testing"
 	"time"
@@ -11,7 +12,6 @@ import (
 	"github.com/net-auto/resourceManager/ent/allocationstrategy"
 	"github.com/net-auto/resourceManager/ent/resource"
 	"github.com/net-auto/resourceManager/ent/schema"
-	"github.com/net-auto/resourceManager/graph/graphql/model"
 
 	_ "github.com/mattn/go-sqlite3"
 	_ "github.com/net-auto/resourceManager/ent/runtime"

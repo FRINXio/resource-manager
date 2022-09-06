@@ -4,11 +4,12 @@ package ent
 
 import (
 	"context"
+	"errors"
 	"fmt"
 
-	"github.com/facebook/ent/dialect/sql"
-	"github.com/facebook/ent/dialect/sql/sqlgraph"
-	"github.com/facebook/ent/schema/field"
+	"entgo.io/ent/dialect/sql"
+	"entgo.io/ent/dialect/sql/sqlgraph"
+	"entgo.io/ent/schema/field"
 	"github.com/net-auto/resourceManager/ent/predicate"
 	"github.com/net-auto/resourceManager/ent/property"
 	"github.com/net-auto/resourceManager/ent/propertytype"
@@ -22,31 +23,31 @@ type PropertyTypeUpdate struct {
 	mutation *PropertyTypeMutation
 }
 
-// Where adds a new predicate for the builder.
+// Where appends a list predicates to the PropertyTypeUpdate builder.
 func (ptu *PropertyTypeUpdate) Where(ps ...predicate.PropertyType) *PropertyTypeUpdate {
-	ptu.mutation.predicates = append(ptu.mutation.predicates, ps...)
+	ptu.mutation.Where(ps...)
 	return ptu
 }
 
-// SetType sets the type field.
+// SetType sets the "type" field.
 func (ptu *PropertyTypeUpdate) SetType(pr propertytype.Type) *PropertyTypeUpdate {
 	ptu.mutation.SetType(pr)
 	return ptu
 }
 
-// SetName sets the name field.
+// SetName sets the "name" field.
 func (ptu *PropertyTypeUpdate) SetName(s string) *PropertyTypeUpdate {
 	ptu.mutation.SetName(s)
 	return ptu
 }
 
-// SetExternalID sets the external_id field.
+// SetExternalID sets the "external_id" field.
 func (ptu *PropertyTypeUpdate) SetExternalID(s string) *PropertyTypeUpdate {
 	ptu.mutation.SetExternalID(s)
 	return ptu
 }
 
-// SetNillableExternalID sets the external_id field if the given value is not nil.
+// SetNillableExternalID sets the "external_id" field if the given value is not nil.
 func (ptu *PropertyTypeUpdate) SetNillableExternalID(s *string) *PropertyTypeUpdate {
 	if s != nil {
 		ptu.SetExternalID(*s)
@@ -54,20 +55,20 @@ func (ptu *PropertyTypeUpdate) SetNillableExternalID(s *string) *PropertyTypeUpd
 	return ptu
 }
 
-// ClearExternalID clears the value of external_id.
+// ClearExternalID clears the value of the "external_id" field.
 func (ptu *PropertyTypeUpdate) ClearExternalID() *PropertyTypeUpdate {
 	ptu.mutation.ClearExternalID()
 	return ptu
 }
 
-// SetIndex sets the index field.
+// SetIndex sets the "index" field.
 func (ptu *PropertyTypeUpdate) SetIndex(i int) *PropertyTypeUpdate {
 	ptu.mutation.ResetIndex()
 	ptu.mutation.SetIndex(i)
 	return ptu
 }
 
-// SetNillableIndex sets the index field if the given value is not nil.
+// SetNillableIndex sets the "index" field if the given value is not nil.
 func (ptu *PropertyTypeUpdate) SetNillableIndex(i *int) *PropertyTypeUpdate {
 	if i != nil {
 		ptu.SetIndex(*i)
@@ -75,25 +76,25 @@ func (ptu *PropertyTypeUpdate) SetNillableIndex(i *int) *PropertyTypeUpdate {
 	return ptu
 }
 
-// AddIndex adds i to index.
+// AddIndex adds i to the "index" field.
 func (ptu *PropertyTypeUpdate) AddIndex(i int) *PropertyTypeUpdate {
 	ptu.mutation.AddIndex(i)
 	return ptu
 }
 
-// ClearIndex clears the value of index.
+// ClearIndex clears the value of the "index" field.
 func (ptu *PropertyTypeUpdate) ClearIndex() *PropertyTypeUpdate {
 	ptu.mutation.ClearIndex()
 	return ptu
 }
 
-// SetCategory sets the category field.
+// SetCategory sets the "category" field.
 func (ptu *PropertyTypeUpdate) SetCategory(s string) *PropertyTypeUpdate {
 	ptu.mutation.SetCategory(s)
 	return ptu
 }
 
-// SetNillableCategory sets the category field if the given value is not nil.
+// SetNillableCategory sets the "category" field if the given value is not nil.
 func (ptu *PropertyTypeUpdate) SetNillableCategory(s *string) *PropertyTypeUpdate {
 	if s != nil {
 		ptu.SetCategory(*s)
@@ -101,20 +102,20 @@ func (ptu *PropertyTypeUpdate) SetNillableCategory(s *string) *PropertyTypeUpdat
 	return ptu
 }
 
-// ClearCategory clears the value of category.
+// ClearCategory clears the value of the "category" field.
 func (ptu *PropertyTypeUpdate) ClearCategory() *PropertyTypeUpdate {
 	ptu.mutation.ClearCategory()
 	return ptu
 }
 
-// SetIntVal sets the int_val field.
+// SetIntVal sets the "int_val" field.
 func (ptu *PropertyTypeUpdate) SetIntVal(i int) *PropertyTypeUpdate {
 	ptu.mutation.ResetIntVal()
 	ptu.mutation.SetIntVal(i)
 	return ptu
 }
 
-// SetNillableIntVal sets the int_val field if the given value is not nil.
+// SetNillableIntVal sets the "int_val" field if the given value is not nil.
 func (ptu *PropertyTypeUpdate) SetNillableIntVal(i *int) *PropertyTypeUpdate {
 	if i != nil {
 		ptu.SetIntVal(*i)
@@ -122,25 +123,25 @@ func (ptu *PropertyTypeUpdate) SetNillableIntVal(i *int) *PropertyTypeUpdate {
 	return ptu
 }
 
-// AddIntVal adds i to int_val.
+// AddIntVal adds i to the "int_val" field.
 func (ptu *PropertyTypeUpdate) AddIntVal(i int) *PropertyTypeUpdate {
 	ptu.mutation.AddIntVal(i)
 	return ptu
 }
 
-// ClearIntVal clears the value of int_val.
+// ClearIntVal clears the value of the "int_val" field.
 func (ptu *PropertyTypeUpdate) ClearIntVal() *PropertyTypeUpdate {
 	ptu.mutation.ClearIntVal()
 	return ptu
 }
 
-// SetBoolVal sets the bool_val field.
+// SetBoolVal sets the "bool_val" field.
 func (ptu *PropertyTypeUpdate) SetBoolVal(b bool) *PropertyTypeUpdate {
 	ptu.mutation.SetBoolVal(b)
 	return ptu
 }
 
-// SetNillableBoolVal sets the bool_val field if the given value is not nil.
+// SetNillableBoolVal sets the "bool_val" field if the given value is not nil.
 func (ptu *PropertyTypeUpdate) SetNillableBoolVal(b *bool) *PropertyTypeUpdate {
 	if b != nil {
 		ptu.SetBoolVal(*b)
@@ -148,20 +149,20 @@ func (ptu *PropertyTypeUpdate) SetNillableBoolVal(b *bool) *PropertyTypeUpdate {
 	return ptu
 }
 
-// ClearBoolVal clears the value of bool_val.
+// ClearBoolVal clears the value of the "bool_val" field.
 func (ptu *PropertyTypeUpdate) ClearBoolVal() *PropertyTypeUpdate {
 	ptu.mutation.ClearBoolVal()
 	return ptu
 }
 
-// SetFloatVal sets the float_val field.
+// SetFloatVal sets the "float_val" field.
 func (ptu *PropertyTypeUpdate) SetFloatVal(f float64) *PropertyTypeUpdate {
 	ptu.mutation.ResetFloatVal()
 	ptu.mutation.SetFloatVal(f)
 	return ptu
 }
 
-// SetNillableFloatVal sets the float_val field if the given value is not nil.
+// SetNillableFloatVal sets the "float_val" field if the given value is not nil.
 func (ptu *PropertyTypeUpdate) SetNillableFloatVal(f *float64) *PropertyTypeUpdate {
 	if f != nil {
 		ptu.SetFloatVal(*f)
@@ -169,26 +170,26 @@ func (ptu *PropertyTypeUpdate) SetNillableFloatVal(f *float64) *PropertyTypeUpda
 	return ptu
 }
 
-// AddFloatVal adds f to float_val.
+// AddFloatVal adds f to the "float_val" field.
 func (ptu *PropertyTypeUpdate) AddFloatVal(f float64) *PropertyTypeUpdate {
 	ptu.mutation.AddFloatVal(f)
 	return ptu
 }
 
-// ClearFloatVal clears the value of float_val.
+// ClearFloatVal clears the value of the "float_val" field.
 func (ptu *PropertyTypeUpdate) ClearFloatVal() *PropertyTypeUpdate {
 	ptu.mutation.ClearFloatVal()
 	return ptu
 }
 
-// SetLatitudeVal sets the latitude_val field.
+// SetLatitudeVal sets the "latitude_val" field.
 func (ptu *PropertyTypeUpdate) SetLatitudeVal(f float64) *PropertyTypeUpdate {
 	ptu.mutation.ResetLatitudeVal()
 	ptu.mutation.SetLatitudeVal(f)
 	return ptu
 }
 
-// SetNillableLatitudeVal sets the latitude_val field if the given value is not nil.
+// SetNillableLatitudeVal sets the "latitude_val" field if the given value is not nil.
 func (ptu *PropertyTypeUpdate) SetNillableLatitudeVal(f *float64) *PropertyTypeUpdate {
 	if f != nil {
 		ptu.SetLatitudeVal(*f)
@@ -196,26 +197,26 @@ func (ptu *PropertyTypeUpdate) SetNillableLatitudeVal(f *float64) *PropertyTypeU
 	return ptu
 }
 
-// AddLatitudeVal adds f to latitude_val.
+// AddLatitudeVal adds f to the "latitude_val" field.
 func (ptu *PropertyTypeUpdate) AddLatitudeVal(f float64) *PropertyTypeUpdate {
 	ptu.mutation.AddLatitudeVal(f)
 	return ptu
 }
 
-// ClearLatitudeVal clears the value of latitude_val.
+// ClearLatitudeVal clears the value of the "latitude_val" field.
 func (ptu *PropertyTypeUpdate) ClearLatitudeVal() *PropertyTypeUpdate {
 	ptu.mutation.ClearLatitudeVal()
 	return ptu
 }
 
-// SetLongitudeVal sets the longitude_val field.
+// SetLongitudeVal sets the "longitude_val" field.
 func (ptu *PropertyTypeUpdate) SetLongitudeVal(f float64) *PropertyTypeUpdate {
 	ptu.mutation.ResetLongitudeVal()
 	ptu.mutation.SetLongitudeVal(f)
 	return ptu
 }
 
-// SetNillableLongitudeVal sets the longitude_val field if the given value is not nil.
+// SetNillableLongitudeVal sets the "longitude_val" field if the given value is not nil.
 func (ptu *PropertyTypeUpdate) SetNillableLongitudeVal(f *float64) *PropertyTypeUpdate {
 	if f != nil {
 		ptu.SetLongitudeVal(*f)
@@ -223,25 +224,25 @@ func (ptu *PropertyTypeUpdate) SetNillableLongitudeVal(f *float64) *PropertyType
 	return ptu
 }
 
-// AddLongitudeVal adds f to longitude_val.
+// AddLongitudeVal adds f to the "longitude_val" field.
 func (ptu *PropertyTypeUpdate) AddLongitudeVal(f float64) *PropertyTypeUpdate {
 	ptu.mutation.AddLongitudeVal(f)
 	return ptu
 }
 
-// ClearLongitudeVal clears the value of longitude_val.
+// ClearLongitudeVal clears the value of the "longitude_val" field.
 func (ptu *PropertyTypeUpdate) ClearLongitudeVal() *PropertyTypeUpdate {
 	ptu.mutation.ClearLongitudeVal()
 	return ptu
 }
 
-// SetStringVal sets the string_val field.
+// SetStringVal sets the "string_val" field.
 func (ptu *PropertyTypeUpdate) SetStringVal(s string) *PropertyTypeUpdate {
 	ptu.mutation.SetStringVal(s)
 	return ptu
 }
 
-// SetNillableStringVal sets the string_val field if the given value is not nil.
+// SetNillableStringVal sets the "string_val" field if the given value is not nil.
 func (ptu *PropertyTypeUpdate) SetNillableStringVal(s *string) *PropertyTypeUpdate {
 	if s != nil {
 		ptu.SetStringVal(*s)
@@ -249,20 +250,20 @@ func (ptu *PropertyTypeUpdate) SetNillableStringVal(s *string) *PropertyTypeUpda
 	return ptu
 }
 
-// ClearStringVal clears the value of string_val.
+// ClearStringVal clears the value of the "string_val" field.
 func (ptu *PropertyTypeUpdate) ClearStringVal() *PropertyTypeUpdate {
 	ptu.mutation.ClearStringVal()
 	return ptu
 }
 
-// SetRangeFromVal sets the range_from_val field.
+// SetRangeFromVal sets the "range_from_val" field.
 func (ptu *PropertyTypeUpdate) SetRangeFromVal(f float64) *PropertyTypeUpdate {
 	ptu.mutation.ResetRangeFromVal()
 	ptu.mutation.SetRangeFromVal(f)
 	return ptu
 }
 
-// SetNillableRangeFromVal sets the range_from_val field if the given value is not nil.
+// SetNillableRangeFromVal sets the "range_from_val" field if the given value is not nil.
 func (ptu *PropertyTypeUpdate) SetNillableRangeFromVal(f *float64) *PropertyTypeUpdate {
 	if f != nil {
 		ptu.SetRangeFromVal(*f)
@@ -270,26 +271,26 @@ func (ptu *PropertyTypeUpdate) SetNillableRangeFromVal(f *float64) *PropertyType
 	return ptu
 }
 
-// AddRangeFromVal adds f to range_from_val.
+// AddRangeFromVal adds f to the "range_from_val" field.
 func (ptu *PropertyTypeUpdate) AddRangeFromVal(f float64) *PropertyTypeUpdate {
 	ptu.mutation.AddRangeFromVal(f)
 	return ptu
 }
 
-// ClearRangeFromVal clears the value of range_from_val.
+// ClearRangeFromVal clears the value of the "range_from_val" field.
 func (ptu *PropertyTypeUpdate) ClearRangeFromVal() *PropertyTypeUpdate {
 	ptu.mutation.ClearRangeFromVal()
 	return ptu
 }
 
-// SetRangeToVal sets the range_to_val field.
+// SetRangeToVal sets the "range_to_val" field.
 func (ptu *PropertyTypeUpdate) SetRangeToVal(f float64) *PropertyTypeUpdate {
 	ptu.mutation.ResetRangeToVal()
 	ptu.mutation.SetRangeToVal(f)
 	return ptu
 }
 
-// SetNillableRangeToVal sets the range_to_val field if the given value is not nil.
+// SetNillableRangeToVal sets the "range_to_val" field if the given value is not nil.
 func (ptu *PropertyTypeUpdate) SetNillableRangeToVal(f *float64) *PropertyTypeUpdate {
 	if f != nil {
 		ptu.SetRangeToVal(*f)
@@ -297,25 +298,25 @@ func (ptu *PropertyTypeUpdate) SetNillableRangeToVal(f *float64) *PropertyTypeUp
 	return ptu
 }
 
-// AddRangeToVal adds f to range_to_val.
+// AddRangeToVal adds f to the "range_to_val" field.
 func (ptu *PropertyTypeUpdate) AddRangeToVal(f float64) *PropertyTypeUpdate {
 	ptu.mutation.AddRangeToVal(f)
 	return ptu
 }
 
-// ClearRangeToVal clears the value of range_to_val.
+// ClearRangeToVal clears the value of the "range_to_val" field.
 func (ptu *PropertyTypeUpdate) ClearRangeToVal() *PropertyTypeUpdate {
 	ptu.mutation.ClearRangeToVal()
 	return ptu
 }
 
-// SetIsInstanceProperty sets the is_instance_property field.
+// SetIsInstanceProperty sets the "is_instance_property" field.
 func (ptu *PropertyTypeUpdate) SetIsInstanceProperty(b bool) *PropertyTypeUpdate {
 	ptu.mutation.SetIsInstanceProperty(b)
 	return ptu
 }
 
-// SetNillableIsInstanceProperty sets the is_instance_property field if the given value is not nil.
+// SetNillableIsInstanceProperty sets the "is_instance_property" field if the given value is not nil.
 func (ptu *PropertyTypeUpdate) SetNillableIsInstanceProperty(b *bool) *PropertyTypeUpdate {
 	if b != nil {
 		ptu.SetIsInstanceProperty(*b)
@@ -323,13 +324,13 @@ func (ptu *PropertyTypeUpdate) SetNillableIsInstanceProperty(b *bool) *PropertyT
 	return ptu
 }
 
-// SetEditable sets the editable field.
+// SetEditable sets the "editable" field.
 func (ptu *PropertyTypeUpdate) SetEditable(b bool) *PropertyTypeUpdate {
 	ptu.mutation.SetEditable(b)
 	return ptu
 }
 
-// SetNillableEditable sets the editable field if the given value is not nil.
+// SetNillableEditable sets the "editable" field if the given value is not nil.
 func (ptu *PropertyTypeUpdate) SetNillableEditable(b *bool) *PropertyTypeUpdate {
 	if b != nil {
 		ptu.SetEditable(*b)
@@ -337,13 +338,13 @@ func (ptu *PropertyTypeUpdate) SetNillableEditable(b *bool) *PropertyTypeUpdate 
 	return ptu
 }
 
-// SetMandatory sets the mandatory field.
+// SetMandatory sets the "mandatory" field.
 func (ptu *PropertyTypeUpdate) SetMandatory(b bool) *PropertyTypeUpdate {
 	ptu.mutation.SetMandatory(b)
 	return ptu
 }
 
-// SetNillableMandatory sets the mandatory field if the given value is not nil.
+// SetNillableMandatory sets the "mandatory" field if the given value is not nil.
 func (ptu *PropertyTypeUpdate) SetNillableMandatory(b *bool) *PropertyTypeUpdate {
 	if b != nil {
 		ptu.SetMandatory(*b)
@@ -351,13 +352,13 @@ func (ptu *PropertyTypeUpdate) SetNillableMandatory(b *bool) *PropertyTypeUpdate
 	return ptu
 }
 
-// SetDeleted sets the deleted field.
+// SetDeleted sets the "deleted" field.
 func (ptu *PropertyTypeUpdate) SetDeleted(b bool) *PropertyTypeUpdate {
 	ptu.mutation.SetDeleted(b)
 	return ptu
 }
 
-// SetNillableDeleted sets the deleted field if the given value is not nil.
+// SetNillableDeleted sets the "deleted" field if the given value is not nil.
 func (ptu *PropertyTypeUpdate) SetNillableDeleted(b *bool) *PropertyTypeUpdate {
 	if b != nil {
 		ptu.SetDeleted(*b)
@@ -365,13 +366,13 @@ func (ptu *PropertyTypeUpdate) SetNillableDeleted(b *bool) *PropertyTypeUpdate {
 	return ptu
 }
 
-// SetNodeType sets the nodeType field.
+// SetNodeType sets the "nodeType" field.
 func (ptu *PropertyTypeUpdate) SetNodeType(s string) *PropertyTypeUpdate {
 	ptu.mutation.SetNodeType(s)
 	return ptu
 }
 
-// SetNillableNodeType sets the nodeType field if the given value is not nil.
+// SetNillableNodeType sets the "nodeType" field if the given value is not nil.
 func (ptu *PropertyTypeUpdate) SetNillableNodeType(s *string) *PropertyTypeUpdate {
 	if s != nil {
 		ptu.SetNodeType(*s)
@@ -379,19 +380,19 @@ func (ptu *PropertyTypeUpdate) SetNillableNodeType(s *string) *PropertyTypeUpdat
 	return ptu
 }
 
-// ClearNodeType clears the value of nodeType.
+// ClearNodeType clears the value of the "nodeType" field.
 func (ptu *PropertyTypeUpdate) ClearNodeType() *PropertyTypeUpdate {
 	ptu.mutation.ClearNodeType()
 	return ptu
 }
 
-// AddPropertyIDs adds the properties edge to Property by ids.
+// AddPropertyIDs adds the "properties" edge to the Property entity by IDs.
 func (ptu *PropertyTypeUpdate) AddPropertyIDs(ids ...int) *PropertyTypeUpdate {
 	ptu.mutation.AddPropertyIDs(ids...)
 	return ptu
 }
 
-// AddProperties adds the properties edges to Property.
+// AddProperties adds the "properties" edges to the Property entity.
 func (ptu *PropertyTypeUpdate) AddProperties(p ...*Property) *PropertyTypeUpdate {
 	ids := make([]int, len(p))
 	for i := range p {
@@ -400,13 +401,13 @@ func (ptu *PropertyTypeUpdate) AddProperties(p ...*Property) *PropertyTypeUpdate
 	return ptu.AddPropertyIDs(ids...)
 }
 
-// SetResourceTypeID sets the resource_type edge to ResourceType by id.
+// SetResourceTypeID sets the "resource_type" edge to the ResourceType entity by ID.
 func (ptu *PropertyTypeUpdate) SetResourceTypeID(id int) *PropertyTypeUpdate {
 	ptu.mutation.SetResourceTypeID(id)
 	return ptu
 }
 
-// SetNillableResourceTypeID sets the resource_type edge to ResourceType by id if the given value is not nil.
+// SetNillableResourceTypeID sets the "resource_type" edge to the ResourceType entity by ID if the given value is not nil.
 func (ptu *PropertyTypeUpdate) SetNillableResourceTypeID(id *int) *PropertyTypeUpdate {
 	if id != nil {
 		ptu = ptu.SetResourceTypeID(*id)
@@ -414,7 +415,7 @@ func (ptu *PropertyTypeUpdate) SetNillableResourceTypeID(id *int) *PropertyTypeU
 	return ptu
 }
 
-// SetResourceType sets the resource_type edge to ResourceType.
+// SetResourceType sets the "resource_type" edge to the ResourceType entity.
 func (ptu *PropertyTypeUpdate) SetResourceType(r *ResourceType) *PropertyTypeUpdate {
 	return ptu.SetResourceTypeID(r.ID)
 }
@@ -424,19 +425,19 @@ func (ptu *PropertyTypeUpdate) Mutation() *PropertyTypeMutation {
 	return ptu.mutation
 }
 
-// ClearProperties clears all "properties" edges to type Property.
+// ClearProperties clears all "properties" edges to the Property entity.
 func (ptu *PropertyTypeUpdate) ClearProperties() *PropertyTypeUpdate {
 	ptu.mutation.ClearProperties()
 	return ptu
 }
 
-// RemovePropertyIDs removes the properties edge to Property by ids.
+// RemovePropertyIDs removes the "properties" edge to Property entities by IDs.
 func (ptu *PropertyTypeUpdate) RemovePropertyIDs(ids ...int) *PropertyTypeUpdate {
 	ptu.mutation.RemovePropertyIDs(ids...)
 	return ptu
 }
 
-// RemoveProperties removes properties edges to Property.
+// RemoveProperties removes "properties" edges to Property entities.
 func (ptu *PropertyTypeUpdate) RemoveProperties(p ...*Property) *PropertyTypeUpdate {
 	ids := make([]int, len(p))
 	for i := range p {
@@ -445,13 +446,13 @@ func (ptu *PropertyTypeUpdate) RemoveProperties(p ...*Property) *PropertyTypeUpd
 	return ptu.RemovePropertyIDs(ids...)
 }
 
-// ClearResourceType clears the "resource_type" edge to type ResourceType.
+// ClearResourceType clears the "resource_type" edge to the ResourceType entity.
 func (ptu *PropertyTypeUpdate) ClearResourceType() *PropertyTypeUpdate {
 	ptu.mutation.ClearResourceType()
 	return ptu
 }
 
-// Save executes the query and returns the number of rows/vertices matched by this operation.
+// Save executes the query and returns the number of nodes affected by the update operation.
 func (ptu *PropertyTypeUpdate) Save(ctx context.Context) (int, error) {
 	var (
 		err      error
@@ -477,6 +478,9 @@ func (ptu *PropertyTypeUpdate) Save(ctx context.Context) (int, error) {
 			return affected, err
 		})
 		for i := len(ptu.hooks) - 1; i >= 0; i-- {
+			if ptu.hooks[i] == nil {
+				return 0, fmt.Errorf("ent: uninitialized hook (forgotten import ent/runtime?)")
+			}
 			mut = ptu.hooks[i](mut)
 		}
 		if _, err := mut.Mutate(ctx, ptu.mutation); err != nil {
@@ -512,7 +516,7 @@ func (ptu *PropertyTypeUpdate) ExecX(ctx context.Context) {
 func (ptu *PropertyTypeUpdate) check() error {
 	if v, ok := ptu.mutation.GetType(); ok {
 		if err := propertytype.TypeValidator(v); err != nil {
-			return &ValidationError{Name: "type", err: fmt.Errorf("ent: validator failed for field \"type\": %w", err)}
+			return &ValidationError{Name: "type", err: fmt.Errorf(`ent: validator failed for field "PropertyType.type": %w`, err)}
 		}
 	}
 	return nil
@@ -875,8 +879,8 @@ func (ptu *PropertyTypeUpdate) sqlSave(ctx context.Context) (n int, err error) {
 	if n, err = sqlgraph.UpdateNodes(ctx, ptu.driver, _spec); err != nil {
 		if _, ok := err.(*sqlgraph.NotFoundError); ok {
 			err = &NotFoundError{propertytype.Label}
-		} else if cerr, ok := isSQLConstraintError(err); ok {
-			err = cerr
+		} else if sqlgraph.IsConstraintError(err) {
+			err = &ConstraintError{msg: err.Error(), wrap: err}
 		}
 		return 0, err
 	}
@@ -886,29 +890,30 @@ func (ptu *PropertyTypeUpdate) sqlSave(ctx context.Context) (n int, err error) {
 // PropertyTypeUpdateOne is the builder for updating a single PropertyType entity.
 type PropertyTypeUpdateOne struct {
 	config
+	fields   []string
 	hooks    []Hook
 	mutation *PropertyTypeMutation
 }
 
-// SetType sets the type field.
+// SetType sets the "type" field.
 func (ptuo *PropertyTypeUpdateOne) SetType(pr propertytype.Type) *PropertyTypeUpdateOne {
 	ptuo.mutation.SetType(pr)
 	return ptuo
 }
 
-// SetName sets the name field.
+// SetName sets the "name" field.
 func (ptuo *PropertyTypeUpdateOne) SetName(s string) *PropertyTypeUpdateOne {
 	ptuo.mutation.SetName(s)
 	return ptuo
 }
 
-// SetExternalID sets the external_id field.
+// SetExternalID sets the "external_id" field.
 func (ptuo *PropertyTypeUpdateOne) SetExternalID(s string) *PropertyTypeUpdateOne {
 	ptuo.mutation.SetExternalID(s)
 	return ptuo
 }
 
-// SetNillableExternalID sets the external_id field if the given value is not nil.
+// SetNillableExternalID sets the "external_id" field if the given value is not nil.
 func (ptuo *PropertyTypeUpdateOne) SetNillableExternalID(s *string) *PropertyTypeUpdateOne {
 	if s != nil {
 		ptuo.SetExternalID(*s)
@@ -916,20 +921,20 @@ func (ptuo *PropertyTypeUpdateOne) SetNillableExternalID(s *string) *PropertyTyp
 	return ptuo
 }
 
-// ClearExternalID clears the value of external_id.
+// ClearExternalID clears the value of the "external_id" field.
 func (ptuo *PropertyTypeUpdateOne) ClearExternalID() *PropertyTypeUpdateOne {
 	ptuo.mutation.ClearExternalID()
 	return ptuo
 }
 
-// SetIndex sets the index field.
+// SetIndex sets the "index" field.
 func (ptuo *PropertyTypeUpdateOne) SetIndex(i int) *PropertyTypeUpdateOne {
 	ptuo.mutation.ResetIndex()
 	ptuo.mutation.SetIndex(i)
 	return ptuo
 }
 
-// SetNillableIndex sets the index field if the given value is not nil.
+// SetNillableIndex sets the "index" field if the given value is not nil.
 func (ptuo *PropertyTypeUpdateOne) SetNillableIndex(i *int) *PropertyTypeUpdateOne {
 	if i != nil {
 		ptuo.SetIndex(*i)
@@ -937,25 +942,25 @@ func (ptuo *PropertyTypeUpdateOne) SetNillableIndex(i *int) *PropertyTypeUpdateO
 	return ptuo
 }
 
-// AddIndex adds i to index.
+// AddIndex adds i to the "index" field.
 func (ptuo *PropertyTypeUpdateOne) AddIndex(i int) *PropertyTypeUpdateOne {
 	ptuo.mutation.AddIndex(i)
 	return ptuo
 }
 
-// ClearIndex clears the value of index.
+// ClearIndex clears the value of the "index" field.
 func (ptuo *PropertyTypeUpdateOne) ClearIndex() *PropertyTypeUpdateOne {
 	ptuo.mutation.ClearIndex()
 	return ptuo
 }
 
-// SetCategory sets the category field.
+// SetCategory sets the "category" field.
 func (ptuo *PropertyTypeUpdateOne) SetCategory(s string) *PropertyTypeUpdateOne {
 	ptuo.mutation.SetCategory(s)
 	return ptuo
 }
 
-// SetNillableCategory sets the category field if the given value is not nil.
+// SetNillableCategory sets the "category" field if the given value is not nil.
 func (ptuo *PropertyTypeUpdateOne) SetNillableCategory(s *string) *PropertyTypeUpdateOne {
 	if s != nil {
 		ptuo.SetCategory(*s)
@@ -963,20 +968,20 @@ func (ptuo *PropertyTypeUpdateOne) SetNillableCategory(s *string) *PropertyTypeU
 	return ptuo
 }
 
-// ClearCategory clears the value of category.
+// ClearCategory clears the value of the "category" field.
 func (ptuo *PropertyTypeUpdateOne) ClearCategory() *PropertyTypeUpdateOne {
 	ptuo.mutation.ClearCategory()
 	return ptuo
 }
 
-// SetIntVal sets the int_val field.
+// SetIntVal sets the "int_val" field.
 func (ptuo *PropertyTypeUpdateOne) SetIntVal(i int) *PropertyTypeUpdateOne {
 	ptuo.mutation.ResetIntVal()
 	ptuo.mutation.SetIntVal(i)
 	return ptuo
 }
 
-// SetNillableIntVal sets the int_val field if the given value is not nil.
+// SetNillableIntVal sets the "int_val" field if the given value is not nil.
 func (ptuo *PropertyTypeUpdateOne) SetNillableIntVal(i *int) *PropertyTypeUpdateOne {
 	if i != nil {
 		ptuo.SetIntVal(*i)
@@ -984,25 +989,25 @@ func (ptuo *PropertyTypeUpdateOne) SetNillableIntVal(i *int) *PropertyTypeUpdate
 	return ptuo
 }
 
-// AddIntVal adds i to int_val.
+// AddIntVal adds i to the "int_val" field.
 func (ptuo *PropertyTypeUpdateOne) AddIntVal(i int) *PropertyTypeUpdateOne {
 	ptuo.mutation.AddIntVal(i)
 	return ptuo
 }
 
-// ClearIntVal clears the value of int_val.
+// ClearIntVal clears the value of the "int_val" field.
 func (ptuo *PropertyTypeUpdateOne) ClearIntVal() *PropertyTypeUpdateOne {
 	ptuo.mutation.ClearIntVal()
 	return ptuo
 }
 
-// SetBoolVal sets the bool_val field.
+// SetBoolVal sets the "bool_val" field.
 func (ptuo *PropertyTypeUpdateOne) SetBoolVal(b bool) *PropertyTypeUpdateOne {
 	ptuo.mutation.SetBoolVal(b)
 	return ptuo
 }
 
-// SetNillableBoolVal sets the bool_val field if the given value is not nil.
+// SetNillableBoolVal sets the "bool_val" field if the given value is not nil.
 func (ptuo *PropertyTypeUpdateOne) SetNillableBoolVal(b *bool) *PropertyTypeUpdateOne {
 	if b != nil {
 		ptuo.SetBoolVal(*b)
@@ -1010,20 +1015,20 @@ func (ptuo *PropertyTypeUpdateOne) SetNillableBoolVal(b *bool) *PropertyTypeUpda
 	return ptuo
 }
 
-// ClearBoolVal clears the value of bool_val.
+// ClearBoolVal clears the value of the "bool_val" field.
 func (ptuo *PropertyTypeUpdateOne) ClearBoolVal() *PropertyTypeUpdateOne {
 	ptuo.mutation.ClearBoolVal()
 	return ptuo
 }
 
-// SetFloatVal sets the float_val field.
+// SetFloatVal sets the "float_val" field.
 func (ptuo *PropertyTypeUpdateOne) SetFloatVal(f float64) *PropertyTypeUpdateOne {
 	ptuo.mutation.ResetFloatVal()
 	ptuo.mutation.SetFloatVal(f)
 	return ptuo
 }
 
-// SetNillableFloatVal sets the float_val field if the given value is not nil.
+// SetNillableFloatVal sets the "float_val" field if the given value is not nil.
 func (ptuo *PropertyTypeUpdateOne) SetNillableFloatVal(f *float64) *PropertyTypeUpdateOne {
 	if f != nil {
 		ptuo.SetFloatVal(*f)
@@ -1031,26 +1036,26 @@ func (ptuo *PropertyTypeUpdateOne) SetNillableFloatVal(f *float64) *PropertyType
 	return ptuo
 }
 
-// AddFloatVal adds f to float_val.
+// AddFloatVal adds f to the "float_val" field.
 func (ptuo *PropertyTypeUpdateOne) AddFloatVal(f float64) *PropertyTypeUpdateOne {
 	ptuo.mutation.AddFloatVal(f)
 	return ptuo
 }
 
-// ClearFloatVal clears the value of float_val.
+// ClearFloatVal clears the value of the "float_val" field.
 func (ptuo *PropertyTypeUpdateOne) ClearFloatVal() *PropertyTypeUpdateOne {
 	ptuo.mutation.ClearFloatVal()
 	return ptuo
 }
 
-// SetLatitudeVal sets the latitude_val field.
+// SetLatitudeVal sets the "latitude_val" field.
 func (ptuo *PropertyTypeUpdateOne) SetLatitudeVal(f float64) *PropertyTypeUpdateOne {
 	ptuo.mutation.ResetLatitudeVal()
 	ptuo.mutation.SetLatitudeVal(f)
 	return ptuo
 }
 
-// SetNillableLatitudeVal sets the latitude_val field if the given value is not nil.
+// SetNillableLatitudeVal sets the "latitude_val" field if the given value is not nil.
 func (ptuo *PropertyTypeUpdateOne) SetNillableLatitudeVal(f *float64) *PropertyTypeUpdateOne {
 	if f != nil {
 		ptuo.SetLatitudeVal(*f)
@@ -1058,26 +1063,26 @@ func (ptuo *PropertyTypeUpdateOne) SetNillableLatitudeVal(f *float64) *PropertyT
 	return ptuo
 }
 
-// AddLatitudeVal adds f to latitude_val.
+// AddLatitudeVal adds f to the "latitude_val" field.
 func (ptuo *PropertyTypeUpdateOne) AddLatitudeVal(f float64) *PropertyTypeUpdateOne {
 	ptuo.mutation.AddLatitudeVal(f)
 	return ptuo
 }
 
-// ClearLatitudeVal clears the value of latitude_val.
+// ClearLatitudeVal clears the value of the "latitude_val" field.
 func (ptuo *PropertyTypeUpdateOne) ClearLatitudeVal() *PropertyTypeUpdateOne {
 	ptuo.mutation.ClearLatitudeVal()
 	return ptuo
 }
 
-// SetLongitudeVal sets the longitude_val field.
+// SetLongitudeVal sets the "longitude_val" field.
 func (ptuo *PropertyTypeUpdateOne) SetLongitudeVal(f float64) *PropertyTypeUpdateOne {
 	ptuo.mutation.ResetLongitudeVal()
 	ptuo.mutation.SetLongitudeVal(f)
 	return ptuo
 }
 
-// SetNillableLongitudeVal sets the longitude_val field if the given value is not nil.
+// SetNillableLongitudeVal sets the "longitude_val" field if the given value is not nil.
 func (ptuo *PropertyTypeUpdateOne) SetNillableLongitudeVal(f *float64) *PropertyTypeUpdateOne {
 	if f != nil {
 		ptuo.SetLongitudeVal(*f)
@@ -1085,25 +1090,25 @@ func (ptuo *PropertyTypeUpdateOne) SetNillableLongitudeVal(f *float64) *Property
 	return ptuo
 }
 
-// AddLongitudeVal adds f to longitude_val.
+// AddLongitudeVal adds f to the "longitude_val" field.
 func (ptuo *PropertyTypeUpdateOne) AddLongitudeVal(f float64) *PropertyTypeUpdateOne {
 	ptuo.mutation.AddLongitudeVal(f)
 	return ptuo
 }
 
-// ClearLongitudeVal clears the value of longitude_val.
+// ClearLongitudeVal clears the value of the "longitude_val" field.
 func (ptuo *PropertyTypeUpdateOne) ClearLongitudeVal() *PropertyTypeUpdateOne {
 	ptuo.mutation.ClearLongitudeVal()
 	return ptuo
 }
 
-// SetStringVal sets the string_val field.
+// SetStringVal sets the "string_val" field.
 func (ptuo *PropertyTypeUpdateOne) SetStringVal(s string) *PropertyTypeUpdateOne {
 	ptuo.mutation.SetStringVal(s)
 	return ptuo
 }
 
-// SetNillableStringVal sets the string_val field if the given value is not nil.
+// SetNillableStringVal sets the "string_val" field if the given value is not nil.
 func (ptuo *PropertyTypeUpdateOne) SetNillableStringVal(s *string) *PropertyTypeUpdateOne {
 	if s != nil {
 		ptuo.SetStringVal(*s)
@@ -1111,20 +1116,20 @@ func (ptuo *PropertyTypeUpdateOne) SetNillableStringVal(s *string) *PropertyType
 	return ptuo
 }
 
-// ClearStringVal clears the value of string_val.
+// ClearStringVal clears the value of the "string_val" field.
 func (ptuo *PropertyTypeUpdateOne) ClearStringVal() *PropertyTypeUpdateOne {
 	ptuo.mutation.ClearStringVal()
 	return ptuo
 }
 
-// SetRangeFromVal sets the range_from_val field.
+// SetRangeFromVal sets the "range_from_val" field.
 func (ptuo *PropertyTypeUpdateOne) SetRangeFromVal(f float64) *PropertyTypeUpdateOne {
 	ptuo.mutation.ResetRangeFromVal()
 	ptuo.mutation.SetRangeFromVal(f)
 	return ptuo
 }
 
-// SetNillableRangeFromVal sets the range_from_val field if the given value is not nil.
+// SetNillableRangeFromVal sets the "range_from_val" field if the given value is not nil.
 func (ptuo *PropertyTypeUpdateOne) SetNillableRangeFromVal(f *float64) *PropertyTypeUpdateOne {
 	if f != nil {
 		ptuo.SetRangeFromVal(*f)
@@ -1132,26 +1137,26 @@ func (ptuo *PropertyTypeUpdateOne) SetNillableRangeFromVal(f *float64) *Property
 	return ptuo
 }
 
-// AddRangeFromVal adds f to range_from_val.
+// AddRangeFromVal adds f to the "range_from_val" field.
 func (ptuo *PropertyTypeUpdateOne) AddRangeFromVal(f float64) *PropertyTypeUpdateOne {
 	ptuo.mutation.AddRangeFromVal(f)
 	return ptuo
 }
 
-// ClearRangeFromVal clears the value of range_from_val.
+// ClearRangeFromVal clears the value of the "range_from_val" field.
 func (ptuo *PropertyTypeUpdateOne) ClearRangeFromVal() *PropertyTypeUpdateOne {
 	ptuo.mutation.ClearRangeFromVal()
 	return ptuo
 }
 
-// SetRangeToVal sets the range_to_val field.
+// SetRangeToVal sets the "range_to_val" field.
 func (ptuo *PropertyTypeUpdateOne) SetRangeToVal(f float64) *PropertyTypeUpdateOne {
 	ptuo.mutation.ResetRangeToVal()
 	ptuo.mutation.SetRangeToVal(f)
 	return ptuo
 }
 
-// SetNillableRangeToVal sets the range_to_val field if the given value is not nil.
+// SetNillableRangeToVal sets the "range_to_val" field if the given value is not nil.
 func (ptuo *PropertyTypeUpdateOne) SetNillableRangeToVal(f *float64) *PropertyTypeUpdateOne {
 	if f != nil {
 		ptuo.SetRangeToVal(*f)
@@ -1159,25 +1164,25 @@ func (ptuo *PropertyTypeUpdateOne) SetNillableRangeToVal(f *float64) *PropertyTy
 	return ptuo
 }
 
-// AddRangeToVal adds f to range_to_val.
+// AddRangeToVal adds f to the "range_to_val" field.
 func (ptuo *PropertyTypeUpdateOne) AddRangeToVal(f float64) *PropertyTypeUpdateOne {
 	ptuo.mutation.AddRangeToVal(f)
 	return ptuo
 }
 
-// ClearRangeToVal clears the value of range_to_val.
+// ClearRangeToVal clears the value of the "range_to_val" field.
 func (ptuo *PropertyTypeUpdateOne) ClearRangeToVal() *PropertyTypeUpdateOne {
 	ptuo.mutation.ClearRangeToVal()
 	return ptuo
 }
 
-// SetIsInstanceProperty sets the is_instance_property field.
+// SetIsInstanceProperty sets the "is_instance_property" field.
 func (ptuo *PropertyTypeUpdateOne) SetIsInstanceProperty(b bool) *PropertyTypeUpdateOne {
 	ptuo.mutation.SetIsInstanceProperty(b)
 	return ptuo
 }
 
-// SetNillableIsInstanceProperty sets the is_instance_property field if the given value is not nil.
+// SetNillableIsInstanceProperty sets the "is_instance_property" field if the given value is not nil.
 func (ptuo *PropertyTypeUpdateOne) SetNillableIsInstanceProperty(b *bool) *PropertyTypeUpdateOne {
 	if b != nil {
 		ptuo.SetIsInstanceProperty(*b)
@@ -1185,13 +1190,13 @@ func (ptuo *PropertyTypeUpdateOne) SetNillableIsInstanceProperty(b *bool) *Prope
 	return ptuo
 }
 
-// SetEditable sets the editable field.
+// SetEditable sets the "editable" field.
 func (ptuo *PropertyTypeUpdateOne) SetEditable(b bool) *PropertyTypeUpdateOne {
 	ptuo.mutation.SetEditable(b)
 	return ptuo
 }
 
-// SetNillableEditable sets the editable field if the given value is not nil.
+// SetNillableEditable sets the "editable" field if the given value is not nil.
 func (ptuo *PropertyTypeUpdateOne) SetNillableEditable(b *bool) *PropertyTypeUpdateOne {
 	if b != nil {
 		ptuo.SetEditable(*b)
@@ -1199,13 +1204,13 @@ func (ptuo *PropertyTypeUpdateOne) SetNillableEditable(b *bool) *PropertyTypeUpd
 	return ptuo
 }
 
-// SetMandatory sets the mandatory field.
+// SetMandatory sets the "mandatory" field.
 func (ptuo *PropertyTypeUpdateOne) SetMandatory(b bool) *PropertyTypeUpdateOne {
 	ptuo.mutation.SetMandatory(b)
 	return ptuo
 }
 
-// SetNillableMandatory sets the mandatory field if the given value is not nil.
+// SetNillableMandatory sets the "mandatory" field if the given value is not nil.
 func (ptuo *PropertyTypeUpdateOne) SetNillableMandatory(b *bool) *PropertyTypeUpdateOne {
 	if b != nil {
 		ptuo.SetMandatory(*b)
@@ -1213,13 +1218,13 @@ func (ptuo *PropertyTypeUpdateOne) SetNillableMandatory(b *bool) *PropertyTypeUp
 	return ptuo
 }
 
-// SetDeleted sets the deleted field.
+// SetDeleted sets the "deleted" field.
 func (ptuo *PropertyTypeUpdateOne) SetDeleted(b bool) *PropertyTypeUpdateOne {
 	ptuo.mutation.SetDeleted(b)
 	return ptuo
 }
 
-// SetNillableDeleted sets the deleted field if the given value is not nil.
+// SetNillableDeleted sets the "deleted" field if the given value is not nil.
 func (ptuo *PropertyTypeUpdateOne) SetNillableDeleted(b *bool) *PropertyTypeUpdateOne {
 	if b != nil {
 		ptuo.SetDeleted(*b)
@@ -1227,13 +1232,13 @@ func (ptuo *PropertyTypeUpdateOne) SetNillableDeleted(b *bool) *PropertyTypeUpda
 	return ptuo
 }
 
-// SetNodeType sets the nodeType field.
+// SetNodeType sets the "nodeType" field.
 func (ptuo *PropertyTypeUpdateOne) SetNodeType(s string) *PropertyTypeUpdateOne {
 	ptuo.mutation.SetNodeType(s)
 	return ptuo
 }
 
-// SetNillableNodeType sets the nodeType field if the given value is not nil.
+// SetNillableNodeType sets the "nodeType" field if the given value is not nil.
 func (ptuo *PropertyTypeUpdateOne) SetNillableNodeType(s *string) *PropertyTypeUpdateOne {
 	if s != nil {
 		ptuo.SetNodeType(*s)
@@ -1241,19 +1246,19 @@ func (ptuo *PropertyTypeUpdateOne) SetNillableNodeType(s *string) *PropertyTypeU
 	return ptuo
 }
 
-// ClearNodeType clears the value of nodeType.
+// ClearNodeType clears the value of the "nodeType" field.
 func (ptuo *PropertyTypeUpdateOne) ClearNodeType() *PropertyTypeUpdateOne {
 	ptuo.mutation.ClearNodeType()
 	return ptuo
 }
 
-// AddPropertyIDs adds the properties edge to Property by ids.
+// AddPropertyIDs adds the "properties" edge to the Property entity by IDs.
 func (ptuo *PropertyTypeUpdateOne) AddPropertyIDs(ids ...int) *PropertyTypeUpdateOne {
 	ptuo.mutation.AddPropertyIDs(ids...)
 	return ptuo
 }
 
-// AddProperties adds the properties edges to Property.
+// AddProperties adds the "properties" edges to the Property entity.
 func (ptuo *PropertyTypeUpdateOne) AddProperties(p ...*Property) *PropertyTypeUpdateOne {
 	ids := make([]int, len(p))
 	for i := range p {
@@ -1262,13 +1267,13 @@ func (ptuo *PropertyTypeUpdateOne) AddProperties(p ...*Property) *PropertyTypeUp
 	return ptuo.AddPropertyIDs(ids...)
 }
 
-// SetResourceTypeID sets the resource_type edge to ResourceType by id.
+// SetResourceTypeID sets the "resource_type" edge to the ResourceType entity by ID.
 func (ptuo *PropertyTypeUpdateOne) SetResourceTypeID(id int) *PropertyTypeUpdateOne {
 	ptuo.mutation.SetResourceTypeID(id)
 	return ptuo
 }
 
-// SetNillableResourceTypeID sets the resource_type edge to ResourceType by id if the given value is not nil.
+// SetNillableResourceTypeID sets the "resource_type" edge to the ResourceType entity by ID if the given value is not nil.
 func (ptuo *PropertyTypeUpdateOne) SetNillableResourceTypeID(id *int) *PropertyTypeUpdateOne {
 	if id != nil {
 		ptuo = ptuo.SetResourceTypeID(*id)
@@ -1276,7 +1281,7 @@ func (ptuo *PropertyTypeUpdateOne) SetNillableResourceTypeID(id *int) *PropertyT
 	return ptuo
 }
 
-// SetResourceType sets the resource_type edge to ResourceType.
+// SetResourceType sets the "resource_type" edge to the ResourceType entity.
 func (ptuo *PropertyTypeUpdateOne) SetResourceType(r *ResourceType) *PropertyTypeUpdateOne {
 	return ptuo.SetResourceTypeID(r.ID)
 }
@@ -1286,19 +1291,19 @@ func (ptuo *PropertyTypeUpdateOne) Mutation() *PropertyTypeMutation {
 	return ptuo.mutation
 }
 
-// ClearProperties clears all "properties" edges to type Property.
+// ClearProperties clears all "properties" edges to the Property entity.
 func (ptuo *PropertyTypeUpdateOne) ClearProperties() *PropertyTypeUpdateOne {
 	ptuo.mutation.ClearProperties()
 	return ptuo
 }
 
-// RemovePropertyIDs removes the properties edge to Property by ids.
+// RemovePropertyIDs removes the "properties" edge to Property entities by IDs.
 func (ptuo *PropertyTypeUpdateOne) RemovePropertyIDs(ids ...int) *PropertyTypeUpdateOne {
 	ptuo.mutation.RemovePropertyIDs(ids...)
 	return ptuo
 }
 
-// RemoveProperties removes properties edges to Property.
+// RemoveProperties removes "properties" edges to Property entities.
 func (ptuo *PropertyTypeUpdateOne) RemoveProperties(p ...*Property) *PropertyTypeUpdateOne {
 	ids := make([]int, len(p))
 	for i := range p {
@@ -1307,13 +1312,20 @@ func (ptuo *PropertyTypeUpdateOne) RemoveProperties(p ...*Property) *PropertyTyp
 	return ptuo.RemovePropertyIDs(ids...)
 }
 
-// ClearResourceType clears the "resource_type" edge to type ResourceType.
+// ClearResourceType clears the "resource_type" edge to the ResourceType entity.
 func (ptuo *PropertyTypeUpdateOne) ClearResourceType() *PropertyTypeUpdateOne {
 	ptuo.mutation.ClearResourceType()
 	return ptuo
 }
 
-// Save executes the query and returns the updated entity.
+// Select allows selecting one or more fields (columns) of the returned entity.
+// The default is selecting all fields defined in the entity schema.
+func (ptuo *PropertyTypeUpdateOne) Select(field string, fields ...string) *PropertyTypeUpdateOne {
+	ptuo.fields = append([]string{field}, fields...)
+	return ptuo
+}
+
+// Save executes the query and returns the updated PropertyType entity.
 func (ptuo *PropertyTypeUpdateOne) Save(ctx context.Context) (*PropertyType, error) {
 	var (
 		err  error
@@ -1339,11 +1351,20 @@ func (ptuo *PropertyTypeUpdateOne) Save(ctx context.Context) (*PropertyType, err
 			return node, err
 		})
 		for i := len(ptuo.hooks) - 1; i >= 0; i-- {
+			if ptuo.hooks[i] == nil {
+				return nil, fmt.Errorf("ent: uninitialized hook (forgotten import ent/runtime?)")
+			}
 			mut = ptuo.hooks[i](mut)
 		}
-		if _, err := mut.Mutate(ctx, ptuo.mutation); err != nil {
+		v, err := mut.Mutate(ctx, ptuo.mutation)
+		if err != nil {
 			return nil, err
 		}
+		nv, ok := v.(*PropertyType)
+		if !ok {
+			return nil, fmt.Errorf("unexpected node type %T returned from PropertyTypeMutation", v)
+		}
+		node = nv
 	}
 	return node, err
 }
@@ -1374,7 +1395,7 @@ func (ptuo *PropertyTypeUpdateOne) ExecX(ctx context.Context) {
 func (ptuo *PropertyTypeUpdateOne) check() error {
 	if v, ok := ptuo.mutation.GetType(); ok {
 		if err := propertytype.TypeValidator(v); err != nil {
-			return &ValidationError{Name: "type", err: fmt.Errorf("ent: validator failed for field \"type\": %w", err)}
+			return &ValidationError{Name: "type", err: fmt.Errorf(`ent: validator failed for field "PropertyType.type": %w`, err)}
 		}
 	}
 	return nil
@@ -1393,9 +1414,28 @@ func (ptuo *PropertyTypeUpdateOne) sqlSave(ctx context.Context) (_node *Property
 	}
 	id, ok := ptuo.mutation.ID()
 	if !ok {
-		return nil, &ValidationError{Name: "ID", err: fmt.Errorf("missing PropertyType.ID for update")}
+		return nil, &ValidationError{Name: "id", err: errors.New(`ent: missing "PropertyType.id" for update`)}
 	}
 	_spec.Node.ID.Value = id
+	if fields := ptuo.fields; len(fields) > 0 {
+		_spec.Node.Columns = make([]string, 0, len(fields))
+		_spec.Node.Columns = append(_spec.Node.Columns, propertytype.FieldID)
+		for _, f := range fields {
+			if !propertytype.ValidColumn(f) {
+				return nil, &ValidationError{Name: f, err: fmt.Errorf("ent: invalid field %q for query", f)}
+			}
+			if f != propertytype.FieldID {
+				_spec.Node.Columns = append(_spec.Node.Columns, f)
+			}
+		}
+	}
+	if ps := ptuo.mutation.predicates; len(ps) > 0 {
+		_spec.Predicate = func(selector *sql.Selector) {
+			for i := range ps {
+				ps[i](selector)
+			}
+		}
+	}
 	if value, ok := ptuo.mutation.GetType(); ok {
 		_spec.Fields.Set = append(_spec.Fields.Set, &sqlgraph.FieldSpec{
 			Type:   field.TypeEnum,
@@ -1734,12 +1774,12 @@ func (ptuo *PropertyTypeUpdateOne) sqlSave(ctx context.Context) (_node *Property
 	}
 	_node = &PropertyType{config: ptuo.config}
 	_spec.Assign = _node.assignValues
-	_spec.ScanValues = _node.scanValues()
+	_spec.ScanValues = _node.scanValues
 	if err = sqlgraph.UpdateNode(ctx, ptuo.driver, _spec); err != nil {
 		if _, ok := err.(*sqlgraph.NotFoundError); ok {
 			err = &NotFoundError{propertytype.Label}
-		} else if cerr, ok := isSQLConstraintError(err); ok {
-			err = cerr
+		} else if sqlgraph.IsConstraintError(err) {
+			err = &ConstraintError{msg: err.Error(), wrap: err}
 		}
 		return nil, err
 	}

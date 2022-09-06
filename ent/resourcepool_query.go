@@ -9,9 +9,9 @@ import (
 	"fmt"
 	"math"
 
-	"github.com/facebook/ent/dialect/sql"
-	"github.com/facebook/ent/dialect/sql/sqlgraph"
-	"github.com/facebook/ent/schema/field"
+	"entgo.io/ent/dialect/sql"
+	"entgo.io/ent/dialect/sql/sqlgraph"
+	"entgo.io/ent/schema/field"
 	"github.com/net-auto/resourceManager/ent/allocationstrategy"
 	"github.com/net-auto/resourceManager/ent/poolproperties"
 	"github.com/net-auto/resourceManager/ent/predicate"
@@ -24,12 +24,12 @@ import (
 // ResourcePoolQuery is the builder for querying ResourcePool entities.
 type ResourcePoolQuery struct {
 	config
-	limit      *int
-	offset     *int
-	order      []OrderFunc
-	unique     []string
-	predicates []predicate.ResourcePool
-	// eager-loading edges.
+	limit                  *int
+	offset                 *int
+	unique                 *bool
+	order                  []OrderFunc
+	fields                 []string
+	predicates             []predicate.ResourcePool
 	withResourceType       *ResourceTypeQuery
 	withTags               *TagQuery
 	withClaims             *ResourceQuery
@@ -42,7 +42,7 @@ type ResourcePoolQuery struct {
 	path func(context.Context) (*sql.Selector, error)
 }
 
-// Where adds a new predicate for the builder.
+// Where adds a new predicate for the ResourcePoolQuery builder.
 func (rpq *ResourcePoolQuery) Where(ps ...predicate.ResourcePool) *ResourcePoolQuery {
 	rpq.predicates = append(rpq.predicates, ps...)
 	return rpq
@@ -60,20 +60,27 @@ func (rpq *ResourcePoolQuery) Offset(offset int) *ResourcePoolQuery {
 	return rpq
 }
 
+// Unique configures the query builder to filter duplicate records on query.
+// By default, unique is set to true, and can be disabled using this method.
+func (rpq *ResourcePoolQuery) Unique(unique bool) *ResourcePoolQuery {
+	rpq.unique = &unique
+	return rpq
+}
+
 // Order adds an order step to the query.
 func (rpq *ResourcePoolQuery) Order(o ...OrderFunc) *ResourcePoolQuery {
 	rpq.order = append(rpq.order, o...)
 	return rpq
 }
 
-// QueryResourceType chains the current query on the resource_type edge.
+// QueryResourceType chains the current query on the "resource_type" edge.
 func (rpq *ResourcePoolQuery) QueryResourceType() *ResourceTypeQuery {
 	query := &ResourceTypeQuery{config: rpq.config}
 	query.path = func(ctx context.Context) (fromU *sql.Selector, err error) {
 		if err := rpq.prepareQuery(ctx); err != nil {
 			return nil, err
 		}
-		selector := rpq.sqlQuery()
+		selector := rpq.sqlQuery(ctx)
 		if err := selector.Err(); err != nil {
 			return nil, err
 		}
@@ -88,14 +95,14 @@ func (rpq *ResourcePoolQuery) QueryResourceType() *ResourceTypeQuery {
 	return query
 }
 
-// QueryTags chains the current query on the tags edge.
+// QueryTags chains the current query on the "tags" edge.
 func (rpq *ResourcePoolQuery) QueryTags() *TagQuery {
 	query := &TagQuery{config: rpq.config}
 	query.path = func(ctx context.Context) (fromU *sql.Selector, err error) {
 		if err := rpq.prepareQuery(ctx); err != nil {
 			return nil, err
 		}
-		selector := rpq.sqlQuery()
+		selector := rpq.sqlQuery(ctx)
 		if err := selector.Err(); err != nil {
 			return nil, err
 		}
@@ -110,14 +117,14 @@ func (rpq *ResourcePoolQuery) QueryTags() *TagQuery {
 	return query
 }
 
-// QueryClaims chains the current query on the claims edge.
+// QueryClaims chains the current query on the "claims" edge.
 func (rpq *ResourcePoolQuery) QueryClaims() *ResourceQuery {
 	query := &ResourceQuery{config: rpq.config}
 	query.path = func(ctx context.Context) (fromU *sql.Selector, err error) {
 		if err := rpq.prepareQuery(ctx); err != nil {
 			return nil, err
 		}
-		selector := rpq.sqlQuery()
+		selector := rpq.sqlQuery(ctx)
 		if err := selector.Err(); err != nil {
 			return nil, err
 		}
@@ -132,14 +139,14 @@ func (rpq *ResourcePoolQuery) QueryClaims() *ResourceQuery {
 	return query
 }
 
-// QueryPoolProperties chains the current query on the poolProperties edge.
+// QueryPoolProperties chains the current query on the "poolProperties" edge.
 func (rpq *ResourcePoolQuery) QueryPoolProperties() *PoolPropertiesQuery {
 	query := &PoolPropertiesQuery{config: rpq.config}
 	query.path = func(ctx context.Context) (fromU *sql.Selector, err error) {
 		if err := rpq.prepareQuery(ctx); err != nil {
 			return nil, err
 		}
-		selector := rpq.sqlQuery()
+		selector := rpq.sqlQuery(ctx)
 		if err := selector.Err(); err != nil {
 			return nil, err
 		}
@@ -154,14 +161,14 @@ func (rpq *ResourcePoolQuery) QueryPoolProperties() *PoolPropertiesQuery {
 	return query
 }
 
-// QueryAllocationStrategy chains the current query on the allocation_strategy edge.
+// QueryAllocationStrategy chains the current query on the "allocation_strategy" edge.
 func (rpq *ResourcePoolQuery) QueryAllocationStrategy() *AllocationStrategyQuery {
 	query := &AllocationStrategyQuery{config: rpq.config}
 	query.path = func(ctx context.Context) (fromU *sql.Selector, err error) {
 		if err := rpq.prepareQuery(ctx); err != nil {
 			return nil, err
 		}
-		selector := rpq.sqlQuery()
+		selector := rpq.sqlQuery(ctx)
 		if err := selector.Err(); err != nil {
 			return nil, err
 		}
@@ -176,14 +183,14 @@ func (rpq *ResourcePoolQuery) QueryAllocationStrategy() *AllocationStrategyQuery
 	return query
 }
 
-// QueryParentResource chains the current query on the parent_resource edge.
+// QueryParentResource chains the current query on the "parent_resource" edge.
 func (rpq *ResourcePoolQuery) QueryParentResource() *ResourceQuery {
 	query := &ResourceQuery{config: rpq.config}
 	query.path = func(ctx context.Context) (fromU *sql.Selector, err error) {
 		if err := rpq.prepareQuery(ctx); err != nil {
 			return nil, err
 		}
-		selector := rpq.sqlQuery()
+		selector := rpq.sqlQuery(ctx)
 		if err := selector.Err(); err != nil {
 			return nil, err
 		}
@@ -198,7 +205,8 @@ func (rpq *ResourcePoolQuery) QueryParentResource() *ResourceQuery {
 	return query
 }
 
-// First returns the first ResourcePool entity in the query. Returns *NotFoundError when no resourcepool was found.
+// First returns the first ResourcePool entity from the query.
+// Returns a *NotFoundError when no ResourcePool was found.
 func (rpq *ResourcePoolQuery) First(ctx context.Context) (*ResourcePool, error) {
 	nodes, err := rpq.Limit(1).All(ctx)
 	if err != nil {
@@ -219,7 +227,8 @@ func (rpq *ResourcePoolQuery) FirstX(ctx context.Context) *ResourcePool {
 	return node
 }
 
-// FirstID returns the first ResourcePool id in the query. Returns *NotFoundError when no id was found.
+// FirstID returns the first ResourcePool ID from the query.
+// Returns a *NotFoundError when no ResourcePool ID was found.
 func (rpq *ResourcePoolQuery) FirstID(ctx context.Context) (id int, err error) {
 	var ids []int
 	if ids, err = rpq.Limit(1).IDs(ctx); err != nil {
@@ -241,7 +250,9 @@ func (rpq *ResourcePoolQuery) FirstIDX(ctx context.Context) int {
 	return id
 }
 
-// Only returns the only ResourcePool entity in the query, returns an error if not exactly one entity was returned.
+// Only returns a single ResourcePool entity found by the query, ensuring it only returns one.
+// Returns a *NotSingularError when more than one ResourcePool entity is found.
+// Returns a *NotFoundError when no ResourcePool entities are found.
 func (rpq *ResourcePoolQuery) Only(ctx context.Context) (*ResourcePool, error) {
 	nodes, err := rpq.Limit(2).All(ctx)
 	if err != nil {
@@ -266,7 +277,9 @@ func (rpq *ResourcePoolQuery) OnlyX(ctx context.Context) *ResourcePool {
 	return node
 }
 
-// OnlyID returns the only ResourcePool id in the query, returns an error if not exactly one id was returned.
+// OnlyID is like Only, but returns the only ResourcePool ID in the query.
+// Returns a *NotSingularError when more than one ResourcePool ID is found.
+// Returns a *NotFoundError when no entities are found.
 func (rpq *ResourcePoolQuery) OnlyID(ctx context.Context) (id int, err error) {
 	var ids []int
 	if ids, err = rpq.Limit(2).IDs(ctx); err != nil {
@@ -309,7 +322,7 @@ func (rpq *ResourcePoolQuery) AllX(ctx context.Context) []*ResourcePool {
 	return nodes
 }
 
-// IDs executes the query and returns a list of ResourcePool ids.
+// IDs executes the query and returns a list of ResourcePool IDs.
 func (rpq *ResourcePoolQuery) IDs(ctx context.Context) ([]int, error) {
 	var ids []int
 	if err := rpq.Select(resourcepool.FieldID).Scan(ctx, &ids); err != nil {
@@ -361,24 +374,33 @@ func (rpq *ResourcePoolQuery) ExistX(ctx context.Context) bool {
 	return exist
 }
 
-// Clone returns a duplicate of the query builder, including all associated steps. It can be
+// Clone returns a duplicate of the ResourcePoolQuery builder, including all associated steps. It can be
 // used to prepare common query builders and use them differently after the clone is made.
 func (rpq *ResourcePoolQuery) Clone() *ResourcePoolQuery {
+	if rpq == nil {
+		return nil
+	}
 	return &ResourcePoolQuery{
-		config:     rpq.config,
-		limit:      rpq.limit,
-		offset:     rpq.offset,
-		order:      append([]OrderFunc{}, rpq.order...),
-		unique:     append([]string{}, rpq.unique...),
-		predicates: append([]predicate.ResourcePool{}, rpq.predicates...),
+		config:                 rpq.config,
+		limit:                  rpq.limit,
+		offset:                 rpq.offset,
+		order:                  append([]OrderFunc{}, rpq.order...),
+		predicates:             append([]predicate.ResourcePool{}, rpq.predicates...),
+		withResourceType:       rpq.withResourceType.Clone(),
+		withTags:               rpq.withTags.Clone(),
+		withClaims:             rpq.withClaims.Clone(),
+		withPoolProperties:     rpq.withPoolProperties.Clone(),
+		withAllocationStrategy: rpq.withAllocationStrategy.Clone(),
+		withParentResource:     rpq.withParentResource.Clone(),
 		// clone intermediate query.
-		sql:  rpq.sql.Clone(),
-		path: rpq.path,
+		sql:    rpq.sql.Clone(),
+		path:   rpq.path,
+		unique: rpq.unique,
 	}
 }
 
-//  WithResourceType tells the query-builder to eager-loads the nodes that are connected to
-// the "resource_type" edge. The optional arguments used to configure the query builder of the edge.
+// WithResourceType tells the query-builder to eager-load the nodes that are connected to
+// the "resource_type" edge. The optional arguments are used to configure the query builder of the edge.
 func (rpq *ResourcePoolQuery) WithResourceType(opts ...func(*ResourceTypeQuery)) *ResourcePoolQuery {
 	query := &ResourceTypeQuery{config: rpq.config}
 	for _, opt := range opts {
@@ -388,8 +410,8 @@ func (rpq *ResourcePoolQuery) WithResourceType(opts ...func(*ResourceTypeQuery))
 	return rpq
 }
 
-//  WithTags tells the query-builder to eager-loads the nodes that are connected to
-// the "tags" edge. The optional arguments used to configure the query builder of the edge.
+// WithTags tells the query-builder to eager-load the nodes that are connected to
+// the "tags" edge. The optional arguments are used to configure the query builder of the edge.
 func (rpq *ResourcePoolQuery) WithTags(opts ...func(*TagQuery)) *ResourcePoolQuery {
 	query := &TagQuery{config: rpq.config}
 	for _, opt := range opts {
@@ -399,8 +421,8 @@ func (rpq *ResourcePoolQuery) WithTags(opts ...func(*TagQuery)) *ResourcePoolQue
 	return rpq
 }
 
-//  WithClaims tells the query-builder to eager-loads the nodes that are connected to
-// the "claims" edge. The optional arguments used to configure the query builder of the edge.
+// WithClaims tells the query-builder to eager-load the nodes that are connected to
+// the "claims" edge. The optional arguments are used to configure the query builder of the edge.
 func (rpq *ResourcePoolQuery) WithClaims(opts ...func(*ResourceQuery)) *ResourcePoolQuery {
 	query := &ResourceQuery{config: rpq.config}
 	for _, opt := range opts {
@@ -410,8 +432,8 @@ func (rpq *ResourcePoolQuery) WithClaims(opts ...func(*ResourceQuery)) *Resource
 	return rpq
 }
 
-//  WithPoolProperties tells the query-builder to eager-loads the nodes that are connected to
-// the "poolProperties" edge. The optional arguments used to configure the query builder of the edge.
+// WithPoolProperties tells the query-builder to eager-load the nodes that are connected to
+// the "poolProperties" edge. The optional arguments are used to configure the query builder of the edge.
 func (rpq *ResourcePoolQuery) WithPoolProperties(opts ...func(*PoolPropertiesQuery)) *ResourcePoolQuery {
 	query := &PoolPropertiesQuery{config: rpq.config}
 	for _, opt := range opts {
@@ -421,8 +443,8 @@ func (rpq *ResourcePoolQuery) WithPoolProperties(opts ...func(*PoolPropertiesQue
 	return rpq
 }
 
-//  WithAllocationStrategy tells the query-builder to eager-loads the nodes that are connected to
-// the "allocation_strategy" edge. The optional arguments used to configure the query builder of the edge.
+// WithAllocationStrategy tells the query-builder to eager-load the nodes that are connected to
+// the "allocation_strategy" edge. The optional arguments are used to configure the query builder of the edge.
 func (rpq *ResourcePoolQuery) WithAllocationStrategy(opts ...func(*AllocationStrategyQuery)) *ResourcePoolQuery {
 	query := &AllocationStrategyQuery{config: rpq.config}
 	for _, opt := range opts {
@@ -432,8 +454,8 @@ func (rpq *ResourcePoolQuery) WithAllocationStrategy(opts ...func(*AllocationStr
 	return rpq
 }
 
-//  WithParentResource tells the query-builder to eager-loads the nodes that are connected to
-// the "parent_resource" edge. The optional arguments used to configure the query builder of the edge.
+// WithParentResource tells the query-builder to eager-load the nodes that are connected to
+// the "parent_resource" edge. The optional arguments are used to configure the query builder of the edge.
 func (rpq *ResourcePoolQuery) WithParentResource(opts ...func(*ResourceQuery)) *ResourcePoolQuery {
 	query := &ResourceQuery{config: rpq.config}
 	for _, opt := range opts {
@@ -443,7 +465,7 @@ func (rpq *ResourcePoolQuery) WithParentResource(opts ...func(*ResourceQuery)) *
 	return rpq
 }
 
-// GroupBy used to group vertices by one or more fields/columns.
+// GroupBy is used to group vertices by one or more fields/columns.
 // It is often used with aggregate functions, like: count, max, mean, min, sum.
 //
 // Example:
@@ -457,20 +479,22 @@ func (rpq *ResourcePoolQuery) WithParentResource(opts ...func(*ResourceQuery)) *
 //		GroupBy(resourcepool.FieldName).
 //		Aggregate(ent.Count()).
 //		Scan(ctx, &v)
-//
 func (rpq *ResourcePoolQuery) GroupBy(field string, fields ...string) *ResourcePoolGroupBy {
-	group := &ResourcePoolGroupBy{config: rpq.config}
-	group.fields = append([]string{field}, fields...)
-	group.path = func(ctx context.Context) (prev *sql.Selector, err error) {
+	grbuild := &ResourcePoolGroupBy{config: rpq.config}
+	grbuild.fields = append([]string{field}, fields...)
+	grbuild.path = func(ctx context.Context) (prev *sql.Selector, err error) {
 		if err := rpq.prepareQuery(ctx); err != nil {
 			return nil, err
 		}
-		return rpq.sqlQuery(), nil
+		return rpq.sqlQuery(ctx), nil
 	}
-	return group
+	grbuild.label = resourcepool.Label
+	grbuild.flds, grbuild.scan = &grbuild.fields, grbuild.Scan
+	return grbuild
 }
 
-// Select one or more fields from the given query.
+// Select allows the selection one or more fields/columns for the given query,
+// instead of selecting all fields in the entity.
 //
 // Example:
 //
@@ -481,20 +505,20 @@ func (rpq *ResourcePoolQuery) GroupBy(field string, fields ...string) *ResourceP
 //	client.ResourcePool.Query().
 //		Select(resourcepool.FieldName).
 //		Scan(ctx, &v)
-//
-func (rpq *ResourcePoolQuery) Select(field string, fields ...string) *ResourcePoolSelect {
-	selector := &ResourcePoolSelect{config: rpq.config}
-	selector.fields = append([]string{field}, fields...)
-	selector.path = func(ctx context.Context) (prev *sql.Selector, err error) {
-		if err := rpq.prepareQuery(ctx); err != nil {
-			return nil, err
-		}
-		return rpq.sqlQuery(), nil
-	}
-	return selector
+func (rpq *ResourcePoolQuery) Select(fields ...string) *ResourcePoolSelect {
+	rpq.fields = append(rpq.fields, fields...)
+	selbuild := &ResourcePoolSelect{ResourcePoolQuery: rpq}
+	selbuild.label = resourcepool.Label
+	selbuild.flds, selbuild.scan = &rpq.fields, selbuild.Scan
+	return selbuild
 }
 
 func (rpq *ResourcePoolQuery) prepareQuery(ctx context.Context) error {
+	for _, f := range rpq.fields {
+		if !resourcepool.ValidColumn(f) {
+			return &ValidationError{Name: f, err: fmt.Errorf("ent: invalid field %q for query", f)}
+		}
+	}
 	if rpq.path != nil {
 		prev, err := rpq.path(ctx)
 		if err != nil {
@@ -502,13 +526,16 @@ func (rpq *ResourcePoolQuery) prepareQuery(ctx context.Context) error {
 		}
 		rpq.sql = prev
 	}
+	if resourcepool.Policy == nil {
+		return errors.New("ent: uninitialized resourcepool.Policy (forgotten import ent/runtime?)")
+	}
 	if err := resourcepool.Policy.EvalQuery(ctx, rpq); err != nil {
 		return err
 	}
 	return nil
 }
 
-func (rpq *ResourcePoolQuery) sqlAll(ctx context.Context) ([]*ResourcePool, error) {
+func (rpq *ResourcePoolQuery) sqlAll(ctx context.Context, hooks ...queryHook) ([]*ResourcePool, error) {
 	var (
 		nodes       = []*ResourcePool{}
 		withFKs     = rpq.withFKs
@@ -528,22 +555,17 @@ func (rpq *ResourcePoolQuery) sqlAll(ctx context.Context) ([]*ResourcePool, erro
 	if withFKs {
 		_spec.Node.Columns = append(_spec.Node.Columns, resourcepool.ForeignKeys...)
 	}
-	_spec.ScanValues = func() []interface{} {
+	_spec.ScanValues = func(columns []string) ([]any, error) {
+		return (*ResourcePool).scanValues(nil, columns)
+	}
+	_spec.Assign = func(columns []string, values []any) error {
 		node := &ResourcePool{config: rpq.config}
 		nodes = append(nodes, node)
-		values := node.scanValues()
-		if withFKs {
-			values = append(values, node.fkValues()...)
-		}
-		return values
-	}
-	_spec.Assign = func(values ...interface{}) error {
-		if len(nodes) == 0 {
-			return fmt.Errorf("ent: Assign called without calling ScanValues")
-		}
-		node := nodes[len(nodes)-1]
 		node.Edges.loadedTypes = loadedTypes
-		return node.assignValues(values...)
+		return node.assignValues(columns, values)
+	}
+	for i := range hooks {
+		hooks[i](ctx, _spec)
 	}
 	if err := sqlgraph.QueryNodes(ctx, rpq.driver, _spec); err != nil {
 		return nil, err
@@ -551,215 +573,265 @@ func (rpq *ResourcePoolQuery) sqlAll(ctx context.Context) ([]*ResourcePool, erro
 	if len(nodes) == 0 {
 		return nodes, nil
 	}
-
 	if query := rpq.withResourceType; query != nil {
-		ids := make([]int, 0, len(nodes))
-		nodeids := make(map[int][]*ResourcePool)
-		for i := range nodes {
-			if fk := nodes[i].resource_type_pools; fk != nil {
-				ids = append(ids, *fk)
-				nodeids[*fk] = append(nodeids[*fk], nodes[i])
-			}
-		}
-		query.Where(resourcetype.IDIn(ids...))
-		neighbors, err := query.All(ctx)
-		if err != nil {
+		if err := rpq.loadResourceType(ctx, query, nodes, nil,
+			func(n *ResourcePool, e *ResourceType) { n.Edges.ResourceType = e }); err != nil {
 			return nil, err
 		}
-		for _, n := range neighbors {
-			nodes, ok := nodeids[n.ID]
-			if !ok {
-				return nil, fmt.Errorf(`unexpected foreign-key "resource_type_pools" returned %v`, n.ID)
-			}
-			for i := range nodes {
-				nodes[i].Edges.ResourceType = n
-			}
-		}
 	}
-
 	if query := rpq.withTags; query != nil {
-		fks := make([]driver.Value, 0, len(nodes))
-		ids := make(map[int]*ResourcePool, len(nodes))
-		for _, node := range nodes {
-			ids[node.ID] = node
-			fks = append(fks, node.ID)
-			node.Edges.Tags = []*Tag{}
-		}
-		var (
-			edgeids []int
-			edges   = make(map[int][]*ResourcePool)
-		)
-		_spec := &sqlgraph.EdgeQuerySpec{
-			Edge: &sqlgraph.EdgeSpec{
-				Inverse: true,
-				Table:   resourcepool.TagsTable,
-				Columns: resourcepool.TagsPrimaryKey,
-			},
-			Predicate: func(s *sql.Selector) {
-				s.Where(sql.InValues(resourcepool.TagsPrimaryKey[1], fks...))
-			},
-
-			ScanValues: func() [2]interface{} {
-				return [2]interface{}{&sql.NullInt64{}, &sql.NullInt64{}}
-			},
-			Assign: func(out, in interface{}) error {
-				eout, ok := out.(*sql.NullInt64)
-				if !ok || eout == nil {
-					return fmt.Errorf("unexpected id value for edge-out")
-				}
-				ein, ok := in.(*sql.NullInt64)
-				if !ok || ein == nil {
-					return fmt.Errorf("unexpected id value for edge-in")
-				}
-				outValue := int(eout.Int64)
-				inValue := int(ein.Int64)
-				node, ok := ids[outValue]
-				if !ok {
-					return fmt.Errorf("unexpected node id in edges: %v", outValue)
-				}
-				edgeids = append(edgeids, inValue)
-				edges[inValue] = append(edges[inValue], node)
-				return nil
-			},
-		}
-		if err := sqlgraph.QueryEdges(ctx, rpq.driver, _spec); err != nil {
-			return nil, fmt.Errorf(`query edges "tags": %v`, err)
-		}
-		query.Where(tag.IDIn(edgeids...))
-		neighbors, err := query.All(ctx)
-		if err != nil {
+		if err := rpq.loadTags(ctx, query, nodes,
+			func(n *ResourcePool) { n.Edges.Tags = []*Tag{} },
+			func(n *ResourcePool, e *Tag) { n.Edges.Tags = append(n.Edges.Tags, e) }); err != nil {
 			return nil, err
 		}
-		for _, n := range neighbors {
-			nodes, ok := edges[n.ID]
-			if !ok {
-				return nil, fmt.Errorf(`unexpected "tags" node returned %v`, n.ID)
-			}
-			for i := range nodes {
-				nodes[i].Edges.Tags = append(nodes[i].Edges.Tags, n)
-			}
-		}
 	}
-
 	if query := rpq.withClaims; query != nil {
-		fks := make([]driver.Value, 0, len(nodes))
-		nodeids := make(map[int]*ResourcePool)
-		for i := range nodes {
-			fks = append(fks, nodes[i].ID)
-			nodeids[nodes[i].ID] = nodes[i]
-			nodes[i].Edges.Claims = []*Resource{}
-		}
-		query.withFKs = true
-		query.Where(predicate.Resource(func(s *sql.Selector) {
-			s.Where(sql.InValues(resourcepool.ClaimsColumn, fks...))
-		}))
-		neighbors, err := query.All(ctx)
-		if err != nil {
+		if err := rpq.loadClaims(ctx, query, nodes,
+			func(n *ResourcePool) { n.Edges.Claims = []*Resource{} },
+			func(n *ResourcePool, e *Resource) { n.Edges.Claims = append(n.Edges.Claims, e) }); err != nil {
 			return nil, err
 		}
-		for _, n := range neighbors {
-			fk := n.resource_pool_claims
-			if fk == nil {
-				return nil, fmt.Errorf(`foreign-key "resource_pool_claims" is nil for node %v`, n.ID)
-			}
-			node, ok := nodeids[*fk]
-			if !ok {
-				return nil, fmt.Errorf(`unexpected foreign-key "resource_pool_claims" returned %v for node %v`, *fk, n.ID)
-			}
-			node.Edges.Claims = append(node.Edges.Claims, n)
-		}
 	}
-
 	if query := rpq.withPoolProperties; query != nil {
-		fks := make([]driver.Value, 0, len(nodes))
-		nodeids := make(map[int]*ResourcePool)
-		for i := range nodes {
-			fks = append(fks, nodes[i].ID)
-			nodeids[nodes[i].ID] = nodes[i]
-		}
-		query.withFKs = true
-		query.Where(predicate.PoolProperties(func(s *sql.Selector) {
-			s.Where(sql.InValues(resourcepool.PoolPropertiesColumn, fks...))
-		}))
-		neighbors, err := query.All(ctx)
-		if err != nil {
+		if err := rpq.loadPoolProperties(ctx, query, nodes, nil,
+			func(n *ResourcePool, e *PoolProperties) { n.Edges.PoolProperties = e }); err != nil {
 			return nil, err
 		}
-		for _, n := range neighbors {
-			fk := n.resource_pool_pool_properties
-			if fk == nil {
-				return nil, fmt.Errorf(`foreign-key "resource_pool_pool_properties" is nil for node %v`, n.ID)
-			}
-			node, ok := nodeids[*fk]
-			if !ok {
-				return nil, fmt.Errorf(`unexpected foreign-key "resource_pool_pool_properties" returned %v for node %v`, *fk, n.ID)
-			}
-			node.Edges.PoolProperties = n
-		}
 	}
-
 	if query := rpq.withAllocationStrategy; query != nil {
-		ids := make([]int, 0, len(nodes))
-		nodeids := make(map[int][]*ResourcePool)
-		for i := range nodes {
-			if fk := nodes[i].resource_pool_allocation_strategy; fk != nil {
-				ids = append(ids, *fk)
-				nodeids[*fk] = append(nodeids[*fk], nodes[i])
-			}
-		}
-		query.Where(allocationstrategy.IDIn(ids...))
-		neighbors, err := query.All(ctx)
-		if err != nil {
+		if err := rpq.loadAllocationStrategy(ctx, query, nodes, nil,
+			func(n *ResourcePool, e *AllocationStrategy) { n.Edges.AllocationStrategy = e }); err != nil {
 			return nil, err
 		}
-		for _, n := range neighbors {
-			nodes, ok := nodeids[n.ID]
-			if !ok {
-				return nil, fmt.Errorf(`unexpected foreign-key "resource_pool_allocation_strategy" returned %v`, n.ID)
-			}
-			for i := range nodes {
-				nodes[i].Edges.AllocationStrategy = n
-			}
-		}
 	}
-
 	if query := rpq.withParentResource; query != nil {
-		ids := make([]int, 0, len(nodes))
-		nodeids := make(map[int][]*ResourcePool)
-		for i := range nodes {
-			if fk := nodes[i].resource_nested_pool; fk != nil {
-				ids = append(ids, *fk)
-				nodeids[*fk] = append(nodeids[*fk], nodes[i])
-			}
-		}
-		query.Where(resource.IDIn(ids...))
-		neighbors, err := query.All(ctx)
-		if err != nil {
+		if err := rpq.loadParentResource(ctx, query, nodes, nil,
+			func(n *ResourcePool, e *Resource) { n.Edges.ParentResource = e }); err != nil {
 			return nil, err
 		}
-		for _, n := range neighbors {
-			nodes, ok := nodeids[n.ID]
-			if !ok {
-				return nil, fmt.Errorf(`unexpected foreign-key "resource_nested_pool" returned %v`, n.ID)
-			}
-			for i := range nodes {
-				nodes[i].Edges.ParentResource = n
-			}
+	}
+	return nodes, nil
+}
+
+func (rpq *ResourcePoolQuery) loadResourceType(ctx context.Context, query *ResourceTypeQuery, nodes []*ResourcePool, init func(*ResourcePool), assign func(*ResourcePool, *ResourceType)) error {
+	ids := make([]int, 0, len(nodes))
+	nodeids := make(map[int][]*ResourcePool)
+	for i := range nodes {
+		if nodes[i].resource_type_pools == nil {
+			continue
+		}
+		fk := *nodes[i].resource_type_pools
+		if _, ok := nodeids[fk]; !ok {
+			ids = append(ids, fk)
+		}
+		nodeids[fk] = append(nodeids[fk], nodes[i])
+	}
+	query.Where(resourcetype.IDIn(ids...))
+	neighbors, err := query.All(ctx)
+	if err != nil {
+		return err
+	}
+	for _, n := range neighbors {
+		nodes, ok := nodeids[n.ID]
+		if !ok {
+			return fmt.Errorf(`unexpected foreign-key "resource_type_pools" returned %v`, n.ID)
+		}
+		for i := range nodes {
+			assign(nodes[i], n)
 		}
 	}
-
-	return nodes, nil
+	return nil
+}
+func (rpq *ResourcePoolQuery) loadTags(ctx context.Context, query *TagQuery, nodes []*ResourcePool, init func(*ResourcePool), assign func(*ResourcePool, *Tag)) error {
+	edgeIDs := make([]driver.Value, len(nodes))
+	byID := make(map[int]*ResourcePool)
+	nids := make(map[int]map[*ResourcePool]struct{})
+	for i, node := range nodes {
+		edgeIDs[i] = node.ID
+		byID[node.ID] = node
+		if init != nil {
+			init(node)
+		}
+	}
+	query.Where(func(s *sql.Selector) {
+		joinT := sql.Table(resourcepool.TagsTable)
+		s.Join(joinT).On(s.C(tag.FieldID), joinT.C(resourcepool.TagsPrimaryKey[0]))
+		s.Where(sql.InValues(joinT.C(resourcepool.TagsPrimaryKey[1]), edgeIDs...))
+		columns := s.SelectedColumns()
+		s.Select(joinT.C(resourcepool.TagsPrimaryKey[1]))
+		s.AppendSelect(columns...)
+		s.SetDistinct(false)
+	})
+	if err := query.prepareQuery(ctx); err != nil {
+		return err
+	}
+	neighbors, err := query.sqlAll(ctx, func(_ context.Context, spec *sqlgraph.QuerySpec) {
+		assign := spec.Assign
+		values := spec.ScanValues
+		spec.ScanValues = func(columns []string) ([]any, error) {
+			values, err := values(columns[1:])
+			if err != nil {
+				return nil, err
+			}
+			return append([]any{new(sql.NullInt64)}, values...), nil
+		}
+		spec.Assign = func(columns []string, values []any) error {
+			outValue := int(values[0].(*sql.NullInt64).Int64)
+			inValue := int(values[1].(*sql.NullInt64).Int64)
+			if nids[inValue] == nil {
+				nids[inValue] = map[*ResourcePool]struct{}{byID[outValue]: struct{}{}}
+				return assign(columns[1:], values[1:])
+			}
+			nids[inValue][byID[outValue]] = struct{}{}
+			return nil
+		}
+	})
+	if err != nil {
+		return err
+	}
+	for _, n := range neighbors {
+		nodes, ok := nids[n.ID]
+		if !ok {
+			return fmt.Errorf(`unexpected "tags" node returned %v`, n.ID)
+		}
+		for kn := range nodes {
+			assign(kn, n)
+		}
+	}
+	return nil
+}
+func (rpq *ResourcePoolQuery) loadClaims(ctx context.Context, query *ResourceQuery, nodes []*ResourcePool, init func(*ResourcePool), assign func(*ResourcePool, *Resource)) error {
+	fks := make([]driver.Value, 0, len(nodes))
+	nodeids := make(map[int]*ResourcePool)
+	for i := range nodes {
+		fks = append(fks, nodes[i].ID)
+		nodeids[nodes[i].ID] = nodes[i]
+		if init != nil {
+			init(nodes[i])
+		}
+	}
+	query.withFKs = true
+	query.Where(predicate.Resource(func(s *sql.Selector) {
+		s.Where(sql.InValues(resourcepool.ClaimsColumn, fks...))
+	}))
+	neighbors, err := query.All(ctx)
+	if err != nil {
+		return err
+	}
+	for _, n := range neighbors {
+		fk := n.resource_pool_claims
+		if fk == nil {
+			return fmt.Errorf(`foreign-key "resource_pool_claims" is nil for node %v`, n.ID)
+		}
+		node, ok := nodeids[*fk]
+		if !ok {
+			return fmt.Errorf(`unexpected foreign-key "resource_pool_claims" returned %v for node %v`, *fk, n.ID)
+		}
+		assign(node, n)
+	}
+	return nil
+}
+func (rpq *ResourcePoolQuery) loadPoolProperties(ctx context.Context, query *PoolPropertiesQuery, nodes []*ResourcePool, init func(*ResourcePool), assign func(*ResourcePool, *PoolProperties)) error {
+	fks := make([]driver.Value, 0, len(nodes))
+	nodeids := make(map[int]*ResourcePool)
+	for i := range nodes {
+		fks = append(fks, nodes[i].ID)
+		nodeids[nodes[i].ID] = nodes[i]
+	}
+	query.withFKs = true
+	query.Where(predicate.PoolProperties(func(s *sql.Selector) {
+		s.Where(sql.InValues(resourcepool.PoolPropertiesColumn, fks...))
+	}))
+	neighbors, err := query.All(ctx)
+	if err != nil {
+		return err
+	}
+	for _, n := range neighbors {
+		fk := n.resource_pool_pool_properties
+		if fk == nil {
+			return fmt.Errorf(`foreign-key "resource_pool_pool_properties" is nil for node %v`, n.ID)
+		}
+		node, ok := nodeids[*fk]
+		if !ok {
+			return fmt.Errorf(`unexpected foreign-key "resource_pool_pool_properties" returned %v for node %v`, *fk, n.ID)
+		}
+		assign(node, n)
+	}
+	return nil
+}
+func (rpq *ResourcePoolQuery) loadAllocationStrategy(ctx context.Context, query *AllocationStrategyQuery, nodes []*ResourcePool, init func(*ResourcePool), assign func(*ResourcePool, *AllocationStrategy)) error {
+	ids := make([]int, 0, len(nodes))
+	nodeids := make(map[int][]*ResourcePool)
+	for i := range nodes {
+		if nodes[i].resource_pool_allocation_strategy == nil {
+			continue
+		}
+		fk := *nodes[i].resource_pool_allocation_strategy
+		if _, ok := nodeids[fk]; !ok {
+			ids = append(ids, fk)
+		}
+		nodeids[fk] = append(nodeids[fk], nodes[i])
+	}
+	query.Where(allocationstrategy.IDIn(ids...))
+	neighbors, err := query.All(ctx)
+	if err != nil {
+		return err
+	}
+	for _, n := range neighbors {
+		nodes, ok := nodeids[n.ID]
+		if !ok {
+			return fmt.Errorf(`unexpected foreign-key "resource_pool_allocation_strategy" returned %v`, n.ID)
+		}
+		for i := range nodes {
+			assign(nodes[i], n)
+		}
+	}
+	return nil
+}
+func (rpq *ResourcePoolQuery) loadParentResource(ctx context.Context, query *ResourceQuery, nodes []*ResourcePool, init func(*ResourcePool), assign func(*ResourcePool, *Resource)) error {
+	ids := make([]int, 0, len(nodes))
+	nodeids := make(map[int][]*ResourcePool)
+	for i := range nodes {
+		if nodes[i].resource_nested_pool == nil {
+			continue
+		}
+		fk := *nodes[i].resource_nested_pool
+		if _, ok := nodeids[fk]; !ok {
+			ids = append(ids, fk)
+		}
+		nodeids[fk] = append(nodeids[fk], nodes[i])
+	}
+	query.Where(resource.IDIn(ids...))
+	neighbors, err := query.All(ctx)
+	if err != nil {
+		return err
+	}
+	for _, n := range neighbors {
+		nodes, ok := nodeids[n.ID]
+		if !ok {
+			return fmt.Errorf(`unexpected foreign-key "resource_nested_pool" returned %v`, n.ID)
+		}
+		for i := range nodes {
+			assign(nodes[i], n)
+		}
+	}
+	return nil
 }
 
 func (rpq *ResourcePoolQuery) sqlCount(ctx context.Context) (int, error) {
 	_spec := rpq.querySpec()
+	_spec.Node.Columns = rpq.fields
+	if len(rpq.fields) > 0 {
+		_spec.Unique = rpq.unique != nil && *rpq.unique
+	}
 	return sqlgraph.CountNodes(ctx, rpq.driver, _spec)
 }
 
 func (rpq *ResourcePoolQuery) sqlExist(ctx context.Context) (bool, error) {
 	n, err := rpq.sqlCount(ctx)
 	if err != nil {
-		return false, fmt.Errorf("ent: check existence: %v", err)
+		return false, fmt.Errorf("ent: check existence: %w", err)
 	}
 	return n > 0, nil
 }
@@ -777,6 +849,18 @@ func (rpq *ResourcePoolQuery) querySpec() *sqlgraph.QuerySpec {
 		From:   rpq.sql,
 		Unique: true,
 	}
+	if unique := rpq.unique; unique != nil {
+		_spec.Unique = *unique
+	}
+	if fields := rpq.fields; len(fields) > 0 {
+		_spec.Node.Columns = make([]string, 0, len(fields))
+		_spec.Node.Columns = append(_spec.Node.Columns, resourcepool.FieldID)
+		for i := range fields {
+			if fields[i] != resourcepool.FieldID {
+				_spec.Node.Columns = append(_spec.Node.Columns, fields[i])
+			}
+		}
+	}
 	if ps := rpq.predicates; len(ps) > 0 {
 		_spec.Predicate = func(selector *sql.Selector) {
 			for i := range ps {
@@ -793,26 +877,33 @@ func (rpq *ResourcePoolQuery) querySpec() *sqlgraph.QuerySpec {
 	if ps := rpq.order; len(ps) > 0 {
 		_spec.Order = func(selector *sql.Selector) {
 			for i := range ps {
-				ps[i](selector, resourcepool.ValidColumn)
+				ps[i](selector)
 			}
 		}
 	}
 	return _spec
 }
 
-func (rpq *ResourcePoolQuery) sqlQuery() *sql.Selector {
+func (rpq *ResourcePoolQuery) sqlQuery(ctx context.Context) *sql.Selector {
 	builder := sql.Dialect(rpq.driver.Dialect())
 	t1 := builder.Table(resourcepool.Table)
-	selector := builder.Select(t1.Columns(resourcepool.Columns...)...).From(t1)
+	columns := rpq.fields
+	if len(columns) == 0 {
+		columns = resourcepool.Columns
+	}
+	selector := builder.Select(t1.Columns(columns...)...).From(t1)
 	if rpq.sql != nil {
 		selector = rpq.sql
-		selector.Select(selector.Columns(resourcepool.Columns...)...)
+		selector.Select(selector.Columns(columns...)...)
+	}
+	if rpq.unique != nil && *rpq.unique {
+		selector.Distinct()
 	}
 	for _, p := range rpq.predicates {
 		p(selector)
 	}
 	for _, p := range rpq.order {
-		p(selector, resourcepool.ValidColumn)
+		p(selector)
 	}
 	if offset := rpq.offset; offset != nil {
 		// limit is mandatory for offset clause. We start
@@ -825,9 +916,10 @@ func (rpq *ResourcePoolQuery) sqlQuery() *sql.Selector {
 	return selector
 }
 
-// ResourcePoolGroupBy is the builder for group-by ResourcePool entities.
+// ResourcePoolGroupBy is the group-by builder for ResourcePool entities.
 type ResourcePoolGroupBy struct {
 	config
+	selector
 	fields []string
 	fns    []AggregateFunc
 	// intermediate query (i.e. traversal path).
@@ -841,8 +933,8 @@ func (rpgb *ResourcePoolGroupBy) Aggregate(fns ...AggregateFunc) *ResourcePoolGr
 	return rpgb
 }
 
-// Scan applies the group-by query and scan the result into the given value.
-func (rpgb *ResourcePoolGroupBy) Scan(ctx context.Context, v interface{}) error {
+// Scan applies the group-by query and scans the result into the given value.
+func (rpgb *ResourcePoolGroupBy) Scan(ctx context.Context, v any) error {
 	query, err := rpgb.path(ctx)
 	if err != nil {
 		return err
@@ -851,202 +943,7 @@ func (rpgb *ResourcePoolGroupBy) Scan(ctx context.Context, v interface{}) error 
 	return rpgb.sqlScan(ctx, v)
 }
 
-// ScanX is like Scan, but panics if an error occurs.
-func (rpgb *ResourcePoolGroupBy) ScanX(ctx context.Context, v interface{}) {
-	if err := rpgb.Scan(ctx, v); err != nil {
-		panic(err)
-	}
-}
-
-// Strings returns list of strings from group-by. It is only allowed when querying group-by with one field.
-func (rpgb *ResourcePoolGroupBy) Strings(ctx context.Context) ([]string, error) {
-	if len(rpgb.fields) > 1 {
-		return nil, errors.New("ent: ResourcePoolGroupBy.Strings is not achievable when grouping more than 1 field")
-	}
-	var v []string
-	if err := rpgb.Scan(ctx, &v); err != nil {
-		return nil, err
-	}
-	return v, nil
-}
-
-// StringsX is like Strings, but panics if an error occurs.
-func (rpgb *ResourcePoolGroupBy) StringsX(ctx context.Context) []string {
-	v, err := rpgb.Strings(ctx)
-	if err != nil {
-		panic(err)
-	}
-	return v
-}
-
-// String returns a single string from group-by. It is only allowed when querying group-by with one field.
-func (rpgb *ResourcePoolGroupBy) String(ctx context.Context) (_ string, err error) {
-	var v []string
-	if v, err = rpgb.Strings(ctx); err != nil {
-		return
-	}
-	switch len(v) {
-	case 1:
-		return v[0], nil
-	case 0:
-		err = &NotFoundError{resourcepool.Label}
-	default:
-		err = fmt.Errorf("ent: ResourcePoolGroupBy.Strings returned %d results when one was expected", len(v))
-	}
-	return
-}
-
-// StringX is like String, but panics if an error occurs.
-func (rpgb *ResourcePoolGroupBy) StringX(ctx context.Context) string {
-	v, err := rpgb.String(ctx)
-	if err != nil {
-		panic(err)
-	}
-	return v
-}
-
-// Ints returns list of ints from group-by. It is only allowed when querying group-by with one field.
-func (rpgb *ResourcePoolGroupBy) Ints(ctx context.Context) ([]int, error) {
-	if len(rpgb.fields) > 1 {
-		return nil, errors.New("ent: ResourcePoolGroupBy.Ints is not achievable when grouping more than 1 field")
-	}
-	var v []int
-	if err := rpgb.Scan(ctx, &v); err != nil {
-		return nil, err
-	}
-	return v, nil
-}
-
-// IntsX is like Ints, but panics if an error occurs.
-func (rpgb *ResourcePoolGroupBy) IntsX(ctx context.Context) []int {
-	v, err := rpgb.Ints(ctx)
-	if err != nil {
-		panic(err)
-	}
-	return v
-}
-
-// Int returns a single int from group-by. It is only allowed when querying group-by with one field.
-func (rpgb *ResourcePoolGroupBy) Int(ctx context.Context) (_ int, err error) {
-	var v []int
-	if v, err = rpgb.Ints(ctx); err != nil {
-		return
-	}
-	switch len(v) {
-	case 1:
-		return v[0], nil
-	case 0:
-		err = &NotFoundError{resourcepool.Label}
-	default:
-		err = fmt.Errorf("ent: ResourcePoolGroupBy.Ints returned %d results when one was expected", len(v))
-	}
-	return
-}
-
-// IntX is like Int, but panics if an error occurs.
-func (rpgb *ResourcePoolGroupBy) IntX(ctx context.Context) int {
-	v, err := rpgb.Int(ctx)
-	if err != nil {
-		panic(err)
-	}
-	return v
-}
-
-// Float64s returns list of float64s from group-by. It is only allowed when querying group-by with one field.
-func (rpgb *ResourcePoolGroupBy) Float64s(ctx context.Context) ([]float64, error) {
-	if len(rpgb.fields) > 1 {
-		return nil, errors.New("ent: ResourcePoolGroupBy.Float64s is not achievable when grouping more than 1 field")
-	}
-	var v []float64
-	if err := rpgb.Scan(ctx, &v); err != nil {
-		return nil, err
-	}
-	return v, nil
-}
-
-// Float64sX is like Float64s, but panics if an error occurs.
-func (rpgb *ResourcePoolGroupBy) Float64sX(ctx context.Context) []float64 {
-	v, err := rpgb.Float64s(ctx)
-	if err != nil {
-		panic(err)
-	}
-	return v
-}
-
-// Float64 returns a single float64 from group-by. It is only allowed when querying group-by with one field.
-func (rpgb *ResourcePoolGroupBy) Float64(ctx context.Context) (_ float64, err error) {
-	var v []float64
-	if v, err = rpgb.Float64s(ctx); err != nil {
-		return
-	}
-	switch len(v) {
-	case 1:
-		return v[0], nil
-	case 0:
-		err = &NotFoundError{resourcepool.Label}
-	default:
-		err = fmt.Errorf("ent: ResourcePoolGroupBy.Float64s returned %d results when one was expected", len(v))
-	}
-	return
-}
-
-// Float64X is like Float64, but panics if an error occurs.
-func (rpgb *ResourcePoolGroupBy) Float64X(ctx context.Context) float64 {
-	v, err := rpgb.Float64(ctx)
-	if err != nil {
-		panic(err)
-	}
-	return v
-}
-
-// Bools returns list of bools from group-by. It is only allowed when querying group-by with one field.
-func (rpgb *ResourcePoolGroupBy) Bools(ctx context.Context) ([]bool, error) {
-	if len(rpgb.fields) > 1 {
-		return nil, errors.New("ent: ResourcePoolGroupBy.Bools is not achievable when grouping more than 1 field")
-	}
-	var v []bool
-	if err := rpgb.Scan(ctx, &v); err != nil {
-		return nil, err
-	}
-	return v, nil
-}
-
-// BoolsX is like Bools, but panics if an error occurs.
-func (rpgb *ResourcePoolGroupBy) BoolsX(ctx context.Context) []bool {
-	v, err := rpgb.Bools(ctx)
-	if err != nil {
-		panic(err)
-	}
-	return v
-}
-
-// Bool returns a single bool from group-by. It is only allowed when querying group-by with one field.
-func (rpgb *ResourcePoolGroupBy) Bool(ctx context.Context) (_ bool, err error) {
-	var v []bool
-	if v, err = rpgb.Bools(ctx); err != nil {
-		return
-	}
-	switch len(v) {
-	case 1:
-		return v[0], nil
-	case 0:
-		err = &NotFoundError{resourcepool.Label}
-	default:
-		err = fmt.Errorf("ent: ResourcePoolGroupBy.Bools returned %d results when one was expected", len(v))
-	}
-	return
-}
-
-// BoolX is like Bool, but panics if an error occurs.
-func (rpgb *ResourcePoolGroupBy) BoolX(ctx context.Context) bool {
-	v, err := rpgb.Bool(ctx)
-	if err != nil {
-		panic(err)
-	}
-	return v
-}
-
-func (rpgb *ResourcePoolGroupBy) sqlScan(ctx context.Context, v interface{}) error {
+func (rpgb *ResourcePoolGroupBy) sqlScan(ctx context.Context, v any) error {
 	for _, f := range rpgb.fields {
 		if !resourcepool.ValidColumn(f) {
 			return &ValidationError{Name: f, err: fmt.Errorf("invalid field %q for group-by", f)}
@@ -1066,246 +963,47 @@ func (rpgb *ResourcePoolGroupBy) sqlScan(ctx context.Context, v interface{}) err
 }
 
 func (rpgb *ResourcePoolGroupBy) sqlQuery() *sql.Selector {
-	selector := rpgb.sql
-	columns := make([]string, 0, len(rpgb.fields)+len(rpgb.fns))
-	columns = append(columns, rpgb.fields...)
+	selector := rpgb.sql.Select()
+	aggregation := make([]string, 0, len(rpgb.fns))
 	for _, fn := range rpgb.fns {
-		columns = append(columns, fn(selector, resourcepool.ValidColumn))
+		aggregation = append(aggregation, fn(selector))
 	}
-	return selector.Select(columns...).GroupBy(rpgb.fields...)
+	// If no columns were selected in a custom aggregation function, the default
+	// selection is the fields used for "group-by", and the aggregation functions.
+	if len(selector.SelectedColumns()) == 0 {
+		columns := make([]string, 0, len(rpgb.fields)+len(rpgb.fns))
+		for _, f := range rpgb.fields {
+			columns = append(columns, selector.C(f))
+		}
+		columns = append(columns, aggregation...)
+		selector.Select(columns...)
+	}
+	return selector.GroupBy(selector.Columns(rpgb.fields...)...)
 }
 
-// ResourcePoolSelect is the builder for select fields of ResourcePool entities.
+// ResourcePoolSelect is the builder for selecting fields of ResourcePool entities.
 type ResourcePoolSelect struct {
-	config
-	fields []string
+	*ResourcePoolQuery
+	selector
 	// intermediate query (i.e. traversal path).
-	sql  *sql.Selector
-	path func(context.Context) (*sql.Selector, error)
+	sql *sql.Selector
 }
 
-// Scan applies the selector query and scan the result into the given value.
-func (rps *ResourcePoolSelect) Scan(ctx context.Context, v interface{}) error {
-	query, err := rps.path(ctx)
-	if err != nil {
+// Scan applies the selector query and scans the result into the given value.
+func (rps *ResourcePoolSelect) Scan(ctx context.Context, v any) error {
+	if err := rps.prepareQuery(ctx); err != nil {
 		return err
 	}
-	rps.sql = query
+	rps.sql = rps.ResourcePoolQuery.sqlQuery(ctx)
 	return rps.sqlScan(ctx, v)
 }
 
-// ScanX is like Scan, but panics if an error occurs.
-func (rps *ResourcePoolSelect) ScanX(ctx context.Context, v interface{}) {
-	if err := rps.Scan(ctx, v); err != nil {
-		panic(err)
-	}
-}
-
-// Strings returns list of strings from selector. It is only allowed when selecting one field.
-func (rps *ResourcePoolSelect) Strings(ctx context.Context) ([]string, error) {
-	if len(rps.fields) > 1 {
-		return nil, errors.New("ent: ResourcePoolSelect.Strings is not achievable when selecting more than 1 field")
-	}
-	var v []string
-	if err := rps.Scan(ctx, &v); err != nil {
-		return nil, err
-	}
-	return v, nil
-}
-
-// StringsX is like Strings, but panics if an error occurs.
-func (rps *ResourcePoolSelect) StringsX(ctx context.Context) []string {
-	v, err := rps.Strings(ctx)
-	if err != nil {
-		panic(err)
-	}
-	return v
-}
-
-// String returns a single string from selector. It is only allowed when selecting one field.
-func (rps *ResourcePoolSelect) String(ctx context.Context) (_ string, err error) {
-	var v []string
-	if v, err = rps.Strings(ctx); err != nil {
-		return
-	}
-	switch len(v) {
-	case 1:
-		return v[0], nil
-	case 0:
-		err = &NotFoundError{resourcepool.Label}
-	default:
-		err = fmt.Errorf("ent: ResourcePoolSelect.Strings returned %d results when one was expected", len(v))
-	}
-	return
-}
-
-// StringX is like String, but panics if an error occurs.
-func (rps *ResourcePoolSelect) StringX(ctx context.Context) string {
-	v, err := rps.String(ctx)
-	if err != nil {
-		panic(err)
-	}
-	return v
-}
-
-// Ints returns list of ints from selector. It is only allowed when selecting one field.
-func (rps *ResourcePoolSelect) Ints(ctx context.Context) ([]int, error) {
-	if len(rps.fields) > 1 {
-		return nil, errors.New("ent: ResourcePoolSelect.Ints is not achievable when selecting more than 1 field")
-	}
-	var v []int
-	if err := rps.Scan(ctx, &v); err != nil {
-		return nil, err
-	}
-	return v, nil
-}
-
-// IntsX is like Ints, but panics if an error occurs.
-func (rps *ResourcePoolSelect) IntsX(ctx context.Context) []int {
-	v, err := rps.Ints(ctx)
-	if err != nil {
-		panic(err)
-	}
-	return v
-}
-
-// Int returns a single int from selector. It is only allowed when selecting one field.
-func (rps *ResourcePoolSelect) Int(ctx context.Context) (_ int, err error) {
-	var v []int
-	if v, err = rps.Ints(ctx); err != nil {
-		return
-	}
-	switch len(v) {
-	case 1:
-		return v[0], nil
-	case 0:
-		err = &NotFoundError{resourcepool.Label}
-	default:
-		err = fmt.Errorf("ent: ResourcePoolSelect.Ints returned %d results when one was expected", len(v))
-	}
-	return
-}
-
-// IntX is like Int, but panics if an error occurs.
-func (rps *ResourcePoolSelect) IntX(ctx context.Context) int {
-	v, err := rps.Int(ctx)
-	if err != nil {
-		panic(err)
-	}
-	return v
-}
-
-// Float64s returns list of float64s from selector. It is only allowed when selecting one field.
-func (rps *ResourcePoolSelect) Float64s(ctx context.Context) ([]float64, error) {
-	if len(rps.fields) > 1 {
-		return nil, errors.New("ent: ResourcePoolSelect.Float64s is not achievable when selecting more than 1 field")
-	}
-	var v []float64
-	if err := rps.Scan(ctx, &v); err != nil {
-		return nil, err
-	}
-	return v, nil
-}
-
-// Float64sX is like Float64s, but panics if an error occurs.
-func (rps *ResourcePoolSelect) Float64sX(ctx context.Context) []float64 {
-	v, err := rps.Float64s(ctx)
-	if err != nil {
-		panic(err)
-	}
-	return v
-}
-
-// Float64 returns a single float64 from selector. It is only allowed when selecting one field.
-func (rps *ResourcePoolSelect) Float64(ctx context.Context) (_ float64, err error) {
-	var v []float64
-	if v, err = rps.Float64s(ctx); err != nil {
-		return
-	}
-	switch len(v) {
-	case 1:
-		return v[0], nil
-	case 0:
-		err = &NotFoundError{resourcepool.Label}
-	default:
-		err = fmt.Errorf("ent: ResourcePoolSelect.Float64s returned %d results when one was expected", len(v))
-	}
-	return
-}
-
-// Float64X is like Float64, but panics if an error occurs.
-func (rps *ResourcePoolSelect) Float64X(ctx context.Context) float64 {
-	v, err := rps.Float64(ctx)
-	if err != nil {
-		panic(err)
-	}
-	return v
-}
-
-// Bools returns list of bools from selector. It is only allowed when selecting one field.
-func (rps *ResourcePoolSelect) Bools(ctx context.Context) ([]bool, error) {
-	if len(rps.fields) > 1 {
-		return nil, errors.New("ent: ResourcePoolSelect.Bools is not achievable when selecting more than 1 field")
-	}
-	var v []bool
-	if err := rps.Scan(ctx, &v); err != nil {
-		return nil, err
-	}
-	return v, nil
-}
-
-// BoolsX is like Bools, but panics if an error occurs.
-func (rps *ResourcePoolSelect) BoolsX(ctx context.Context) []bool {
-	v, err := rps.Bools(ctx)
-	if err != nil {
-		panic(err)
-	}
-	return v
-}
-
-// Bool returns a single bool from selector. It is only allowed when selecting one field.
-func (rps *ResourcePoolSelect) Bool(ctx context.Context) (_ bool, err error) {
-	var v []bool
-	if v, err = rps.Bools(ctx); err != nil {
-		return
-	}
-	switch len(v) {
-	case 1:
-		return v[0], nil
-	case 0:
-		err = &NotFoundError{resourcepool.Label}
-	default:
-		err = fmt.Errorf("ent: ResourcePoolSelect.Bools returned %d results when one was expected", len(v))
-	}
-	return
-}
-
-// BoolX is like Bool, but panics if an error occurs.
-func (rps *ResourcePoolSelect) BoolX(ctx context.Context) bool {
-	v, err := rps.Bool(ctx)
-	if err != nil {
-		panic(err)
-	}
-	return v
-}
-
-func (rps *ResourcePoolSelect) sqlScan(ctx context.Context, v interface{}) error {
-	for _, f := range rps.fields {
-		if !resourcepool.ValidColumn(f) {
-			return &ValidationError{Name: f, err: fmt.Errorf("invalid field %q for selection", f)}
-		}
-	}
+func (rps *ResourcePoolSelect) sqlScan(ctx context.Context, v any) error {
 	rows := &sql.Rows{}
-	query, args := rps.sqlQuery().Query()
+	query, args := rps.sql.Query()
 	if err := rps.driver.Query(ctx, query, args, rows); err != nil {
 		return err
 	}
 	defer rows.Close()
 	return sql.ScanSlice(rows, v)
-}
-
-func (rps *ResourcePoolSelect) sqlQuery() sql.Querier {
-	selector := rps.sql
-	selector.Select(selector.Columns(rps.fields...)...)
-	return selector
 }

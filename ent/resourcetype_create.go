@@ -7,8 +7,8 @@ import (
 	"errors"
 	"fmt"
 
-	"github.com/facebook/ent/dialect/sql/sqlgraph"
-	"github.com/facebook/ent/schema/field"
+	"entgo.io/ent/dialect/sql/sqlgraph"
+	"entgo.io/ent/schema/field"
 	"github.com/net-auto/resourceManager/ent/poolproperties"
 	"github.com/net-auto/resourceManager/ent/propertytype"
 	"github.com/net-auto/resourceManager/ent/resourcepool"
@@ -22,19 +22,19 @@ type ResourceTypeCreate struct {
 	hooks    []Hook
 }
 
-// SetName sets the name field.
+// SetName sets the "name" field.
 func (rtc *ResourceTypeCreate) SetName(s string) *ResourceTypeCreate {
 	rtc.mutation.SetName(s)
 	return rtc
 }
 
-// AddPropertyTypeIDs adds the property_types edge to PropertyType by ids.
+// AddPropertyTypeIDs adds the "property_types" edge to the PropertyType entity by IDs.
 func (rtc *ResourceTypeCreate) AddPropertyTypeIDs(ids ...int) *ResourceTypeCreate {
 	rtc.mutation.AddPropertyTypeIDs(ids...)
 	return rtc
 }
 
-// AddPropertyTypes adds the property_types edges to PropertyType.
+// AddPropertyTypes adds the "property_types" edges to the PropertyType entity.
 func (rtc *ResourceTypeCreate) AddPropertyTypes(p ...*PropertyType) *ResourceTypeCreate {
 	ids := make([]int, len(p))
 	for i := range p {
@@ -43,13 +43,13 @@ func (rtc *ResourceTypeCreate) AddPropertyTypes(p ...*PropertyType) *ResourceTyp
 	return rtc.AddPropertyTypeIDs(ids...)
 }
 
-// AddPoolIDs adds the pools edge to ResourcePool by ids.
+// AddPoolIDs adds the "pools" edge to the ResourcePool entity by IDs.
 func (rtc *ResourceTypeCreate) AddPoolIDs(ids ...int) *ResourceTypeCreate {
 	rtc.mutation.AddPoolIDs(ids...)
 	return rtc
 }
 
-// AddPools adds the pools edges to ResourcePool.
+// AddPools adds the "pools" edges to the ResourcePool entity.
 func (rtc *ResourceTypeCreate) AddPools(r ...*ResourcePool) *ResourceTypeCreate {
 	ids := make([]int, len(r))
 	for i := range r {
@@ -58,13 +58,13 @@ func (rtc *ResourceTypeCreate) AddPools(r ...*ResourcePool) *ResourceTypeCreate 
 	return rtc.AddPoolIDs(ids...)
 }
 
-// AddPoolPropertyIDs adds the pool_properties edge to PoolProperties by ids.
+// AddPoolPropertyIDs adds the "pool_properties" edge to the PoolProperties entity by IDs.
 func (rtc *ResourceTypeCreate) AddPoolPropertyIDs(ids ...int) *ResourceTypeCreate {
 	rtc.mutation.AddPoolPropertyIDs(ids...)
 	return rtc
 }
 
-// AddPoolProperties adds the pool_properties edges to PoolProperties.
+// AddPoolProperties adds the "pool_properties" edges to the PoolProperties entity.
 func (rtc *ResourceTypeCreate) AddPoolProperties(p ...*PoolProperties) *ResourceTypeCreate {
 	ids := make([]int, len(p))
 	for i := range p {
@@ -99,16 +99,28 @@ func (rtc *ResourceTypeCreate) Save(ctx context.Context) (*ResourceType, error) 
 				return nil, err
 			}
 			rtc.mutation = mutation
-			node, err = rtc.sqlSave(ctx)
+			if node, err = rtc.sqlSave(ctx); err != nil {
+				return nil, err
+			}
+			mutation.id = &node.ID
 			mutation.done = true
 			return node, err
 		})
 		for i := len(rtc.hooks) - 1; i >= 0; i-- {
+			if rtc.hooks[i] == nil {
+				return nil, fmt.Errorf("ent: uninitialized hook (forgotten import ent/runtime?)")
+			}
 			mut = rtc.hooks[i](mut)
 		}
-		if _, err := mut.Mutate(ctx, rtc.mutation); err != nil {
+		v, err := mut.Mutate(ctx, rtc.mutation)
+		if err != nil {
 			return nil, err
 		}
+		nv, ok := v.(*ResourceType)
+		if !ok {
+			return nil, fmt.Errorf("unexpected node type %T returned from ResourceTypeMutation", v)
+		}
+		node = nv
 	}
 	return node, err
 }
@@ -122,14 +134,27 @@ func (rtc *ResourceTypeCreate) SaveX(ctx context.Context) *ResourceType {
 	return v
 }
 
+// Exec executes the query.
+func (rtc *ResourceTypeCreate) Exec(ctx context.Context) error {
+	_, err := rtc.Save(ctx)
+	return err
+}
+
+// ExecX is like Exec, but panics if an error occurs.
+func (rtc *ResourceTypeCreate) ExecX(ctx context.Context) {
+	if err := rtc.Exec(ctx); err != nil {
+		panic(err)
+	}
+}
+
 // check runs all checks and user-defined validators on the builder.
 func (rtc *ResourceTypeCreate) check() error {
 	if _, ok := rtc.mutation.Name(); !ok {
-		return &ValidationError{Name: "name", err: errors.New("ent: missing required field \"name\"")}
+		return &ValidationError{Name: "name", err: errors.New(`ent: missing required field "ResourceType.name"`)}
 	}
 	if v, ok := rtc.mutation.Name(); ok {
 		if err := resourcetype.NameValidator(v); err != nil {
-			return &ValidationError{Name: "name", err: fmt.Errorf("ent: validator failed for field \"name\": %w", err)}
+			return &ValidationError{Name: "name", err: fmt.Errorf(`ent: validator failed for field "ResourceType.name": %w`, err)}
 		}
 	}
 	return nil
@@ -138,8 +163,8 @@ func (rtc *ResourceTypeCreate) check() error {
 func (rtc *ResourceTypeCreate) sqlSave(ctx context.Context) (*ResourceType, error) {
 	_node, _spec := rtc.createSpec()
 	if err := sqlgraph.CreateNode(ctx, rtc.driver, _spec); err != nil {
-		if cerr, ok := isSQLConstraintError(err); ok {
-			err = cerr
+		if sqlgraph.IsConstraintError(err) {
+			err = &ConstraintError{msg: err.Error(), wrap: err}
 		}
 		return nil, err
 	}
@@ -227,7 +252,7 @@ func (rtc *ResourceTypeCreate) createSpec() (*ResourceType, *sqlgraph.CreateSpec
 	return _node, _spec
 }
 
-// ResourceTypeCreateBulk is the builder for creating a bulk of ResourceType entities.
+// ResourceTypeCreateBulk is the builder for creating many ResourceType entities in bulk.
 type ResourceTypeCreateBulk struct {
 	config
 	builders []*ResourceTypeCreate
@@ -255,19 +280,23 @@ func (rtcb *ResourceTypeCreateBulk) Save(ctx context.Context) ([]*ResourceType, 
 				if i < len(mutators)-1 {
 					_, err = mutators[i+1].Mutate(root, rtcb.builders[i+1].mutation)
 				} else {
+					spec := &sqlgraph.BatchCreateSpec{Nodes: specs}
 					// Invoke the actual operation on the latest mutation in the chain.
-					if err = sqlgraph.BatchCreate(ctx, rtcb.driver, &sqlgraph.BatchCreateSpec{Nodes: specs}); err != nil {
-						if cerr, ok := isSQLConstraintError(err); ok {
-							err = cerr
+					if err = sqlgraph.BatchCreate(ctx, rtcb.driver, spec); err != nil {
+						if sqlgraph.IsConstraintError(err) {
+							err = &ConstraintError{msg: err.Error(), wrap: err}
 						}
 					}
 				}
-				mutation.done = true
 				if err != nil {
 					return nil, err
 				}
-				id := specs[i].ID.Value.(int64)
-				nodes[i].ID = int(id)
+				mutation.id = &nodes[i].ID
+				if specs[i].ID.Value != nil {
+					id := specs[i].ID.Value.(int64)
+					nodes[i].ID = int(id)
+				}
+				mutation.done = true
 				return nodes[i], nil
 			})
 			for i := len(builder.hooks) - 1; i >= 0; i-- {
@@ -284,11 +313,24 @@ func (rtcb *ResourceTypeCreateBulk) Save(ctx context.Context) ([]*ResourceType, 
 	return nodes, nil
 }
 
-// SaveX calls Save and panics if Save returns an error.
+// SaveX is like Save, but panics if an error occurs.
 func (rtcb *ResourceTypeCreateBulk) SaveX(ctx context.Context) []*ResourceType {
 	v, err := rtcb.Save(ctx)
 	if err != nil {
 		panic(err)
 	}
 	return v
+}
+
+// Exec executes the query.
+func (rtcb *ResourceTypeCreateBulk) Exec(ctx context.Context) error {
+	_, err := rtcb.Save(ctx)
+	return err
+}
+
+// ExecX is like Exec, but panics if an error occurs.
+func (rtcb *ResourceTypeCreateBulk) ExecX(ctx context.Context) {
+	if err := rtcb.Exec(ctx); err != nil {
+		panic(err)
+	}
 }

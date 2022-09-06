@@ -6,9 +6,9 @@ import (
 	"context"
 	"fmt"
 
-	"github.com/facebook/ent/dialect/sql"
-	"github.com/facebook/ent/dialect/sql/sqlgraph"
-	"github.com/facebook/ent/schema/field"
+	"entgo.io/ent/dialect/sql"
+	"entgo.io/ent/dialect/sql/sqlgraph"
+	"entgo.io/ent/schema/field"
 	"github.com/net-auto/resourceManager/ent/allocationstrategy"
 	"github.com/net-auto/resourceManager/ent/predicate"
 )
@@ -20,9 +20,9 @@ type AllocationStrategyDelete struct {
 	mutation *AllocationStrategyMutation
 }
 
-// Where adds a new predicate to the delete builder.
+// Where appends a list predicates to the AllocationStrategyDelete builder.
 func (asd *AllocationStrategyDelete) Where(ps ...predicate.AllocationStrategy) *AllocationStrategyDelete {
-	asd.mutation.predicates = append(asd.mutation.predicates, ps...)
+	asd.mutation.Where(ps...)
 	return asd
 }
 
@@ -46,6 +46,9 @@ func (asd *AllocationStrategyDelete) Exec(ctx context.Context) (int, error) {
 			return affected, err
 		})
 		for i := len(asd.hooks) - 1; i >= 0; i-- {
+			if asd.hooks[i] == nil {
+				return 0, fmt.Errorf("ent: uninitialized hook (forgotten import ent/runtime?)")
+			}
 			mut = asd.hooks[i](mut)
 		}
 		if _, err := mut.Mutate(ctx, asd.mutation); err != nil {
@@ -81,7 +84,11 @@ func (asd *AllocationStrategyDelete) sqlExec(ctx context.Context) (int, error) {
 			}
 		}
 	}
-	return sqlgraph.DeleteNodes(ctx, asd.driver, _spec)
+	affected, err := sqlgraph.DeleteNodes(ctx, asd.driver, _spec)
+	if err != nil && sqlgraph.IsConstraintError(err) {
+		err = &ConstraintError{msg: err.Error(), wrap: err}
+	}
+	return affected, err
 }
 
 // AllocationStrategyDeleteOne is the builder for deleting a single AllocationStrategy entity.

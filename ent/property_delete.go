@@ -6,9 +6,9 @@ import (
 	"context"
 	"fmt"
 
-	"github.com/facebook/ent/dialect/sql"
-	"github.com/facebook/ent/dialect/sql/sqlgraph"
-	"github.com/facebook/ent/schema/field"
+	"entgo.io/ent/dialect/sql"
+	"entgo.io/ent/dialect/sql/sqlgraph"
+	"entgo.io/ent/schema/field"
 	"github.com/net-auto/resourceManager/ent/predicate"
 	"github.com/net-auto/resourceManager/ent/property"
 )
@@ -20,9 +20,9 @@ type PropertyDelete struct {
 	mutation *PropertyMutation
 }
 
-// Where adds a new predicate to the delete builder.
+// Where appends a list predicates to the PropertyDelete builder.
 func (pd *PropertyDelete) Where(ps ...predicate.Property) *PropertyDelete {
-	pd.mutation.predicates = append(pd.mutation.predicates, ps...)
+	pd.mutation.Where(ps...)
 	return pd
 }
 
@@ -46,6 +46,9 @@ func (pd *PropertyDelete) Exec(ctx context.Context) (int, error) {
 			return affected, err
 		})
 		for i := len(pd.hooks) - 1; i >= 0; i-- {
+			if pd.hooks[i] == nil {
+				return 0, fmt.Errorf("ent: uninitialized hook (forgotten import ent/runtime?)")
+			}
 			mut = pd.hooks[i](mut)
 		}
 		if _, err := mut.Mutate(ctx, pd.mutation); err != nil {
@@ -81,7 +84,11 @@ func (pd *PropertyDelete) sqlExec(ctx context.Context) (int, error) {
 			}
 		}
 	}
-	return sqlgraph.DeleteNodes(ctx, pd.driver, _spec)
+	affected, err := sqlgraph.DeleteNodes(ctx, pd.driver, _spec)
+	if err != nil && sqlgraph.IsConstraintError(err) {
+		err = &ConstraintError{msg: err.Error(), wrap: err}
+	}
+	return affected, err
 }
 
 // PropertyDeleteOne is the builder for deleting a single Property entity.

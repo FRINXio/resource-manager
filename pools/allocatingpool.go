@@ -6,13 +6,13 @@ import (
 	"github.com/net-auto/resourceManager/ent/poolproperties"
 	"github.com/net-auto/resourceManager/ent/predicate"
 	"github.com/net-auto/resourceManager/ent/property"
+	"github.com/net-auto/resourceManager/graph/graphql/model"
 	log "github.com/net-auto/resourceManager/logging"
 	"time"
 
 	"github.com/net-auto/resourceManager/ent"
 	"github.com/net-auto/resourceManager/ent/resource"
 	resourcePool "github.com/net-auto/resourceManager/ent/resourcepool"
-	"github.com/net-auto/resourceManager/graph/graphql/model"
 	"github.com/pkg/errors"
 )
 

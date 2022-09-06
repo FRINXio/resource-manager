@@ -6,8 +6,8 @@ import (
 	"context"
 	"fmt"
 
-	"github.com/facebook/ent/dialect/sql/sqlgraph"
-	"github.com/facebook/ent/schema/field"
+	"entgo.io/ent/dialect/sql/sqlgraph"
+	"entgo.io/ent/schema/field"
 	"github.com/net-auto/resourceManager/ent/poolproperties"
 	"github.com/net-auto/resourceManager/ent/property"
 	"github.com/net-auto/resourceManager/ent/resourcepool"
@@ -21,13 +21,13 @@ type PoolPropertiesCreate struct {
 	hooks    []Hook
 }
 
-// SetPoolID sets the pool edge to ResourcePool by id.
+// SetPoolID sets the "pool" edge to the ResourcePool entity by ID.
 func (ppc *PoolPropertiesCreate) SetPoolID(id int) *PoolPropertiesCreate {
 	ppc.mutation.SetPoolID(id)
 	return ppc
 }
 
-// SetNillablePoolID sets the pool edge to ResourcePool by id if the given value is not nil.
+// SetNillablePoolID sets the "pool" edge to the ResourcePool entity by ID if the given value is not nil.
 func (ppc *PoolPropertiesCreate) SetNillablePoolID(id *int) *PoolPropertiesCreate {
 	if id != nil {
 		ppc = ppc.SetPoolID(*id)
@@ -35,18 +35,18 @@ func (ppc *PoolPropertiesCreate) SetNillablePoolID(id *int) *PoolPropertiesCreat
 	return ppc
 }
 
-// SetPool sets the pool edge to ResourcePool.
+// SetPool sets the "pool" edge to the ResourcePool entity.
 func (ppc *PoolPropertiesCreate) SetPool(r *ResourcePool) *PoolPropertiesCreate {
 	return ppc.SetPoolID(r.ID)
 }
 
-// AddResourceTypeIDs adds the resourceType edge to ResourceType by ids.
+// AddResourceTypeIDs adds the "resourceType" edge to the ResourceType entity by IDs.
 func (ppc *PoolPropertiesCreate) AddResourceTypeIDs(ids ...int) *PoolPropertiesCreate {
 	ppc.mutation.AddResourceTypeIDs(ids...)
 	return ppc
 }
 
-// AddResourceType adds the resourceType edges to ResourceType.
+// AddResourceType adds the "resourceType" edges to the ResourceType entity.
 func (ppc *PoolPropertiesCreate) AddResourceType(r ...*ResourceType) *PoolPropertiesCreate {
 	ids := make([]int, len(r))
 	for i := range r {
@@ -55,13 +55,13 @@ func (ppc *PoolPropertiesCreate) AddResourceType(r ...*ResourceType) *PoolProper
 	return ppc.AddResourceTypeIDs(ids...)
 }
 
-// AddPropertyIDs adds the properties edge to Property by ids.
+// AddPropertyIDs adds the "properties" edge to the Property entity by IDs.
 func (ppc *PoolPropertiesCreate) AddPropertyIDs(ids ...int) *PoolPropertiesCreate {
 	ppc.mutation.AddPropertyIDs(ids...)
 	return ppc
 }
 
-// AddProperties adds the properties edges to Property.
+// AddProperties adds the "properties" edges to the Property entity.
 func (ppc *PoolPropertiesCreate) AddProperties(p ...*Property) *PoolPropertiesCreate {
 	ids := make([]int, len(p))
 	for i := range p {
@@ -96,16 +96,28 @@ func (ppc *PoolPropertiesCreate) Save(ctx context.Context) (*PoolProperties, err
 				return nil, err
 			}
 			ppc.mutation = mutation
-			node, err = ppc.sqlSave(ctx)
+			if node, err = ppc.sqlSave(ctx); err != nil {
+				return nil, err
+			}
+			mutation.id = &node.ID
 			mutation.done = true
 			return node, err
 		})
 		for i := len(ppc.hooks) - 1; i >= 0; i-- {
+			if ppc.hooks[i] == nil {
+				return nil, fmt.Errorf("ent: uninitialized hook (forgotten import ent/runtime?)")
+			}
 			mut = ppc.hooks[i](mut)
 		}
-		if _, err := mut.Mutate(ctx, ppc.mutation); err != nil {
+		v, err := mut.Mutate(ctx, ppc.mutation)
+		if err != nil {
 			return nil, err
 		}
+		nv, ok := v.(*PoolProperties)
+		if !ok {
+			return nil, fmt.Errorf("unexpected node type %T returned from PoolPropertiesMutation", v)
+		}
+		node = nv
 	}
 	return node, err
 }
@@ -119,6 +131,19 @@ func (ppc *PoolPropertiesCreate) SaveX(ctx context.Context) *PoolProperties {
 	return v
 }
 
+// Exec executes the query.
+func (ppc *PoolPropertiesCreate) Exec(ctx context.Context) error {
+	_, err := ppc.Save(ctx)
+	return err
+}
+
+// ExecX is like Exec, but panics if an error occurs.
+func (ppc *PoolPropertiesCreate) ExecX(ctx context.Context) {
+	if err := ppc.Exec(ctx); err != nil {
+		panic(err)
+	}
+}
+
 // check runs all checks and user-defined validators on the builder.
 func (ppc *PoolPropertiesCreate) check() error {
 	return nil
@@ -127,8 +152,8 @@ func (ppc *PoolPropertiesCreate) check() error {
 func (ppc *PoolPropertiesCreate) sqlSave(ctx context.Context) (*PoolProperties, error) {
 	_node, _spec := ppc.createSpec()
 	if err := sqlgraph.CreateNode(ctx, ppc.driver, _spec); err != nil {
-		if cerr, ok := isSQLConstraintError(err); ok {
-			err = cerr
+		if sqlgraph.IsConstraintError(err) {
+			err = &ConstraintError{msg: err.Error(), wrap: err}
 		}
 		return nil, err
 	}
@@ -165,6 +190,7 @@ func (ppc *PoolPropertiesCreate) createSpec() (*PoolProperties, *sqlgraph.Create
 		for _, k := range nodes {
 			edge.Target.Nodes = append(edge.Target.Nodes, k)
 		}
+		_node.resource_pool_pool_properties = &nodes[0]
 		_spec.Edges = append(_spec.Edges, edge)
 	}
 	if nodes := ppc.mutation.ResourceTypeIDs(); len(nodes) > 0 {
@@ -208,7 +234,7 @@ func (ppc *PoolPropertiesCreate) createSpec() (*PoolProperties, *sqlgraph.Create
 	return _node, _spec
 }
 
-// PoolPropertiesCreateBulk is the builder for creating a bulk of PoolProperties entities.
+// PoolPropertiesCreateBulk is the builder for creating many PoolProperties entities in bulk.
 type PoolPropertiesCreateBulk struct {
 	config
 	builders []*PoolPropertiesCreate
@@ -236,19 +262,23 @@ func (ppcb *PoolPropertiesCreateBulk) Save(ctx context.Context) ([]*PoolProperti
 				if i < len(mutators)-1 {
 					_, err = mutators[i+1].Mutate(root, ppcb.builders[i+1].mutation)
 				} else {
+					spec := &sqlgraph.BatchCreateSpec{Nodes: specs}
 					// Invoke the actual operation on the latest mutation in the chain.
-					if err = sqlgraph.BatchCreate(ctx, ppcb.driver, &sqlgraph.BatchCreateSpec{Nodes: specs}); err != nil {
-						if cerr, ok := isSQLConstraintError(err); ok {
-							err = cerr
+					if err = sqlgraph.BatchCreate(ctx, ppcb.driver, spec); err != nil {
+						if sqlgraph.IsConstraintError(err) {
+							err = &ConstraintError{msg: err.Error(), wrap: err}
 						}
 					}
 				}
-				mutation.done = true
 				if err != nil {
 					return nil, err
 				}
-				id := specs[i].ID.Value.(int64)
-				nodes[i].ID = int(id)
+				mutation.id = &nodes[i].ID
+				if specs[i].ID.Value != nil {
+					id := specs[i].ID.Value.(int64)
+					nodes[i].ID = int(id)
+				}
+				mutation.done = true
 				return nodes[i], nil
 			})
 			for i := len(builder.hooks) - 1; i >= 0; i-- {
@@ -265,11 +295,24 @@ func (ppcb *PoolPropertiesCreateBulk) Save(ctx context.Context) ([]*PoolProperti
 	return nodes, nil
 }
 
-// SaveX calls Save and panics if Save returns an error.
+// SaveX is like Save, but panics if an error occurs.
 func (ppcb *PoolPropertiesCreateBulk) SaveX(ctx context.Context) []*PoolProperties {
 	v, err := ppcb.Save(ctx)
 	if err != nil {
 		panic(err)
 	}
 	return v
+}
+
+// Exec executes the query.
+func (ppcb *PoolPropertiesCreateBulk) Exec(ctx context.Context) error {
+	_, err := ppcb.Save(ctx)
+	return err
+}
+
+// ExecX is like Exec, but panics if an error occurs.
+func (ppcb *PoolPropertiesCreateBulk) ExecX(ctx context.Context) {
+	if err := ppcb.Exec(ctx); err != nil {
+		panic(err)
+	}
 }

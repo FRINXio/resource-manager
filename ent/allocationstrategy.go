@@ -6,7 +6,7 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/facebook/ent/dialect/sql"
+	"entgo.io/ent/dialect/sql"
 	"github.com/net-auto/resourceManager/ent/allocationstrategy"
 )
 
@@ -31,7 +31,7 @@ type AllocationStrategy struct {
 // AllocationStrategyEdges holds the relations/edges for other nodes in the graph.
 type AllocationStrategyEdges struct {
 	// Pools holds the value of the pools edge.
-	Pools []*ResourcePool
+	Pools []*ResourcePool `json:"pools,omitempty"`
 	// loadedTypes holds the information for reporting if a
 	// type was loaded (or requested) in eager-loading or not.
 	loadedTypes [1]bool
@@ -47,72 +47,85 @@ func (e AllocationStrategyEdges) PoolsOrErr() ([]*ResourcePool, error) {
 }
 
 // scanValues returns the types for scanning values from sql.Rows.
-func (*AllocationStrategy) scanValues() []interface{} {
-	return []interface{}{
-		&sql.NullInt64{},  // id
-		&sql.NullString{}, // name
-		&sql.NullString{}, // description
-		&sql.NullString{}, // lang
-		&sql.NullString{}, // script
+func (*AllocationStrategy) scanValues(columns []string) ([]any, error) {
+	values := make([]any, len(columns))
+	for i := range columns {
+		switch columns[i] {
+		case allocationstrategy.FieldID:
+			values[i] = new(sql.NullInt64)
+		case allocationstrategy.FieldName, allocationstrategy.FieldDescription, allocationstrategy.FieldLang, allocationstrategy.FieldScript:
+			values[i] = new(sql.NullString)
+		default:
+			return nil, fmt.Errorf("unexpected column %q for type AllocationStrategy", columns[i])
+		}
 	}
+	return values, nil
 }
 
 // assignValues assigns the values that were returned from sql.Rows (after scanning)
 // to the AllocationStrategy fields.
-func (as *AllocationStrategy) assignValues(values ...interface{}) error {
-	if m, n := len(values), len(allocationstrategy.Columns); m < n {
+func (as *AllocationStrategy) assignValues(columns []string, values []any) error {
+	if m, n := len(values), len(columns); m < n {
 		return fmt.Errorf("mismatch number of scan values: %d != %d", m, n)
 	}
-	value, ok := values[0].(*sql.NullInt64)
-	if !ok {
-		return fmt.Errorf("unexpected type %T for field id", value)
-	}
-	as.ID = int(value.Int64)
-	values = values[1:]
-	if value, ok := values[0].(*sql.NullString); !ok {
-		return fmt.Errorf("unexpected type %T for field name", values[0])
-	} else if value.Valid {
-		as.Name = value.String
-	}
-	if value, ok := values[1].(*sql.NullString); !ok {
-		return fmt.Errorf("unexpected type %T for field description", values[1])
-	} else if value.Valid {
-		as.Description = new(string)
-		*as.Description = value.String
-	}
-	if value, ok := values[2].(*sql.NullString); !ok {
-		return fmt.Errorf("unexpected type %T for field lang", values[2])
-	} else if value.Valid {
-		as.Lang = allocationstrategy.Lang(value.String)
-	}
-	if value, ok := values[3].(*sql.NullString); !ok {
-		return fmt.Errorf("unexpected type %T for field script", values[3])
-	} else if value.Valid {
-		as.Script = value.String
+	for i := range columns {
+		switch columns[i] {
+		case allocationstrategy.FieldID:
+			value, ok := values[i].(*sql.NullInt64)
+			if !ok {
+				return fmt.Errorf("unexpected type %T for field id", value)
+			}
+			as.ID = int(value.Int64)
+		case allocationstrategy.FieldName:
+			if value, ok := values[i].(*sql.NullString); !ok {
+				return fmt.Errorf("unexpected type %T for field name", values[i])
+			} else if value.Valid {
+				as.Name = value.String
+			}
+		case allocationstrategy.FieldDescription:
+			if value, ok := values[i].(*sql.NullString); !ok {
+				return fmt.Errorf("unexpected type %T for field description", values[i])
+			} else if value.Valid {
+				as.Description = new(string)
+				*as.Description = value.String
+			}
+		case allocationstrategy.FieldLang:
+			if value, ok := values[i].(*sql.NullString); !ok {
+				return fmt.Errorf("unexpected type %T for field lang", values[i])
+			} else if value.Valid {
+				as.Lang = allocationstrategy.Lang(value.String)
+			}
+		case allocationstrategy.FieldScript:
+			if value, ok := values[i].(*sql.NullString); !ok {
+				return fmt.Errorf("unexpected type %T for field script", values[i])
+			} else if value.Valid {
+				as.Script = value.String
+			}
+		}
 	}
 	return nil
 }
 
-// QueryPools queries the pools edge of the AllocationStrategy.
+// QueryPools queries the "pools" edge of the AllocationStrategy entity.
 func (as *AllocationStrategy) QueryPools() *ResourcePoolQuery {
 	return (&AllocationStrategyClient{config: as.config}).QueryPools(as)
 }
 
 // Update returns a builder for updating this AllocationStrategy.
-// Note that, you need to call AllocationStrategy.Unwrap() before calling this method, if this AllocationStrategy
+// Note that you need to call AllocationStrategy.Unwrap() before calling this method if this AllocationStrategy
 // was returned from a transaction, and the transaction was committed or rolled back.
 func (as *AllocationStrategy) Update() *AllocationStrategyUpdateOne {
 	return (&AllocationStrategyClient{config: as.config}).UpdateOne(as)
 }
 
-// Unwrap unwraps the entity that was returned from a transaction after it was closed,
-// so that all next queries will be executed through the driver which created the transaction.
+// Unwrap unwraps the AllocationStrategy entity that was returned from a transaction after it was closed,
+// so that all future queries will be executed through the driver which created the transaction.
 func (as *AllocationStrategy) Unwrap() *AllocationStrategy {
-	tx, ok := as.config.driver.(*txDriver)
+	_tx, ok := as.config.driver.(*txDriver)
 	if !ok {
 		panic("ent: AllocationStrategy is not a transactional entity")
 	}
-	as.config.driver = tx.drv
+	as.config.driver = _tx.drv
 	return as
 }
 
@@ -120,16 +133,19 @@ func (as *AllocationStrategy) Unwrap() *AllocationStrategy {
 func (as *AllocationStrategy) String() string {
 	var builder strings.Builder
 	builder.WriteString("AllocationStrategy(")
-	builder.WriteString(fmt.Sprintf("id=%v", as.ID))
-	builder.WriteString(", name=")
+	builder.WriteString(fmt.Sprintf("id=%v, ", as.ID))
+	builder.WriteString("name=")
 	builder.WriteString(as.Name)
+	builder.WriteString(", ")
 	if v := as.Description; v != nil {
-		builder.WriteString(", description=")
+		builder.WriteString("description=")
 		builder.WriteString(*v)
 	}
-	builder.WriteString(", lang=")
+	builder.WriteString(", ")
+	builder.WriteString("lang=")
 	builder.WriteString(fmt.Sprintf("%v", as.Lang))
-	builder.WriteString(", script=")
+	builder.WriteString(", ")
+	builder.WriteString("script=")
 	builder.WriteString(as.Script)
 	builder.WriteByte(')')
 	return builder.String()

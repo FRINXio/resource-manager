@@ -7,8 +7,8 @@ import (
 	"errors"
 	"fmt"
 
-	"github.com/facebook/ent/dialect/sql/sqlgraph"
-	"github.com/facebook/ent/schema/field"
+	"entgo.io/ent/dialect/sql/sqlgraph"
+	"entgo.io/ent/schema/field"
 	"github.com/net-auto/resourceManager/ent/allocationstrategy"
 	"github.com/net-auto/resourceManager/ent/poolproperties"
 	"github.com/net-auto/resourceManager/ent/resource"
@@ -24,19 +24,19 @@ type ResourcePoolCreate struct {
 	hooks    []Hook
 }
 
-// SetName sets the name field.
+// SetName sets the "name" field.
 func (rpc *ResourcePoolCreate) SetName(s string) *ResourcePoolCreate {
 	rpc.mutation.SetName(s)
 	return rpc
 }
 
-// SetDescription sets the description field.
+// SetDescription sets the "description" field.
 func (rpc *ResourcePoolCreate) SetDescription(s string) *ResourcePoolCreate {
 	rpc.mutation.SetDescription(s)
 	return rpc
 }
 
-// SetNillableDescription sets the description field if the given value is not nil.
+// SetNillableDescription sets the "description" field if the given value is not nil.
 func (rpc *ResourcePoolCreate) SetNillableDescription(s *string) *ResourcePoolCreate {
 	if s != nil {
 		rpc.SetDescription(*s)
@@ -44,19 +44,19 @@ func (rpc *ResourcePoolCreate) SetNillableDescription(s *string) *ResourcePoolCr
 	return rpc
 }
 
-// SetPoolType sets the pool_type field.
+// SetPoolType sets the "pool_type" field.
 func (rpc *ResourcePoolCreate) SetPoolType(rt resourcepool.PoolType) *ResourcePoolCreate {
 	rpc.mutation.SetPoolType(rt)
 	return rpc
 }
 
-// SetDealocationSafetyPeriod sets the dealocation_safety_period field.
+// SetDealocationSafetyPeriod sets the "dealocation_safety_period" field.
 func (rpc *ResourcePoolCreate) SetDealocationSafetyPeriod(i int) *ResourcePoolCreate {
 	rpc.mutation.SetDealocationSafetyPeriod(i)
 	return rpc
 }
 
-// SetNillableDealocationSafetyPeriod sets the dealocation_safety_period field if the given value is not nil.
+// SetNillableDealocationSafetyPeriod sets the "dealocation_safety_period" field if the given value is not nil.
 func (rpc *ResourcePoolCreate) SetNillableDealocationSafetyPeriod(i *int) *ResourcePoolCreate {
 	if i != nil {
 		rpc.SetDealocationSafetyPeriod(*i)
@@ -64,13 +64,13 @@ func (rpc *ResourcePoolCreate) SetNillableDealocationSafetyPeriod(i *int) *Resou
 	return rpc
 }
 
-// SetResourceTypeID sets the resource_type edge to ResourceType by id.
+// SetResourceTypeID sets the "resource_type" edge to the ResourceType entity by ID.
 func (rpc *ResourcePoolCreate) SetResourceTypeID(id int) *ResourcePoolCreate {
 	rpc.mutation.SetResourceTypeID(id)
 	return rpc
 }
 
-// SetNillableResourceTypeID sets the resource_type edge to ResourceType by id if the given value is not nil.
+// SetNillableResourceTypeID sets the "resource_type" edge to the ResourceType entity by ID if the given value is not nil.
 func (rpc *ResourcePoolCreate) SetNillableResourceTypeID(id *int) *ResourcePoolCreate {
 	if id != nil {
 		rpc = rpc.SetResourceTypeID(*id)
@@ -78,18 +78,18 @@ func (rpc *ResourcePoolCreate) SetNillableResourceTypeID(id *int) *ResourcePoolC
 	return rpc
 }
 
-// SetResourceType sets the resource_type edge to ResourceType.
+// SetResourceType sets the "resource_type" edge to the ResourceType entity.
 func (rpc *ResourcePoolCreate) SetResourceType(r *ResourceType) *ResourcePoolCreate {
 	return rpc.SetResourceTypeID(r.ID)
 }
 
-// AddTagIDs adds the tags edge to Tag by ids.
+// AddTagIDs adds the "tags" edge to the Tag entity by IDs.
 func (rpc *ResourcePoolCreate) AddTagIDs(ids ...int) *ResourcePoolCreate {
 	rpc.mutation.AddTagIDs(ids...)
 	return rpc
 }
 
-// AddTags adds the tags edges to Tag.
+// AddTags adds the "tags" edges to the Tag entity.
 func (rpc *ResourcePoolCreate) AddTags(t ...*Tag) *ResourcePoolCreate {
 	ids := make([]int, len(t))
 	for i := range t {
@@ -98,13 +98,13 @@ func (rpc *ResourcePoolCreate) AddTags(t ...*Tag) *ResourcePoolCreate {
 	return rpc.AddTagIDs(ids...)
 }
 
-// AddClaimIDs adds the claims edge to Resource by ids.
+// AddClaimIDs adds the "claims" edge to the Resource entity by IDs.
 func (rpc *ResourcePoolCreate) AddClaimIDs(ids ...int) *ResourcePoolCreate {
 	rpc.mutation.AddClaimIDs(ids...)
 	return rpc
 }
 
-// AddClaims adds the claims edges to Resource.
+// AddClaims adds the "claims" edges to the Resource entity.
 func (rpc *ResourcePoolCreate) AddClaims(r ...*Resource) *ResourcePoolCreate {
 	ids := make([]int, len(r))
 	for i := range r {
@@ -113,13 +113,13 @@ func (rpc *ResourcePoolCreate) AddClaims(r ...*Resource) *ResourcePoolCreate {
 	return rpc.AddClaimIDs(ids...)
 }
 
-// SetPoolPropertiesID sets the poolProperties edge to PoolProperties by id.
+// SetPoolPropertiesID sets the "poolProperties" edge to the PoolProperties entity by ID.
 func (rpc *ResourcePoolCreate) SetPoolPropertiesID(id int) *ResourcePoolCreate {
 	rpc.mutation.SetPoolPropertiesID(id)
 	return rpc
 }
 
-// SetNillablePoolPropertiesID sets the poolProperties edge to PoolProperties by id if the given value is not nil.
+// SetNillablePoolPropertiesID sets the "poolProperties" edge to the PoolProperties entity by ID if the given value is not nil.
 func (rpc *ResourcePoolCreate) SetNillablePoolPropertiesID(id *int) *ResourcePoolCreate {
 	if id != nil {
 		rpc = rpc.SetPoolPropertiesID(*id)
@@ -127,18 +127,18 @@ func (rpc *ResourcePoolCreate) SetNillablePoolPropertiesID(id *int) *ResourcePoo
 	return rpc
 }
 
-// SetPoolProperties sets the poolProperties edge to PoolProperties.
+// SetPoolProperties sets the "poolProperties" edge to the PoolProperties entity.
 func (rpc *ResourcePoolCreate) SetPoolProperties(p *PoolProperties) *ResourcePoolCreate {
 	return rpc.SetPoolPropertiesID(p.ID)
 }
 
-// SetAllocationStrategyID sets the allocation_strategy edge to AllocationStrategy by id.
+// SetAllocationStrategyID sets the "allocation_strategy" edge to the AllocationStrategy entity by ID.
 func (rpc *ResourcePoolCreate) SetAllocationStrategyID(id int) *ResourcePoolCreate {
 	rpc.mutation.SetAllocationStrategyID(id)
 	return rpc
 }
 
-// SetNillableAllocationStrategyID sets the allocation_strategy edge to AllocationStrategy by id if the given value is not nil.
+// SetNillableAllocationStrategyID sets the "allocation_strategy" edge to the AllocationStrategy entity by ID if the given value is not nil.
 func (rpc *ResourcePoolCreate) SetNillableAllocationStrategyID(id *int) *ResourcePoolCreate {
 	if id != nil {
 		rpc = rpc.SetAllocationStrategyID(*id)
@@ -146,18 +146,18 @@ func (rpc *ResourcePoolCreate) SetNillableAllocationStrategyID(id *int) *Resourc
 	return rpc
 }
 
-// SetAllocationStrategy sets the allocation_strategy edge to AllocationStrategy.
+// SetAllocationStrategy sets the "allocation_strategy" edge to the AllocationStrategy entity.
 func (rpc *ResourcePoolCreate) SetAllocationStrategy(a *AllocationStrategy) *ResourcePoolCreate {
 	return rpc.SetAllocationStrategyID(a.ID)
 }
 
-// SetParentResourceID sets the parent_resource edge to Resource by id.
+// SetParentResourceID sets the "parent_resource" edge to the Resource entity by ID.
 func (rpc *ResourcePoolCreate) SetParentResourceID(id int) *ResourcePoolCreate {
 	rpc.mutation.SetParentResourceID(id)
 	return rpc
 }
 
-// SetNillableParentResourceID sets the parent_resource edge to Resource by id if the given value is not nil.
+// SetNillableParentResourceID sets the "parent_resource" edge to the Resource entity by ID if the given value is not nil.
 func (rpc *ResourcePoolCreate) SetNillableParentResourceID(id *int) *ResourcePoolCreate {
 	if id != nil {
 		rpc = rpc.SetParentResourceID(*id)
@@ -165,7 +165,7 @@ func (rpc *ResourcePoolCreate) SetNillableParentResourceID(id *int) *ResourcePoo
 	return rpc
 }
 
-// SetParentResource sets the parent_resource edge to Resource.
+// SetParentResource sets the "parent_resource" edge to the Resource entity.
 func (rpc *ResourcePoolCreate) SetParentResource(r *Resource) *ResourcePoolCreate {
 	return rpc.SetParentResourceID(r.ID)
 }
@@ -181,7 +181,9 @@ func (rpc *ResourcePoolCreate) Save(ctx context.Context) (*ResourcePool, error) 
 		err  error
 		node *ResourcePool
 	)
-	rpc.defaults()
+	if err := rpc.defaults(); err != nil {
+		return nil, err
+	}
 	if len(rpc.hooks) == 0 {
 		if err = rpc.check(); err != nil {
 			return nil, err
@@ -197,16 +199,28 @@ func (rpc *ResourcePoolCreate) Save(ctx context.Context) (*ResourcePool, error) 
 				return nil, err
 			}
 			rpc.mutation = mutation
-			node, err = rpc.sqlSave(ctx)
+			if node, err = rpc.sqlSave(ctx); err != nil {
+				return nil, err
+			}
+			mutation.id = &node.ID
 			mutation.done = true
 			return node, err
 		})
 		for i := len(rpc.hooks) - 1; i >= 0; i-- {
+			if rpc.hooks[i] == nil {
+				return nil, fmt.Errorf("ent: uninitialized hook (forgotten import ent/runtime?)")
+			}
 			mut = rpc.hooks[i](mut)
 		}
-		if _, err := mut.Mutate(ctx, rpc.mutation); err != nil {
+		v, err := mut.Mutate(ctx, rpc.mutation)
+		if err != nil {
 			return nil, err
 		}
+		nv, ok := v.(*ResourcePool)
+		if !ok {
+			return nil, fmt.Errorf("unexpected node type %T returned from ResourcePoolMutation", v)
+		}
+		node = nv
 	}
 	return node, err
 }
@@ -220,34 +234,48 @@ func (rpc *ResourcePoolCreate) SaveX(ctx context.Context) *ResourcePool {
 	return v
 }
 
+// Exec executes the query.
+func (rpc *ResourcePoolCreate) Exec(ctx context.Context) error {
+	_, err := rpc.Save(ctx)
+	return err
+}
+
+// ExecX is like Exec, but panics if an error occurs.
+func (rpc *ResourcePoolCreate) ExecX(ctx context.Context) {
+	if err := rpc.Exec(ctx); err != nil {
+		panic(err)
+	}
+}
+
 // defaults sets the default values of the builder before save.
-func (rpc *ResourcePoolCreate) defaults() {
+func (rpc *ResourcePoolCreate) defaults() error {
 	if _, ok := rpc.mutation.DealocationSafetyPeriod(); !ok {
 		v := resourcepool.DefaultDealocationSafetyPeriod
 		rpc.mutation.SetDealocationSafetyPeriod(v)
 	}
+	return nil
 }
 
 // check runs all checks and user-defined validators on the builder.
 func (rpc *ResourcePoolCreate) check() error {
 	if _, ok := rpc.mutation.Name(); !ok {
-		return &ValidationError{Name: "name", err: errors.New("ent: missing required field \"name\"")}
+		return &ValidationError{Name: "name", err: errors.New(`ent: missing required field "ResourcePool.name"`)}
 	}
 	if v, ok := rpc.mutation.Name(); ok {
 		if err := resourcepool.NameValidator(v); err != nil {
-			return &ValidationError{Name: "name", err: fmt.Errorf("ent: validator failed for field \"name\": %w", err)}
+			return &ValidationError{Name: "name", err: fmt.Errorf(`ent: validator failed for field "ResourcePool.name": %w`, err)}
 		}
 	}
 	if _, ok := rpc.mutation.PoolType(); !ok {
-		return &ValidationError{Name: "pool_type", err: errors.New("ent: missing required field \"pool_type\"")}
+		return &ValidationError{Name: "pool_type", err: errors.New(`ent: missing required field "ResourcePool.pool_type"`)}
 	}
 	if v, ok := rpc.mutation.PoolType(); ok {
 		if err := resourcepool.PoolTypeValidator(v); err != nil {
-			return &ValidationError{Name: "pool_type", err: fmt.Errorf("ent: validator failed for field \"pool_type\": %w", err)}
+			return &ValidationError{Name: "pool_type", err: fmt.Errorf(`ent: validator failed for field "ResourcePool.pool_type": %w`, err)}
 		}
 	}
 	if _, ok := rpc.mutation.DealocationSafetyPeriod(); !ok {
-		return &ValidationError{Name: "dealocation_safety_period", err: errors.New("ent: missing required field \"dealocation_safety_period\"")}
+		return &ValidationError{Name: "dealocation_safety_period", err: errors.New(`ent: missing required field "ResourcePool.dealocation_safety_period"`)}
 	}
 	return nil
 }
@@ -255,8 +283,8 @@ func (rpc *ResourcePoolCreate) check() error {
 func (rpc *ResourcePoolCreate) sqlSave(ctx context.Context) (*ResourcePool, error) {
 	_node, _spec := rpc.createSpec()
 	if err := sqlgraph.CreateNode(ctx, rpc.driver, _spec); err != nil {
-		if cerr, ok := isSQLConstraintError(err); ok {
-			err = cerr
+		if sqlgraph.IsConstraintError(err) {
+			err = &ConstraintError{msg: err.Error(), wrap: err}
 		}
 		return nil, err
 	}
@@ -325,6 +353,7 @@ func (rpc *ResourcePoolCreate) createSpec() (*ResourcePool, *sqlgraph.CreateSpec
 		for _, k := range nodes {
 			edge.Target.Nodes = append(edge.Target.Nodes, k)
 		}
+		_node.resource_type_pools = &nodes[0]
 		_spec.Edges = append(_spec.Edges, edge)
 	}
 	if nodes := rpc.mutation.TagsIDs(); len(nodes) > 0 {
@@ -401,6 +430,7 @@ func (rpc *ResourcePoolCreate) createSpec() (*ResourcePool, *sqlgraph.CreateSpec
 		for _, k := range nodes {
 			edge.Target.Nodes = append(edge.Target.Nodes, k)
 		}
+		_node.resource_pool_allocation_strategy = &nodes[0]
 		_spec.Edges = append(_spec.Edges, edge)
 	}
 	if nodes := rpc.mutation.ParentResourceIDs(); len(nodes) > 0 {
@@ -420,12 +450,13 @@ func (rpc *ResourcePoolCreate) createSpec() (*ResourcePool, *sqlgraph.CreateSpec
 		for _, k := range nodes {
 			edge.Target.Nodes = append(edge.Target.Nodes, k)
 		}
+		_node.resource_nested_pool = &nodes[0]
 		_spec.Edges = append(_spec.Edges, edge)
 	}
 	return _node, _spec
 }
 
-// ResourcePoolCreateBulk is the builder for creating a bulk of ResourcePool entities.
+// ResourcePoolCreateBulk is the builder for creating many ResourcePool entities in bulk.
 type ResourcePoolCreateBulk struct {
 	config
 	builders []*ResourcePoolCreate
@@ -454,19 +485,23 @@ func (rpcb *ResourcePoolCreateBulk) Save(ctx context.Context) ([]*ResourcePool, 
 				if i < len(mutators)-1 {
 					_, err = mutators[i+1].Mutate(root, rpcb.builders[i+1].mutation)
 				} else {
+					spec := &sqlgraph.BatchCreateSpec{Nodes: specs}
 					// Invoke the actual operation on the latest mutation in the chain.
-					if err = sqlgraph.BatchCreate(ctx, rpcb.driver, &sqlgraph.BatchCreateSpec{Nodes: specs}); err != nil {
-						if cerr, ok := isSQLConstraintError(err); ok {
-							err = cerr
+					if err = sqlgraph.BatchCreate(ctx, rpcb.driver, spec); err != nil {
+						if sqlgraph.IsConstraintError(err) {
+							err = &ConstraintError{msg: err.Error(), wrap: err}
 						}
 					}
 				}
-				mutation.done = true
 				if err != nil {
 					return nil, err
 				}
-				id := specs[i].ID.Value.(int64)
-				nodes[i].ID = int(id)
+				mutation.id = &nodes[i].ID
+				if specs[i].ID.Value != nil {
+					id := specs[i].ID.Value.(int64)
+					nodes[i].ID = int(id)
+				}
+				mutation.done = true
 				return nodes[i], nil
 			})
 			for i := len(builder.hooks) - 1; i >= 0; i-- {
@@ -483,11 +518,24 @@ func (rpcb *ResourcePoolCreateBulk) Save(ctx context.Context) ([]*ResourcePool, 
 	return nodes, nil
 }
 
-// SaveX calls Save and panics if Save returns an error.
+// SaveX is like Save, but panics if an error occurs.
 func (rpcb *ResourcePoolCreateBulk) SaveX(ctx context.Context) []*ResourcePool {
 	v, err := rpcb.Save(ctx)
 	if err != nil {
 		panic(err)
 	}
 	return v
+}
+
+// Exec executes the query.
+func (rpcb *ResourcePoolCreateBulk) Exec(ctx context.Context) error {
+	_, err := rpcb.Save(ctx)
+	return err
+}
+
+// ExecX is like Exec, but panics if an error occurs.
+func (rpcb *ResourcePoolCreateBulk) ExecX(ctx context.Context) {
+	if err := rpcb.Exec(ctx); err != nil {
+		panic(err)
+	}
 }

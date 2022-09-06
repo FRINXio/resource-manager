@@ -3,7 +3,7 @@
 package resourcetype
 
 import (
-	"github.com/facebook/ent"
+	"entgo.io/ent"
 )
 
 const (
@@ -13,31 +13,29 @@ const (
 	FieldID = "id"
 	// FieldName holds the string denoting the name field in the database.
 	FieldName = "name"
-
 	// EdgePropertyTypes holds the string denoting the property_types edge name in mutations.
 	EdgePropertyTypes = "property_types"
 	// EdgePools holds the string denoting the pools edge name in mutations.
 	EdgePools = "pools"
 	// EdgePoolProperties holds the string denoting the pool_properties edge name in mutations.
 	EdgePoolProperties = "pool_properties"
-
 	// Table holds the table name of the resourcetype in the database.
 	Table = "resource_types"
-	// PropertyTypesTable is the table the holds the property_types relation/edge.
+	// PropertyTypesTable is the table that holds the property_types relation/edge.
 	PropertyTypesTable = "property_types"
 	// PropertyTypesInverseTable is the table name for the PropertyType entity.
 	// It exists in this package in order to avoid circular dependency with the "propertytype" package.
 	PropertyTypesInverseTable = "property_types"
 	// PropertyTypesColumn is the table column denoting the property_types relation/edge.
 	PropertyTypesColumn = "resource_type_property_types"
-	// PoolsTable is the table the holds the pools relation/edge.
+	// PoolsTable is the table that holds the pools relation/edge.
 	PoolsTable = "resource_pools"
 	// PoolsInverseTable is the table name for the ResourcePool entity.
 	// It exists in this package in order to avoid circular dependency with the "resourcepool" package.
 	PoolsInverseTable = "resource_pools"
 	// PoolsColumn is the table column denoting the pools relation/edge.
 	PoolsColumn = "resource_type_pools"
-	// PoolPropertiesTable is the table the holds the pool_properties relation/edge. The primary key declared below.
+	// PoolPropertiesTable is the table that holds the pool_properties relation/edge. The primary key declared below.
 	PoolPropertiesTable = "pool_properties_resourceType"
 	// PoolPropertiesInverseTable is the table name for the PoolProperties entity.
 	// It exists in this package in order to avoid circular dependency with the "poolproperties" package.
@@ -71,7 +69,6 @@ func ValidColumn(column string) bool {
 // it should be imported in the main as follows:
 //
 //	import _ "github.com/net-auto/resourceManager/ent/runtime"
-//
 var (
 	Hooks  [1]ent.Hook
 	Policy ent.Policy
