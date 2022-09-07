@@ -376,7 +376,6 @@ func (rtq *ResourceTypeQuery) WithPoolProperties(opts ...func(*PoolPropertiesQue
 //		GroupBy(resourcetype.FieldName).
 //		Aggregate(ent.Count()).
 //		Scan(ctx, &v)
-//
 func (rtq *ResourceTypeQuery) GroupBy(field string, fields ...string) *ResourceTypeGroupBy {
 	grbuild := &ResourceTypeGroupBy{config: rtq.config}
 	grbuild.fields = append([]string{field}, fields...)
@@ -403,7 +402,6 @@ func (rtq *ResourceTypeQuery) GroupBy(field string, fields ...string) *ResourceT
 //	client.ResourceType.Query().
 //		Select(resourcetype.FieldName).
 //		Scan(ctx, &v)
-//
 func (rtq *ResourceTypeQuery) Select(fields ...string) *ResourceTypeSelect {
 	rtq.fields = append(rtq.fields, fields...)
 	selbuild := &ResourceTypeSelect{ResourceTypeQuery: rtq}

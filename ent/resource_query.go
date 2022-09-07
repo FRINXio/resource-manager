@@ -374,7 +374,6 @@ func (rq *ResourceQuery) WithNestedPool(opts ...func(*ResourcePoolQuery)) *Resou
 //		GroupBy(resource.FieldStatus).
 //		Aggregate(ent.Count()).
 //		Scan(ctx, &v)
-//
 func (rq *ResourceQuery) GroupBy(field string, fields ...string) *ResourceGroupBy {
 	grbuild := &ResourceGroupBy{config: rq.config}
 	grbuild.fields = append([]string{field}, fields...)
@@ -401,7 +400,6 @@ func (rq *ResourceQuery) GroupBy(field string, fields ...string) *ResourceGroupB
 //	client.Resource.Query().
 //		Select(resource.FieldStatus).
 //		Scan(ctx, &v)
-//
 func (rq *ResourceQuery) Select(fields ...string) *ResourceSelect {
 	rq.fields = append(rq.fields, fields...)
 	selbuild := &ResourceSelect{ResourceQuery: rq}

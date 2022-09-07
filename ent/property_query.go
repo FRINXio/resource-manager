@@ -337,7 +337,6 @@ func (pq *PropertyQuery) WithResources(opts ...func(*ResourceQuery)) *PropertyQu
 //		GroupBy(property.FieldIntVal).
 //		Aggregate(ent.Count()).
 //		Scan(ctx, &v)
-//
 func (pq *PropertyQuery) GroupBy(field string, fields ...string) *PropertyGroupBy {
 	grbuild := &PropertyGroupBy{config: pq.config}
 	grbuild.fields = append([]string{field}, fields...)
@@ -364,7 +363,6 @@ func (pq *PropertyQuery) GroupBy(field string, fields ...string) *PropertyGroupB
 //	client.Property.Query().
 //		Select(property.FieldIntVal).
 //		Scan(ctx, &v)
-//
 func (pq *PropertyQuery) Select(fields ...string) *PropertySelect {
 	pq.fields = append(pq.fields, fields...)
 	selbuild := &PropertySelect{PropertyQuery: pq}

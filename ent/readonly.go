@@ -12,7 +12,6 @@ import (
 // ReadOnly returns a new readonly-client.
 //
 //	client := client.ReadOnly()
-//
 func (c *Client) ReadOnly() *Client {
 	cfg := config{driver: &readonly{Driver: c.driver}, log: c.log}
 	return &Client{

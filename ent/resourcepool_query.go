@@ -483,7 +483,6 @@ func (rpq *ResourcePoolQuery) WithParentResource(opts ...func(*ResourceQuery)) *
 //		GroupBy(resourcepool.FieldName).
 //		Aggregate(ent.Count()).
 //		Scan(ctx, &v)
-//
 func (rpq *ResourcePoolQuery) GroupBy(field string, fields ...string) *ResourcePoolGroupBy {
 	grbuild := &ResourcePoolGroupBy{config: rpq.config}
 	grbuild.fields = append([]string{field}, fields...)
@@ -510,7 +509,6 @@ func (rpq *ResourcePoolQuery) GroupBy(field string, fields ...string) *ResourceP
 //	client.ResourcePool.Query().
 //		Select(resourcepool.FieldName).
 //		Scan(ctx, &v)
-//
 func (rpq *ResourcePoolQuery) Select(fields ...string) *ResourcePoolSelect {
 	rpq.fields = append(rpq.fields, fields...)
 	selbuild := &ResourcePoolSelect{ResourcePoolQuery: rpq}
