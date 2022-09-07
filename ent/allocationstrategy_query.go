@@ -302,7 +302,6 @@ func (asq *AllocationStrategyQuery) WithPools(opts ...func(*ResourcePoolQuery)) 
 //		GroupBy(allocationstrategy.FieldName).
 //		Aggregate(ent.Count()).
 //		Scan(ctx, &v)
-//
 func (asq *AllocationStrategyQuery) GroupBy(field string, fields ...string) *AllocationStrategyGroupBy {
 	grbuild := &AllocationStrategyGroupBy{config: asq.config}
 	grbuild.fields = append([]string{field}, fields...)
@@ -329,7 +328,6 @@ func (asq *AllocationStrategyQuery) GroupBy(field string, fields ...string) *All
 //	client.AllocationStrategy.Query().
 //		Select(allocationstrategy.FieldName).
 //		Scan(ctx, &v)
-//
 func (asq *AllocationStrategyQuery) Select(fields ...string) *AllocationStrategySelect {
 	asq.fields = append(asq.fields, fields...)
 	selbuild := &AllocationStrategySelect{AllocationStrategyQuery: asq}
