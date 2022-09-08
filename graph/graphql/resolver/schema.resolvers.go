@@ -391,10 +391,30 @@ func (r *mutationResolver) DeleteResourcePool(ctx context.Context, input model.D
 	client := r.ClientFrom(ctx)
 	retVal := model.DeleteResourcePoolPayload{ResourcePoolID: input.ResourcePoolID}
 
-	pool, errPool := p.ExistingPoolFromId(ctx, client, input.ResourcePoolID)
+	pool, err := p.ExistingPoolFromId(ctx, client, input.ResourcePoolID)
+	if err != nil {
+		return &retVal, gqlerror.Errorf("Unable to retrieve pool: %v", err)
+	}
 
-	if errPool != nil {
-		return &retVal, gqlerror.Errorf("Unable to retrieve pool: %v", errPool)
+	poolName, err := p.PoolName(ctx, client, input.ResourcePoolID)
+	if err != nil {
+		return &retVal, gqlerror.Errorf("Unable to retrieve pool name: %v", err)
+	}
+
+	resourceTypes, err := client.ResourceType.Query().Where(resourcetype.Name(poolName + "-ResourceType")).All(ctx)
+	if err != nil {
+		log.Error(ctx, err, "Unable to retrieve resource type from pool id %d", input.ResourcePoolID)
+		return &retVal, gqlerror.Errorf("Unable to delete resource type - cannot find by pool ID %d: %v", input.ResourcePoolID, err)
+	}
+	for _, resourceType := range resourceTypes {
+
+		rp, err := r.DeleteResourceType(ctx, model.DeleteResourceTypeInput{
+			ResourceTypeID: resourceType.ID,
+		})
+		if err != nil {
+			log.Error(ctx, err, "Unable to delete resource type ID %d", rp.ResourceTypeID)
+			return &retVal, gqlerror.Errorf("Unable to delete resource type ID %d: %v", rp.ResourceTypeID, err)
+		}
 	}
 
 	errDp := pool.Destroy()
@@ -630,8 +650,9 @@ func (r *queryResolver) QueryResourceTypes(ctx context.Context, byName *string) 
 	client := r.ClientFrom(ctx)
 	query := client.ResourceType.Query()
 
-	// Filter out pool properties that are stored in resource type table
-	query = query.Where(resourcetype.Not(resourcetype.HasPoolProperties()))
+	// Filter out pool properties that are stored in resource type table and pool names
+	query = query.Where(resourcetype.Not(resourcetype.HasPoolProperties())).
+		Where(resourcetype.Not(resourcetype.NameContains("-ResourceType")))
 
 	if byName != nil {
 		query = query.Where(resourcetype.Name(*byName))
@@ -1015,9 +1036,9 @@ type resourcePoolResolver struct{ *Resolver }
 // !!! WARNING !!!
 // The code below was going to be deleted when updating resolvers. It has been copied here so you have
 // one last chance to move it out of harms way if you want. There are two reasons this happens:
-//  - When renaming or deleting a resolver the old code will be put in here. You can safely delete
-//    it when you're done.
-//  - You have helper methods in this file. Move them out to keep these resolver files clean.
+//   - When renaming or deleting a resolver the old code will be put in here. You can safely delete
+//     it when you're done.
+//   - You have helper methods in this file. Move them out to keep these resolver files clean.
 func (r *resourceResolver) NestedPool(ctx context.Context, obj *ent.Resource) (*ent.ResourcePool, error) {
 	if es, err := obj.Edges.NestedPoolOrErr(); !ent.IsNotLoaded(err) {
 		log.Error(ctx, err, "Unable to retrieve nested pool for resource with ID %d", obj.ID)

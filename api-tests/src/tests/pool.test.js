@@ -35,11 +35,11 @@ const test = tap.test;
 test('singleton claim and free resource', async (t) => {
     let rtId = await findResourceTypeId('ipv4');
     const ipAddress = '192.168.1.1';
-    let poolId = await createSingletonPool(
-        getUniqueName('singleton'),
-        rtId,
-        [{address: ipAddress}]
-    );
+    const poolName = getUniqueName('singleton');
+    let poolId = await createSingletonPool(poolName, rtId, [{address: ipAddress}]);
+    let resourceTypeOfPoolName = await findResourceTypeId(poolName + "-ResourceType");
+    t.equal(resourceTypeOfPoolName, undefined);
+
     let resource = await claimResource(poolId, {});
     let rs = await getResourcesForPool(poolId);
     t.equal(rs.edges.length, 1);
