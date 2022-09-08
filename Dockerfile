@@ -19,7 +19,7 @@ ENV GITHUB_TOKEN_EXTERNAL=$GITHUB_TOKEN_EXTERNAL_DOCKERFILE
 RUN ./build.sh
 
 # final image:
-FROM golang:1.17.9-buster
+FROM golang:1.18.6-buster
 ARG RM_LOG_FILE=rm.log
 WORKDIR /resMgr
 
