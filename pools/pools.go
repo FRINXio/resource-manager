@@ -125,3 +125,16 @@ func existingPool(
 		return nil, err
 	}
 }
+
+func PoolName(ctx context.Context, client *ent.Client, poolId int) (string, error) {
+	thisPool, err := client.ResourcePool.Query().
+		Where(resourcePool.ID(poolId)).
+		Only(ctx)
+
+	if err != nil {
+		log.Error(ctx, err, "Unable to find pool ID %d", poolId)
+		return "", errors.Wrapf(err, "Cannot get pool by id %d", poolId)
+	}
+
+	return thisPool.Name, nil
+}
