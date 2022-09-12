@@ -26,10 +26,11 @@ type CreateAllocatingPoolPayload struct {
 
 // Input parameters for creating a new allocation strategy
 type CreateAllocationStrategyInput struct {
-	Name        string                  `json:"name"`
-	Description *string                 `json:"description"`
-	Script      string                  `json:"script"`
-	Lang        allocationstrategy.Lang `json:"lang"`
+	Name                      string                  `json:"name"`
+	Description               *string                 `json:"description"`
+	Script                    string                  `json:"script"`
+	Lang                      allocationstrategy.Lang `json:"lang"`
+	ExpectedPoolPropertyTypes map[string]interface{}  `json:"expectedPoolPropertyTypes"`
 }
 
 // Output of creating a new allocation strategy

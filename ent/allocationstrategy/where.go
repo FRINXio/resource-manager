@@ -475,6 +475,34 @@ func HasPoolsWith(preds ...predicate.ResourcePool) predicate.AllocationStrategy 
 	})
 }
 
+// HasPoolPropertyTypes applies the HasEdge predicate on the "pool_property_types" edge.
+func HasPoolPropertyTypes() predicate.AllocationStrategy {
+	return predicate.AllocationStrategy(func(s *sql.Selector) {
+		step := sqlgraph.NewStep(
+			sqlgraph.From(Table, FieldID),
+			sqlgraph.To(PoolPropertyTypesTable, FieldID),
+			sqlgraph.Edge(sqlgraph.O2M, false, PoolPropertyTypesTable, PoolPropertyTypesColumn),
+		)
+		sqlgraph.HasNeighbors(s, step)
+	})
+}
+
+// HasPoolPropertyTypesWith applies the HasEdge predicate on the "pool_property_types" edge with a given conditions (other predicates).
+func HasPoolPropertyTypesWith(preds ...predicate.PropertyType) predicate.AllocationStrategy {
+	return predicate.AllocationStrategy(func(s *sql.Selector) {
+		step := sqlgraph.NewStep(
+			sqlgraph.From(Table, FieldID),
+			sqlgraph.To(PoolPropertyTypesInverseTable, FieldID),
+			sqlgraph.Edge(sqlgraph.O2M, false, PoolPropertyTypesTable, PoolPropertyTypesColumn),
+		)
+		sqlgraph.HasNeighborsWith(s, step, func(s *sql.Selector) {
+			for _, p := range preds {
+				p(s)
+			}
+		})
+	})
+}
+
 // And groups predicates with the AND operator between them.
 func And(predicates ...predicate.AllocationStrategy) predicate.AllocationStrategy {
 	return predicate.AllocationStrategy(func(s *sql.Selector) {

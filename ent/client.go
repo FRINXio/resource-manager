@@ -275,6 +275,22 @@ func (c *AllocationStrategyClient) QueryPools(as *AllocationStrategy) *ResourceP
 	return query
 }
 
+// QueryPoolPropertyTypes queries the pool_property_types edge of a AllocationStrategy.
+func (c *AllocationStrategyClient) QueryPoolPropertyTypes(as *AllocationStrategy) *PropertyTypeQuery {
+	query := &PropertyTypeQuery{config: c.config}
+	query.path = func(ctx context.Context) (fromV *sql.Selector, _ error) {
+		id := as.ID
+		step := sqlgraph.NewStep(
+			sqlgraph.From(allocationstrategy.Table, allocationstrategy.FieldID, id),
+			sqlgraph.To(propertytype.Table, propertytype.FieldID),
+			sqlgraph.Edge(sqlgraph.O2M, false, allocationstrategy.PoolPropertyTypesTable, allocationstrategy.PoolPropertyTypesColumn),
+		)
+		fromV = sqlgraph.Neighbors(as.driver.Dialect(), step)
+		return fromV, nil
+	}
+	return query
+}
+
 // Hooks returns the client hooks.
 func (c *AllocationStrategyClient) Hooks() []Hook {
 	hooks := c.hooks.AllocationStrategy

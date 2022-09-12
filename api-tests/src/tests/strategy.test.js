@@ -1,4 +1,10 @@
-import {deleteAllocationStrategy, testStrategy, createAllocationStrategy, findAllocationStrategyId} from '../graphql-queries.js';
+import {
+    deleteAllocationStrategy,
+    testStrategy,
+    createAllocationStrategy,
+    findAllocationStrategyId,
+    createResourceType, findResourceTypeId, deleteResourceType, getRequiredPoolProperties
+} from '../graphql-queries.js';
 import {cleanup, getUniqueName} from '../test-helpers.js';
 import tap from 'tap';
 const test = tap.test;
@@ -9,7 +15,7 @@ test('create and call JS strategy', async (t) => {
     let strategyId = await createAllocationStrategy(
         poolName,
         'function invoke() {return {vlan: userInput.desiredVlan};}',
-        'js');
+        'js', null);
     let strategyOutput = await testStrategy(strategyId, { ResourcePoolName: 'testpool'},
         poolName, poolId, [], {desiredVlan: 85} );
 
@@ -25,7 +31,7 @@ test('create and call Py strategy', async (t) => {
     let strategyId = await createAllocationStrategy(
         poolName,
         'log(json.dumps({ \'respool\': resourcePool[\'ResourcePoolName\'], \'currentRes\': currentResources }))\nreturn {\'vlan\': userInput[\'desiredVlan\']}',
-        'py');
+        'py', null);
     let strategyOutput = await testStrategy(strategyId, { ResourcePoolName: poolName},
         poolName, poolId,[], {desiredVlan: 11} );
 
@@ -39,7 +45,7 @@ test('delete strategy', async (t) => {
     let poolName = getUniqueName('testJSstrategy');
     let strategyId = await createAllocationStrategy(
         poolName,
-        'function invoke() {return {vlan: userInput.desiredVlan};}', 'js');
+        'function invoke() {return {vlan: userInput.desiredVlan};}', 'js', null);
     let foundStrategyId = await findAllocationStrategyId(poolName);
     t.equal(foundStrategyId, strategyId);
     await deleteAllocationStrategy(strategyId);
@@ -152,6 +158,23 @@ test('ipv4-rd strategy', async (t) => {
     t.equal(allocated.stdout.rd, '1.2.3.4:2');
 
     await cleanup()
+    t.end();
+});
+
+test('check required resource types for different strategies', async (t) => {
+    let requiredPoolProperties = await getRequiredPoolProperties('vlan');
+
+    t.equal(requiredPoolProperties[0].Name, 'from')
+    t.equal(requiredPoolProperties[0].Type, 'int')
+    t.equal(requiredPoolProperties[1].Name, 'to')
+    t.equal(requiredPoolProperties[1].Type, 'int')
+
+    requiredPoolProperties = await getRequiredPoolProperties("ipv4");
+
+    t.equal(requiredPoolProperties[0].Name, 'address')
+    t.equal(requiredPoolProperties[0].Type, 'string')
+    t.equal(requiredPoolProperties[1].Name, 'prefix')
+    t.equal(requiredPoolProperties[1].Type, 'int')
     t.end();
 });
 

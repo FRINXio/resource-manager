@@ -17,7 +17,7 @@ import {
     getResourcesByDatetimeRange,
     updateResourceAltId,
     getEmptyPools,
-    getPaginatedResourcesForPool
+    getPaginatedResourcesForPool, getRequiredPoolProperties, findAllocationStrategyId, createAllocationPool
 } from "../graphql-queries.js";
 import {
     cleanup,
@@ -150,6 +150,38 @@ test('create and delete set pool', async (t) => {
     await deleteResourcePool(poolId);
     foundPool = await searchPoolsByTags({matchesAny: [{matchesAll: [tagText]}]});
     t.equal(foundPool.length, 0);
+    t.end();
+});
+
+test('allocating pool with incorrect properties', async (t) => {
+    let resourceTypeId = await findResourceTypeId('ipv4');
+    let strategyId = await findAllocationStrategyId('ipv4');
+    let poolName = getUniqueName('root-ipv4');
+    let pool = await createAllocationPool(
+        poolName,
+        resourceTypeId,
+        strategyId,
+        {prefix: "int"},
+        {prefix: 24},)
+    t.notOk(pool)
+
+    pool = await createAllocationPool(
+        poolName,
+        resourceTypeId,
+        strategyId,
+        {address: "string"},
+        {address: "192.168.3.0"},)
+    t.notOk(pool)
+
+    pool = await createAllocationPool(
+        poolName,
+        resourceTypeId,
+        strategyId,
+        {address: "string", prefix: "int"},
+        {address: "192.168.3.0", prefix: 24},)
+    t.ok(pool)
+
+    await cleanup()
     t.end();
 });
 

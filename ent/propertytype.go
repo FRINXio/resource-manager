@@ -54,8 +54,9 @@ type PropertyType struct {
 	NodeType string `json:"nodeType,omitempty"`
 	// Edges holds the relations/edges for other nodes in the graph.
 	// The values are being populated by the PropertyTypeQuery when eager-loading is set.
-	Edges                        PropertyTypeEdges `json:"edges"`
-	resource_type_property_types *int
+	Edges                                   PropertyTypeEdges `json:"edges"`
+	allocation_strategy_pool_property_types *int
+	resource_type_property_types            *int
 }
 
 // PropertyTypeEdges holds the relations/edges for other nodes in the graph.
@@ -108,7 +109,9 @@ func (*PropertyType) scanValues(columns []string) ([]any, error) {
 			values[i] = new(sql.NullInt64)
 		case propertytype.FieldType, propertytype.FieldName, propertytype.FieldExternalID, propertytype.FieldCategory, propertytype.FieldStringVal, propertytype.FieldNodeType:
 			values[i] = new(sql.NullString)
-		case propertytype.ForeignKeys[0]: // resource_type_property_types
+		case propertytype.ForeignKeys[0]: // allocation_strategy_pool_property_types
+			values[i] = new(sql.NullInt64)
+		case propertytype.ForeignKeys[1]: // resource_type_property_types
 			values[i] = new(sql.NullInt64)
 		default:
 			return nil, fmt.Errorf("unexpected column %q for type PropertyType", columns[i])
@@ -248,6 +251,13 @@ func (pt *PropertyType) assignValues(columns []string, values []any) error {
 				pt.NodeType = value.String
 			}
 		case propertytype.ForeignKeys[0]:
+			if value, ok := values[i].(*sql.NullInt64); !ok {
+				return fmt.Errorf("unexpected type %T for edge-field allocation_strategy_pool_property_types", value)
+			} else if value.Valid {
+				pt.allocation_strategy_pool_property_types = new(int)
+				*pt.allocation_strategy_pool_property_types = int(value.Int64)
+			}
+		case propertytype.ForeignKeys[1]:
 			if value, ok := values[i].(*sql.NullInt64); !ok {
 				return fmt.Errorf("unexpected type %T for edge-field resource_type_property_types", value)
 			} else if value.Valid {

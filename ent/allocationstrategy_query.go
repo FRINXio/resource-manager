@@ -14,22 +14,25 @@ import (
 	"entgo.io/ent/schema/field"
 	"github.com/net-auto/resourceManager/ent/allocationstrategy"
 	"github.com/net-auto/resourceManager/ent/predicate"
+	"github.com/net-auto/resourceManager/ent/propertytype"
 	"github.com/net-auto/resourceManager/ent/resourcepool"
 )
 
 // AllocationStrategyQuery is the builder for querying AllocationStrategy entities.
 type AllocationStrategyQuery struct {
 	config
-	limit          *int
-	offset         *int
-	unique         *bool
-	order          []OrderFunc
-	fields         []string
-	predicates     []predicate.AllocationStrategy
-	withPools      *ResourcePoolQuery
-	modifiers      []func(*sql.Selector)
-	loadTotal      []func(context.Context, []*AllocationStrategy) error
-	withNamedPools map[string]*ResourcePoolQuery
+	limit                      *int
+	offset                     *int
+	unique                     *bool
+	order                      []OrderFunc
+	fields                     []string
+	predicates                 []predicate.AllocationStrategy
+	withPools                  *ResourcePoolQuery
+	withPoolPropertyTypes      *PropertyTypeQuery
+	modifiers                  []func(*sql.Selector)
+	loadTotal                  []func(context.Context, []*AllocationStrategy) error
+	withNamedPools             map[string]*ResourcePoolQuery
+	withNamedPoolPropertyTypes map[string]*PropertyTypeQuery
 	// intermediate query (i.e. traversal path).
 	sql  *sql.Selector
 	path func(context.Context) (*sql.Selector, error)
@@ -81,6 +84,28 @@ func (asq *AllocationStrategyQuery) QueryPools() *ResourcePoolQuery {
 			sqlgraph.From(allocationstrategy.Table, allocationstrategy.FieldID, selector),
 			sqlgraph.To(resourcepool.Table, resourcepool.FieldID),
 			sqlgraph.Edge(sqlgraph.O2M, true, allocationstrategy.PoolsTable, allocationstrategy.PoolsColumn),
+		)
+		fromU = sqlgraph.SetNeighbors(asq.driver.Dialect(), step)
+		return fromU, nil
+	}
+	return query
+}
+
+// QueryPoolPropertyTypes chains the current query on the "pool_property_types" edge.
+func (asq *AllocationStrategyQuery) QueryPoolPropertyTypes() *PropertyTypeQuery {
+	query := &PropertyTypeQuery{config: asq.config}
+	query.path = func(ctx context.Context) (fromU *sql.Selector, err error) {
+		if err := asq.prepareQuery(ctx); err != nil {
+			return nil, err
+		}
+		selector := asq.sqlQuery(ctx)
+		if err := selector.Err(); err != nil {
+			return nil, err
+		}
+		step := sqlgraph.NewStep(
+			sqlgraph.From(allocationstrategy.Table, allocationstrategy.FieldID, selector),
+			sqlgraph.To(propertytype.Table, propertytype.FieldID),
+			sqlgraph.Edge(sqlgraph.O2M, false, allocationstrategy.PoolPropertyTypesTable, allocationstrategy.PoolPropertyTypesColumn),
 		)
 		fromU = sqlgraph.SetNeighbors(asq.driver.Dialect(), step)
 		return fromU, nil
@@ -264,12 +289,13 @@ func (asq *AllocationStrategyQuery) Clone() *AllocationStrategyQuery {
 		return nil
 	}
 	return &AllocationStrategyQuery{
-		config:     asq.config,
-		limit:      asq.limit,
-		offset:     asq.offset,
-		order:      append([]OrderFunc{}, asq.order...),
-		predicates: append([]predicate.AllocationStrategy{}, asq.predicates...),
-		withPools:  asq.withPools.Clone(),
+		config:                asq.config,
+		limit:                 asq.limit,
+		offset:                asq.offset,
+		order:                 append([]OrderFunc{}, asq.order...),
+		predicates:            append([]predicate.AllocationStrategy{}, asq.predicates...),
+		withPools:             asq.withPools.Clone(),
+		withPoolPropertyTypes: asq.withPoolPropertyTypes.Clone(),
 		// clone intermediate query.
 		sql:    asq.sql.Clone(),
 		path:   asq.path,
@@ -285,6 +311,17 @@ func (asq *AllocationStrategyQuery) WithPools(opts ...func(*ResourcePoolQuery)) 
 		opt(query)
 	}
 	asq.withPools = query
+	return asq
+}
+
+// WithPoolPropertyTypes tells the query-builder to eager-load the nodes that are connected to
+// the "pool_property_types" edge. The optional arguments are used to configure the query builder of the edge.
+func (asq *AllocationStrategyQuery) WithPoolPropertyTypes(opts ...func(*PropertyTypeQuery)) *AllocationStrategyQuery {
+	query := &PropertyTypeQuery{config: asq.config}
+	for _, opt := range opts {
+		opt(query)
+	}
+	asq.withPoolPropertyTypes = query
 	return asq
 }
 
@@ -362,8 +399,9 @@ func (asq *AllocationStrategyQuery) sqlAll(ctx context.Context, hooks ...queryHo
 	var (
 		nodes       = []*AllocationStrategy{}
 		_spec       = asq.querySpec()
-		loadedTypes = [1]bool{
+		loadedTypes = [2]bool{
 			asq.withPools != nil,
+			asq.withPoolPropertyTypes != nil,
 		}
 	)
 	_spec.ScanValues = func(columns []string) ([]any, error) {
@@ -394,10 +432,26 @@ func (asq *AllocationStrategyQuery) sqlAll(ctx context.Context, hooks ...queryHo
 			return nil, err
 		}
 	}
+	if query := asq.withPoolPropertyTypes; query != nil {
+		if err := asq.loadPoolPropertyTypes(ctx, query, nodes,
+			func(n *AllocationStrategy) { n.Edges.PoolPropertyTypes = []*PropertyType{} },
+			func(n *AllocationStrategy, e *PropertyType) {
+				n.Edges.PoolPropertyTypes = append(n.Edges.PoolPropertyTypes, e)
+			}); err != nil {
+			return nil, err
+		}
+	}
 	for name, query := range asq.withNamedPools {
 		if err := asq.loadPools(ctx, query, nodes,
 			func(n *AllocationStrategy) { n.appendNamedPools(name) },
 			func(n *AllocationStrategy, e *ResourcePool) { n.appendNamedPools(name, e) }); err != nil {
+			return nil, err
+		}
+	}
+	for name, query := range asq.withNamedPoolPropertyTypes {
+		if err := asq.loadPoolPropertyTypes(ctx, query, nodes,
+			func(n *AllocationStrategy) { n.appendNamedPoolPropertyTypes(name) },
+			func(n *AllocationStrategy, e *PropertyType) { n.appendNamedPoolPropertyTypes(name, e) }); err != nil {
 			return nil, err
 		}
 	}
@@ -435,6 +489,37 @@ func (asq *AllocationStrategyQuery) loadPools(ctx context.Context, query *Resour
 		node, ok := nodeids[*fk]
 		if !ok {
 			return fmt.Errorf(`unexpected foreign-key "resource_pool_allocation_strategy" returned %v for node %v`, *fk, n.ID)
+		}
+		assign(node, n)
+	}
+	return nil
+}
+func (asq *AllocationStrategyQuery) loadPoolPropertyTypes(ctx context.Context, query *PropertyTypeQuery, nodes []*AllocationStrategy, init func(*AllocationStrategy), assign func(*AllocationStrategy, *PropertyType)) error {
+	fks := make([]driver.Value, 0, len(nodes))
+	nodeids := make(map[int]*AllocationStrategy)
+	for i := range nodes {
+		fks = append(fks, nodes[i].ID)
+		nodeids[nodes[i].ID] = nodes[i]
+		if init != nil {
+			init(nodes[i])
+		}
+	}
+	query.withFKs = true
+	query.Where(predicate.PropertyType(func(s *sql.Selector) {
+		s.Where(sql.InValues(allocationstrategy.PoolPropertyTypesColumn, fks...))
+	}))
+	neighbors, err := query.All(ctx)
+	if err != nil {
+		return err
+	}
+	for _, n := range neighbors {
+		fk := n.allocation_strategy_pool_property_types
+		if fk == nil {
+			return fmt.Errorf(`foreign-key "allocation_strategy_pool_property_types" is nil for node %v`, n.ID)
+		}
+		node, ok := nodeids[*fk]
+		if !ok {
+			return fmt.Errorf(`unexpected foreign-key "allocation_strategy_pool_property_types" returned %v for node %v`, *fk, n.ID)
 		}
 		assign(node, n)
 	}
@@ -552,6 +637,20 @@ func (asq *AllocationStrategyQuery) WithNamedPools(name string, opts ...func(*Re
 		asq.withNamedPools = make(map[string]*ResourcePoolQuery)
 	}
 	asq.withNamedPools[name] = query
+	return asq
+}
+
+// WithNamedPoolPropertyTypes tells the query-builder to eager-load the nodes that are connected to the "pool_property_types"
+// edge with the given name. The optional arguments are used to configure the query builder of the edge.
+func (asq *AllocationStrategyQuery) WithNamedPoolPropertyTypes(name string, opts ...func(*PropertyTypeQuery)) *AllocationStrategyQuery {
+	query := &PropertyTypeQuery{config: asq.config}
+	for _, opt := range opts {
+		opt(query)
+	}
+	if asq.withNamedPoolPropertyTypes == nil {
+		asq.withNamedPoolPropertyTypes = make(map[string]*PropertyTypeQuery)
+	}
+	asq.withNamedPoolPropertyTypes[name] = query
 	return asq
 }
 
