@@ -32,13 +32,16 @@ type AllocationStrategy struct {
 type AllocationStrategyEdges struct {
 	// Pools holds the value of the pools edge.
 	Pools []*ResourcePool `json:"pools,omitempty"`
+	// PoolPropertyTypes holds the value of the pool_property_types edge.
+	PoolPropertyTypes []*PropertyType `json:"pool_property_types,omitempty"`
 	// loadedTypes holds the information for reporting if a
 	// type was loaded (or requested) in eager-loading or not.
-	loadedTypes [1]bool
+	loadedTypes [2]bool
 	// totalCount holds the count of the edges above.
-	totalCount [1]map[string]int
+	totalCount [2]map[string]int
 
-	namedPools map[string][]*ResourcePool
+	namedPools             map[string][]*ResourcePool
+	namedPoolPropertyTypes map[string][]*PropertyType
 }
 
 // PoolsOrErr returns the Pools value or an error if the edge
@@ -48,6 +51,15 @@ func (e AllocationStrategyEdges) PoolsOrErr() ([]*ResourcePool, error) {
 		return e.Pools, nil
 	}
 	return nil, &NotLoadedError{edge: "pools"}
+}
+
+// PoolPropertyTypesOrErr returns the PoolPropertyTypes value or an error if the edge
+// was not loaded in eager-loading.
+func (e AllocationStrategyEdges) PoolPropertyTypesOrErr() ([]*PropertyType, error) {
+	if e.loadedTypes[1] {
+		return e.PoolPropertyTypes, nil
+	}
+	return nil, &NotLoadedError{edge: "pool_property_types"}
 }
 
 // scanValues returns the types for scanning values from sql.Rows.
@@ -115,6 +127,11 @@ func (as *AllocationStrategy) QueryPools() *ResourcePoolQuery {
 	return (&AllocationStrategyClient{config: as.config}).QueryPools(as)
 }
 
+// QueryPoolPropertyTypes queries the "pool_property_types" edge of the AllocationStrategy entity.
+func (as *AllocationStrategy) QueryPoolPropertyTypes() *PropertyTypeQuery {
+	return (&AllocationStrategyClient{config: as.config}).QueryPoolPropertyTypes(as)
+}
+
 // Update returns a builder for updating this AllocationStrategy.
 // Note that you need to call AllocationStrategy.Unwrap() before calling this method if this AllocationStrategy
 // was returned from a transaction, and the transaction was committed or rolled back.
@@ -176,6 +193,30 @@ func (as *AllocationStrategy) appendNamedPools(name string, edges ...*ResourcePo
 		as.Edges.namedPools[name] = []*ResourcePool{}
 	} else {
 		as.Edges.namedPools[name] = append(as.Edges.namedPools[name], edges...)
+	}
+}
+
+// NamedPoolPropertyTypes returns the PoolPropertyTypes named value or an error if the edge was not
+// loaded in eager-loading with this name.
+func (as *AllocationStrategy) NamedPoolPropertyTypes(name string) ([]*PropertyType, error) {
+	if as.Edges.namedPoolPropertyTypes == nil {
+		return nil, &NotLoadedError{edge: name}
+	}
+	nodes, ok := as.Edges.namedPoolPropertyTypes[name]
+	if !ok {
+		return nil, &NotLoadedError{edge: name}
+	}
+	return nodes, nil
+}
+
+func (as *AllocationStrategy) appendNamedPoolPropertyTypes(name string, edges ...*PropertyType) {
+	if as.Edges.namedPoolPropertyTypes == nil {
+		as.Edges.namedPoolPropertyTypes = make(map[string][]*PropertyType)
+	}
+	if len(edges) == 0 {
+		as.Edges.namedPoolPropertyTypes[name] = []*PropertyType{}
+	} else {
+		as.Edges.namedPoolPropertyTypes[name] = append(as.Edges.namedPoolPropertyTypes[name], edges...)
 	}
 }
 

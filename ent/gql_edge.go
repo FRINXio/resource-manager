@@ -16,6 +16,14 @@ func (as *AllocationStrategy) Pools(ctx context.Context) ([]*ResourcePool, error
 	return result, err
 }
 
+func (as *AllocationStrategy) PoolPropertyTypes(ctx context.Context) ([]*PropertyType, error) {
+	result, err := as.NamedPoolPropertyTypes(graphql.GetFieldContext(ctx).Field.Alias)
+	if IsNotLoaded(err) {
+		result, err = as.QueryPoolPropertyTypes().All(ctx)
+	}
+	return result, err
+}
+
 func (pp *PoolProperties) Pool(ctx context.Context) (*ResourcePool, error) {
 	result, err := pp.Edges.PoolOrErr()
 	if IsNotLoaded(err) {

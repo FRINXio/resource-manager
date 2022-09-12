@@ -44,20 +44,23 @@ const (
 // AllocationStrategyMutation represents an operation that mutates the AllocationStrategy nodes in the graph.
 type AllocationStrategyMutation struct {
 	config
-	op            Op
-	typ           string
-	id            *int
-	name          *string
-	description   *string
-	lang          *allocationstrategy.Lang
-	script        *string
-	clearedFields map[string]struct{}
-	pools         map[int]struct{}
-	removedpools  map[int]struct{}
-	clearedpools  bool
-	done          bool
-	oldValue      func(context.Context) (*AllocationStrategy, error)
-	predicates    []predicate.AllocationStrategy
+	op                         Op
+	typ                        string
+	id                         *int
+	name                       *string
+	description                *string
+	lang                       *allocationstrategy.Lang
+	script                     *string
+	clearedFields              map[string]struct{}
+	pools                      map[int]struct{}
+	removedpools               map[int]struct{}
+	clearedpools               bool
+	pool_property_types        map[int]struct{}
+	removedpool_property_types map[int]struct{}
+	clearedpool_property_types bool
+	done                       bool
+	oldValue                   func(context.Context) (*AllocationStrategy, error)
+	predicates                 []predicate.AllocationStrategy
 }
 
 var _ ent.Mutation = (*AllocationStrategyMutation)(nil)
@@ -369,6 +372,60 @@ func (m *AllocationStrategyMutation) ResetPools() {
 	m.removedpools = nil
 }
 
+// AddPoolPropertyTypeIDs adds the "pool_property_types" edge to the PropertyType entity by ids.
+func (m *AllocationStrategyMutation) AddPoolPropertyTypeIDs(ids ...int) {
+	if m.pool_property_types == nil {
+		m.pool_property_types = make(map[int]struct{})
+	}
+	for i := range ids {
+		m.pool_property_types[ids[i]] = struct{}{}
+	}
+}
+
+// ClearPoolPropertyTypes clears the "pool_property_types" edge to the PropertyType entity.
+func (m *AllocationStrategyMutation) ClearPoolPropertyTypes() {
+	m.clearedpool_property_types = true
+}
+
+// PoolPropertyTypesCleared reports if the "pool_property_types" edge to the PropertyType entity was cleared.
+func (m *AllocationStrategyMutation) PoolPropertyTypesCleared() bool {
+	return m.clearedpool_property_types
+}
+
+// RemovePoolPropertyTypeIDs removes the "pool_property_types" edge to the PropertyType entity by IDs.
+func (m *AllocationStrategyMutation) RemovePoolPropertyTypeIDs(ids ...int) {
+	if m.removedpool_property_types == nil {
+		m.removedpool_property_types = make(map[int]struct{})
+	}
+	for i := range ids {
+		delete(m.pool_property_types, ids[i])
+		m.removedpool_property_types[ids[i]] = struct{}{}
+	}
+}
+
+// RemovedPoolPropertyTypes returns the removed IDs of the "pool_property_types" edge to the PropertyType entity.
+func (m *AllocationStrategyMutation) RemovedPoolPropertyTypesIDs() (ids []int) {
+	for id := range m.removedpool_property_types {
+		ids = append(ids, id)
+	}
+	return
+}
+
+// PoolPropertyTypesIDs returns the "pool_property_types" edge IDs in the mutation.
+func (m *AllocationStrategyMutation) PoolPropertyTypesIDs() (ids []int) {
+	for id := range m.pool_property_types {
+		ids = append(ids, id)
+	}
+	return
+}
+
+// ResetPoolPropertyTypes resets all changes to the "pool_property_types" edge.
+func (m *AllocationStrategyMutation) ResetPoolPropertyTypes() {
+	m.pool_property_types = nil
+	m.clearedpool_property_types = false
+	m.removedpool_property_types = nil
+}
+
 // Where appends a list predicates to the AllocationStrategyMutation builder.
 func (m *AllocationStrategyMutation) Where(ps ...predicate.AllocationStrategy) {
 	m.predicates = append(m.predicates, ps...)
@@ -547,9 +604,12 @@ func (m *AllocationStrategyMutation) ResetField(name string) error {
 
 // AddedEdges returns all edge names that were set/added in this mutation.
 func (m *AllocationStrategyMutation) AddedEdges() []string {
-	edges := make([]string, 0, 1)
+	edges := make([]string, 0, 2)
 	if m.pools != nil {
 		edges = append(edges, allocationstrategy.EdgePools)
+	}
+	if m.pool_property_types != nil {
+		edges = append(edges, allocationstrategy.EdgePoolPropertyTypes)
 	}
 	return edges
 }
@@ -564,15 +624,24 @@ func (m *AllocationStrategyMutation) AddedIDs(name string) []ent.Value {
 			ids = append(ids, id)
 		}
 		return ids
+	case allocationstrategy.EdgePoolPropertyTypes:
+		ids := make([]ent.Value, 0, len(m.pool_property_types))
+		for id := range m.pool_property_types {
+			ids = append(ids, id)
+		}
+		return ids
 	}
 	return nil
 }
 
 // RemovedEdges returns all edge names that were removed in this mutation.
 func (m *AllocationStrategyMutation) RemovedEdges() []string {
-	edges := make([]string, 0, 1)
+	edges := make([]string, 0, 2)
 	if m.removedpools != nil {
 		edges = append(edges, allocationstrategy.EdgePools)
+	}
+	if m.removedpool_property_types != nil {
+		edges = append(edges, allocationstrategy.EdgePoolPropertyTypes)
 	}
 	return edges
 }
@@ -587,15 +656,24 @@ func (m *AllocationStrategyMutation) RemovedIDs(name string) []ent.Value {
 			ids = append(ids, id)
 		}
 		return ids
+	case allocationstrategy.EdgePoolPropertyTypes:
+		ids := make([]ent.Value, 0, len(m.removedpool_property_types))
+		for id := range m.removedpool_property_types {
+			ids = append(ids, id)
+		}
+		return ids
 	}
 	return nil
 }
 
 // ClearedEdges returns all edge names that were cleared in this mutation.
 func (m *AllocationStrategyMutation) ClearedEdges() []string {
-	edges := make([]string, 0, 1)
+	edges := make([]string, 0, 2)
 	if m.clearedpools {
 		edges = append(edges, allocationstrategy.EdgePools)
+	}
+	if m.clearedpool_property_types {
+		edges = append(edges, allocationstrategy.EdgePoolPropertyTypes)
 	}
 	return edges
 }
@@ -606,6 +684,8 @@ func (m *AllocationStrategyMutation) EdgeCleared(name string) bool {
 	switch name {
 	case allocationstrategy.EdgePools:
 		return m.clearedpools
+	case allocationstrategy.EdgePoolPropertyTypes:
+		return m.clearedpool_property_types
 	}
 	return false
 }
@@ -624,6 +704,9 @@ func (m *AllocationStrategyMutation) ResetEdge(name string) error {
 	switch name {
 	case allocationstrategy.EdgePools:
 		m.ResetPools()
+		return nil
+	case allocationstrategy.EdgePoolPropertyTypes:
+		m.ResetPoolPropertyTypes()
 		return nil
 	}
 	return fmt.Errorf("unknown AllocationStrategy edge %s", name)

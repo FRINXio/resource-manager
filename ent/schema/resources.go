@@ -87,6 +87,8 @@ func (AllocationStrategy) Edges() []ent.Edge {
 	return []ent.Edge{
 		edge.From("pools", ResourcePool.Type).
 			Ref("allocation_strategy"),
+		edge.To("pool_property_types", PropertyType.Type).
+			Annotations(entgql.Bind()),
 	}
 }
 

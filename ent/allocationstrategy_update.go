@@ -12,6 +12,7 @@ import (
 	"entgo.io/ent/schema/field"
 	"github.com/net-auto/resourceManager/ent/allocationstrategy"
 	"github.com/net-auto/resourceManager/ent/predicate"
+	"github.com/net-auto/resourceManager/ent/propertytype"
 	"github.com/net-auto/resourceManager/ent/resourcepool"
 )
 
@@ -89,6 +90,21 @@ func (asu *AllocationStrategyUpdate) AddPools(r ...*ResourcePool) *AllocationStr
 	return asu.AddPoolIDs(ids...)
 }
 
+// AddPoolPropertyTypeIDs adds the "pool_property_types" edge to the PropertyType entity by IDs.
+func (asu *AllocationStrategyUpdate) AddPoolPropertyTypeIDs(ids ...int) *AllocationStrategyUpdate {
+	asu.mutation.AddPoolPropertyTypeIDs(ids...)
+	return asu
+}
+
+// AddPoolPropertyTypes adds the "pool_property_types" edges to the PropertyType entity.
+func (asu *AllocationStrategyUpdate) AddPoolPropertyTypes(p ...*PropertyType) *AllocationStrategyUpdate {
+	ids := make([]int, len(p))
+	for i := range p {
+		ids[i] = p[i].ID
+	}
+	return asu.AddPoolPropertyTypeIDs(ids...)
+}
+
 // Mutation returns the AllocationStrategyMutation object of the builder.
 func (asu *AllocationStrategyUpdate) Mutation() *AllocationStrategyMutation {
 	return asu.mutation
@@ -113,6 +129,27 @@ func (asu *AllocationStrategyUpdate) RemovePools(r ...*ResourcePool) *Allocation
 		ids[i] = r[i].ID
 	}
 	return asu.RemovePoolIDs(ids...)
+}
+
+// ClearPoolPropertyTypes clears all "pool_property_types" edges to the PropertyType entity.
+func (asu *AllocationStrategyUpdate) ClearPoolPropertyTypes() *AllocationStrategyUpdate {
+	asu.mutation.ClearPoolPropertyTypes()
+	return asu
+}
+
+// RemovePoolPropertyTypeIDs removes the "pool_property_types" edge to PropertyType entities by IDs.
+func (asu *AllocationStrategyUpdate) RemovePoolPropertyTypeIDs(ids ...int) *AllocationStrategyUpdate {
+	asu.mutation.RemovePoolPropertyTypeIDs(ids...)
+	return asu
+}
+
+// RemovePoolPropertyTypes removes "pool_property_types" edges to PropertyType entities.
+func (asu *AllocationStrategyUpdate) RemovePoolPropertyTypes(p ...*PropertyType) *AllocationStrategyUpdate {
+	ids := make([]int, len(p))
+	for i := range p {
+		ids[i] = p[i].ID
+	}
+	return asu.RemovePoolPropertyTypeIDs(ids...)
 }
 
 // Save executes the query and returns the number of nodes affected by the update operation.
@@ -301,6 +338,60 @@ func (asu *AllocationStrategyUpdate) sqlSave(ctx context.Context) (n int, err er
 		}
 		_spec.Edges.Add = append(_spec.Edges.Add, edge)
 	}
+	if asu.mutation.PoolPropertyTypesCleared() {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: false,
+			Table:   allocationstrategy.PoolPropertyTypesTable,
+			Columns: []string{allocationstrategy.PoolPropertyTypesColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: &sqlgraph.FieldSpec{
+					Type:   field.TypeInt,
+					Column: propertytype.FieldID,
+				},
+			},
+		}
+		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
+	}
+	if nodes := asu.mutation.RemovedPoolPropertyTypesIDs(); len(nodes) > 0 && !asu.mutation.PoolPropertyTypesCleared() {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: false,
+			Table:   allocationstrategy.PoolPropertyTypesTable,
+			Columns: []string{allocationstrategy.PoolPropertyTypesColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: &sqlgraph.FieldSpec{
+					Type:   field.TypeInt,
+					Column: propertytype.FieldID,
+				},
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
+	}
+	if nodes := asu.mutation.PoolPropertyTypesIDs(); len(nodes) > 0 {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: false,
+			Table:   allocationstrategy.PoolPropertyTypesTable,
+			Columns: []string{allocationstrategy.PoolPropertyTypesColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: &sqlgraph.FieldSpec{
+					Type:   field.TypeInt,
+					Column: propertytype.FieldID,
+				},
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges.Add = append(_spec.Edges.Add, edge)
+	}
 	if n, err = sqlgraph.UpdateNodes(ctx, asu.driver, _spec); err != nil {
 		if _, ok := err.(*sqlgraph.NotFoundError); ok {
 			err = &NotFoundError{allocationstrategy.Label}
@@ -381,6 +472,21 @@ func (asuo *AllocationStrategyUpdateOne) AddPools(r ...*ResourcePool) *Allocatio
 	return asuo.AddPoolIDs(ids...)
 }
 
+// AddPoolPropertyTypeIDs adds the "pool_property_types" edge to the PropertyType entity by IDs.
+func (asuo *AllocationStrategyUpdateOne) AddPoolPropertyTypeIDs(ids ...int) *AllocationStrategyUpdateOne {
+	asuo.mutation.AddPoolPropertyTypeIDs(ids...)
+	return asuo
+}
+
+// AddPoolPropertyTypes adds the "pool_property_types" edges to the PropertyType entity.
+func (asuo *AllocationStrategyUpdateOne) AddPoolPropertyTypes(p ...*PropertyType) *AllocationStrategyUpdateOne {
+	ids := make([]int, len(p))
+	for i := range p {
+		ids[i] = p[i].ID
+	}
+	return asuo.AddPoolPropertyTypeIDs(ids...)
+}
+
 // Mutation returns the AllocationStrategyMutation object of the builder.
 func (asuo *AllocationStrategyUpdateOne) Mutation() *AllocationStrategyMutation {
 	return asuo.mutation
@@ -405,6 +511,27 @@ func (asuo *AllocationStrategyUpdateOne) RemovePools(r ...*ResourcePool) *Alloca
 		ids[i] = r[i].ID
 	}
 	return asuo.RemovePoolIDs(ids...)
+}
+
+// ClearPoolPropertyTypes clears all "pool_property_types" edges to the PropertyType entity.
+func (asuo *AllocationStrategyUpdateOne) ClearPoolPropertyTypes() *AllocationStrategyUpdateOne {
+	asuo.mutation.ClearPoolPropertyTypes()
+	return asuo
+}
+
+// RemovePoolPropertyTypeIDs removes the "pool_property_types" edge to PropertyType entities by IDs.
+func (asuo *AllocationStrategyUpdateOne) RemovePoolPropertyTypeIDs(ids ...int) *AllocationStrategyUpdateOne {
+	asuo.mutation.RemovePoolPropertyTypeIDs(ids...)
+	return asuo
+}
+
+// RemovePoolPropertyTypes removes "pool_property_types" edges to PropertyType entities.
+func (asuo *AllocationStrategyUpdateOne) RemovePoolPropertyTypes(p ...*PropertyType) *AllocationStrategyUpdateOne {
+	ids := make([]int, len(p))
+	for i := range p {
+		ids[i] = p[i].ID
+	}
+	return asuo.RemovePoolPropertyTypeIDs(ids...)
 }
 
 // Select allows selecting one or more fields (columns) of the returned entity.
@@ -615,6 +742,60 @@ func (asuo *AllocationStrategyUpdateOne) sqlSave(ctx context.Context) (_node *Al
 				IDSpec: &sqlgraph.FieldSpec{
 					Type:   field.TypeInt,
 					Column: resourcepool.FieldID,
+				},
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges.Add = append(_spec.Edges.Add, edge)
+	}
+	if asuo.mutation.PoolPropertyTypesCleared() {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: false,
+			Table:   allocationstrategy.PoolPropertyTypesTable,
+			Columns: []string{allocationstrategy.PoolPropertyTypesColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: &sqlgraph.FieldSpec{
+					Type:   field.TypeInt,
+					Column: propertytype.FieldID,
+				},
+			},
+		}
+		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
+	}
+	if nodes := asuo.mutation.RemovedPoolPropertyTypesIDs(); len(nodes) > 0 && !asuo.mutation.PoolPropertyTypesCleared() {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: false,
+			Table:   allocationstrategy.PoolPropertyTypesTable,
+			Columns: []string{allocationstrategy.PoolPropertyTypesColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: &sqlgraph.FieldSpec{
+					Type:   field.TypeInt,
+					Column: propertytype.FieldID,
+				},
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
+	}
+	if nodes := asuo.mutation.PoolPropertyTypesIDs(); len(nodes) > 0 {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: false,
+			Table:   allocationstrategy.PoolPropertyTypesTable,
+			Columns: []string{allocationstrategy.PoolPropertyTypesColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: &sqlgraph.FieldSpec{
+					Type:   field.TypeInt,
+					Column: propertytype.FieldID,
 				},
 			},
 		}

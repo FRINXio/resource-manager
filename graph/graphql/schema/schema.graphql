@@ -32,12 +32,12 @@ Defines the type of the property
 """
 type PropertyType implements Node
 @goModel(model: "github.com/net-auto/resourceManager/ent.PropertyType"){
-    FloatVal: Float!,
-    IntVal: Int!,
-    Mandatory: Boolean!
+    FloatVal: Float
+    IntVal: Int
+    Mandatory: Boolean
+    StringVal: String
     Name: String!
-    StringVal: String!,
-    Type: String!,
+    Type: String!
     id: ID!
 }
 
@@ -347,6 +347,7 @@ type Query {
     QueryAllocationStrategy(allocationStrategyId: ID!): AllocationStrategy!
     QueryAllocationStrategies(byName: String): [AllocationStrategy!]!
     QueryResourceTypes(byName: String): [ResourceType!]!
+    QueryRequiredPoolProperties(allocationStrategyName: String!): [PropertyType!]!
 
     QueryResourcePool(poolId: ID!): ResourcePool!
 
@@ -444,6 +445,7 @@ input CreateAllocationStrategyInput {
     description: String,
     script: String!,
     lang: AllocationStrategyLang!
+    expectedPoolPropertyTypes: Map
 }
 
 """

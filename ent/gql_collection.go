@@ -37,6 +37,18 @@ func (as *AllocationStrategyQuery) collectField(ctx context.Context, op *graphql
 			as.WithNamedPools(alias, func(wq *ResourcePoolQuery) {
 				*wq = *query
 			})
+		case "poolPropertyTypes", "pool_property_types":
+			var (
+				alias = field.Alias
+				path  = append(path, alias)
+				query = &PropertyTypeQuery{config: as.config}
+			)
+			if err := query.collectField(ctx, op, field, path, satisfies...); err != nil {
+				return err
+			}
+			as.WithNamedPoolPropertyTypes(alias, func(wq *PropertyTypeQuery) {
+				*wq = *query
+			})
 		}
 	}
 	return nil

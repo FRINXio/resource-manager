@@ -58,7 +58,7 @@ func (as *AllocationStrategy) Node(ctx context.Context) (node *Node, err error) 
 		ID:     as.ID,
 		Type:   "AllocationStrategy",
 		Fields: make([]*Field, 4),
-		Edges:  make([]*Edge, 1),
+		Edges:  make([]*Edge, 2),
 	}
 	var buf []byte
 	if buf, err = json.Marshal(as.Name); err != nil {
@@ -100,6 +100,16 @@ func (as *AllocationStrategy) Node(ctx context.Context) (node *Node, err error) 
 	err = as.QueryPools().
 		Select(resourcepool.FieldID).
 		Scan(ctx, &node.Edges[0].IDs)
+	if err != nil {
+		return nil, err
+	}
+	node.Edges[1] = &Edge{
+		Type: "PropertyType",
+		Name: "pool_property_types",
+	}
+	err = as.QueryPoolPropertyTypes().
+		Select(propertytype.FieldID).
+		Scan(ctx, &node.Edges[1].IDs)
 	if err != nil {
 		return nil, err
 	}

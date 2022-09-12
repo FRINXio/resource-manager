@@ -447,15 +447,17 @@ export async function deleteAllocationStrategy(strategyId) {
     .catch(error => console.log(error));
 }
 
-export async function createAllocationStrategy(strategyName, scriptBody, strategyType) {
+export async function createAllocationStrategy(strategyName, scriptBody, strategyType, expectedPropertyTypes) {
     return client.mutate({
         mutation: gql`
-            mutation createStrategy($strategyName: String!, $scriptBody: String!, $strategyType: AllocationStrategyLang!) {
+            mutation createStrategy($strategyName: String!, $scriptBody: String!, $strategyType: AllocationStrategyLang!,
+                $expectedPropertyTypes: Map) {
                 CreateAllocationStrategy( input:  {
                     name: $strategyName
                     description: "testing strategy"
                     script: $scriptBody
                     lang: $strategyType
+                    expectedPoolPropertyTypes: $expectedPropertyTypes
                 }){
                     strategy {
                         id
@@ -467,6 +469,7 @@ export async function createAllocationStrategy(strategyName, scriptBody, strateg
             strategyName: strategyName,
             scriptBody: scriptBody,
             strategyType: strategyType,
+            expectedPropertyTypes: expectedPropertyTypes
         }
     })
     .then(result => result.data.CreateAllocationStrategy.strategy.id)
@@ -901,5 +904,26 @@ export async function getEmptyPools(resourceTypeId){
         }
     })
     .then(result => result.data.QueryEmptyResourcePools)
+    .catch(error => console.log(error));
+}
+
+export async function getRequiredPoolProperties(allocationStrategyName) {
+    return client.query({
+        query: gql`
+            query QueryRequiredPoolProperties($allocationStrategyName: String!) {
+                QueryRequiredPoolProperties(allocationStrategyName: $allocationStrategyName) {
+                    Name
+                    Type
+                    FloatVal
+                    IntVal
+                    StringVal
+                }
+            }
+        `,
+        variables: {
+            allocationStrategyName: allocationStrategyName
+        }
+    })
+    .then(result => result.data.QueryRequiredPoolProperties)
     .catch(error => console.log(error));
 }

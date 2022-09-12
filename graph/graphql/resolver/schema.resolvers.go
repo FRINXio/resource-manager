@@ -7,6 +7,7 @@ import (
 	"context"
 	"time"
 
+	"entgo.io/ent/dialect/sql"
 	"github.com/net-auto/resourceManager/ent"
 	"github.com/net-auto/resourceManager/ent/allocationstrategy"
 	"github.com/net-auto/resourceManager/ent/predicate"
@@ -82,15 +83,41 @@ func (r *mutationResolver) UntagPool(ctx context.Context, input model.UntagPoolI
 // CreateAllocationStrategy is the resolver for the CreateAllocationStrategy field.
 func (r *mutationResolver) CreateAllocationStrategy(ctx context.Context, input *model.CreateAllocationStrategyInput) (*model.CreateAllocationStrategyPayload, error) {
 	var client = r.ClientFrom(ctx)
-	strat, err := client.AllocationStrategy.Create().
-		SetName(input.Name).
-		SetNillableDescription(input.Description).
-		SetScript(input.Script).
-		SetLang(input.Lang).
-		Save(ctx)
-	if err != nil {
-		log.Error(ctx, err, "Unable create a new allocation strategy")
-		return &model.CreateAllocationStrategyPayload{Strategy: nil}, gqlerror.Errorf("Unable to create strategy: %v", err)
+
+	var propertyTypes []*ent.PropertyType
+	var strat *ent.AllocationStrategy
+	var err error
+	if input.ExpectedPoolPropertyTypes != nil {
+		for propName, rawPropType := range input.ExpectedPoolPropertyTypes {
+			var propertyType, err = p.CreatePropertyType(ctx, client, propName, rawPropType)
+			if err != nil {
+				return &model.CreateAllocationStrategyPayload{Strategy: nil}, gqlerror.Errorf("Unable to create expected resource type: %v", err)
+			}
+			propertyTypes = append(propertyTypes, propertyType)
+		}
+
+		strat, err = client.AllocationStrategy.Create().
+			SetName(input.Name).
+			SetNillableDescription(input.Description).
+			SetScript(input.Script).
+			SetLang(input.Lang).
+			AddPoolPropertyTypes(propertyTypes...).
+			Save(ctx)
+		if err != nil {
+			log.Error(ctx, err, "Unable create a new allocation strategy")
+			return &model.CreateAllocationStrategyPayload{Strategy: nil}, gqlerror.Errorf("Unable to create strategy: %v", err)
+		}
+	} else {
+		strat, err = client.AllocationStrategy.Create().
+			SetName(input.Name).
+			SetNillableDescription(input.Description).
+			SetScript(input.Script).
+			SetLang(input.Lang).
+			Save(ctx)
+		if err != nil {
+			log.Error(ctx, err, "Unable create a new allocation strategy")
+			return &model.CreateAllocationStrategyPayload{Strategy: nil}, gqlerror.Errorf("Unable to create strategy: %v", err)
+		}
 	}
 
 	return &model.CreateAllocationStrategyPayload{Strategy: strat}, nil
@@ -303,6 +330,37 @@ func (r *mutationResolver) CreateAllocatingPool(ctx context.Context, input *mode
 	var client = r.ClientFrom(ctx)
 	emptyRetVal := model.CreateAllocatingPoolPayload{Pool: nil}
 
+	allocationStrat, errAlloc := client.AllocationStrategy.Get(ctx, input.AllocationStrategyID)
+	if errAlloc != nil {
+		log.Error(ctx, errAlloc, "Unable to retrieve allocation strategy for pool (strategy ID: %d)", input.AllocationStrategyID)
+		return &emptyRetVal, gqlerror.Errorf("Unable to create pool: %v", errAlloc)
+	}
+
+	requiredPoolProperties, err := r.Query().QueryRequiredPoolProperties(ctx, allocationStrat.Name)
+	if err != nil {
+		log.Error(ctx, errAlloc, "Unable to retrieve required pool properties for pool (strategy ID: %d)", input.AllocationStrategyID)
+		return &emptyRetVal, gqlerror.Errorf("Unable to create pool: %v", errAlloc)
+	}
+
+	if requiredPoolProperties != nil {
+		for _, requiredPoolProperty := range requiredPoolProperties {
+			if input.PoolPropertyTypes != nil {
+				propertyExists := false
+				inputPoolPropertiesMap := []map[string]interface{}{input.PoolPropertyTypes}
+				for _, inputPoolPropertyMap := range inputPoolPropertiesMap {
+					if inputPoolPropertyMap[requiredPoolProperty.Name] != nil &&
+						inputPoolPropertyMap[requiredPoolProperty.Name].(string) == requiredPoolProperty.Type.String() {
+						propertyExists = true
+					}
+				}
+				if propertyExists != true {
+					log.Error(ctx, nil, "In pool properties input missed property: %s - %s", requiredPoolProperty.Name, requiredPoolProperty.Type)
+					return &emptyRetVal, gqlerror.Errorf("In pool properties input missed property: %s - %s", requiredPoolProperty.Name, requiredPoolProperty.Type)
+				}
+			}
+		}
+	}
+
 	var resPropertyType *ent.ResourceType = nil
 	//create additional resource type IFF we are not a nested type
 	//only root pool
@@ -336,11 +394,6 @@ func (r *mutationResolver) CreateAllocatingPool(ctx context.Context, input *mode
 	if errRes != nil {
 		log.Error(ctx, errRes, "Unable to retrieve resource type for pool (resource type ID: %d)", input.ResourceTypeID)
 		return &emptyRetVal, gqlerror.Errorf("Unable to create pool: %v", errRes)
-	}
-	allocationStrat, errAlloc := client.AllocationStrategy.Get(ctx, input.AllocationStrategyID)
-	if errAlloc != nil {
-		log.Error(ctx, errAlloc, "Unable to retrieve allocation strategy for pool (strategy ID: %d)", input.AllocationStrategyID)
-		return &emptyRetVal, gqlerror.Errorf("Unable to create pool: %v", errAlloc)
 	}
 
 	_, rp, err := p.NewAllocatingPoolWithMeta(ctx, client, resType, allocationStrat,
@@ -664,6 +717,24 @@ func (r *queryResolver) QueryResourceTypes(ctx context.Context, byName *string) 
 	} else {
 		return resourceTypes, nil
 	}
+}
+
+// QueryRequiredPoolProperties is the resolver for the QueryRequiredPoolProperties field.
+func (r *queryResolver) QueryRequiredPoolProperties(ctx context.Context, allocationStrategyName string) ([]*ent.PropertyType, error) {
+	allocationStrategy, err := r.ClientFrom(ctx).AllocationStrategy.Query().Where(allocationstrategy.Name(allocationStrategyName)).Only(ctx)
+	if err != nil {
+		log.Error(ctx, err, "Unable to retrieve required allocation strategy by name: %s", allocationStrategyName)
+		return nil, gqlerror.Errorf("Unable to retrieve required allocation strategy by name: %s", allocationStrategyName, err)
+	}
+
+	requiredPropertyTypes, err := r.ClientFrom(ctx).PropertyType.Query().Where(func(s *sql.Selector) {
+		s.Where(sql.EQ(allocationstrategy.PoolPropertyTypesColumn, allocationStrategy.ID))
+	}).All(ctx)
+	if err != nil {
+		log.Error(ctx, err, "Unable to retrieve required pool properties for allocation strategy: %s", allocationStrategyName)
+		return nil, gqlerror.Errorf("Unable to retrieve required pool properties for allocation strategy: %s", allocationStrategyName, err)
+	}
+	return requiredPropertyTypes, nil
 }
 
 // QueryResourcePool is the resolver for the QueryResourcePool field.

@@ -10,6 +10,7 @@ import (
 	"entgo.io/ent/dialect/sql/sqlgraph"
 	"entgo.io/ent/schema/field"
 	"github.com/net-auto/resourceManager/ent/allocationstrategy"
+	"github.com/net-auto/resourceManager/ent/propertytype"
 	"github.com/net-auto/resourceManager/ent/resourcepool"
 )
 
@@ -73,6 +74,21 @@ func (asc *AllocationStrategyCreate) AddPools(r ...*ResourcePool) *AllocationStr
 		ids[i] = r[i].ID
 	}
 	return asc.AddPoolIDs(ids...)
+}
+
+// AddPoolPropertyTypeIDs adds the "pool_property_types" edge to the PropertyType entity by IDs.
+func (asc *AllocationStrategyCreate) AddPoolPropertyTypeIDs(ids ...int) *AllocationStrategyCreate {
+	asc.mutation.AddPoolPropertyTypeIDs(ids...)
+	return asc
+}
+
+// AddPoolPropertyTypes adds the "pool_property_types" edges to the PropertyType entity.
+func (asc *AllocationStrategyCreate) AddPoolPropertyTypes(p ...*PropertyType) *AllocationStrategyCreate {
+	ids := make([]int, len(p))
+	for i := range p {
+		ids[i] = p[i].ID
+	}
+	return asc.AddPoolPropertyTypeIDs(ids...)
 }
 
 // Mutation returns the AllocationStrategyMutation object of the builder.
@@ -257,6 +273,25 @@ func (asc *AllocationStrategyCreate) createSpec() (*AllocationStrategy, *sqlgrap
 				IDSpec: &sqlgraph.FieldSpec{
 					Type:   field.TypeInt,
 					Column: resourcepool.FieldID,
+				},
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges = append(_spec.Edges, edge)
+	}
+	if nodes := asc.mutation.PoolPropertyTypesIDs(); len(nodes) > 0 {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: false,
+			Table:   allocationstrategy.PoolPropertyTypesTable,
+			Columns: []string{allocationstrategy.PoolPropertyTypesColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: &sqlgraph.FieldSpec{
+					Type:   field.TypeInt,
+					Column: propertytype.FieldID,
 				},
 			},
 		}

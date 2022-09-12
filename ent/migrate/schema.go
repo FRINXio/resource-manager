@@ -79,7 +79,7 @@ var (
 				Symbol:     "properties_property_types_type",
 				Columns:    []*schema.Column{PropertiesColumns[10]},
 				RefColumns: []*schema.Column{PropertyTypesColumns[0]},
-				OnDelete:   schema.NoAction,
+				OnDelete:   schema.Cascade,
 			},
 			{
 				Symbol:     "properties_resources_properties",
@@ -127,6 +127,7 @@ var (
 		{Name: "mandatory", Type: field.TypeBool, Default: false},
 		{Name: "deleted", Type: field.TypeBool, Default: false},
 		{Name: "node_type", Type: field.TypeString, Nullable: true},
+		{Name: "allocation_strategy_pool_property_types", Type: field.TypeInt, Nullable: true},
 		{Name: "resource_type_property_types", Type: field.TypeInt, Nullable: true},
 	}
 	// PropertyTypesTable holds the schema information for the "property_types" table.
@@ -136,8 +137,14 @@ var (
 		PrimaryKey: []*schema.Column{PropertyTypesColumns[0]},
 		ForeignKeys: []*schema.ForeignKey{
 			{
-				Symbol:     "property_types_resource_types_property_types",
+				Symbol:     "property_types_allocation_strategies_pool_property_types",
 				Columns:    []*schema.Column{PropertyTypesColumns[19]},
+				RefColumns: []*schema.Column{AllocationStrategiesColumns[0]},
+				OnDelete:   schema.SetNull,
+			},
+			{
+				Symbol:     "property_types_resource_types_property_types",
+				Columns:    []*schema.Column{PropertyTypesColumns[20]},
 				RefColumns: []*schema.Column{ResourceTypesColumns[0]},
 				OnDelete:   schema.SetNull,
 			},
@@ -309,7 +316,8 @@ func init() {
 	PropertiesTable.ForeignKeys[0].RefTable = PoolPropertiesTable
 	PropertiesTable.ForeignKeys[1].RefTable = PropertyTypesTable
 	PropertiesTable.ForeignKeys[2].RefTable = ResourcesTable
-	PropertyTypesTable.ForeignKeys[0].RefTable = ResourceTypesTable
+	PropertyTypesTable.ForeignKeys[0].RefTable = AllocationStrategiesTable
+	PropertyTypesTable.ForeignKeys[1].RefTable = ResourceTypesTable
 	ResourcesTable.ForeignKeys[0].RefTable = ResourcePoolsTable
 	ResourcePoolsTable.ForeignKeys[0].RefTable = ResourcesTable
 	ResourcePoolsTable.ForeignKeys[1].RefTable = AllocationStrategiesTable

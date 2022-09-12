@@ -25,6 +25,8 @@ const (
 	FieldScript = "script"
 	// EdgePools holds the string denoting the pools edge name in mutations.
 	EdgePools = "pools"
+	// EdgePoolPropertyTypes holds the string denoting the pool_property_types edge name in mutations.
+	EdgePoolPropertyTypes = "pool_property_types"
 	// Table holds the table name of the allocationstrategy in the database.
 	Table = "allocation_strategies"
 	// PoolsTable is the table that holds the pools relation/edge.
@@ -34,6 +36,13 @@ const (
 	PoolsInverseTable = "resource_pools"
 	// PoolsColumn is the table column denoting the pools relation/edge.
 	PoolsColumn = "resource_pool_allocation_strategy"
+	// PoolPropertyTypesTable is the table that holds the pool_property_types relation/edge.
+	PoolPropertyTypesTable = "property_types"
+	// PoolPropertyTypesInverseTable is the table name for the PropertyType entity.
+	// It exists in this package in order to avoid circular dependency with the "propertytype" package.
+	PoolPropertyTypesInverseTable = "property_types"
+	// PoolPropertyTypesColumn is the table column denoting the pool_property_types relation/edge.
+	PoolPropertyTypesColumn = "allocation_strategy_pool_property_types"
 )
 
 // Columns holds all SQL columns for allocationstrategy fields.
