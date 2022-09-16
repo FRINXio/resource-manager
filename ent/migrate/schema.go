@@ -79,7 +79,7 @@ var (
 				Symbol:     "properties_property_types_type",
 				Columns:    []*schema.Column{PropertiesColumns[10]},
 				RefColumns: []*schema.Column{PropertyTypesColumns[0]},
-				OnDelete:   schema.Cascade,
+				OnDelete:   schema.NoAction,
 			},
 			{
 				Symbol:     "properties_resources_properties",

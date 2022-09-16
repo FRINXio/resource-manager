@@ -454,6 +454,12 @@ func (r *mutationResolver) DeleteResourcePool(ctx context.Context, input model.D
 		return &retVal, gqlerror.Errorf("Unable to retrieve pool name: %v", err)
 	}
 
+	errDp := pool.Destroy()
+
+	if errDp != nil {
+		return &retVal, gqlerror.Errorf("Unable to delete pool: %v", errDp)
+	}
+
 	resourceTypes, err := client.ResourceType.Query().Where(resourcetype.Name(poolName + "-ResourceType")).All(ctx)
 	if err != nil {
 		log.Error(ctx, err, "Unable to retrieve resource type from pool id %d", input.ResourcePoolID)
@@ -468,12 +474,6 @@ func (r *mutationResolver) DeleteResourcePool(ctx context.Context, input model.D
 			log.Error(ctx, err, "Unable to delete resource type ID %d", rp.ResourceTypeID)
 			return &retVal, gqlerror.Errorf("Unable to delete resource type ID %d: %v", rp.ResourceTypeID, err)
 		}
-	}
-
-	errDp := pool.Destroy()
-
-	if errDp != nil {
-		return &retVal, gqlerror.Errorf("Unable to delete pool: %v", errDp)
 	}
 
 	return &retVal, nil
