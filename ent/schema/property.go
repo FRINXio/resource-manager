@@ -9,7 +9,6 @@ package schema
 import (
 	"entgo.io/contrib/entgql"
 	"entgo.io/ent"
-	"entgo.io/ent/dialect/entsql"
 	"entgo.io/ent/schema/edge"
 	"entgo.io/ent/schema/field"
 	"entgo.io/ent/schema/index"
@@ -156,8 +155,7 @@ func (Property) Edges() []ent.Edge {
 		edge.To("type", PropertyType.Type).
 			Unique().
 			Required().
-			Annotations(entgql.Bind(), entsql.Annotation{
-				OnDelete: entsql.Cascade}).
+			Annotations(entgql.Bind()).
 			StructTag(`gqlgen:"propertyType"`),
 		edge.From("resources", Resource.Type).Ref("properties").Unique(),
 	}
