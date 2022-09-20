@@ -177,8 +177,8 @@ test('allocating pool with incorrect properties', async (t) => {
         poolName,
         resourceTypeId,
         strategyId,
-        {address: "string", prefix: "int"},
-        {address: "192.168.3.0", prefix: 24},)
+        {address: "string", prefix: "int", subnet: "bool"},
+        {address: "192.168.3.0", prefix: 24, subnet: true})
     t.ok(pool)
 
     await cleanup()
@@ -255,7 +255,7 @@ test('capacity for allocating ipv4 pool', async (t) => {
 
     const capacity = await getCapacityForPool(poolId);
     t.equal(capacity.utilizedCapacity, "2");
-    t.equal(capacity.freeCapacity, "65532");
+    t.equal(capacity.freeCapacity, "65534");
 
     await cleanup()
     t.end();
@@ -283,7 +283,7 @@ test('capacity for allocating ipv4-prefix pool', async (t) => {
 
     const capacity = await getCapacityForPool(poolId);
     t.equal(capacity.utilizedCapacity, "4");
-    t.equal(capacity.freeCapacity, "16777210");
+    t.equal(capacity.freeCapacity, "16777212");
 
     await cleanup()
     t.end();

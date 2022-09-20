@@ -43,8 +43,8 @@ export async function createIpv4RootPool(address, prefix) {
         poolName,
         resourceTypeId,
         strategyId,
-        {address: "string", prefix: "int"},
-        {address: address, prefix: prefix},)
+        {address: "string", prefix: "int", subnet: "bool"},
+        {address: address, prefix: prefix, subnet: false})
 
     return pool.id
 }
@@ -72,8 +72,8 @@ export async function createIpv6RootPool() {
         poolName,
         resourceTypeId,
         strategyId,
-        {address: "string", prefix: "int"},
-        {address: "dead::", prefix: 16},)
+        {address: "string", prefix: "int", subnet: "bool"},
+        {address: "dead::", prefix: 16, subnet: false})
 
     return pool.id;
 }
@@ -86,8 +86,8 @@ export async function createIpv6PrefixRootPool() {
         poolName,
         resourceTypeId,
         strategyId,
-        {address: "string", prefix: "int"},
-        {address: "dead::", prefix: 120},)
+        {address: "string", prefix: "int", subnet: "bool"},
+        {address: "dead::", prefix: 120, subnet: false})
 
     return pool.id;
 }
@@ -110,8 +110,8 @@ export async function createIpv4PrefixRootPool() {
         getUniqueName('ipv4-root'),
         resourceTypeId,
         strategyId,
-        {prefix: "int", address: "string"},
-        {prefix: 8, address: "10.0.0.0"},);
+        {prefix: "int", address: "string", subnet: "bool"},
+        {prefix: 8, address: "10.0.0.0", subnet: false});
 }
 
 export async function createUniqueIdPool() {
@@ -155,7 +155,7 @@ export async function createSingletonIpv4PrefixNestedPool(parentResourceId) {
     return await createNestedSingletonPool(
         getUniqueName('singleton-ipv4prefix-nested'),
         resourceTypeId,
-        [{address: "10.10.0.0", prefix: 11},],
+        [{address: "10.10.0.0", prefix: 11, subnet:false}],
         parentResourceId);
 }
 

@@ -48,13 +48,6 @@ func (ipv6Prefix *Ipv6Prefix) Capacity() (map[string]interface{}, error) {
 	if !ok {
 		return nil, errors.New("Unable to extract prefix resources")
 	}
-	subnetItself := new(big.Int)
-	i, ok := ipv6Prefix.userInput["subnet"]
-	if i != nil {
-		subnetItself = big.NewInt(1)
-	} else {
-		subnetItself = big.NewInt(0)
-	}
 
 	var allocatedCapacity = big.NewInt(0)
 	for _, resource := range ipv6Prefix.currentResources {
@@ -66,10 +59,12 @@ func (ipv6Prefix *Ipv6Prefix) Capacity() (map[string]interface{}, error) {
 			resource["Properties"].(map[string]interface{})["address"].(string),
 			prefix.(int)))
 	}
-
+	rootMask, err := NumberToInt(rootMask)
+	if err != nil {
+		return nil, err
+	}
 	totalCapacity := ipv6HostsInMask(rootAddressStr.(string), rootMask.(int))
 	totalCapacity.Sub(totalCapacity, allocatedCapacity)
-	totalCapacity.Add(totalCapacity, subnetItself)
 
 	result["freeCapacity"] = totalCapacity.String()
 	result["utilizedCapacity"] = allocatedCapacity.String()
@@ -87,6 +82,10 @@ func (ipv6Prefix *Ipv6Prefix) Invoke() (map[string]interface{}, error) {
 	rootMask, ok := ipv6Prefix.resourcePoolProperties["prefix"]
 	if !ok {
 		return nil, errors.New("Unable to extract prefix resources")
+	}
+	isSubnet, ok := ipv6Prefix.resourcePoolProperties["subnet"]
+	if !ok {
+		return nil, errors.New("Unable to extract subnet property")
 	}
 	rootMask, err := NumberToInt(rootMask)
 	if err != nil {
@@ -113,7 +112,7 @@ func (ipv6Prefix *Ipv6Prefix) Invoke() (map[string]interface{}, error) {
 			". Desired size is invalid: " + desiredSize.String() + ". Use values >= 2")
 	}
 
-	if value, ok := ipv6Prefix.userInput["subnet"]; ok && value == true {
+	if isSubnet.(bool) == true {
 		// reserve subnet address and broadcast
 		desiredSize.Add(desiredSize, big.NewInt(2))
 	}
@@ -156,6 +155,7 @@ func (ipv6Prefix *Ipv6Prefix) Invoke() (map[string]interface{}, error) {
 			var newlyAllocatedPrefix = make(map[string]interface{})
 			newlyAllocatedPrefix["address"] = Ipv6InetNtoa(possibleSubnetNum)
 			newlyAllocatedPrefix["prefix"] = newSubnetMask
+			newlyAllocatedPrefix["subnet"] = isSubnet
 
 			return newlyAllocatedPrefix, nil
 		}
@@ -175,6 +175,7 @@ func (ipv6Prefix *Ipv6Prefix) Invoke() (map[string]interface{}, error) {
 		var newlyAllocatedPrefix = make(map[string]interface{})
 		newlyAllocatedPrefix["address"] = Ipv6InetNtoa(possibleSubnetNum)
 		newlyAllocatedPrefix["prefix"] = newSubnetMask
+		newlyAllocatedPrefix["subnet"] = isSubnet
 
 		return newlyAllocatedPrefix, nil
 	}
@@ -200,7 +201,8 @@ func calculateDesiredSubnetMask(desiredSize *big.Int) (int, *big.Int) {
 }
 
 // calculate the nearest possible address for a subnet where mask === newSubnetMask
-//  that is outside allocatedSubnet
+//
+//	that is outside allocatedSubnet
 func findNextFreeSubnetAddress(allocatedSubnet Ipv6PrefixStruct, newSubnetMask int) (*big.Int, error) {
 	address, err := Ipv6InetAton(allocatedSubnet.address)
 	if err != nil {

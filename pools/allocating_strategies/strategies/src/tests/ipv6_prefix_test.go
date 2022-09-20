@@ -9,6 +9,16 @@ import (
 	"testing"
 )
 
+func ipv6PrefixWithSubnet(address string, prefix int, subnet bool) map[string]interface{} {
+	ipv6PrefixProperties := make(map[string]interface{})
+	ipv6PrefixMap := make(map[string]interface{})
+	ipv6PrefixMap["address"] = address
+	ipv6PrefixMap["prefix"] = prefix
+	ipv6PrefixMap["subnet"] = subnet
+	ipv6PrefixProperties["Properties"] = ipv6PrefixMap
+	return ipv6PrefixProperties
+}
+
 func ipv6Prefix(address string, prefix int) map[string]interface{} {
 	ipv6PrefixProperties := make(map[string]interface{})
 	ipv6PrefixMap := make(map[string]interface{})
@@ -87,22 +97,22 @@ func TestSingleAllocationPoolIpv6(t *testing.T) {
 	var desiredSize *big.Int
 	for i := 1; i <= 128-8-1; i++ {
 		desiredSize = new(big.Int).Exp(big.NewInt(2), big.NewInt(int64(i)), nil)
-		resourcePool := map[string]interface{}{"prefix": 8, "address": "bb00::"}
-		userInput := map[string]interface{}{"desiredSize": desiredSize, "subnet": true}
+		resourcePool := map[string]interface{}{"prefix": 8, "address": "bb00::", "subnet": true}
+		userInput := map[string]interface{}{"desiredSize": desiredSize}
 		ipv6PrefixStruct := src.NewIpv6Prefix([]map[string]interface{}{}, resourcePool, userInput)
 		output, err := ipv6PrefixStruct.Invoke()
 		if eq := reflect.DeepEqual(err, nil); !eq {
 			t.Fatalf("different output of nil expected, got: %s", err)
 		}
-		if eq := reflect.DeepEqual(output, ipv6Prefix("bb00::", 128-i-1)["Properties"]); !eq {
+		if eq := reflect.DeepEqual(output, ipv6PrefixWithSubnet("bb00::", 128-i-1, true)["Properties"]); !eq {
 			t.Fatalf("different output of %s expected, got: %s", output,
-				ipv6Prefix("bb00::", 128-i-1)["Properties"])
+				ipv6PrefixWithSubnet("bb00::", 128-i-1, true)["Properties"])
 		}
 	}
 }
 
 func TestAllocateRangeAtStartWithExistingResourcesIpv6(t *testing.T) {
-	resourcePool := map[string]interface{}{"prefix": 120, "address": "dead::be00"}
+	resourcePool := map[string]interface{}{"prefix": 120, "address": "dead::be00", "subnet": false}
 	userInput := map[string]interface{}{"desiredSize": 2}
 	var allocated []map[string]interface{}
 	allocated = append(allocated, ipv6Prefix("dead::be02", 127))
@@ -111,14 +121,14 @@ func TestAllocateRangeAtStartWithExistingResourcesIpv6(t *testing.T) {
 	if eq := reflect.DeepEqual(err, nil); !eq {
 		t.Fatalf("different output of nil expected, got: %s", err)
 	}
-	if eq := reflect.DeepEqual(output, ipv6Prefix("dead::be00", 127)["Properties"]); !eq {
+	if eq := reflect.DeepEqual(output, ipv6PrefixWithSubnet("dead::be00", 127, false)["Properties"]); !eq {
 		t.Fatalf("different output of %s expected, got: %s",
-			ipv6Prefix("dead::be00", 127)["Properties"], output)
+			ipv6PrefixWithSubnet("dead::be00", 127, false)["Properties"], output)
 	}
 }
 
 func TestDesiredSizeIsBiggerThanRootIpv6(t *testing.T) {
-	resourcePool := map[string]interface{}{"prefix": 120, "address": "dead::be00"}
+	resourcePool := map[string]interface{}{"prefix": 120, "address": "dead::be00", "subnet": false}
 	userInput := map[string]interface{}{"desiredSize": 300}
 	ipv6PrefixStruct := src.NewIpv6Prefix([]map[string]interface{}{}, resourcePool, userInput)
 	output, err := ipv6PrefixStruct.Invoke()
@@ -133,21 +143,21 @@ func TestDesiredSizeIsBiggerThanRootIpv6(t *testing.T) {
 }
 
 func TestDesiredSizeIsTheSameThanRootIpv6(t *testing.T) {
-	resourcePool := map[string]interface{}{"prefix": 104, "address": "dead::"}
+	resourcePool := map[string]interface{}{"prefix": 104, "address": "dead::", "subnet": false}
 	userInput := map[string]interface{}{"desiredSize": 16777216}
 	ipv6PrefixStruct := src.NewIpv6Prefix([]map[string]interface{}{}, resourcePool, userInput)
 	output, err := ipv6PrefixStruct.Invoke()
 	if eq := reflect.DeepEqual(err, nil); !eq {
 		t.Fatalf("different output of nil expected, got: %s", err)
 	}
-	if eq := reflect.DeepEqual(output, ipv6Prefix("dead::", 104)["Properties"]); !eq {
+	if eq := reflect.DeepEqual(output, ipv6PrefixWithSubnet("dead::", 104, false)["Properties"]); !eq {
 		t.Fatalf("different output of %s expected, got: %s",
-			ipv6Prefix("dead::", 104)["Properties"], output)
+			ipv6PrefixWithSubnet("dead::", 104, false)["Properties"], output)
 	}
 }
 
 func TestCapacity(t *testing.T) {
-	resourcePool := map[string]interface{}{"prefix": 120, "address": "dead::"}
+	resourcePool := map[string]interface{}{"prefix": 120, "address": "dead::", "subnet": false}
 	userInput := map[string]interface{}{"desiredSize": 16777216}
 	ipv6PrefixStruct := src.NewIpv6Prefix([]map[string]interface{}{}, resourcePool, userInput)
 	output, err := ipv6PrefixStruct.Capacity()
@@ -162,22 +172,22 @@ func TestCapacity(t *testing.T) {
 
 func TestAllocateAllAddresses104Ipv6Range(t *testing.T) {
 	var allocated []map[string]interface{}
-	var resourcePool = map[string]interface{}{"prefix": 104, "address": "abcd:ef01:2345:6789::"}
+	var resourcePool = map[string]interface{}{"prefix": 104, "address": "abcd:ef01:2345:6789::", "subnet": false}
 	var expectedIpv6PrefixAddresses = []map[string]interface{}{
-		ipv6Prefix("abcd:ef01:2345:6789::", 108),
-		ipv6Prefix("abcd:ef01:2345:6789::20:0", 107),
-		ipv6Prefix("abcd:ef01:2345:6789::40:0", 106),
-		ipv6Prefix("abcd:ef01:2345:6789::10:0", 111),
-		ipv6Prefix("abcd:ef01:2345:6789::80:0", 108),
-		ipv6Prefix("abcd:ef01:2345:6789::18:0", 109),
-		ipv6Prefix("abcd:ef01:2345:6789::c0:0", 106),
+		ipv6PrefixWithSubnet("abcd:ef01:2345:6789::", 108, false),
+		ipv6PrefixWithSubnet("abcd:ef01:2345:6789::20:0", 107, false),
+		ipv6PrefixWithSubnet("abcd:ef01:2345:6789::40:0", 106, false),
+		ipv6PrefixWithSubnet("abcd:ef01:2345:6789::10:0", 111, false),
+		ipv6PrefixWithSubnet("abcd:ef01:2345:6789::80:0", 108, false),
+		ipv6PrefixWithSubnet("abcd:ef01:2345:6789::18:0", 109, false),
+		ipv6PrefixWithSubnet("abcd:ef01:2345:6789::c0:0", 106, false),
 	}
 	var ipv6PrefixAddresses = []int64{655360, 1245184, 2555904, 131072, 917504, 524288, 4194304}
 	for index, ipv6PrefixAddress := range expectedIpv6PrefixAddresses {
 		ipv6PrefixStruct := src.NewIpv6Prefix(allocated, resourcePool,
 			map[string]interface{}{"desiredSize": ipv6PrefixAddresses[index]})
 		output, err := ipv6PrefixStruct.Invoke()
-		allocated = append(allocated, ipv6Prefix(output["address"].(string), output["prefix"].(int)))
+		allocated = append(allocated, ipv6PrefixWithSubnet(output["address"].(string), output["prefix"].(int), false))
 		if eq := reflect.DeepEqual(err, nil); !eq {
 			t.Fatalf("different output of nil expected, got: %s", err)
 		}
@@ -191,19 +201,19 @@ func TestAllocateAllAddresses104Ipv6Range(t *testing.T) {
 
 	// Round 2, try to squeeze in additional subnets
 	var expectedIpv6PrefixAddresses2 = []map[string]interface{}{
-		ipv6Prefix("abcd:ef01:2345:6789::14:0", 110),
-		ipv6Prefix("abcd:ef01:2345:6789::a0:0", 107),
-		ipv6Prefix("abcd:ef01:2345:6789::90:0", 109),
-		ipv6Prefix("abcd:ef01:2345:6789::98:0", 110),
-		ipv6Prefix("abcd:ef01:2345:6789::12:0", 111),
-		ipv6Prefix("abcd:ef01:2345:6789::9c:0", 110),
+		ipv6PrefixWithSubnet("abcd:ef01:2345:6789::14:0", 110, false),
+		ipv6PrefixWithSubnet("abcd:ef01:2345:6789::a0:0", 107, false),
+		ipv6PrefixWithSubnet("abcd:ef01:2345:6789::90:0", 109, false),
+		ipv6PrefixWithSubnet("abcd:ef01:2345:6789::98:0", 110, false),
+		ipv6PrefixWithSubnet("abcd:ef01:2345:6789::12:0", 111, false),
+		ipv6PrefixWithSubnet("abcd:ef01:2345:6789::9c:0", 110, false),
 	}
-	var ipv6PrefixAddresses2 = []int64{ 262144, 2097152, 524288, 262144, 131072, 262144}
+	var ipv6PrefixAddresses2 = []int64{262144, 2097152, 524288, 262144, 131072, 262144}
 	for index, ipv6PrefixAddress := range expectedIpv6PrefixAddresses2 {
 		ipv6PrefixStruct := src.NewIpv6Prefix(allocated, resourcePool,
 			map[string]interface{}{"desiredSize": ipv6PrefixAddresses2[index]})
 		output, err := ipv6PrefixStruct.Invoke()
-		allocated = append(allocated, ipv6Prefix(output["address"].(string), output["prefix"].(int)))
+		allocated = append(allocated, ipv6PrefixWithSubnet(output["address"].(string), output["prefix"].(int), false))
 		if eq := reflect.DeepEqual(err, nil); !eq {
 			t.Fatalf("different output of nil expected, got: %s", err)
 		}

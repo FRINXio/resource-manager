@@ -19,8 +19,8 @@ func ipv6(address string) map[string]interface{} {
 
 func TestAllocateAllAddresses120Ipv6(t *testing.T) {
 	var allocated []map[string]interface{}
-	var resourcePool = map[string]interface{}{"prefix": 120, "address": "dddd::"}
-	var userInput = map[string]interface{}{"subnet": true}
+	var resourcePool = map[string]interface{}{"prefix": 120, "address": "dddd::", "subnet": true}
+	var userInput = map[string]interface{}{}
 	ipv6Struct := src.NewIpv6(allocated, resourcePool, userInput)
 
 	var generated = ""
@@ -51,34 +51,6 @@ func TestAllocateAllAddresses120Ipv6(t *testing.T) {
 		t.Fatalf("different output of %s expected, got: %s", expectedOutputError, err)
 	}
 
-	// If treated as a pool, there are still 2 more addresses left
-	resourcePool = map[string]interface{}{"prefix": 120, "address": "dddd::"}
-	userInput = map[string]interface{}{}
-	ipv6Struct = src.NewIpv6(allocated, resourcePool, userInput)
-	output, err = ipv6Struct.Invoke()
-	expectedOutput := map[string]interface{}{"address": "dddd::"}
-	if eq := reflect.DeepEqual(output, expectedOutput); !eq {
-		t.Fatalf("different output of %s expected, got: %s", expectedOutput, output)
-	}
-	if eq := reflect.DeepEqual(err, nil); !eq {
-		t.Fatalf("different output of nil expected, got: %s", err)
-	}
-	allocated = append(allocated, ipv6(output["address"].(string)))
-	ipv6Struct = src.NewIpv6(allocated, resourcePool, userInput)
-	generated += output["address"].(string) + ", "
-
-	output, err = ipv6Struct.Invoke()
-	expectedOutput = map[string]interface{}{"address": "dddd::ff"}
-	if eq := reflect.DeepEqual(output, expectedOutput); !eq {
-		t.Fatalf("different output of %s expected, got: %s", expectedOutput, output)
-	}
-	if eq := reflect.DeepEqual(err, nil); !eq {
-		t.Fatalf("different output of nil expected, got: %s", err)
-	}
-	allocated = append(allocated, ipv6(output["address"].(string)))
-	ipv6Struct = src.NewIpv6(allocated, resourcePool, userInput)
-	generated += output["address"].(string) + ", "
-
 	output, err = ipv6Struct.Invoke()
 	expectedOutputError = errors.New("Unable to allocate Ipv6 address from: dddd::/120." +
 		"Insufficient capacity to allocate a new address.\n" +
@@ -93,10 +65,10 @@ func TestAllocateAllAddresses120Ipv6(t *testing.T) {
 
 func TestAllocateAllAddresses117ForIpv6(t *testing.T) {
 	var allocated []map[string]interface{}
-	var resourcePool = map[string]interface{}{"prefix": 115, "address": "dddd::"}
-	var userInput = map[string]interface{}{"subnet": true}
+	var resourcePool = map[string]interface{}{"prefix": 115, "address": "dddd::", "subnet": true}
+	var userInput = map[string]interface{}{}
 	ipv6Struct := src.NewIpv6(allocated, resourcePool, userInput)
-	for  i := 0; i < 8; i++ {
+	for i := 0; i < 8; i++ {
 		for j := 0; j < 256; j++ {
 			if i == 0 && j == 0 {
 				// First subnet addr: reserved
@@ -140,42 +112,12 @@ func TestAllocateAllAddresses117ForIpv6(t *testing.T) {
 	if eq := reflect.DeepEqual(output, (map[string]interface{})(nil)); !eq {
 		t.Fatalf("different output of nil expected, got: %s", output)
 	}
-
-	// If treated as a pool, there are still 2 more addresses left
-	userInput = map[string]interface{}{}
-	ipv6Struct = src.NewIpv6(allocated, resourcePool, userInput)
-	output, err := ipv6Struct.Invoke()
-	expectedOutput := map[string]interface{}{"address": "dddd::"}
-	if eq := reflect.DeepEqual(output, expectedOutput); !eq {
-		t.Fatalf("different output of %s expected, got: %s", expectedOutput, output)
-	}
-	if eq := reflect.DeepEqual(err, nil); !eq {
-		t.Fatalf("different output of nil expected, got: %s", err)
-	}
-	allocated = append(allocated, ipv6(output["address"].(string)))
-	ipv6Struct = src.NewIpv6(allocated, resourcePool, userInput)
-
-	output, err = ipv6Struct.Invoke()
-	expectedOutput = map[string]interface{}{"address": "dddd::7ff"}
-	if eq := reflect.DeepEqual(output, expectedOutput); !eq {
-		t.Fatalf("different output of %s expected, got: %s", expectedOutput, output)
-	}
-	if eq := reflect.DeepEqual(err, nil); !eq {
-		t.Fatalf("different output of nil expected, got: %s", err)
-	}
-	allocated = append(allocated, ipv6(output["address"].(string)))
-	ipv6Struct = src.NewIpv6(allocated, resourcePool, userInput)
-
-	output, _ = ipv6Struct.Invoke()
-	if eq := reflect.DeepEqual(output, (map[string]interface{})(nil)); !eq {
-		t.Fatalf("different output of nil expected, got: %s", output)
-	}
 }
 
 func TestAllocateIpv6AtStartWithExistingResources(t *testing.T) {
 	var allocated = []map[string]interface{}{ipv6("dead::2")}
-	var resourcePool = map[string]interface{}{"prefix": 24, "address": "dead::"}
-	var userInput = map[string]interface{}{"subnet": true}
+	var resourcePool = map[string]interface{}{"prefix": 24, "address": "dead::", "subnet": true}
+	var userInput = map[string]interface{}{}
 	ipv6Struct := src.NewIpv6(allocated, resourcePool, userInput)
 	output, err := ipv6Struct.Invoke()
 	expectedOutput := map[string]interface{}{"address": "dead::1"}
@@ -189,11 +131,11 @@ func TestAllocateIpv6AtStartWithExistingResources(t *testing.T) {
 
 func TestIpv6Capacity24Mask(t *testing.T) {
 	var allocated = []map[string]interface{}{ipv6("dead::2")}
-	var resourcePool = map[string]interface{}{"prefix": 110, "address": "dead::"}
-	var userInput = map[string]interface{}{"subnet": true}
+	var resourcePool = map[string]interface{}{"prefix": 110, "address": "dead::", "subnet": true}
+	var userInput = map[string]interface{}{}
 	ipv6Struct := src.NewIpv6(allocated, resourcePool, userInput)
 	output, err := ipv6Struct.Capacity()
-	expectedOutput := map[string]interface{}{"freeCapacity": "262144", "utilizedCapacity": "1"}
+	expectedOutput := map[string]interface{}{"freeCapacity": "262141", "utilizedCapacity": "1"}
 	if eq := reflect.DeepEqual(output, expectedOutput); !eq {
 		t.Fatalf("different output of %s expected, got: %s", expectedOutput, output)
 	}
@@ -229,7 +171,7 @@ func TestIpv6Utilisation(t *testing.T) {
 
 func TestIpv6DesireValue(t *testing.T) {
 	var allocated = []map[string]interface{}{ipv6("dead::2")}
-	var resourcePool = map[string]interface{}{"prefix": 110, "address": "dead::"}
+	var resourcePool = map[string]interface{}{"prefix": 110, "address": "dead::", "subnet": false}
 	var userInput = map[string]interface{}{"desiredValue": "dead::3"}
 	ipv6Struct := src.NewIpv6(allocated, resourcePool, userInput)
 	output, err := ipv6Struct.Invoke()
