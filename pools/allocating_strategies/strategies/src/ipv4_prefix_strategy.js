@@ -54,17 +54,16 @@ function freeCapacity(parentPrefix, utilisedCapacity) {
 }
 
 function capacity() {
-    let totalCapacity = hostsInMask(resourcePoolProperties.address, resourcePoolProperties.prefix);
+    let totalCapacity = (hostsInMask(resourcePoolProperties.address, resourcePoolProperties.prefix) + 2);
     let allocatedCapacity = 0;
     let resource;
-    let subnetItself = userInput.subnet ? 1 : 0;
-
+    let subnetItself = Boolean(resourcePoolProperties.subnet) ? 2 : 0;
     for (resource of currentResources) {
-        allocatedCapacity += hostsInMask(resource.Properties.address, resource.Properties.prefix);
+        allocatedCapacity += (hostsInMask(resource.Properties.address, resource.Properties.prefix) + subnetItself);
     }
 
     return {
-        freeCapacity: String(totalCapacity - allocatedCapacity + subnetItself),
+        freeCapacity: String(totalCapacity - allocatedCapacity),
         utilizedCapacity: String(allocatedCapacity)
     };
 }
@@ -136,6 +135,7 @@ function invoke() {
     }
     let rootAddressStr = rootPrefixParsed.address
     let rootMask = rootPrefixParsed.prefix
+    let isSubnet = Boolean(rootPrefixParsed.subnet)
     let rootPrefixStr = prefixToStr(rootPrefixParsed)
     let rootCapacity = subnetAddresses(rootMask)
     let rootAddressNum = inet_aton(rootAddressStr)
@@ -152,7 +152,7 @@ function invoke() {
         return null
     }
 
-    if (userInput.subnet === true) {
+    if (isSubnet === true) {
         // reserve subnet address and broadcast
         userInput.desiredSize += 2
     }
@@ -174,7 +174,8 @@ function invoke() {
             // there is chunk with sufficient capacity between possibleSubnetNum and allocatedSubnet.address
             let newlyAllocatedPrefix = {
                 "address": inet_ntoa(possibleSubnetNum),
-                "prefix": newSubnetMask
+                "prefix": newSubnetMask,
+                "subnet": isSubnet
             }
             // FIXME How to pass these stats ?
             // logStats(newlyAllocatedPrefix, rootPrefixParsed, currentResourcesUnwrapped)
@@ -190,7 +191,8 @@ function invoke() {
         // there sure is some space, use it !
         let newlyAllocatedPrefix = {
             "address": inet_ntoa(possibleSubnetNum),
-            "prefix": newSubnetMask
+            "prefix": newSubnetMask,
+            "subnet": isSubnet
         }
         // FIXME How to pass these stats ?
         // logStats(newlyAllocatedPrefix, rootPrefixParsed, currentResourcesUnwrapped)

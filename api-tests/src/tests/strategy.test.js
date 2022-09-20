@@ -58,7 +58,7 @@ test('simple ipv4 prefix strategy', async (t) => {
     let poolName = getUniqueName('testJSstrategy');
     let poolId = 0;
     let ipv4PrefixStrategyId = await findAllocationStrategyId('ipv4_prefix');
-    let x = await testStrategy(ipv4PrefixStrategyId, {prefix: 8, address: '10.0.0.0'},
+    let x = await testStrategy(ipv4PrefixStrategyId, {prefix: 8, address: '10.0.0.0', subnet: false},
         poolName, poolId,
         [], {desiredSize: 8388608});
 
@@ -73,7 +73,7 @@ test('ipv4 prefix strategy one resource already claimed', async (t) => {
     let poolName = getUniqueName('testJSstrategy');
     let poolId = 0;
     let ipv4PrefixStrategyId = await findAllocationStrategyId('ipv4_prefix');
-    let allocated = await testStrategy(ipv4PrefixStrategyId, {prefix: 8, address: '10.0.0.0'},
+    let allocated = await testStrategy(ipv4PrefixStrategyId, {prefix: 8, address: '10.0.0.0', subnet: false},
         poolName, poolId,
         [{Properties: { prefix: 9, address: '10.0.0.0'},
             Status: 'claimed',
@@ -100,7 +100,7 @@ test('ipv4 prefix strategy pool has no capacity left', async (t) => {
             UpdatedAt: '2020-08-18 11:38:48.0 +0200 CEST'
         }];
     let ipv4PrefixStrategyId = await findAllocationStrategyId('ipv4_prefix');
-    let allocated = await testStrategy(ipv4PrefixStrategyId, {prefix: 8, address: '10.0.0.0'},
+    let allocated = await testStrategy(ipv4PrefixStrategyId, {prefix: 8, address: '10.0.0.0', subnet: false},
         poolName, poolId, allocatedResources, {desiredSize: 8388608}, true);
 
     t.notOk(allocated);
@@ -113,7 +113,7 @@ test('ipv4 strategy just get an IP', async (t) => {
     const poolName = getUniqueName('testJSstrategy');
     let poolId = 0;
     let ipv4StrategyId = await findAllocationStrategyId('ipv4');
-    let allocated = await testStrategy(ipv4StrategyId, {prefix: 8, address: '10.0.0.0'},
+    let allocated = await testStrategy(ipv4StrategyId, {prefix: 8, address: '10.0.0.0', subnet: false},
         poolName, poolId, [], {});
 
     t.equal(allocated.stdout.address, '10.0.0.0');
@@ -127,7 +127,7 @@ test('simple ipv6 prefix strategy', async (t) => {
     let poolName = getUniqueName('testJSstrategy');
     let poolId = 0;
     let ipv6PrefixStrategyId = await findAllocationStrategyId('ipv6_prefix');
-    let allocated = await testStrategy(ipv6PrefixStrategyId, {prefix: 120, address: 'dead::'},
+    let allocated = await testStrategy(ipv6PrefixStrategyId, {prefix: 120, address: 'dead::', subnet: false},
         poolName, poolId, [], {desiredSize: 101});
     t.equal(allocated.stdout.address, 'dead::');
     t.equal(allocated.stdout.prefix, 121);
@@ -140,8 +140,8 @@ test('simple ipv6 strategy', async (t) => {
     let poolName = getUniqueName('testJSstrategy');
     let poolId = 0;
     let ipv6StrategyId = await findAllocationStrategyId('ipv6');
-    let allocated = await testStrategy(ipv6StrategyId, {prefix: 120, address: 'dead::'},
-        poolName, poolId, [], {subnet: true});
+    let allocated = await testStrategy(ipv6StrategyId, {prefix: 120, address: 'dead::', subnet: true},
+        poolName, poolId, [], {});
     t.equal(allocated.stdout.address, 'dead::1');
 
     await cleanup()
@@ -175,6 +175,8 @@ test('check required resource types for different strategies', async (t) => {
     t.equal(requiredPoolProperties[0].Type, 'string')
     t.equal(requiredPoolProperties[1].Name, 'prefix')
     t.equal(requiredPoolProperties[1].Type, 'int')
+    t.equal(requiredPoolProperties[2].Name, 'subnet')
+    t.equal(requiredPoolProperties[2].Type, 'bool')
     t.end();
 });
 

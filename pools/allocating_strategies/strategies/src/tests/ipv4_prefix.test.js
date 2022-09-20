@@ -1,14 +1,14 @@
 const strat = require('../ipv4_prefix_strategy')
-import {parsePrefix} from "../ipv4-utils";
+import {hostsInMask, parsePrefix, subnetAddresses} from "../ipv4-utils";
 
 test("single allocation pool", () => {
     for (let i = 1; i <= 8; i++) {
         let desiredSize = Math.pow(2, i)
         let subnet = strat.invokeWithParams([],
-            { 'prefix': 24, 'address': "192.168.1.0"},
+            { 'prefix': 24, 'address': "192.168.1.0", "subnet": false},
             {"desiredSize": desiredSize});
         expect(subnet)
-            .toStrictEqual(prefix("192.168.1.0", 32 - i).Properties)
+            .toStrictEqual(prefixWithSubnet("192.168.1.0", 32 - i, false).Properties)
     }
 })
 
@@ -16,66 +16,66 @@ test("single allocation subnet", () => {
     for (let i = 1; i <= 7; i++) {
         let desiredSize = Math.pow(2, i)
         let subnet = strat.invokeWithParams([],
-            { 'prefix': 24, 'address': "192.168.1.0"},
-            {"desiredSize": desiredSize, "subnet": true});
+            { 'prefix': 24, 'address': "192.168.1.0", "subnet": true},
+            {"desiredSize": desiredSize});
         expect(subnet)
-            .toStrictEqual(prefix("192.168.1.0", 32 - i - 1).Properties)
+            .toStrictEqual(prefixWithSubnet("192.168.1.0", 32 - i - 1, true).Properties)
     }
 })
 
 test("allocate range at start with existing resources", () => {
     let subnet = strat.invokeWithParams(
-        [prefix("192.168.1.16", 28)],
-        { 'prefix': 24, 'address': "192.168.1.0"},
+        [prefixWithSubnet("192.168.1.16", 28, false)],
+        { 'prefix': 24, 'address': "192.168.1.0", "subnet": false},
         {"desiredSize": 10});
     expect(subnet)
-        .toStrictEqual(prefix("192.168.1.0", 28).Properties)
+        .toStrictEqual(prefixWithSubnet("192.168.1.0", 28, false).Properties)
 })
 
-test("ipv6-prefix capacity 24 mask", () => {
+test("ipv4-prefix capacity 24 mask", () => {
     let capacity = strat.invokeWithParamsCapacity(
-        [prefix("192.168.1.16", 28)],
-        { 'prefix': 24, 'address': "192.168.1.0"},
+        [prefixWithSubnet("192.168.1.16", 28, true)],
+        { 'prefix': 24, 'address': "192.168.1.0", subnet: true},
         {});
 
     expect(capacity)
-        .toStrictEqual({freeCapacity: "240", utilizedCapacity: "14"})
+        .toStrictEqual({freeCapacity: "240", utilizedCapacity: "16"})
 })
 
 test("ipv4 prefix allocation subnet vs. pool", () => {
     expect(strat.invokeWithParams([],
-        { 'prefix': 24, 'address': "192.168.1.0"},
-        {"desiredSize": 2, "subnet": true}))
-        .toStrictEqual(prefix("192.168.1.0", 30).Properties)
+        { 'prefix': 24, 'address': "192.168.1.0", "subnet": true},
+        {"desiredSize": 2}))
+        .toStrictEqual(prefixWithSubnet("192.168.1.0", 30, true).Properties)
 
     expect(strat.invokeWithParams([],
-        { 'prefix': 24, 'address': "192.168.1.0"},
-        {"desiredSize": 2, "subnet": false}))
-        .toStrictEqual(prefix("192.168.1.0", 31).Properties)
+        { 'prefix': 24, 'address': "192.168.1.0", "subnet": false},
+        {"desiredSize": 2}))
+        .toStrictEqual(prefixWithSubnet("192.168.1.0", 31, false).Properties)
 
     expect(strat.invokeWithParams([],
-        { 'prefix': 24, 'address': "192.168.1.0"},
-        {"desiredSize": 256, "subnet": false}))
-        .toStrictEqual(prefix("192.168.1.0", 24).Properties)
+        { 'prefix': 24, 'address': "192.168.1.0", "subnet": false},
+        {"desiredSize": 256}))
+        .toStrictEqual(prefixWithSubnet("192.168.1.0", 24, false).Properties)
 
     // 256 desired size for a subnet does not fit into 192.168.1.0/24
     expect(strat.invokeWithParams([],
-        { 'prefix': 24, 'address': "192.168.1.0"},
-        {"desiredSize": 256, "subnet": true}))
+        { 'prefix': 24, 'address': "192.168.1.0", "subnet": true},
+        {"desiredSize": 256}))
         .toStrictEqual(null)
 })
 
 test("ipv4 prefix allocation 24", () => {
-    let resourcePoolArg = { 'prefix': 24, 'address': "192.168.1.0"};
+    let resourcePoolArg = { 'prefix': 24, 'address': "192.168.1.0", "subnet": false};
     let subnets = []
     let expectedSubnets = [
-        prefix("192.168.1.0", 28),      // 10 ->   0 -  15
-        prefix("192.168.1.32", 27),     // 19 ->  32 -  63
-        prefix("192.168.1.64", 26),     // 39 ->  64 - 127
-        prefix("192.168.1.16", 31),     //  2 ->  16 -  17
-        prefix("192.168.1.128", 28),    // 14 -> 128 - 143
-        prefix("192.168.1.24", 29),     //  8 ->  24 -  31
-        prefix("192.168.1.192", 26),    // 64 -> 196 - 255
+        prefixWithSubnet("192.168.1.0", 28, false),      // 10 ->   0 -  15
+        prefixWithSubnet("192.168.1.32", 27, false),     // 19 ->  32 -  63
+        prefixWithSubnet("192.168.1.64", 26, false),     // 39 ->  64 - 127
+        prefixWithSubnet("192.168.1.16", 31, false),     //  2 ->  16 -  17
+        prefixWithSubnet("192.168.1.128", 28, false),    // 14 -> 128 - 143
+        prefixWithSubnet("192.168.1.24", 29, false),     //  8 ->  24 -  31
+        prefixWithSubnet("192.168.1.192", 26, false),    // 64 -> 196 - 255
     ]
     let counter = 0
     for (const i of [10, 19, 39, 2, 14, 8, 64]) {
@@ -95,12 +95,12 @@ test("ipv4 prefix allocation 24", () => {
 
     // Round 2, try to squeeze in additional subnets
     let expectedSubnets2 = [
-        prefix("192.168.1.20", 30),
-        prefix("192.168.1.160", 27),
-        prefix("192.168.1.144", 29),
-        prefix("192.168.1.152", 30),
-        prefix("192.168.1.18", 31),
-        prefix("192.168.1.156", 30)
+        prefixWithSubnet("192.168.1.20", 30, false),
+        prefixWithSubnet("192.168.1.160", 27, false),
+        prefixWithSubnet("192.168.1.144", 29, false),
+        prefixWithSubnet("192.168.1.152", 30, false),
+        prefixWithSubnet("192.168.1.18", 31, false),
+        prefixWithSubnet("192.168.1.156", 30, false)
     ]
     counter = 0
     for (const i of [4, 32, 8, 4, 2, 4]) {
@@ -108,7 +108,7 @@ test("ipv4 prefix allocation 24", () => {
             subnets,
             resourcePoolArg,
             {"desiredSize": i})
-        subnets.push(prefix(subnet.address, subnet.prefix))
+        subnets.push(prefixWithSubnet(subnet.address, subnet.prefix, false))
         expect(subnet).toStrictEqual(expectedSubnets2[counter].Properties)
         counter++
     }
@@ -126,16 +126,16 @@ test("ipv4 prefix allocation 24", () => {
 
 // This test is the same as "ipv4 prefix allocation 24" everything is just multiplied by 256*256 to simplify the assertions
 test("ipv4 prefix allocation 8", () => {
-    let resourcePoolArg = { 'prefix': 8, 'address': "10.0.0.0"};
+    let resourcePoolArg = { 'prefix': 8, 'address': "10.0.0.0", "subnet": false};
     let subnets = []
     let expectedSubnets = [
-        prefix("10.0.0.0", 12),
-        prefix("10.32.0.0", 11),
-        prefix("10.64.0.0", 10),
-        prefix("10.16.0.0", 15),
-        prefix("10.128.0.0", 12),
-        prefix("10.24.0.0", 13),
-        prefix("10.192.0.0", 10),
+        prefixWithSubnet("10.0.0.0", 12, false),
+        prefixWithSubnet("10.32.0.0", 11, false),
+        prefixWithSubnet("10.64.0.0", 10, false),
+        prefixWithSubnet("10.16.0.0", 15, false),
+        prefixWithSubnet("10.128.0.0", 12, false),
+        prefixWithSubnet("10.24.0.0", 13, false),
+        prefixWithSubnet("10.192.0.0", 10, false),
     ]
     let counter = 0
     for (const i of [655360, 1245184, 2555904, 131072, 917504, 524288, 4194304]) {
@@ -143,7 +143,7 @@ test("ipv4 prefix allocation 8", () => {
             subnets,
             resourcePoolArg,
             {"desiredSize": i})
-        subnets.push(prefix(subnet.address, subnet.prefix))
+        subnets.push(prefixWithSubnet(subnet.address, subnet.prefix, false))
         expect(subnet).toStrictEqual(expectedSubnets[counter].Properties)
         counter++
     }
@@ -152,12 +152,12 @@ test("ipv4 prefix allocation 8", () => {
 
     // Round 2, try to squeeze in additional subnets
     let expectedSubnets2 = [
-        prefix("10.20.0.0", 14),
-        prefix("10.160.0.0", 11),
-        prefix("10.144.0.0", 13),
-        prefix("10.152.0.0", 14),
-        prefix("10.18.0.0", 15),
-        prefix("10.156.0.0", 14)
+        prefixWithSubnet("10.20.0.0", 14, false),
+        prefixWithSubnet("10.160.0.0", 11, false),
+        prefixWithSubnet("10.144.0.0", 13, false),
+        prefixWithSubnet("10.152.0.0", 14, false),
+        prefixWithSubnet("10.18.0.0", 15, false),
+        prefixWithSubnet("10.156.0.0", 14, false)
     ]
     counter = 0
     for (const i of [262144, 2097152, 524288, 262144, 131072, 262144]) {
@@ -165,7 +165,7 @@ test("ipv4 prefix allocation 8", () => {
             subnets,
             resourcePoolArg,
             {"desiredSize": i})
-        subnets.push(prefix(subnet.address, subnet.prefix))
+        subnets.push(prefixWithSubnet(subnet.address, subnet.prefix, false))
         expect(subnet).toStrictEqual(expectedSubnets2[counter].Properties)
         counter++
     }
@@ -189,9 +189,9 @@ test("desired size > than root", () => {
 
 test("desired size === than root", () => {
     expect(strat.invokeWithParams([],
-        { 'prefix': 24, 'address': "192.168.1.0"},
+        { 'prefix': 24, 'address': "192.168.1.0", "subnet": false},
         {"desiredSize": 256}))
-        .toStrictEqual(prefix("192.168.1.0", 24).Properties)
+        .toStrictEqual(prefixWithSubnet("192.168.1.0", 24, false).Properties)
 })
 
 test("parse prefix invalid", () => {
@@ -226,17 +226,35 @@ test("parse prefix", () => {
         .toStrictEqual(prefix("255.255.255.255", 32).Properties)
 })
 
+test("parse capacity without subnet", () => {
+    expect(strat.invokeWithParamsCapacity([prefixWithSubnet("10.0.0.0", 31, false), prefixWithSubnet("10.0.0.2", 31, false)],
+        { 'prefix': 8, 'address': "10.0.0.0", subnet: false},
+        {"desiredSize": 2}))
+        .toStrictEqual({"freeCapacity": "16777212", "utilizedCapacity": "4"})
+})
+
+test("parse capacity with subnet", () => {
+    expect(strat.invokeWithParamsCapacity([prefixWithSubnet("10.0.0.0", 31, true), prefixWithSubnet("10.0.0.4", 31, true)],
+        { 'prefix': 8, 'address': "10.0.0.0", subnet: true},
+        {"desiredSize": 2}))
+        .toStrictEqual({"freeCapacity": "16777208", "utilizedCapacity": "8"})
+})
+
+function prefixWithSubnet(ip, prefix, isSubnet) {
+    return {"Properties": {"address": ip, "prefix": prefix, "subnet": isSubnet}}
+}
+
 function prefix(ip, prefix) {
     return {"Properties": {"address": ip, "prefix": prefix}}
 }
 
 test("free ipv4 prefix capacity", () => {
-    expect(strat.freeCapacity(prefix("192.168.1.0", 24).Properties, 100)).toStrictEqual(156)
+    expect(strat.freeCapacity(prefixWithSubnet("192.168.1.0", 24, false).Properties, 100)).toStrictEqual(156)
 })
 
 test("ipv4 prefix utilisation", () => {
     expect(strat.utilizedCapacity(
-        [prefix("192.168.1.0", 28).Properties, prefix("192.168.1.128", 27).Properties],
+        [prefixWithSubnet("192.168.1.0", 28, false).Properties, prefixWithSubnet("192.168.1.128", 27, false).Properties],
         32))
         .toStrictEqual(16+32+32)
 })

@@ -43,10 +43,13 @@ func (ipv6 *Ipv6) Capacity() (map[string]interface{}, error) {
 	if !ok {
 		return nil, errors.New("Unable to extract prefix resources")
 	}
+	isSubnet, ok := ipv6.resourcePoolProperties["subnet"]
+	if !ok {
+		return nil, errors.New("Unable to extract subnet property")
+	}
 	subnetItself := new(big.Int)
-	i, ok := ipv6.userInput["subnet"]
-	if i != nil {
-		subnetItself = big.NewInt(1)
+	if isSubnet.(bool) == true {
+		subnetItself = big.NewInt(-2)
 	} else {
 		subnetItself = big.NewInt(0)
 	}
@@ -74,6 +77,10 @@ func (ipv6 *Ipv6) Invoke() (map[string]interface{}, error) {
 	if !ok {
 		return nil, errors.New("Unable to extract prefix resources")
 	}
+	isSubnet, ok := ipv6.resourcePoolProperties["subnet"]
+	if !ok {
+		return nil, errors.New("Unable to extract subnet property")
+	}
 	rootMask, err := NumberToInt(rootMask)
 	if err != nil {
 		return nil, err
@@ -100,7 +107,7 @@ func (ipv6 *Ipv6) Invoke() (map[string]interface{}, error) {
 	var firstPossibleAddr = big.NewInt(0)
 	var lastPossibleAddr = big.NewInt(0)
 
-	if value, ok := ipv6.userInput["subnet"]; ok && value == true {
+	if isSubnet.(bool) == true {
 		firstPossibleAddr.Add(rootAddressNum, big.NewInt(1))
 		lastPossibleAddr.Add(rootAddressNum, rootCapacity)
 		lastPossibleAddr.Sub(lastPossibleAddr, big.NewInt(1))

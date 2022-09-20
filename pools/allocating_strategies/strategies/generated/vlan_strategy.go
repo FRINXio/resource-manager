@@ -38,20 +38,19 @@ func contains(slice []float64, val float64) bool {
 }
 
 func NumberToInt(number interface{}) (interface{}, error) {
-	var newNumber int
 	switch number.(type) {
 	case json.Number:
 		intVal64, err := number.(json.Number).Float64()
 		if err != nil {
 			return nil, errors.New("Unable to convert a json number")
 		}
-		newNumber = int(intVal64)
+		return int(intVal64), nil
 	case float64:
-		newNumber = int(number.(float64))
+		return int(number.(float64)), nil
 	case int:
-		newNumber = number.(int)
+		return number.(int), nil
 	}
-	return newNumber, nil
+	return nil, errors.New("Unable to convert number: " + number.(string) + " to a known type")
 }
 
 func (vlan *Vlan) Invoke() (map[string]interface{}, error) {

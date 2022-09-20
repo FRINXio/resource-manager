@@ -36,6 +36,13 @@ func loadIpv4Prefix(ctx context.Context, client *ent.Tx) error {
 	if err != nil {
 		return err
 	}
+	propSubnet, err := client.PropertyType.Create().
+		SetName("subnet").
+		SetType(propertytype.TypeBool).
+		Save(ctx)
+	if err != nil {
+		return err
+	}
 
 	expectedPoolPropAddr, err := client.PropertyType.Create().
 		SetName("address").
@@ -54,9 +61,18 @@ func loadIpv4Prefix(ctx context.Context, client *ent.Tx) error {
 		return err
 	}
 
+	expectedPoolPropSubnet, err := client.PropertyType.Create().
+		SetName("subnet").
+		SetBoolVal(false).
+		SetType(propertytype.TypeBool).
+		Save(ctx)
+	if err != nil {
+		return err
+	}
+
 	_, err = client.ResourceType.Create().
 		SetName("ipv4_prefix").
-		AddPropertyTypes(propAddr, propPrefix).
+		AddPropertyTypes(propAddr, propPrefix, propSubnet).
 		Save(ctx)
 	if err != nil {
 		return err
@@ -66,7 +82,7 @@ func loadIpv4Prefix(ctx context.Context, client *ent.Tx) error {
 		SetName("ipv4_prefix").
 		SetLang(allocationstrategy.LangJs).
 		SetScript(IPV4_PREFIX).
-		AddPoolPropertyTypes(expectedPoolPropAddr, expectedPoolPropPrefix).
+		AddPoolPropertyTypes(expectedPoolPropAddr, expectedPoolPropPrefix, expectedPoolPropSubnet).
 		Save(ctx)
 	if err != nil {
 		return err
@@ -103,6 +119,14 @@ func loadIpv6Prefix(ctx context.Context, client *ent.Tx) error {
 		return err
 	}
 
+	propSubnet, err := client.PropertyType.Create().
+		SetName("subnet").
+		SetType(propertytype.TypeBool).
+		Save(ctx)
+	if err != nil {
+		return err
+	}
+
 	expectedPoolPropAddr, err := client.PropertyType.Create().
 		SetName("address").
 		SetStringVal("2001:db8::").
@@ -121,9 +145,18 @@ func loadIpv6Prefix(ctx context.Context, client *ent.Tx) error {
 		return err
 	}
 
+	expectedPoolPropSubnet, err := client.PropertyType.Create().
+		SetName("subnet").
+		SetBoolVal(false).
+		SetType(propertytype.TypeBool).
+		Save(ctx)
+	if err != nil {
+		return err
+	}
+
 	_, err = client.ResourceType.Create().
 		SetName("ipv6_prefix").
-		AddPropertyTypes(propAddr, propPrefix).
+		AddPropertyTypes(propAddr, propPrefix, propSubnet).
 		Save(ctx)
 	if err != nil {
 		return err
@@ -133,7 +166,7 @@ func loadIpv6Prefix(ctx context.Context, client *ent.Tx) error {
 		SetName("ipv6_prefix").
 		SetLang(allocationstrategy.LangGo).
 		SetScript(IPV6_PREFIX).
-		AddPoolPropertyTypes(expectedPoolPropAddr, expectedPoolPropPrefix).
+		AddPoolPropertyTypes(expectedPoolPropAddr, expectedPoolPropPrefix, expectedPoolPropSubnet).
 		Save(ctx)
 	if err != nil {
 		return err
@@ -177,6 +210,15 @@ func loadIpv4(ctx context.Context, client *ent.Tx) error {
 		return err
 	}
 
+	expectedPoolPropSubnet, err := client.PropertyType.Create().
+		SetName("subnet").
+		SetBoolVal(false).
+		SetType(propertytype.TypeBool).
+		Save(ctx)
+	if err != nil {
+		return err
+	}
+
 	_, err = client.ResourceType.Create().
 		SetName("ipv4").
 		AddPropertyTypes(propAddr).
@@ -189,7 +231,7 @@ func loadIpv4(ctx context.Context, client *ent.Tx) error {
 		SetName("ipv4").
 		SetLang(allocationstrategy.LangGo).
 		SetScript(IPV4).
-		AddPoolPropertyTypes(expectedPoolPropAddr, expectedPoolPropPrefix).
+		AddPoolPropertyTypes(expectedPoolPropAddr, expectedPoolPropPrefix, expectedPoolPropSubnet).
 		Save(ctx)
 	if err != nil {
 		return err
@@ -233,6 +275,15 @@ func loadIpv6(ctx context.Context, client *ent.Tx) error {
 		return err
 	}
 
+	expectedPoolPropSubnet, err := client.PropertyType.Create().
+		SetName("subnet").
+		SetBoolVal(false).
+		SetType(propertytype.TypeBool).
+		Save(ctx)
+	if err != nil {
+		return err
+	}
+
 	_, err = client.ResourceType.Create().
 		SetName("ipv6").
 		AddPropertyTypes(propAddr).
@@ -245,7 +296,7 @@ func loadIpv6(ctx context.Context, client *ent.Tx) error {
 		SetName("ipv6").
 		SetLang(allocationstrategy.LangGo).
 		SetScript(IPV6).
-		AddPoolPropertyTypes(expectedPoolPropAddr, expectedPoolPropPrefix).
+		AddPoolPropertyTypes(expectedPoolPropAddr, expectedPoolPropPrefix, expectedPoolPropSubnet).
 		Save(ctx)
 	if err != nil {
 		return err
