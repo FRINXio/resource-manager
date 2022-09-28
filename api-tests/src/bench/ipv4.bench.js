@@ -23,8 +23,8 @@ bench('Create ipv4 prefix pool 100x serially',
                     getUniqueName('ipv4-root'),
                     resourceTypeId,
                     strategyId,
-                    { prefix: "int", address: "string" },
-                    { prefix: 8, address: "10.0.0.0" },
+                    { prefix: "int", address: "string", subnet: "bool"},
+                    { prefix: 8, address: "10.0.0.0", subnet: false},
                     null,
                     false);
             }
@@ -49,8 +49,8 @@ bench('Create ipv4 prefix pool 100x parallelly',
                         getUniqueName('ipv4-root'),
                         resourceTypeId,
                         strategyId,
-                        { prefix: "int", address: "string" },
-                        { prefix: 8, address: "10.0.0.0" },
+                        { prefix: "int", address: "string", subnet: "bool"},
+                        { prefix: 8, address: "10.0.0.0", subnet: false},
                         null,
                         true));
             }
