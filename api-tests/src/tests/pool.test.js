@@ -483,22 +483,22 @@ test('empty pools test', async (t) => {
 });
 
 test('test filtering of allocated resources by pool id', async (t) => {
-    const [pool, pool2] = await Promise.all([
-        createIpv4PrefixRootPool(),
-        createIpv4PrefixRootPool()
+    const [poolId, poolId2] = await Promise.all([
+        createIpv6PrefixRootPool(),
+        createIpv6PrefixRootPool()
     ]);
 
     await Promise.all([
-        claimResource(pool.id, {
-            desiredSize: 5
+        claimResource(poolId, {
+            desiredSize: 4
         }),
-        claimResource(pool2.id, {
-            desiredSize: 5
+        claimResource(poolId2, {
+            desiredSize: 4
         })
     ]);
 
-    const allocResourcesForPoolId = await queryResourcesByAltId(pool.id, {});
-    const allocResourcesForPoolId2 = await queryResourcesByAltId(pool2.id, {});
+    const allocResourcesForPoolId = await queryResourcesByAltId(poolId, {});
+    const allocResourcesForPoolId2 = await queryResourcesByAltId(poolId2, {});
 
     t.equal(allocResourcesForPoolId.edges.length, 1);
     t.equal(allocResourcesForPoolId2.edges.length, 1);
