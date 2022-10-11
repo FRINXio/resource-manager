@@ -219,7 +219,7 @@ test('vlan range strategy', async (t) => {
     let allocated = await testStrategy(strategyId,
         {from: 0, to: 4095}, poolName, poolId, [], {desiredSize: 101});
 
-    t.deepEqual(allocated.stdout, {from: 0, to:100});
+    t.same(allocated.stdout, {from: 0, to:100});
 
     await cleanup()
     t.end();
@@ -239,7 +239,7 @@ test('vlan range strategy range partly claimed', async (t) => {
         let allocated = await testStrategy(strategyId, {from: 0, to: 4095},
         poolName, poolId, claimed, {desiredSize: 101});
 
-    t.deepEqual(allocated.stdout, {from: 1001, to:1101});
+    t.same(allocated.stdout, {from: 1001, to:1101});
 
     await cleanup()
     t.end();

@@ -71,7 +71,7 @@ test('create and delete singleton pool', async (t) => {
     let resource1 = await claimResource(poolId, {});
     let resource2 = await claimResource(poolId, {});
 
-    t.deepEqual(resource1, resource2); //the same resource
+    t.same(resource1, resource2); //the same resource
 
     await freeResource(poolId, resource2.Properties);
 
