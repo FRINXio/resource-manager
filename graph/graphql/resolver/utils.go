@@ -4,6 +4,7 @@ import (
 	"context"
 	"entgo.io/ent/dialect/sql"
 	"entgo.io/ent/dialect/sql/sqljson"
+	"fmt"
 	"github.com/net-auto/resourceManager/ent"
 	"github.com/net-auto/resourceManager/ent/predicate"
 	"github.com/net-auto/resourceManager/ent/resource"
@@ -174,21 +175,25 @@ func QueryResourcesByAltId(ctx context.Context, client *ent.Client, alternativeI
 		return nil, errB
 	}
 
-	res, err := client.Resource.Query().
-		Where(func(selector *sql.Selector) {
-			for k, v := range alternativeId {
-				selector.Where(sqljson.ValueContains("alternate_id", v, sqljson.Path(k)))
-			}
-		}).
-		Where(resource.HasPoolWith(resourcePool.ID(*poolId))).
-		Paginate(ctx, afterCursor, first, beforeCursor, last)
-	if err != nil {
-		log.Error(ctx, err, "Unable to retrieve resources with alternative ID %v", alternativeId)
-		return nil, gqlerror.Errorf("Unable to query resources: %v", err)
-	}
+	if poolId != nil {
+		fmt.Println(poolId)
+		res, err := client.Resource.Query().
+			Where(resource.HasPoolWith(resourcePool.ID(*poolId))).
+			Where(func(selector *sql.Selector) {
+				for k, v := range alternativeId {
+					selector.Where(sqljson.ValueContains("alternate_id", v, sqljson.Path(k)))
+				}
+			}).
+			Paginate(ctx, afterCursor, first, beforeCursor, last)
 
-	if res != nil {
-		return res, nil
+		if err != nil {
+			log.Error(ctx, err, "Unable to retrieve resources with alternative ID %v", alternativeId)
+			return nil, gqlerror.Errorf("Unable to query resources: %v", err)
+		}
+
+		if res != nil {
+			return res, nil
+		}
 	}
 
 	log.Error(ctx, nil, "There is not such resource with alternative ID %v", alternativeId)
