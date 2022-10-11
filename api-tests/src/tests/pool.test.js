@@ -481,3 +481,28 @@ test('empty pools test', async (t) => {
     await cleanup()
     t.end();
 });
+
+test('test filtering of allocated resources by pool id', async (t) => {
+    const [pool, pool2] = await Promise.all([
+        createIpv4PrefixRootPool(),
+        createIpv4PrefixRootPool()
+    ]);
+
+    await Promise.all([
+        claimResource(pool.id, {
+            desiredSize: 5
+        }),
+        claimResource(pool2.id, {
+            desiredSize: 5
+        })
+    ]);
+
+    const allocResourcesForPoolId = await queryResourcesByAltId(pool.id, {});
+    const allocResourcesForPoolId2 = await queryResourcesByAltId(pool2.id, {});
+
+    t.equal(allocResourcesForPoolId.edges.length, 1);
+    t.equal(allocResourcesForPoolId2.edges.length, 1);
+
+    await cleanup();
+    t.end();
+});

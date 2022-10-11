@@ -6,7 +6,7 @@ import (
 	"entgo.io/ent/dialect/sql/sqljson"
 	"github.com/net-auto/resourceManager/ent"
 	"github.com/net-auto/resourceManager/ent/predicate"
-	"github.com/net-auto/resourceManager/ent/resourcepool"
+	"github.com/net-auto/resourceManager/ent/resource"
 	resourcePool "github.com/net-auto/resourceManager/ent/resourcepool"
 	"github.com/net-auto/resourceManager/ent/tag"
 	"github.com/net-auto/resourceManager/graph/graphql/model"
@@ -61,7 +61,7 @@ func createNestedPool(ctx context.Context,
 	}
 
 	//create pool properties from parent resource type
-	if pool.PoolType == resourcepool.PoolTypeAllocating {
+	if pool.PoolType == resourcePool.PoolTypeAllocating {
 
 		properties, err := parentResource.QueryProperties().All(ctx)
 
@@ -159,7 +159,7 @@ func tagFromDb(ctx context.Context, client *ent.Client, tagValue string) (*ent.T
 }
 
 // QueryResourcesByAltId returns paginate resources if alt Id matches
-func QueryResourcesByAltId(ctx context.Context, client *ent.Client, alternativeId map[string]interface{}, first *int,
+func QueryResourcesByAltId(ctx context.Context, client *ent.Client, alternativeId map[string]interface{}, poolId *int, first *int,
 	last *int, before *string, after *string) (*ent.ResourceConnection, error) {
 
 	afterCursor, errA := decodeCursor(after)
@@ -180,6 +180,7 @@ func QueryResourcesByAltId(ctx context.Context, client *ent.Client, alternativeI
 				selector.Where(sqljson.ValueContains("alternate_id", v, sqljson.Path(k)))
 			}
 		}).
+		Where(resource.HasPoolWith(resourcePool.ID(*poolId))).
 		Paginate(ctx, afterCursor, first, beforeCursor, last)
 	if err != nil {
 		log.Error(ctx, err, "Unable to retrieve resources with alternative ID %v", alternativeId)
