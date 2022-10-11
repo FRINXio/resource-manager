@@ -483,25 +483,32 @@ test('empty pools test', async (t) => {
 });
 
 test('test filtering of allocated resources by pool id', async (t) => {
-    const [poolId, poolId2] = await Promise.all([
-        createIpv6PrefixRootPool(),
-        createIpv6PrefixRootPool()
-    ]);
+    const poolId = await createIpv6PrefixRootPool();
+    const poolId2 = await createIpv6PrefixRootPool();
 
-    await Promise.all([
-        claimResource(poolId, {
-            desiredSize: 4
-        }),
-        claimResource(poolId2, {
-            desiredSize: 4
-        })
-    ]);
+    await claimResourceWithAltId(poolId, { desiredSize: 4 }, {});
+    await claimResourceWithAltId(poolId2, { desiredSize: 4 }, {});
 
     const allocResourcesForPoolId = await queryResourcesByAltId(poolId, {});
     const allocResourcesForPoolId2 = await queryResourcesByAltId(poolId2, {});
 
     t.equal(allocResourcesForPoolId.edges.length, 1);
     t.equal(allocResourcesForPoolId2.edges.length, 1);
+
+    await cleanup();
+    t.end();
+});
+
+test('test filtering of allocated resources when pool id is null', async (t) => {
+    const poolId = await createIpv6PrefixRootPool()
+
+    await claimResourceWithAltId(poolId, {
+        desiredSize: 4
+    }, {});
+
+    const allocResourcesForPoolId = await queryResourcesByAltId(null, {});
+
+    t.equal(allocResourcesForPoolId, null);
 
     await cleanup();
     t.end();

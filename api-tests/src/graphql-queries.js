@@ -758,7 +758,10 @@ export async function queryResourcesByAltId(poolId, params){
 
         return null;
     })
-    .catch(error => console.log(error));
+    .catch(error => {
+        console.log(error);
+        return null;
+    });
 }
 
 export async function freeResource(poolId, propInput){
