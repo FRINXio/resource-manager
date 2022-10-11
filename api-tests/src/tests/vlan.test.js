@@ -24,7 +24,7 @@ test('create vlan hierarchy', async (t) => {
     let nestedPool2Id = await createVlanNestedPool(secondParentResourceId);
 
     const children = await get2ChildrenIds(rootPoolId);
-    t.deepEqual(children, [nestedPool1Id, nestedPool2Id]);
+    t.same(children, [nestedPool1Id, nestedPool2Id]);
 
     let resource1 = await claimResource(nestedPool1Id, {});
     let resource2 = await claimResource(nestedPool2Id, {});

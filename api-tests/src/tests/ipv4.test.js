@@ -67,7 +67,7 @@ test('create ipv4 hierarchy', async (t) => {
 
     const poolChildren = await get2ChildrenIds(rootPoolId);
 
-    t.deepEqual(poolChildren, [pool21Id, pool22Id]);
+    t.same(poolChildren, [pool21Id, pool22Id]);
 
     let resource11Id = (await claimResource(pool21Id, { desiredSize: 4194304 })).id;
     let resource12Id = (await claimResource(pool21Id, { desiredSize: 4194304 })).id;
@@ -80,10 +80,10 @@ test('create ipv4 hierarchy', async (t) => {
     const pool34Id = await createIpv4NestedPool(resource22Id);
 
     const pool21Children = await get2ChildrenIds(pool21Id);
-    t.deepEqual(pool21Children, [pool31Id, pool32Id]);
+    t.same(pool21Children, [pool31Id, pool32Id]);
 
     const pool22Children = await get2ChildrenIds(pool22Id);
-    t.deepEqual(pool22Children, [pool33Id, pool34Id]);
+    t.same(pool22Children, [pool33Id, pool34Id]);
 
     let resource31 = await claimResource(pool31Id, {});
     let resource32 = await claimResource(pool32Id, {});
@@ -101,13 +101,13 @@ test('create ipv4 hierarchy', async (t) => {
     t.equal(pool34Queried.ParentResource.ParentPool.id, pool22Id);
 
     const hierarchyPath34 = await getPoolHierarchyPath(pool34Id);
-    t.deepEqual(hierarchyPath34.map(it => it.id), [rootPoolId, pool22Id]);
+    t.same(hierarchyPath34.map(it => it.id), [rootPoolId, pool22Id]);
 
     const hierarchyPathRoot = await getPoolHierarchyPath(rootPoolId);
     t.equal(hierarchyPathRoot.length, 0);
 
     const hierarchyPath21 = await getPoolHierarchyPath(pool21Id);
-    t.deepEqual(hierarchyPath21.map(it => it.id), [rootPoolId]);
+    t.same(hierarchyPath21.map(it => it.id), [rootPoolId]);
 
     await cleanup()
     t.end();
@@ -118,7 +118,7 @@ test('ipv4_prefix_pool serially', async (t) => {
     const poolId = (await createIpv4PrefixRootPool()).id;
     const createdIPs = await allocateFromIPv4PoolSerially(poolId, count, { desiredSize: 2 });
     const queriedIPs = await queryIPs(poolId, count);
-    t.deepEqual(queriedIPs, createdIPs);
+    t.same(queriedIPs, createdIPs);
     t.equal(queriedIPs.length, count);
 
     await cleanup()
@@ -130,7 +130,7 @@ test('ipv4_pool serially', async (t) => {
     const poolId = await prepareIpv4Pool();
     const createdIPs = await allocateFromIPv4PoolSerially(poolId, count, {});
     const queriedIPs = await queryIPs(poolId, count);
-    t.deepEqual(queriedIPs, createdIPs);
+    t.same(queriedIPs, createdIPs);
     t.equal(queriedIPs.length, count);
 
     await cleanup()
@@ -143,7 +143,7 @@ test('ipv4_prefix_pool parallelly', async (t) => {
     const createdIPs = (await allocateFromIPv4PoolParallelly(
         poolId, count, retries, { desiredSize: 2 })).sort();
     const queriedIPs = (await queryIPs(poolId, count)).sort();
-    t.deepEqual(queriedIPs, createdIPs);
+    t.same(queriedIPs, createdIPs);
     t.equal(queriedIPs.length, count);
 
     await cleanup()
@@ -156,7 +156,7 @@ test('ipv4_pool parallelly', async (t) => {
     const createdIPs = (await allocateFromIPv4PoolParallelly(
         poolId, count, retries, {})).sort();
     const queriedIPs = (await queryIPs(poolId, count)).sort();
-    t.deepEqual(queriedIPs, createdIPs);
+    t.same(queriedIPs, createdIPs);
     t.equal(queriedIPs.length, count);
 
     await cleanup()
