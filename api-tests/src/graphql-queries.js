@@ -649,7 +649,6 @@ export async function createAllocationPool(poolName, resourceTypeId, strategyId,
             poolProperties: poolProperties,
             poolPropertyTypes: poolPropertyTypes,
             tags: tags,
-
         }
     })
     .then(result => result.data.CreateAllocatingPool.pool)

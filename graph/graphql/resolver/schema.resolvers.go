@@ -660,7 +660,7 @@ func (r *queryResolver) QueryResourcesByAltID(ctx context.Context, input map[str
 		}
 	}
 
-	res, err := QueryResourcesByAltId(ctx, r.ClientFrom(ctx), typeFixedAlternativeId, first, last, before, after)
+	res, err := QueryResourcesByAltId(ctx, r.ClientFrom(ctx), typeFixedAlternativeId, poolID, first, last, before, after)
 
 	if res != nil {
 		return res, nil
