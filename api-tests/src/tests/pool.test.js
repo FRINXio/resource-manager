@@ -482,7 +482,7 @@ test('empty pools test', async (t) => {
     t.end();
 });
 
-test('test filtering of allocated resources by pool id', async (t) => {
+test('test filtering of allocated ipv6 resources by pool id', async (t) => {
     const poolId = await createIpv6PrefixRootPool();
     const poolId2 = await createIpv6PrefixRootPool();
 
@@ -491,6 +491,23 @@ test('test filtering of allocated resources by pool id', async (t) => {
 
     const allocResourcesForPoolId = await queryResourcesByAltId(poolId, {});
     const allocResourcesForPoolId2 = await queryResourcesByAltId(poolId2, {});
+
+    t.equal(allocResourcesForPoolId.edges.length, 1);
+    t.equal(allocResourcesForPoolId2.edges.length, 1);
+
+    await cleanup();
+    t.end();
+});
+
+test('test filtering of allocated ipv4 resources by pool id', async (t) => {
+    const poolId = await createIpv4PrefixRootPool();
+    const poolId2 = await createIpv4PrefixRootPool();
+
+    await claimResourceWithAltId(poolId.id, { desiredSize: 4 }, {});
+    await claimResourceWithAltId(poolId2.id, { desiredSize: 4 }, {});
+
+    const allocResourcesForPoolId = await queryResourcesByAltId(poolId.id, {});
+    const allocResourcesForPoolId2 = await queryResourcesByAltId(poolId2.id, {});
 
     t.equal(allocResourcesForPoolId.edges.length, 1);
     t.equal(allocResourcesForPoolId2.edges.length, 1);
