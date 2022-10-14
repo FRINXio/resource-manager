@@ -539,6 +539,6 @@ test('query resources that do not have an alternative id', async (t) => {
     const res = await queryResourcesByAltId(poolId, {});
     const res2 = await getResourcesForPool(poolId);
 
-    t.equal(res.edges.every((node) => node.AlternativeId != null || node.AlternativeId == null), false);
-    t.equal(res2.edges.some((node) => node.AlternativeId != null || node.AlternativeId == null), false);
+    t.equal(res.edges.every((node) => node.AlternativeId != null || node.AlternativeId == null), true);
+    t.equal(res2.edges.every((node) => node.AlternativeId != null || node.AlternativeId == null), true);
 })
