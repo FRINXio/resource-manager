@@ -1488,7 +1488,7 @@ type Resource implements Node
     NestedPool: ResourcePool
     ParentPool: ResourcePool!
     Properties: Map!
-    AlternativeId: Map!
+    AlternativeId: Map
     id: ID!
 }
 
@@ -7406,14 +7406,11 @@ func (ec *executionContext) _Resource_AlternativeId(ctx context.Context, field g
 		return graphql.Null
 	}
 	if resTmp == nil {
-		if !graphql.HasFieldError(ctx, fc) {
-			ec.Errorf(ctx, "must not be null")
-		}
 		return graphql.Null
 	}
 	res := resTmp.(map[string]interface{})
 	fc.Result = res
-	return ec.marshalNMap2map(ctx, field.Selections, res)
+	return ec.marshalOMap2map(ctx, field.Selections, res)
 }
 
 func (ec *executionContext) fieldContext_Resource_AlternativeId(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
@@ -12989,9 +12986,6 @@ func (ec *executionContext) _Resource(ctx context.Context, sel ast.SelectionSet,
 					}
 				}()
 				res = ec._Resource_AlternativeId(ctx, field, obj)
-				if res == graphql.Null {
-					atomic.AddUint32(&invalids, 1)
-				}
 				return res
 			}
 
