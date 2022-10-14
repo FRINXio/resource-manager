@@ -175,43 +175,43 @@ function findNextFreeSubnetAddress(allocatedSubnet, newSubnetMask) {
 
 // main
 function invoke() {
-    let rootPrefixParsed = resourcePoolProperties;
+    let rootPrefixParsed = resourcePoolProperties
     if (rootPrefixParsed == null) {
-        console.error("Unable to extract root prefix from pool name: " + rootPrefix);
+        console.error("Unable to extract root prefix from pool name: " + rootPrefix)
         return null
     }
-    let rootAddressStr = rootPrefixParsed.address;
-    let rootMask = rootPrefixParsed.prefix;
-    let isSubnet = Boolean(rootPrefixParsed.subnet);
-    let rootPrefixStr = prefixToStr(rootPrefixParsed);
-    let rootCapacity = subnetAddresses(rootMask);
-    let rootAddressNum = inet_aton(rootAddressStr);
+    let rootAddressStr = rootPrefixParsed.address
+    let rootMask = rootPrefixParsed.prefix
+    let isSubnet = Boolean(rootPrefixParsed.subnet)
+    let rootPrefixStr = prefixToStr(rootPrefixParsed)
+    let rootCapacity = subnetAddresses(rootMask)
+    let rootAddressNum = inet_aton(rootAddressStr)
 
     if (!userInput.desiredSize) {
         console.error("Unable to allocate subnet from root prefix: " + rootPrefixStr +
-            ". Desired size of a new subnet size not provided as userInput.desiredSize");
+            ". Desired size of a new subnet size not provided as userInput.desiredSize")
         return null
     }
 
     if (userInput.desiredSize < 2) {
         console.error("Unable to allocate subnet from root prefix: " + rootPrefixStr +
-            ". Desired size is invalid: " + userInput.desiredSize + ". Use values >= 2");
+            ". Desired size is invalid: " + userInput.desiredSize + ". Use values >= 2")
         return null
     }
 
     if (isSubnet === true) {
         // reserve subnet address and broadcast
-        userInput.desiredSize += 2;
+        userInput.desiredSize += 2
     }
 
     // Calculate smallest possible subnet mask to fit desiredSize
     let {newSubnetMask, newSubnetCapacity} = calculateDesiredSubnetMask();
 
     // unwrap and sort currentResources
-    let currentResourcesUnwrapped = currentResources.map(cR => cR.Properties);
-    currentResourcesUnwrapped.sort(comparePrefix);
+    let currentResourcesUnwrapped = currentResources.map(cR => cR.Properties)
+    currentResourcesUnwrapped.sort(comparePrefix)
 
-    let possibleSubnetNum = rootAddressNum;
+    let possibleSubnetNum = rootAddressNum
     // iterate over allocated subnets and see if a desired new subnet can be squeezed in
     for (let allocatedSubnet of currentResourcesUnwrapped) {
 
@@ -240,7 +240,7 @@ function invoke() {
             "address": inet_ntoa(possibleSubnetNum),
             "prefix": newSubnetMask,
             "subnet": isSubnet
-        };
+        }
         // FIXME How to pass these stats ?
         // logStats(newlyAllocatedPrefix, rootPrefixParsed, currentResourcesUnwrapped)
         return newlyAllocatedPrefix
@@ -248,9 +248,9 @@ function invoke() {
 
     // no suitable range found
     console.error("Unable to allocate Ipv4 prefix from: " + rootPrefixStr +
-        ". Insufficient capacity to allocate a new prefix of size: " + userInput.desiredSize);
-    console.error("Currently allocated prefixes: " + prefixesToString(currentResourcesUnwrapped));
-    logStats(null, rootPrefixParsed, currentResourcesUnwrapped, "error");
+        ". Insufficient capacity to allocate a new prefix of size: " + userInput.desiredSize)
+    console.error("Currently allocated prefixes: " + prefixesToString(currentResourcesUnwrapped))
+    logStats(null, rootPrefixParsed, currentResourcesUnwrapped, "error")
     return null
 }
 
