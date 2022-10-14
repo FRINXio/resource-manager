@@ -189,6 +189,7 @@ export async function getResourcesForPool(poolId){
                                  Name
                                  PoolType
                              }
+                             AlternativeId
                          }
                      }
                  }

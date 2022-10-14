@@ -530,3 +530,15 @@ test('test filtering of allocated resources when pool id is null', async (t) => 
     await cleanup();
     t.end();
 });
+
+test('query resources that do not have an alternative id', async (t) => {
+    const poolId = await createIpv4RootPool('10.0.0.0', 16);
+    await claimResource(poolId, {});
+    await claimResourceWithAltId(poolId, {}, {vlanAltId: getUniqueName('vlan')});
+
+    const res = await queryResourcesByAltId(poolId, {});
+    const res2 = await getResourcesForPool(poolId);
+
+    t.equal(res.edges.every((node) => node.AlternativeId != null || node.AlternativeId == null), false);
+    t.equal(res2.edges.some((node) => node.AlternativeId != null || node.AlternativeId == null), false);
+})
