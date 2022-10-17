@@ -215,15 +215,15 @@ function invoke() {
     // iterate over allocated subnets and see if a desired new subnet can be squeezed in
     for (let allocatedSubnet of currentResourcesUnwrapped) {
 
-        let allocatedSubnetNum = inet_aton(allocatedSubnet.address);
-        let chunkCapacity = allocatedSubnetNum - possibleSubnetNum;
+        let allocatedSubnetNum = inet_aton(allocatedSubnet.address)
+        let chunkCapacity = allocatedSubnetNum - possibleSubnetNum
         if (chunkCapacity >= userInput.desiredSize) {
             // there is chunk with sufficient capacity between possibleSubnetNum and allocatedSubnet.address
             let newlyAllocatedPrefix = {
                 "address": inet_ntoa(possibleSubnetNum),
                 "prefix": newSubnetMask,
                 "subnet": isSubnet
-            };
+            }
             // FIXME How to pass these stats ?
             // logStats(newlyAllocatedPrefix, rootPrefixParsed, currentResourcesUnwrapped)
             return newlyAllocatedPrefix
