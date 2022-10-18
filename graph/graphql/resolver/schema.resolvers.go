@@ -120,6 +120,26 @@ func (r *mutationResolver) CreateAllocationStrategy(ctx context.Context, input *
 		}
 	}
 
+	if input.ExpectedPoolPropertyTypes == nil {
+		_, resTypeErr := p.CreateResourceType(ctx, client, model.CreateResourceTypeInput{
+			ResourceName:       input.Name,
+			ResourceProperties: nil,
+		})
+
+		if resTypeErr != nil {
+			return &model.CreateAllocationStrategyPayload{Strategy: strat}, gqlerror.Errorf("Unable to create resource type corresponding to created allocation strategy")
+		}
+	}
+
+	_, resTypeErr := p.CreateResourceType(ctx, client, model.CreateResourceTypeInput{
+		ResourceName:       input.Name,
+		ResourceProperties: input.ExpectedPoolPropertyTypes,
+	})
+
+	if resTypeErr != nil {
+		return &model.CreateAllocationStrategyPayload{Strategy: strat}, gqlerror.Errorf("Unable to create resource type corresponding to created allocation strategy")
+	}
+
 	return &model.CreateAllocationStrategyPayload{Strategy: strat}, nil
 }
 
@@ -483,19 +503,8 @@ func (r *mutationResolver) DeleteResourcePool(ctx context.Context, input model.D
 func (r *mutationResolver) CreateResourceType(ctx context.Context, input model.CreateResourceTypeInput) (*model.CreateResourceTypePayload, error) {
 	var client = r.ClientFrom(ctx)
 
-	var propertyTypes []*ent.PropertyType
-	for propName, rawPropType := range input.ResourceProperties {
-		var propertyType, err = p.CreatePropertyType(ctx, client, propName, rawPropType)
-		if err != nil {
-			return &model.CreateResourceTypePayload{ResourceType: nil}, gqlerror.Errorf("Unable to create resource type: %v", err)
-		}
-		propertyTypes = append(propertyTypes, propertyType)
-	}
+	resType, err2 := p.CreateResourceType(ctx, client, input)
 
-	resType, err2 := client.ResourceType.Create().
-		SetName(input.ResourceName).
-		AddPropertyTypes(propertyTypes...).
-		Save(ctx)
 	if err2 != nil {
 		log.Error(ctx, err2, "Unable to create a new resource type")
 		return &model.CreateResourceTypePayload{ResourceType: nil}, gqlerror.Errorf("Unable to create resource type: %v", err2)

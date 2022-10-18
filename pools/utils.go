@@ -4,8 +4,9 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-
+	"github.com/net-auto/resourceManager/graph/graphql/model"
 	log "github.com/net-auto/resourceManager/logging"
+	"github.com/vektah/gqlparser/v2/gqlerror"
 
 	"github.com/net-auto/resourceManager/ent"
 	"github.com/net-auto/resourceManager/ent/propertytype"
@@ -13,7 +14,7 @@ import (
 	"github.com/pkg/errors"
 )
 
-func GetResourceFromPool (
+func GetResourceFromPool(
 	ctx context.Context, obj *ent.ResourcePool) ([]*ent.Resource, error) {
 	if es, err := obj.Edges.ClaimsOrErr(); !ent.IsNotLoaded(err) {
 		log.Error(ctx, err, "Loading resources for resource pool %d failed", obj.ID)
@@ -104,4 +105,26 @@ func ConvertValuesToFloat64(ctx context.Context, datamap map[string]interface{})
 	}
 
 	return datamap, nil
+}
+
+func CreateResourceType(ctx context.Context, client *ent.Client, input model.CreateResourceTypeInput) (*ent.ResourceType, error) {
+	var propertyTypes []*ent.PropertyType
+	for propName, rawPropType := range input.ResourceProperties {
+		var propertyType, err = CreatePropertyType(ctx, client, propName, rawPropType)
+		if err != nil {
+			return nil, gqlerror.Errorf("Unable to create resource type: %v", err)
+		}
+		propertyTypes = append(propertyTypes, propertyType)
+	}
+
+	resType, err2 := client.ResourceType.Create().
+		SetName(input.ResourceName).
+		AddPropertyTypes(propertyTypes...).
+		Save(ctx)
+
+	if err2 != nil {
+		return resType, gqlerror.Errorf("Unable to create resource type", err2)
+	}
+
+	return resType, nil
 }
