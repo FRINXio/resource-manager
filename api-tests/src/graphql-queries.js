@@ -64,6 +64,54 @@ export async function findAllocationStrategyId(name){
     .catch(error => console.log(error));
 }
 
+export async function findAllocationStrategy(allocationStrategyId) {
+    return client.query({
+        query: gql`
+            query GetAllocationStrategy($id: ID!) {
+                QueryAllocationStrategy(allocationStrategyId: $id) {
+                    Name
+                    Lang
+                    Description
+                    Script
+                    id
+                }
+            }
+        `,
+        variables: {
+            id: allocationStrategyId
+        }
+    })
+    .then(result => result.data.QueryAllocationStrategy)
+    .catch(error => console.log(error));
+}
+
+export async function findResourceType(resourceTypeName) {
+    return client.query({
+        query: gql`
+            query QueryResourceTypes($name: String) {
+                QueryResourceTypes(byName: $name) {
+                    Name
+                    PropertyTypes {
+                        Name
+                        Type
+                    }
+                    id
+                }
+            }
+        `,
+        variables: {
+            name: resourceTypeName
+        }
+    })
+    .then(result => {
+        if (result.error != null || result.errors != null) {
+            throw new Error("Problem to find resource type")
+        }
+        return result.data.QueryResourceTypes;
+    })
+    .catch(error => console.log(error));
+}
+
 export async function getCapacityForPool(poolId){
     return client.query({
         query: gql`
@@ -462,6 +510,8 @@ export async function createAllocationStrategy(strategyName, scriptBody, strateg
                 }){
                     strategy {
                         id
+                        Name
+                        Lang
                     }
                 }
             }
@@ -473,7 +523,10 @@ export async function createAllocationStrategy(strategyName, scriptBody, strateg
             expectedPropertyTypes: expectedPropertyTypes
         }
     })
-    .then(result => result.data.CreateAllocationStrategy.strategy.id)
+    .then(result => {
+        console.log("jozko", result.data.CreateAllocationStrategy.strategy);
+        return result.data.CreateAllocationStrategy.strategy.id
+    })
     .catch(error => console.log(error));
 }
 

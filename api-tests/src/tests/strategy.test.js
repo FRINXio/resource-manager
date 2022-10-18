@@ -3,7 +3,12 @@ import {
     testStrategy,
     createAllocationStrategy,
     findAllocationStrategyId,
-    createResourceType, findResourceTypeId, deleteResourceType, getRequiredPoolProperties
+    createResourceType,
+    findResourceTypeId,
+    deleteResourceType,
+    getRequiredPoolProperties,
+    findResourceType,
+    findAllocationStrategy
 } from '../graphql-queries.js';
 import {cleanup, getUniqueName} from '../test-helpers.js';
 import tap from 'tap';
@@ -255,5 +260,47 @@ test('vlan strategy', async (t) => {
     t.equal(allocated.stdout.vlan, 0);
 
     await cleanup()
+    t.end();
+});
+
+test('create allocation strategy in one step together with allocation strategy', async (t) => {
+    const strategyName = getUniqueName('testAllocStrategy');
+    const allocationStrategyId = await createAllocationStrategy(strategyName, 'function invoke() {return {vlan: userInput.desiredVlan};}', 'py', {
+        address: "string",
+        prefix: "int",
+        subnet: "bool",
+    });
+
+    const allocationStrategy = await findAllocationStrategy(allocationStrategyId);
+    const resourceType = await findResourceType(strategyName);
+
+    t.equal(allocationStrategy.Name, strategyName);
+    t.ok(resourceType);
+
+    await cleanup();
+    t.end();
+});
+
+test('allocation strategy and resource type have same expected properties', async (t) => {
+    const strategyName = getUniqueName('testAllocStrategy');
+    await createAllocationStrategy(strategyName, 'function invoke() {return {vlan: userInput.desiredVlan};}', 'py', {
+        address: "string",
+        prefix: "int",
+        subnet: "bool",
+    });
+
+    const allocationStrategy = await getRequiredPoolProperties(strategyName);
+    const resourceType = await findResourceType(strategyName);
+
+    const allocationStrategyProperties = allocationStrategy.map((property) => {
+        return {Name: property.Name, Type: property.Type}
+    });
+    const resourceTypeProperties = resourceType.PropertyTypes.map((property) => {
+        return {Name: property.Name, Type: property.Type}
+    });
+
+    t.same(allocationStrategyProperties, resourceTypeProperties);
+
+    await cleanup();
     t.end();
 });
