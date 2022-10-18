@@ -4,13 +4,11 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	"github.com/net-auto/resourceManager/graph/graphql/model"
-	log "github.com/net-auto/resourceManager/logging"
-	"github.com/vektah/gqlparser/v2/gqlerror"
-
 	"github.com/net-auto/resourceManager/ent"
 	"github.com/net-auto/resourceManager/ent/propertytype"
 	"github.com/net-auto/resourceManager/ent/resource"
+	"github.com/net-auto/resourceManager/graph/graphql/model"
+	log "github.com/net-auto/resourceManager/logging"
 	"github.com/pkg/errors"
 )
 
@@ -112,7 +110,7 @@ func CreateResourceType(ctx context.Context, client *ent.Client, input model.Cre
 	for propName, rawPropType := range input.ResourceProperties {
 		var propertyType, err = CreatePropertyType(ctx, client, propName, rawPropType)
 		if err != nil {
-			return nil, gqlerror.Errorf("Unable to create resource type: %v", err)
+			return nil, errors.Errorf("Unable to create resource type: %v", err)
 		}
 		propertyTypes = append(propertyTypes, propertyType)
 	}
@@ -123,7 +121,7 @@ func CreateResourceType(ctx context.Context, client *ent.Client, input model.Cre
 		Save(ctx)
 
 	if err2 != nil {
-		return resType, gqlerror.Errorf("Unable to create resource type", err2)
+		return resType, errors.Errorf("Unable to create resource type", err2)
 	}
 
 	return resType, nil
