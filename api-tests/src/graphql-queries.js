@@ -524,7 +524,6 @@ export async function createAllocationStrategy(strategyName, scriptBody, strateg
         }
     })
     .then(result => {
-        console.log("jozko", result.data.CreateAllocationStrategy.strategy);
         return result.data.CreateAllocationStrategy.strategy.id
     })
     .catch(error => console.log(error));

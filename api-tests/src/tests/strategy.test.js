@@ -290,13 +290,13 @@ test('allocation strategy and resource type have same expected properties', asyn
     });
 
     const allocationStrategy = await getRequiredPoolProperties(strategyName);
-    const resourceType = await findResourceType(strategyName);
+    const resourceTypes = await findResourceType(strategyName);
 
     const allocationStrategyProperties = allocationStrategy.map((property) => {
         return {Name: property.Name, Type: property.Type}
     });
-    const resourceTypeProperties = resourceType.PropertyTypes.map((property) => {
-        return {Name: property.Name, Type: property.Type}
+    const resourceTypeProperties = resourceTypes.map((property) => {
+        return {Name: property.PropertyTypes.Name, Type: property.PropertyTypes.Type}
     });
 
     t.same(allocationStrategyProperties, resourceTypeProperties);
