@@ -121,7 +121,7 @@ func CreateResourceType(ctx context.Context, client *ent.Client, input model.Cre
 		Save(ctx)
 
 	if err2 != nil {
-		return resType, errors.Errorf("Unable to create resource type", err2)
+		return resType, errors.Errorf("Unable to create resource type %v", err2)
 	}
 
 	return resType, nil
