@@ -208,7 +208,7 @@ func ClaimResource(pool pools.Pool, userInput map[string]interface{}, descriptio
 	for key, value := range userInput {
 		switch value.(type) {
 		case string:
-			intVal, intErr := strconv.Atoi(value.(string))
+			intVal, intErr := strconv.Atoi(fmt.Sprintf("%v", value))
 			if intErr == nil {
 				input[key] = intVal
 			} else {
