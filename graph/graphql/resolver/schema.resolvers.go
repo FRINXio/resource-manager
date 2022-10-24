@@ -192,7 +192,12 @@ func (r *mutationResolver) TestAllocationStrategy(ctx context.Context, allocatio
 
 // ClaimResource is the resolver for the ClaimResource field.
 func (r *mutationResolver) ClaimResource(ctx context.Context, poolID int, description *string, userInput map[string]interface{}) (*ent.Resource, error) {
-	return r.ClaimResourceWithAltID(ctx, poolID, description, userInput, nil)
+	pool, err := p.ExistingPoolFromId(ctx, r.ClientFrom(ctx), poolID)
+	if err != nil {
+		return nil, gqlerror.Errorf("Unable to claim resource: %v", err)
+	}
+
+	return ClaimResource(pool, userInput, description, nil)
 }
 
 // ClaimResourceWithAltID is the resolver for the ClaimResourceWithAltId field.
@@ -202,11 +207,7 @@ func (r *mutationResolver) ClaimResourceWithAltID(ctx context.Context, poolID in
 		return nil, gqlerror.Errorf("Unable to claim resource: %v", err)
 	}
 
-	if res, err := pool.ClaimResource(userInput, description, alternativeID); err != nil {
-		return nil, gqlerror.Errorf("Unable to claim resource: %v", err)
-	} else {
-		return res, nil
-	}
+	return ClaimResource(pool, userInput, description, alternativeID)
 }
 
 // FreeResource is the resolver for the FreeResource field.

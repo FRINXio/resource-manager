@@ -11,6 +11,8 @@ import (
 	resourcePool "github.com/net-auto/resourceManager/ent/resourcepool"
 	"github.com/net-auto/resourceManager/ent/tag"
 	"github.com/net-auto/resourceManager/graph/graphql/model"
+	"github.com/net-auto/resourceManager/pools"
+	"strconv"
 
 	//"github.com/net-auto/resourceManager/graph/graphql/model"
 	log "github.com/net-auto/resourceManager/logging"
@@ -198,4 +200,29 @@ func QueryResourcesByAltId(ctx context.Context, client *ent.Client, alternativeI
 
 	log.Error(ctx, nil, "There is not such resource with alternative ID %v", alternativeId)
 	return nil, errors.New("No such resource with given alternative ID")
+}
+
+func ClaimResource(pool pools.Pool, userInput map[string]interface{}, description *string, alternativeId map[string]interface{}) (*ent.Resource, error) {
+	input := make(map[string]interface{})
+
+	for key, value := range userInput {
+		switch value.(type) {
+		case string:
+			intVal, intErr := strconv.Atoi(value.(string))
+			if intErr == nil {
+				input[key] = intVal
+			} else {
+				input[key] = value
+			}
+		default:
+			input[key] = value
+			break
+		}
+	}
+
+	if res, err := pool.ClaimResource(input, description, alternativeId); err != nil {
+		return nil, gqlerror.Errorf("Unable to claim resource: %v", err)
+	} else {
+		return res, nil
+	}
 }
