@@ -541,4 +541,15 @@ test('query resources that do not have an alternative id', async (t) => {
 
     t.equal(res.edges.every((node) => node.AlternativeId != null || node.AlternativeId == null), true);
     t.equal(res2.edges.every((node) => node.AlternativeId != null || node.AlternativeId == null), true);
-})
+});
+
+test('claim resource with integer value sent as string', async (t) => {
+    const poolId = createIpv4PrefixRootPool();
+    const claimedResource = await claimResource(poolId, { desiredSize: '4' });
+    const poolWithResources = await getResourcesForPool(poolId);
+
+    t.ok(claimedResource);
+    t.equal(poolWithResources.edges.length, 1);
+});
+
+
