@@ -544,9 +544,9 @@ test('query resources that do not have an alternative id', async (t) => {
 });
 
 test('claim resource with integer value sent as string', async (t) => {
-    const poolId = createIpv4PrefixRootPool();
-    const claimedResource = await claimResource(poolId, { desiredSize: '4' });
-    const poolWithResources = await getResourcesForPool(poolId);
+    const pool = await createIpv4PrefixRootPool();
+    const claimedResource = await claimResource(pool.id, { desiredSize: '4' });
+    const poolWithResources = await getResourcesForPool(pool.id);
 
     t.ok(claimedResource);
     t.equal(poolWithResources.edges.length, 1);
