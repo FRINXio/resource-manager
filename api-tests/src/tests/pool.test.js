@@ -552,4 +552,13 @@ test('claim resource with integer value sent as string', async (t) => {
     t.equal(poolWithResources.edges.length, 1);
 });
 
+test('claim resource with altId and integer value sent as string', async (t) => {
+    const pool = await createIpv4PrefixRootPool();
+    const claimedResource = await claimResourceWithAltId(pool.id, { desiredSize: '4' }, { vlanAltId: '123' });
+    const poolWithResources = await getResourcesForPool(pool.id);
+
+    t.ok(claimedResource);
+    t.equal(poolWithResources.edges.length, 1);
+});
+
 
