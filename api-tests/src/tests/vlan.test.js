@@ -1,5 +1,11 @@
 import { claimResource} from '../graphql-queries.js';
-import { createVlanRangeRootPool, createVlanNestedPool, get2ChildrenIds, cleanup } from '../test-helpers.js';
+import {
+    createVlanRangeRootPool,
+    createVlanNestedPool,
+    get2ChildrenIds,
+    cleanup,
+    createVlanRootPool
+} from '../test-helpers.js';
 import tap from 'tap';
 const test = tap.test;
 
@@ -33,5 +39,18 @@ test('create vlan hierarchy', async (t) => {
     t.equal(resource2.Properties.vlan, 2001);
 
     await cleanup()
+    t.end();
+});
+
+test('allocate specific vlan from vlan resource pool', async (t) => {
+    const rootPoolId = await createVlanRootPool();
+
+    const allocatedResource = await claimResource(rootPoolId, {
+        desiredValue: 1000
+    });
+
+    t.equal(allocatedResource.Properties.vlan, 1000);
+
+    await cleanup();
     t.end();
 });
