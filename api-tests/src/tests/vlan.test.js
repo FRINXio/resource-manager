@@ -46,10 +46,23 @@ test('allocate specific vlan from vlan resource pool', async (t) => {
     const rootPoolId = await createVlanRootPool();
 
     const allocatedResource = await claimResource(rootPoolId, {
-        desiredValue: 1000
+        desiredValue: "1000"
     });
 
     t.equal(allocatedResource.Properties.vlan, 1000);
+
+    await cleanup();
+    t.end();
+});
+
+test('allocate specific vlan from vlan resource pool', async (t) => {
+    const rootPoolId = await createVlanRootPool();
+
+    const allocatedResource = await claimResource(rootPoolId, {
+        desiredValue: 1000
+    });
+
+    t.notOk(allocatedResource.Properties.vlan, 1000);
 
     await cleanup();
     t.end();
