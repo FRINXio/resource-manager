@@ -200,14 +200,12 @@ export async function createVlanNestedPool(parentResourceId, tags = null) {
 export async function createRandomSignedInt32Pool({from, to}) {
     let resourceTypeId = await findResourceTypeId('random_signed_int32');
     let strategyId = await findAllocationStrategyId('random_signed_int32');
-    const pool = await createAllocationPool(
+    return await createAllocationPool(
         getUniqueName('random-signed-int32'),
         resourceTypeId,
         strategyId,
         {from: "int", to: "int"},
         {from, to});
-
-    return pool.id;
 }
 
 export function getUniqueName(prefix) {
