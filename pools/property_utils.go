@@ -2,10 +2,11 @@ package pools
 
 import (
 	"context"
-	"fmt"
-	"strconv"
 	"encoding/json"
+	"fmt"
 	log "github.com/net-auto/resourceManager/logging"
+	"reflect"
+	"strconv"
 
 	"github.com/net-auto/resourceManager/ent"
 	"github.com/net-auto/resourceManager/ent/predicate"
@@ -161,8 +162,15 @@ func ParseProps(
 		// TODO add additional types
 		switch pt.Type {
 		case "int":
-			// Parse the int from string to be sure
-			atoi, err := strconv.Atoi(fmt.Sprintf("%v", pv))
+			var atoi int
+			var err error
+
+			if pvType := reflect.TypeOf(pv); pvType.Kind() == reflect.Float64 {
+				atoi, err = strconv.Atoi(fmt.Sprintf("%v", int(pv.(float64))))
+			} else {
+				atoi, err = strconv.Atoi(fmt.Sprintf("%v", pv))
+			}
+
 			if err != nil {
 				err := errors.Wrapf(err, "Unable to parse int value from \"%s\"", pv)
 				log.Error(ctx, err, "Unable to parse int value")
