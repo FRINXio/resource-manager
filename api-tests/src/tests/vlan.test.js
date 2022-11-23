@@ -55,14 +55,14 @@ test('allocate specific vlan from vlan resource pool', async (t) => {
     t.end();
 });
 
-test('allocate specific vlan from vlan resource pool', async (t) => {
+test('allocate specific vlan from vlan resource pool with bad format', async (t) => {
     const rootPoolId = await createVlanRootPool();
 
     const allocatedResource = await claimResource(rootPoolId, {
         desiredValue: 1000
     });
 
-    t.notOk(allocatedResource.Properties.vlan, 1000);
+    t.notOk(allocatedResource);
 
     await cleanup();
     t.end();
