@@ -1,7 +1,6 @@
 package src
 
 import (
-	"fmt"
 	"github.com/pkg/errors"
 	"strconv"
 )
@@ -46,7 +45,7 @@ func (ipv4 *Ipv4) Capacity() (map[string]interface{}, error) {
 		subnetItself = 0
 	}
 	freeCapacity := ipv4.FreeCapacity(rootAddressStr.(string), rootMask.(int), float64(len(ipv4.currentResources)), subnetItself)
-	result["freeCapacity"] = fmt.Sprintf("%v", freeCapacity)
+	result["freeCapacity"] = strconv.FormatFloat(freeCapacity, 'g', 30, 64)
 	result["utilizedCapacity"] = strconv.Itoa(len(ipv4.currentResources))
 	return result, nil
 }
