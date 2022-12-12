@@ -40,11 +40,15 @@ export function hostsInMask(addressStr, mask) {
     }
     let address = inet_aton(addressStr);
 
-    return subnetLastAddress(address, mask) - (address + 1);
+    return subnetBroadcastAddress(address, mask) - (address + 1);
 }
 
-function subnetLastAddress(subnet, mask) {
+export function subnetBroadcastAddress(subnet, mask) {
     return subnet + subnetAddresses(mask) - 1;
+}
+
+export function subnetLastAddress(subnetAddressNum, subnetMask) {
+    return subnetAddressNum + subnetAddresses(subnetMask);
 }
 
 const prefixRegex = /([0-9.]+)\/([0-9]{1,2})/
@@ -91,4 +95,24 @@ export function addressesToStr(currentResourcesUnwrapped) {
 
 export function prefixToStr(prefix) {
     return `${prefix.address}/${prefix.prefix}`
+}
+
+export function hostAddressesInSubnet(networkAddress, subnetCapacity) {
+    return Array(subnetCapacity).fill(networkAddress, 0).map((address, index) => {
+        const addressNum = inet_aton(address) + index;
+        return inet_ntoa(addressNum);
+    });
+}
+
+export function networkAddressesInSubnet(rootAddress, rootCapacity, rootSubnetMask, subnetCapacity) {
+    const rootAddressNum = inet_aton(rootAddress);
+    let currentAddressNum = rootAddressNum
+    const networkAddresses = [];
+
+    while (currentAddressNum < subnetLastAddress(rootAddressNum, rootSubnetMask)) {
+        networkAddresses.push(inet_ntoa(currentAddressNum));
+        currentAddressNum += subnetCapacity;
+    }
+
+    return networkAddresses;
 }

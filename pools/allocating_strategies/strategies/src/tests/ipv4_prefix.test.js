@@ -1,5 +1,5 @@
 const strat = require('../ipv4_prefix_strategy')
-import {hostsInMask, parsePrefix, subnetAddresses} from "../ipv4-utils";
+import { parsePrefix } from "../ipv4-utils";
 
 test("single allocation pool", () => {
     for (let i = 1; i <= 8; i++) {
@@ -41,6 +41,51 @@ test("ipv4-prefix capacity 24 mask", () => {
     expect(capacity)
         .toStrictEqual({freeCapacity: "240", utilizedCapacity: "16"})
 })
+
+test("ipv4-prefix with desired value after allocated resources", () => {
+    const allocatedResource = strat.invokeWithParams(
+        [prefixWithSubnet("192.168.1.0", 31, true), prefixWithSubnet("192.168.1.40", 31, true)],
+        { 'prefix': 24, 'address': "192.168.1.0", subnet: true},
+        { desiredSize: 6, desiredValue: "192.168.1.56"});
+
+    expect(allocatedResource).toStrictEqual({address: "192.168.1.56", prefix: 29, subnet:true})
+});
+
+test("ipv4-prefix with desired value between allocated resources", () => {
+    const allocatedResource = strat.invokeWithParams(
+        [prefixWithSubnet("192.168.1.0", 31, true), prefixWithSubnet("192.168.1.40", 31, true)],
+        { 'prefix': 24, 'address': "192.168.1.0", subnet: true},
+        { desiredSize: 6, desiredValue: "192.168.1.8"});
+
+    expect(allocatedResource).toStrictEqual({address: "192.168.1.8", prefix: 29, subnet:true})
+});
+
+test("ipv4-prefix with desired value between allocated resources but insufficient capacity", () => {
+    const allocatedResource = strat.invokeWithParams(
+        [prefixWithSubnet("192.168.1.40", 31, true)],
+        { 'prefix': 24, 'address': "192.168.1.0", subnet: true},
+        { desiredSize: 60, desiredValue: "192.168.1.0"});
+
+    expect(allocatedResource).toStrictEqual(null)
+});
+
+test("ipv4-prefix with invalid desired value", () => {
+    const allocatedResource = strat.invokeWithParams(
+        [prefixWithSubnet("192.168.1.0", 31, true), prefixWithSubnet("192.168.1.40", 31, true)],
+        { 'prefix': 24, 'address': "192.168.1.0", subnet: true},
+        { desiredSize: 6, desiredValue: "192.168.1.33"});
+
+    expect(allocatedResource).toStrictEqual(null)
+});
+
+test("ipv4-prefix with desired value overlapping other subnets in resource pool", () => {
+    const allocatedResource = strat.invokeWithParams(
+        [prefixWithSubnet("192.168.1.0", 31, true), prefixWithSubnet("192.168.1.40", 29, true)],
+        { 'prefix': 24, 'address': "192.168.1.0", subnet: true},
+        { desiredSize: 2, desiredValue: "192.168.1.44"});
+
+    expect(allocatedResource).toStrictEqual(null)
+});
 
 test("ipv4 prefix allocation subnet vs. pool", () => {
     expect(strat.invokeWithParams([],

@@ -1,9 +1,12 @@
 import {
+    hostAddressesInSubnet,
     hostsInMask,
     inet_aton,
     inet_ntoa,
+    networkAddressesInSubnet,
     prefixToStr,
-    subnetAddresses
+    subnetAddresses,
+    subnetBroadcastAddress, subnetLastAddress
 } from "./ipv4-utils";
 
 // framework managed constants
@@ -154,11 +157,23 @@ function invoke() {
 
     if (isSubnet === true) {
         // reserve subnet address and broadcast
-        userInput.desiredSize += 2
+        userInput.desiredSize += 2;
     }
 
     // Calculate smallest possible subnet mask to fit desiredSize
     let {newSubnetMask, newSubnetCapacity} = calculateDesiredSubnetMask();
+
+    if (userInput.desiredValue != null && networkAddressesInSubnet(rootAddressStr, rootCapacity, rootMask, newSubnetCapacity).includes(userInput.desiredValue) === false) {
+        console.error("Cannot allocate resource, because of the invalid value of provided ip address");
+        logStats(null, rootPrefixParsed, [], "error")
+        return null;
+    }
+
+    if (rootMask > newSubnetMask) {
+        console.error("Cannot allocate resource, because of the invalid value of provided ip address");
+        logStats(null, rootPrefixParsed, [], "error")
+        return null;
+    }
 
     // unwrap and sort currentResources
     let currentResourcesUnwrapped = currentResources.map(cR => cR.Properties)
@@ -167,44 +182,84 @@ function invoke() {
     let possibleSubnetNum = rootAddressNum
     // iterate over allocated subnets and see if a desired new subnet can be squeezed in
     for (let allocatedSubnet of currentResourcesUnwrapped) {
+        let allocatedSubnetNum = inet_aton(allocatedSubnet.address);
+        let chunkCapacity = allocatedSubnetNum - possibleSubnetNum;
 
-        let allocatedSubnetNum = inet_aton(allocatedSubnet.address)
-        let chunkCapacity = allocatedSubnetNum - possibleSubnetNum
-        if (chunkCapacity >= userInput.desiredSize) {
-            // there is chunk with sufficient capacity between possibleSubnetNum and allocatedSubnet.address
-            let newlyAllocatedPrefix = {
-                "address": inet_ntoa(possibleSubnetNum),
-                "prefix": newSubnetMask,
-                "subnet": isSubnet
+        if (userInput.desiredValue != null) {
+            while (possibleSubnetNum <= inet_aton(userInput.desiredValue)) {
+                if (chunkCapacity >= userInput.desiredSize && userInput.desiredValue === inet_ntoa(possibleSubnetNum)) {
+                    // there is chunk with sufficient capacity between possibleSubnetNum and allocatedSubnet.address
+                    return {
+                        "address": inet_ntoa(possibleSubnetNum),
+                        "prefix": newSubnetMask,
+                        "subnet": isSubnet
+                    }
+                }
+
+                chunkCapacity -= newSubnetCapacity;
+                possibleSubnetNum += newSubnetCapacity;
             }
-            // FIXME How to pass these stats ?
-            // logStats(newlyAllocatedPrefix, rootPrefixParsed, currentResourcesUnwrapped)
-            return newlyAllocatedPrefix
+        } else {
+            if (chunkCapacity >= userInput.desiredSize) {
+                // there is chunk with sufficient capacity between possibleSubnetNum and allocatedSubnet.address
+                return {
+                    "address": inet_ntoa(possibleSubnetNum),
+                    "prefix": newSubnetMask,
+                    "subnet": isSubnet
+                }
+            }
         }
 
         // move possible subnet start to a valid address outside of allocatedSubnet's addresses and continue the search
         possibleSubnetNum = findNextFreeSubnetAddress(allocatedSubnet, newSubnetMask);
     }
 
-    // check if there is any space left at the end of parent range
-    if (possibleSubnetNum + newSubnetCapacity <= rootAddressNum + rootCapacity) {
-        // there sure is some space, use it !
-        let newlyAllocatedPrefix = {
-            "address": inet_ntoa(possibleSubnetNum),
-            "prefix": newSubnetMask,
-            "subnet": isSubnet
-        }
-        // FIXME How to pass these stats ?
-        // logStats(newlyAllocatedPrefix, rootPrefixParsed, currentResourcesUnwrapped)
-        return newlyAllocatedPrefix
-    }
+    let possibleSubnetNumber = possibleSubnetNum;
 
-    // no suitable range found
-    console.error("Unable to allocate Ipv4 prefix from: " + rootPrefixStr +
-        ". Insufficient capacity to allocate a new prefix of size: " + userInput.desiredSize)
-    console.error("Currently allocated prefixes: " + prefixesToString(currentResourcesUnwrapped))
-    logStats(null, rootPrefixParsed, currentResourcesUnwrapped, "error")
-    return null
+    if (userInput.desiredValue != null) {
+        while (possibleSubnetNumber + newSubnetCapacity <= rootAddressNum + rootCapacity) {
+            // check if there is any space left at the end of parent range
+            const hasFreeSpaceInParentRange = possibleSubnetNumber + newSubnetCapacity <= rootAddressNum + rootCapacity;
+
+            if (hasFreeSpaceInParentRange && possibleSubnetNumber === inet_aton(userInput.desiredValue)) {
+                // there sure is some space, use it !
+                // FIXME How to pass these stats ?
+                // logStats(newlyAllocatedPrefix, rootPrefixParsed, currentResourcesUnwrapped)
+                return {
+                    "address": inet_ntoa(possibleSubnetNumber),
+                    "prefix": newSubnetMask,
+                    "subnet": isSubnet,
+                }
+            }
+
+            possibleSubnetNumber += newSubnetCapacity;
+        }
+
+        // no suitable range found
+        console.error("Unable to allocate Ipv4 prefix from: " + rootPrefixStr +
+            ". Insufficient capacity found to allocate a new prefix of size: " + userInput.desiredSize + " with a desired ipv4 address " + userInput.desiredValue + " in a subnet.")
+        console.error("Currently allocated prefixes: " + prefixesToString(currentResourcesUnwrapped))
+        logStats(null, rootPrefixParsed, currentResourcesUnwrapped, "error")
+        return null
+    } else {
+        if (possibleSubnetNum + newSubnetCapacity <= rootAddressNum + rootCapacity) {
+            // there sure is some space, use it !
+            // FIXME How to pass these stats ?
+            // logStats(newlyAllocatedPrefix, rootPrefixParsed, currentResourcesUnwrapped)
+            return {
+                "address": inet_ntoa(possibleSubnetNum),
+                "prefix": newSubnetMask,
+                "subnet": isSubnet,
+            }
+        }
+
+        // no suitable range found
+        console.error("Unable to allocate Ipv4 prefix from: " + rootPrefixStr +
+            ". Insufficient capacity to allocate a new prefix of size: " + userInput.desiredSize)
+        console.error("Currently allocated prefixes: " + prefixesToString(currentResourcesUnwrapped))
+        logStats(null, rootPrefixParsed, currentResourcesUnwrapped, "error")
+        return null
+    }
 }
 
 // STRATEGY_END
