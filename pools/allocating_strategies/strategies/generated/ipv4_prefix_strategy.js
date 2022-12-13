@@ -71,9 +71,9 @@ function networkAddressesInSubnet(rootAddress, rootCapacity, rootSubnetMask, sub
 }
 
 // framework managed constants
-var currentResources = [];
-var resourcePoolProperties = {};
-var userInput = {};
+//;
+//;
+//;
 // framework managed constants
 
 // STRATEGY_START

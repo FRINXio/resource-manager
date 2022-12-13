@@ -42,10 +42,10 @@ function hostsInMask(addressStr, mask) {
     }
     let address = inet_aton(addressStr);
 
-    return subnetLastAddress(address, mask) - (address + 1);
+    return subnetBroadcastAddress(address, mask) - (address + 1);
 }
 
-function subnetLastAddress(subnet, mask) {
+function subnetBroadcastAddress(subnet, mask) {
     return subnet + subnetAddresses(mask) - 1;
 }
 
