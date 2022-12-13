@@ -61,6 +61,9 @@ jobs:
         run: docker build --build-arg GITHUB_TOKEN_EXTERNAL_DOCKERFILE=${{ secrets.TOKEN }} . --file Dockerfile --tag $IMAGE_NAME
       - name: Run api-tests
         run: api-tests/test.sh yarn test
+      - name: Docker logs
+        if: always()
+        run: docker logs resource-manager
 
   push:
     # Ensure unit-test job passes before pushing image.
