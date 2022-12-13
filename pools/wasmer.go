@@ -302,7 +302,7 @@ func (wasmer Wasmer) invoke(name string, arg ...string) (map[string]interface{},
 
 	if err != nil {
 		err := errors.Wrapf(err,
-			"Error invoking user script. Stdout: \"%s\", Stderr: \"%s\"", string(stdout), stderr)
+			"Error invoking user script. Stdout: \"%s\", Stderr: \"%s\" name: \"%s\" args: \"%s\"", string(stdout), stderr, name, arg)
 		log.Error(nil, err, "Error invoking user script")
 		return nil, "", err
 	}
