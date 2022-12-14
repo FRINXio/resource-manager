@@ -673,6 +673,7 @@ export async function claimResource(poolId, params, description = null, suppress
         }
     })
     .then(result => {
+        console.log(result.Properties);
         console.log(result)
         if (result == null || result.data == null || result.data.ClaimResource == null) {
             return null;
