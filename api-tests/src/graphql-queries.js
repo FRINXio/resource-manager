@@ -672,7 +672,14 @@ export async function claimResource(poolId, params, description = null, suppress
             description: description,
         }
     })
-    .then(result => result.data.ClaimResource)
+    .then(result => {
+        console.log(result)
+        if (result == null || result.data == null || result.data.ClaimResource == null) {
+            return null;
+        }
+
+        return result.data.ClaimResource;
+    })
     .catch(error => suppressErrors?null:console.log(error));
 }
 

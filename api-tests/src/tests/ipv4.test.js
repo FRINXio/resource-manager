@@ -169,6 +169,8 @@ test('allocate resource from ipv4 prefix pool with desired value', async (t) => 
 
     t.same(allocatedResource.Properties, {address: "10.0.0.16", prefix: 29, subnet: false});
 
+    console.log(allocatedResource);
+
     await cleanup();
     t.end();
 });
