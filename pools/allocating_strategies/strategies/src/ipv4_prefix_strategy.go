@@ -85,8 +85,8 @@ func (ipv4prefix *Ipv4Prefix) Capacity() (map[string]interface{}, error) {
 		allocatedCapacity += hostsInMask(address, prefix)
 	}
 	var result = make(map[string]interface{})
-	result["freeCapacity"] = string(totalCapacity - allocatedCapacity + subnetItself)
-	result["utilizedCapacity"] = string(allocatedCapacity)
+	result["freeCapacity"] = strconv.FormatFloat(float64(totalCapacity-allocatedCapacity+subnetItself), 'g', 30, 64)
+	result["utilizedCapacity"] = strconv.Itoa(allocatedCapacity)
 
 	return result, nil
 }
