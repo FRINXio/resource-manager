@@ -5,6 +5,7 @@ import (
 	"github.com/pkg/errors"
 	"math"
 	"reflect"
+	"strconv"
 	"testing"
 )
 
@@ -74,7 +75,7 @@ func TestIpv4prefixCapacity24Mask(t *testing.T) {
 	var userInput map[string]interface{}
 	ipv4PrefixStruct := src.NewIpv4Prefix(allocated, resourcePool, userInput)
 	output, err := ipv4PrefixStruct.Capacity()
-	expectedOutput := map[string]interface{}{"freeCapacity": float64(240), "utilizedCapacity": float64(14)}
+	expectedOutput := map[string]interface{}{"freeCapacity": strconv.Itoa(240), "utilizedCapacity": strconv.Itoa(14)}
 	if eq := reflect.DeepEqual(output, expectedOutput); !eq {
 		t.Fatalf("different output of %s expected, got: %s", expectedOutput, output)
 	}
@@ -134,7 +135,7 @@ func TestIpv4PrefixAllocationSubnetVsPool(t *testing.T) {
 func TestIpv4PrefixAllocation24(t *testing.T) {
 	var resourcePool = map[string]interface{}{"prefix": 24, "address": "192.168.1.0"}
 	var subnet []map[string]interface{}
- 	var expectedSubnets = []map[string]interface{}{
+	var expectedSubnets = []map[string]interface{}{
 		ipv4Prefix("192.168.1.0", 28),   // 10 ->   0 -  15
 		ipv4Prefix("192.168.1.32", 27),  // 19 ->  32 -  63
 		ipv4Prefix("192.168.1.64", 26),  // 39 ->  64 - 127
@@ -231,9 +232,9 @@ func TestIpv4PrefixAllocation8(t *testing.T) {
 		subnet = append(subnet, ipv4Prefix(output["address"].(string), output["prefix"].(int)))
 		counter++
 	}
-// utilisation should be 202/256=78.9%
+	// utilisation should be 202/256=78.9%
 
-// Round 2, try to squeeze in additional subnets
+	// Round 2, try to squeeze in additional subnets
 	var expectedSubnets2 = []map[string]interface{}{
 		ipv4Prefix("10.20.0.0", 14),
 		ipv4Prefix("10.160.0.0", 11),
@@ -257,9 +258,9 @@ func TestIpv4PrefixAllocation8(t *testing.T) {
 		counter++
 	}
 
-// utilisation should be 100%
+	// utilisation should be 100%
 
-// Round 3, no more capacity at utilisation 100%
+	// Round 3, no more capacity at utilisation 100%
 	userInput := map[string]interface{}{"desiredSize": 2}
 	ipv4PrefixStruct := src.NewIpv4Prefix(subnet, resourcePool, userInput)
 	output, err := ipv4PrefixStruct.Invoke()
@@ -303,7 +304,7 @@ func TestDesiredSizeEqualsRoot(t *testing.T) {
 	}
 }
 
-func TestFreeIpv4PrefixCapacity(t *testing.T){
+func TestFreeIpv4PrefixCapacity(t *testing.T) {
 	var allocated []map[string]interface{}
 	var resourcePool = map[string]interface{}{"prefix": 24, "address": "192.168.1.0"}
 	var userInput = map[string]interface{}{"desiredSize": 2, "subnet": true}
@@ -317,7 +318,7 @@ func TestFreeIpv4PrefixCapacity(t *testing.T){
 	}
 }
 
-func TestFreeIpv4PrefixUtilisation(t *testing.T){
+func TestFreeIpv4PrefixUtilisation(t *testing.T) {
 	var allocated = []map[string]interface{}{
 		ipv4Prefix("192.168.1.0", 28)["Properties"].(map[string]interface{}),
 		ipv4Prefix("192.168.1.128", 27)["Properties"].(map[string]interface{})}
@@ -327,7 +328,7 @@ func TestFreeIpv4PrefixUtilisation(t *testing.T){
 	output := ipv4PrefixStruct.UtilizedCapacity(
 		allocated,
 		32)
-	expectedOutput := 16+32+32
+	expectedOutput := 16 + 32 + 32
 	if eq := reflect.DeepEqual(output, expectedOutput); !eq {
 		t.Fatalf("different output of %d expected, got: %d", expectedOutput, output)
 	}
