@@ -85,8 +85,8 @@ func (ipv4prefix *Ipv4Prefix) Capacity() (map[string]interface{}, error) {
 		allocatedCapacity += hostsInMask(address, prefix)
 	}
 	var result = make(map[string]interface{})
-	result["freeCapacity"] = float64(totalCapacity - allocatedCapacity + subnetItself)
-	result["utilizedCapacity"] = float64(allocatedCapacity)
+	result["freeCapacity"] = string(totalCapacity - allocatedCapacity + subnetItself)
+	result["utilizedCapacity"] = string(allocatedCapacity)
 
 	return result, nil
 }
