@@ -3,12 +3,12 @@
 package resourcetype
 
 import (
-	"github.com/facebook/ent/dialect/sql"
-	"github.com/facebook/ent/dialect/sql/sqlgraph"
+	"entgo.io/ent/dialect/sql"
+	"entgo.io/ent/dialect/sql/sqlgraph"
 	"github.com/net-auto/resourceManager/ent/predicate"
 )
 
-// ID filters vertices based on their identifier.
+// ID filters vertices based on their ID field.
 func ID(id int) predicate.ResourceType {
 	return predicate.ResourceType(func(s *sql.Selector) {
 		s.Where(sql.EQ(s.C(FieldID), id))
@@ -32,13 +32,7 @@ func IDNEQ(id int) predicate.ResourceType {
 // IDIn applies the In predicate on the ID field.
 func IDIn(ids ...int) predicate.ResourceType {
 	return predicate.ResourceType(func(s *sql.Selector) {
-		// if not arguments were provided, append the FALSE constants,
-		// since we can't apply "IN ()". This will make this predicate falsy.
-		if len(ids) == 0 {
-			s.Where(sql.False())
-			return
-		}
-		v := make([]interface{}, len(ids))
+		v := make([]any, len(ids))
 		for i := range v {
 			v[i] = ids[i]
 		}
@@ -49,13 +43,7 @@ func IDIn(ids ...int) predicate.ResourceType {
 // IDNotIn applies the NotIn predicate on the ID field.
 func IDNotIn(ids ...int) predicate.ResourceType {
 	return predicate.ResourceType(func(s *sql.Selector) {
-		// if not arguments were provided, append the FALSE constants,
-		// since we can't apply "IN ()". This will make this predicate falsy.
-		if len(ids) == 0 {
-			s.Where(sql.False())
-			return
-		}
-		v := make([]interface{}, len(ids))
+		v := make([]any, len(ids))
 		for i := range v {
 			v[i] = ids[i]
 		}
@@ -114,34 +102,22 @@ func NameNEQ(v string) predicate.ResourceType {
 
 // NameIn applies the In predicate on the "name" field.
 func NameIn(vs ...string) predicate.ResourceType {
-	v := make([]interface{}, len(vs))
+	v := make([]any, len(vs))
 	for i := range v {
 		v[i] = vs[i]
 	}
 	return predicate.ResourceType(func(s *sql.Selector) {
-		// if not arguments were provided, append the FALSE constants,
-		// since we can't apply "IN ()". This will make this predicate falsy.
-		if len(v) == 0 {
-			s.Where(sql.False())
-			return
-		}
 		s.Where(sql.In(s.C(FieldName), v...))
 	})
 }
 
 // NameNotIn applies the NotIn predicate on the "name" field.
 func NameNotIn(vs ...string) predicate.ResourceType {
-	v := make([]interface{}, len(vs))
+	v := make([]any, len(vs))
 	for i := range v {
 		v[i] = vs[i]
 	}
 	return predicate.ResourceType(func(s *sql.Selector) {
-		// if not arguments were provided, append the FALSE constants,
-		// since we can't apply "IN ()". This will make this predicate falsy.
-		if len(v) == 0 {
-			s.Where(sql.False())
-			return
-		}
 		s.Where(sql.NotIn(s.C(FieldName), v...))
 	})
 }
@@ -293,7 +269,7 @@ func HasPoolPropertiesWith(preds ...predicate.PoolProperties) predicate.Resource
 	})
 }
 
-// And groups list of predicates with the AND operator between them.
+// And groups predicates with the AND operator between them.
 func And(predicates ...predicate.ResourceType) predicate.ResourceType {
 	return predicate.ResourceType(func(s *sql.Selector) {
 		s1 := s.Clone().SetP(nil)
@@ -304,7 +280,7 @@ func And(predicates ...predicate.ResourceType) predicate.ResourceType {
 	})
 }
 
-// Or groups list of predicates with the OR operator between them.
+// Or groups predicates with the OR operator between them.
 func Or(predicates ...predicate.ResourceType) predicate.ResourceType {
 	return predicate.ResourceType(func(s *sql.Selector) {
 		s1 := s.Clone().SetP(nil)

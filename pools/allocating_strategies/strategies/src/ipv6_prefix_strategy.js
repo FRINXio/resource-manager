@@ -5,7 +5,7 @@ import {
     parsePrefix,
     prefixToStr,
     subnetAddresses
-} from "./ipv6utils";
+} from "./ipv6-utils";
 
 // framework managed constants
 var currentResources = []
@@ -71,7 +71,10 @@ function capacity() {
         allocatedCapacity += hostsInMask(resource.Properties.address, resource.Properties.prefix);
     }
 
-    return { freeCapacity: Number(totalCapacity - allocatedCapacity + subnetItself), utilizedCapacity: Number(allocatedCapacity) };
+    return {
+        freeCapacity: String(totalCapacity - allocatedCapacity + subnetItself),
+        utilizedCapacity: String(allocatedCapacity)
+    };
 }
 
 // log utilisation stats

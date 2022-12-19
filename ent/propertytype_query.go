@@ -9,9 +9,9 @@ import (
 	"fmt"
 	"math"
 
-	"github.com/facebook/ent/dialect/sql"
-	"github.com/facebook/ent/dialect/sql/sqlgraph"
-	"github.com/facebook/ent/schema/field"
+	"entgo.io/ent/dialect/sql"
+	"entgo.io/ent/dialect/sql/sqlgraph"
+	"entgo.io/ent/schema/field"
 	"github.com/net-auto/resourceManager/ent/predicate"
 	"github.com/net-auto/resourceManager/ent/property"
 	"github.com/net-auto/resourceManager/ent/propertytype"
@@ -21,21 +21,24 @@ import (
 // PropertyTypeQuery is the builder for querying PropertyType entities.
 type PropertyTypeQuery struct {
 	config
-	limit      *int
-	offset     *int
-	order      []OrderFunc
-	unique     []string
-	predicates []predicate.PropertyType
-	// eager-loading edges.
-	withProperties   *PropertyQuery
-	withResourceType *ResourceTypeQuery
-	withFKs          bool
+	limit               *int
+	offset              *int
+	unique              *bool
+	order               []OrderFunc
+	fields              []string
+	predicates          []predicate.PropertyType
+	withProperties      *PropertyQuery
+	withResourceType    *ResourceTypeQuery
+	withFKs             bool
+	modifiers           []func(*sql.Selector)
+	loadTotal           []func(context.Context, []*PropertyType) error
+	withNamedProperties map[string]*PropertyQuery
 	// intermediate query (i.e. traversal path).
 	sql  *sql.Selector
 	path func(context.Context) (*sql.Selector, error)
 }
 
-// Where adds a new predicate for the builder.
+// Where adds a new predicate for the PropertyTypeQuery builder.
 func (ptq *PropertyTypeQuery) Where(ps ...predicate.PropertyType) *PropertyTypeQuery {
 	ptq.predicates = append(ptq.predicates, ps...)
 	return ptq
@@ -53,20 +56,27 @@ func (ptq *PropertyTypeQuery) Offset(offset int) *PropertyTypeQuery {
 	return ptq
 }
 
+// Unique configures the query builder to filter duplicate records on query.
+// By default, unique is set to true, and can be disabled using this method.
+func (ptq *PropertyTypeQuery) Unique(unique bool) *PropertyTypeQuery {
+	ptq.unique = &unique
+	return ptq
+}
+
 // Order adds an order step to the query.
 func (ptq *PropertyTypeQuery) Order(o ...OrderFunc) *PropertyTypeQuery {
 	ptq.order = append(ptq.order, o...)
 	return ptq
 }
 
-// QueryProperties chains the current query on the properties edge.
+// QueryProperties chains the current query on the "properties" edge.
 func (ptq *PropertyTypeQuery) QueryProperties() *PropertyQuery {
 	query := &PropertyQuery{config: ptq.config}
 	query.path = func(ctx context.Context) (fromU *sql.Selector, err error) {
 		if err := ptq.prepareQuery(ctx); err != nil {
 			return nil, err
 		}
-		selector := ptq.sqlQuery()
+		selector := ptq.sqlQuery(ctx)
 		if err := selector.Err(); err != nil {
 			return nil, err
 		}
@@ -81,14 +91,14 @@ func (ptq *PropertyTypeQuery) QueryProperties() *PropertyQuery {
 	return query
 }
 
-// QueryResourceType chains the current query on the resource_type edge.
+// QueryResourceType chains the current query on the "resource_type" edge.
 func (ptq *PropertyTypeQuery) QueryResourceType() *ResourceTypeQuery {
 	query := &ResourceTypeQuery{config: ptq.config}
 	query.path = func(ctx context.Context) (fromU *sql.Selector, err error) {
 		if err := ptq.prepareQuery(ctx); err != nil {
 			return nil, err
 		}
-		selector := ptq.sqlQuery()
+		selector := ptq.sqlQuery(ctx)
 		if err := selector.Err(); err != nil {
 			return nil, err
 		}
@@ -103,7 +113,8 @@ func (ptq *PropertyTypeQuery) QueryResourceType() *ResourceTypeQuery {
 	return query
 }
 
-// First returns the first PropertyType entity in the query. Returns *NotFoundError when no propertytype was found.
+// First returns the first PropertyType entity from the query.
+// Returns a *NotFoundError when no PropertyType was found.
 func (ptq *PropertyTypeQuery) First(ctx context.Context) (*PropertyType, error) {
 	nodes, err := ptq.Limit(1).All(ctx)
 	if err != nil {
@@ -124,7 +135,8 @@ func (ptq *PropertyTypeQuery) FirstX(ctx context.Context) *PropertyType {
 	return node
 }
 
-// FirstID returns the first PropertyType id in the query. Returns *NotFoundError when no id was found.
+// FirstID returns the first PropertyType ID from the query.
+// Returns a *NotFoundError when no PropertyType ID was found.
 func (ptq *PropertyTypeQuery) FirstID(ctx context.Context) (id int, err error) {
 	var ids []int
 	if ids, err = ptq.Limit(1).IDs(ctx); err != nil {
@@ -146,7 +158,9 @@ func (ptq *PropertyTypeQuery) FirstIDX(ctx context.Context) int {
 	return id
 }
 
-// Only returns the only PropertyType entity in the query, returns an error if not exactly one entity was returned.
+// Only returns a single PropertyType entity found by the query, ensuring it only returns one.
+// Returns a *NotSingularError when more than one PropertyType entity is found.
+// Returns a *NotFoundError when no PropertyType entities are found.
 func (ptq *PropertyTypeQuery) Only(ctx context.Context) (*PropertyType, error) {
 	nodes, err := ptq.Limit(2).All(ctx)
 	if err != nil {
@@ -171,7 +185,9 @@ func (ptq *PropertyTypeQuery) OnlyX(ctx context.Context) *PropertyType {
 	return node
 }
 
-// OnlyID returns the only PropertyType id in the query, returns an error if not exactly one id was returned.
+// OnlyID is like Only, but returns the only PropertyType ID in the query.
+// Returns a *NotSingularError when more than one PropertyType ID is found.
+// Returns a *NotFoundError when no entities are found.
 func (ptq *PropertyTypeQuery) OnlyID(ctx context.Context) (id int, err error) {
 	var ids []int
 	if ids, err = ptq.Limit(2).IDs(ctx); err != nil {
@@ -214,7 +230,7 @@ func (ptq *PropertyTypeQuery) AllX(ctx context.Context) []*PropertyType {
 	return nodes
 }
 
-// IDs executes the query and returns a list of PropertyType ids.
+// IDs executes the query and returns a list of PropertyType IDs.
 func (ptq *PropertyTypeQuery) IDs(ctx context.Context) ([]int, error) {
 	var ids []int
 	if err := ptq.Select(propertytype.FieldID).Scan(ctx, &ids); err != nil {
@@ -266,24 +282,29 @@ func (ptq *PropertyTypeQuery) ExistX(ctx context.Context) bool {
 	return exist
 }
 
-// Clone returns a duplicate of the query builder, including all associated steps. It can be
+// Clone returns a duplicate of the PropertyTypeQuery builder, including all associated steps. It can be
 // used to prepare common query builders and use them differently after the clone is made.
 func (ptq *PropertyTypeQuery) Clone() *PropertyTypeQuery {
+	if ptq == nil {
+		return nil
+	}
 	return &PropertyTypeQuery{
-		config:     ptq.config,
-		limit:      ptq.limit,
-		offset:     ptq.offset,
-		order:      append([]OrderFunc{}, ptq.order...),
-		unique:     append([]string{}, ptq.unique...),
-		predicates: append([]predicate.PropertyType{}, ptq.predicates...),
+		config:           ptq.config,
+		limit:            ptq.limit,
+		offset:           ptq.offset,
+		order:            append([]OrderFunc{}, ptq.order...),
+		predicates:       append([]predicate.PropertyType{}, ptq.predicates...),
+		withProperties:   ptq.withProperties.Clone(),
+		withResourceType: ptq.withResourceType.Clone(),
 		// clone intermediate query.
-		sql:  ptq.sql.Clone(),
-		path: ptq.path,
+		sql:    ptq.sql.Clone(),
+		path:   ptq.path,
+		unique: ptq.unique,
 	}
 }
 
-//  WithProperties tells the query-builder to eager-loads the nodes that are connected to
-// the "properties" edge. The optional arguments used to configure the query builder of the edge.
+// WithProperties tells the query-builder to eager-load the nodes that are connected to
+// the "properties" edge. The optional arguments are used to configure the query builder of the edge.
 func (ptq *PropertyTypeQuery) WithProperties(opts ...func(*PropertyQuery)) *PropertyTypeQuery {
 	query := &PropertyQuery{config: ptq.config}
 	for _, opt := range opts {
@@ -293,8 +314,8 @@ func (ptq *PropertyTypeQuery) WithProperties(opts ...func(*PropertyQuery)) *Prop
 	return ptq
 }
 
-//  WithResourceType tells the query-builder to eager-loads the nodes that are connected to
-// the "resource_type" edge. The optional arguments used to configure the query builder of the edge.
+// WithResourceType tells the query-builder to eager-load the nodes that are connected to
+// the "resource_type" edge. The optional arguments are used to configure the query builder of the edge.
 func (ptq *PropertyTypeQuery) WithResourceType(opts ...func(*ResourceTypeQuery)) *PropertyTypeQuery {
 	query := &ResourceTypeQuery{config: ptq.config}
 	for _, opt := range opts {
@@ -304,7 +325,7 @@ func (ptq *PropertyTypeQuery) WithResourceType(opts ...func(*ResourceTypeQuery))
 	return ptq
 }
 
-// GroupBy used to group vertices by one or more fields/columns.
+// GroupBy is used to group vertices by one or more fields/columns.
 // It is often used with aggregate functions, like: count, max, mean, min, sum.
 //
 // Example:
@@ -318,20 +339,22 @@ func (ptq *PropertyTypeQuery) WithResourceType(opts ...func(*ResourceTypeQuery))
 //		GroupBy(propertytype.FieldType).
 //		Aggregate(ent.Count()).
 //		Scan(ctx, &v)
-//
 func (ptq *PropertyTypeQuery) GroupBy(field string, fields ...string) *PropertyTypeGroupBy {
-	group := &PropertyTypeGroupBy{config: ptq.config}
-	group.fields = append([]string{field}, fields...)
-	group.path = func(ctx context.Context) (prev *sql.Selector, err error) {
+	grbuild := &PropertyTypeGroupBy{config: ptq.config}
+	grbuild.fields = append([]string{field}, fields...)
+	grbuild.path = func(ctx context.Context) (prev *sql.Selector, err error) {
 		if err := ptq.prepareQuery(ctx); err != nil {
 			return nil, err
 		}
-		return ptq.sqlQuery(), nil
+		return ptq.sqlQuery(ctx), nil
 	}
-	return group
+	grbuild.label = propertytype.Label
+	grbuild.flds, grbuild.scan = &grbuild.fields, grbuild.Scan
+	return grbuild
 }
 
-// Select one or more fields from the given query.
+// Select allows the selection one or more fields/columns for the given query,
+// instead of selecting all fields in the entity.
 //
 // Example:
 //
@@ -342,20 +365,20 @@ func (ptq *PropertyTypeQuery) GroupBy(field string, fields ...string) *PropertyT
 //	client.PropertyType.Query().
 //		Select(propertytype.FieldType).
 //		Scan(ctx, &v)
-//
-func (ptq *PropertyTypeQuery) Select(field string, fields ...string) *PropertyTypeSelect {
-	selector := &PropertyTypeSelect{config: ptq.config}
-	selector.fields = append([]string{field}, fields...)
-	selector.path = func(ctx context.Context) (prev *sql.Selector, err error) {
-		if err := ptq.prepareQuery(ctx); err != nil {
-			return nil, err
-		}
-		return ptq.sqlQuery(), nil
-	}
-	return selector
+func (ptq *PropertyTypeQuery) Select(fields ...string) *PropertyTypeSelect {
+	ptq.fields = append(ptq.fields, fields...)
+	selbuild := &PropertyTypeSelect{PropertyTypeQuery: ptq}
+	selbuild.label = propertytype.Label
+	selbuild.flds, selbuild.scan = &ptq.fields, selbuild.Scan
+	return selbuild
 }
 
 func (ptq *PropertyTypeQuery) prepareQuery(ctx context.Context) error {
+	for _, f := range ptq.fields {
+		if !propertytype.ValidColumn(f) {
+			return &ValidationError{Name: f, err: fmt.Errorf("ent: invalid field %q for query", f)}
+		}
+	}
 	if ptq.path != nil {
 		prev, err := ptq.path(ctx)
 		if err != nil {
@@ -363,13 +386,16 @@ func (ptq *PropertyTypeQuery) prepareQuery(ctx context.Context) error {
 		}
 		ptq.sql = prev
 	}
+	if propertytype.Policy == nil {
+		return errors.New("ent: uninitialized propertytype.Policy (forgotten import ent/runtime?)")
+	}
 	if err := propertytype.Policy.EvalQuery(ctx, ptq); err != nil {
 		return err
 	}
 	return nil
 }
 
-func (ptq *PropertyTypeQuery) sqlAll(ctx context.Context) ([]*PropertyType, error) {
+func (ptq *PropertyTypeQuery) sqlAll(ctx context.Context, hooks ...queryHook) ([]*PropertyType, error) {
 	var (
 		nodes       = []*PropertyType{}
 		withFKs     = ptq.withFKs
@@ -385,22 +411,20 @@ func (ptq *PropertyTypeQuery) sqlAll(ctx context.Context) ([]*PropertyType, erro
 	if withFKs {
 		_spec.Node.Columns = append(_spec.Node.Columns, propertytype.ForeignKeys...)
 	}
-	_spec.ScanValues = func() []interface{} {
+	_spec.ScanValues = func(columns []string) ([]any, error) {
+		return (*PropertyType).scanValues(nil, columns)
+	}
+	_spec.Assign = func(columns []string, values []any) error {
 		node := &PropertyType{config: ptq.config}
 		nodes = append(nodes, node)
-		values := node.scanValues()
-		if withFKs {
-			values = append(values, node.fkValues()...)
-		}
-		return values
-	}
-	_spec.Assign = func(values ...interface{}) error {
-		if len(nodes) == 0 {
-			return fmt.Errorf("ent: Assign called without calling ScanValues")
-		}
-		node := nodes[len(nodes)-1]
 		node.Edges.loadedTypes = loadedTypes
-		return node.assignValues(values...)
+		return node.assignValues(columns, values)
+	}
+	if len(ptq.modifiers) > 0 {
+		_spec.Modifiers = ptq.modifiers
+	}
+	for i := range hooks {
+		hooks[i](ctx, _spec)
 	}
 	if err := sqlgraph.QueryNodes(ctx, ptq.driver, _spec); err != nil {
 		return nil, err
@@ -408,73 +432,111 @@ func (ptq *PropertyTypeQuery) sqlAll(ctx context.Context) ([]*PropertyType, erro
 	if len(nodes) == 0 {
 		return nodes, nil
 	}
-
 	if query := ptq.withProperties; query != nil {
-		fks := make([]driver.Value, 0, len(nodes))
-		nodeids := make(map[int]*PropertyType)
-		for i := range nodes {
-			fks = append(fks, nodes[i].ID)
-			nodeids[nodes[i].ID] = nodes[i]
-			nodes[i].Edges.Properties = []*Property{}
-		}
-		query.withFKs = true
-		query.Where(predicate.Property(func(s *sql.Selector) {
-			s.Where(sql.InValues(propertytype.PropertiesColumn, fks...))
-		}))
-		neighbors, err := query.All(ctx)
-		if err != nil {
+		if err := ptq.loadProperties(ctx, query, nodes,
+			func(n *PropertyType) { n.Edges.Properties = []*Property{} },
+			func(n *PropertyType, e *Property) { n.Edges.Properties = append(n.Edges.Properties, e) }); err != nil {
 			return nil, err
 		}
-		for _, n := range neighbors {
-			fk := n.property_type
-			if fk == nil {
-				return nil, fmt.Errorf(`foreign-key "property_type" is nil for node %v`, n.ID)
-			}
-			node, ok := nodeids[*fk]
-			if !ok {
-				return nil, fmt.Errorf(`unexpected foreign-key "property_type" returned %v for node %v`, *fk, n.ID)
-			}
-			node.Edges.Properties = append(node.Edges.Properties, n)
-		}
 	}
-
 	if query := ptq.withResourceType; query != nil {
-		ids := make([]int, 0, len(nodes))
-		nodeids := make(map[int][]*PropertyType)
-		for i := range nodes {
-			if fk := nodes[i].resource_type_property_types; fk != nil {
-				ids = append(ids, *fk)
-				nodeids[*fk] = append(nodeids[*fk], nodes[i])
-			}
-		}
-		query.Where(resourcetype.IDIn(ids...))
-		neighbors, err := query.All(ctx)
-		if err != nil {
+		if err := ptq.loadResourceType(ctx, query, nodes, nil,
+			func(n *PropertyType, e *ResourceType) { n.Edges.ResourceType = e }); err != nil {
 			return nil, err
 		}
-		for _, n := range neighbors {
-			nodes, ok := nodeids[n.ID]
-			if !ok {
-				return nil, fmt.Errorf(`unexpected foreign-key "resource_type_property_types" returned %v`, n.ID)
-			}
-			for i := range nodes {
-				nodes[i].Edges.ResourceType = n
-			}
+	}
+	for name, query := range ptq.withNamedProperties {
+		if err := ptq.loadProperties(ctx, query, nodes,
+			func(n *PropertyType) { n.appendNamedProperties(name) },
+			func(n *PropertyType, e *Property) { n.appendNamedProperties(name, e) }); err != nil {
+			return nil, err
 		}
 	}
-
+	for i := range ptq.loadTotal {
+		if err := ptq.loadTotal[i](ctx, nodes); err != nil {
+			return nil, err
+		}
+	}
 	return nodes, nil
+}
+
+func (ptq *PropertyTypeQuery) loadProperties(ctx context.Context, query *PropertyQuery, nodes []*PropertyType, init func(*PropertyType), assign func(*PropertyType, *Property)) error {
+	fks := make([]driver.Value, 0, len(nodes))
+	nodeids := make(map[int]*PropertyType)
+	for i := range nodes {
+		fks = append(fks, nodes[i].ID)
+		nodeids[nodes[i].ID] = nodes[i]
+		if init != nil {
+			init(nodes[i])
+		}
+	}
+	query.withFKs = true
+	query.Where(predicate.Property(func(s *sql.Selector) {
+		s.Where(sql.InValues(propertytype.PropertiesColumn, fks...))
+	}))
+	neighbors, err := query.All(ctx)
+	if err != nil {
+		return err
+	}
+	for _, n := range neighbors {
+		fk := n.property_type
+		if fk == nil {
+			return fmt.Errorf(`foreign-key "property_type" is nil for node %v`, n.ID)
+		}
+		node, ok := nodeids[*fk]
+		if !ok {
+			return fmt.Errorf(`unexpected foreign-key "property_type" returned %v for node %v`, *fk, n.ID)
+		}
+		assign(node, n)
+	}
+	return nil
+}
+func (ptq *PropertyTypeQuery) loadResourceType(ctx context.Context, query *ResourceTypeQuery, nodes []*PropertyType, init func(*PropertyType), assign func(*PropertyType, *ResourceType)) error {
+	ids := make([]int, 0, len(nodes))
+	nodeids := make(map[int][]*PropertyType)
+	for i := range nodes {
+		if nodes[i].resource_type_property_types == nil {
+			continue
+		}
+		fk := *nodes[i].resource_type_property_types
+		if _, ok := nodeids[fk]; !ok {
+			ids = append(ids, fk)
+		}
+		nodeids[fk] = append(nodeids[fk], nodes[i])
+	}
+	query.Where(resourcetype.IDIn(ids...))
+	neighbors, err := query.All(ctx)
+	if err != nil {
+		return err
+	}
+	for _, n := range neighbors {
+		nodes, ok := nodeids[n.ID]
+		if !ok {
+			return fmt.Errorf(`unexpected foreign-key "resource_type_property_types" returned %v`, n.ID)
+		}
+		for i := range nodes {
+			assign(nodes[i], n)
+		}
+	}
+	return nil
 }
 
 func (ptq *PropertyTypeQuery) sqlCount(ctx context.Context) (int, error) {
 	_spec := ptq.querySpec()
+	if len(ptq.modifiers) > 0 {
+		_spec.Modifiers = ptq.modifiers
+	}
+	_spec.Node.Columns = ptq.fields
+	if len(ptq.fields) > 0 {
+		_spec.Unique = ptq.unique != nil && *ptq.unique
+	}
 	return sqlgraph.CountNodes(ctx, ptq.driver, _spec)
 }
 
 func (ptq *PropertyTypeQuery) sqlExist(ctx context.Context) (bool, error) {
 	n, err := ptq.sqlCount(ctx)
 	if err != nil {
-		return false, fmt.Errorf("ent: check existence: %v", err)
+		return false, fmt.Errorf("ent: check existence: %w", err)
 	}
 	return n > 0, nil
 }
@@ -492,6 +554,18 @@ func (ptq *PropertyTypeQuery) querySpec() *sqlgraph.QuerySpec {
 		From:   ptq.sql,
 		Unique: true,
 	}
+	if unique := ptq.unique; unique != nil {
+		_spec.Unique = *unique
+	}
+	if fields := ptq.fields; len(fields) > 0 {
+		_spec.Node.Columns = make([]string, 0, len(fields))
+		_spec.Node.Columns = append(_spec.Node.Columns, propertytype.FieldID)
+		for i := range fields {
+			if fields[i] != propertytype.FieldID {
+				_spec.Node.Columns = append(_spec.Node.Columns, fields[i])
+			}
+		}
+	}
 	if ps := ptq.predicates; len(ps) > 0 {
 		_spec.Predicate = func(selector *sql.Selector) {
 			for i := range ps {
@@ -508,26 +582,33 @@ func (ptq *PropertyTypeQuery) querySpec() *sqlgraph.QuerySpec {
 	if ps := ptq.order; len(ps) > 0 {
 		_spec.Order = func(selector *sql.Selector) {
 			for i := range ps {
-				ps[i](selector, propertytype.ValidColumn)
+				ps[i](selector)
 			}
 		}
 	}
 	return _spec
 }
 
-func (ptq *PropertyTypeQuery) sqlQuery() *sql.Selector {
+func (ptq *PropertyTypeQuery) sqlQuery(ctx context.Context) *sql.Selector {
 	builder := sql.Dialect(ptq.driver.Dialect())
 	t1 := builder.Table(propertytype.Table)
-	selector := builder.Select(t1.Columns(propertytype.Columns...)...).From(t1)
+	columns := ptq.fields
+	if len(columns) == 0 {
+		columns = propertytype.Columns
+	}
+	selector := builder.Select(t1.Columns(columns...)...).From(t1)
 	if ptq.sql != nil {
 		selector = ptq.sql
-		selector.Select(selector.Columns(propertytype.Columns...)...)
+		selector.Select(selector.Columns(columns...)...)
+	}
+	if ptq.unique != nil && *ptq.unique {
+		selector.Distinct()
 	}
 	for _, p := range ptq.predicates {
 		p(selector)
 	}
 	for _, p := range ptq.order {
-		p(selector, propertytype.ValidColumn)
+		p(selector)
 	}
 	if offset := ptq.offset; offset != nil {
 		// limit is mandatory for offset clause. We start
@@ -540,9 +621,24 @@ func (ptq *PropertyTypeQuery) sqlQuery() *sql.Selector {
 	return selector
 }
 
-// PropertyTypeGroupBy is the builder for group-by PropertyType entities.
+// WithNamedProperties tells the query-builder to eager-load the nodes that are connected to the "properties"
+// edge with the given name. The optional arguments are used to configure the query builder of the edge.
+func (ptq *PropertyTypeQuery) WithNamedProperties(name string, opts ...func(*PropertyQuery)) *PropertyTypeQuery {
+	query := &PropertyQuery{config: ptq.config}
+	for _, opt := range opts {
+		opt(query)
+	}
+	if ptq.withNamedProperties == nil {
+		ptq.withNamedProperties = make(map[string]*PropertyQuery)
+	}
+	ptq.withNamedProperties[name] = query
+	return ptq
+}
+
+// PropertyTypeGroupBy is the group-by builder for PropertyType entities.
 type PropertyTypeGroupBy struct {
 	config
+	selector
 	fields []string
 	fns    []AggregateFunc
 	// intermediate query (i.e. traversal path).
@@ -556,8 +652,8 @@ func (ptgb *PropertyTypeGroupBy) Aggregate(fns ...AggregateFunc) *PropertyTypeGr
 	return ptgb
 }
 
-// Scan applies the group-by query and scan the result into the given value.
-func (ptgb *PropertyTypeGroupBy) Scan(ctx context.Context, v interface{}) error {
+// Scan applies the group-by query and scans the result into the given value.
+func (ptgb *PropertyTypeGroupBy) Scan(ctx context.Context, v any) error {
 	query, err := ptgb.path(ctx)
 	if err != nil {
 		return err
@@ -566,202 +662,7 @@ func (ptgb *PropertyTypeGroupBy) Scan(ctx context.Context, v interface{}) error 
 	return ptgb.sqlScan(ctx, v)
 }
 
-// ScanX is like Scan, but panics if an error occurs.
-func (ptgb *PropertyTypeGroupBy) ScanX(ctx context.Context, v interface{}) {
-	if err := ptgb.Scan(ctx, v); err != nil {
-		panic(err)
-	}
-}
-
-// Strings returns list of strings from group-by. It is only allowed when querying group-by with one field.
-func (ptgb *PropertyTypeGroupBy) Strings(ctx context.Context) ([]string, error) {
-	if len(ptgb.fields) > 1 {
-		return nil, errors.New("ent: PropertyTypeGroupBy.Strings is not achievable when grouping more than 1 field")
-	}
-	var v []string
-	if err := ptgb.Scan(ctx, &v); err != nil {
-		return nil, err
-	}
-	return v, nil
-}
-
-// StringsX is like Strings, but panics if an error occurs.
-func (ptgb *PropertyTypeGroupBy) StringsX(ctx context.Context) []string {
-	v, err := ptgb.Strings(ctx)
-	if err != nil {
-		panic(err)
-	}
-	return v
-}
-
-// String returns a single string from group-by. It is only allowed when querying group-by with one field.
-func (ptgb *PropertyTypeGroupBy) String(ctx context.Context) (_ string, err error) {
-	var v []string
-	if v, err = ptgb.Strings(ctx); err != nil {
-		return
-	}
-	switch len(v) {
-	case 1:
-		return v[0], nil
-	case 0:
-		err = &NotFoundError{propertytype.Label}
-	default:
-		err = fmt.Errorf("ent: PropertyTypeGroupBy.Strings returned %d results when one was expected", len(v))
-	}
-	return
-}
-
-// StringX is like String, but panics if an error occurs.
-func (ptgb *PropertyTypeGroupBy) StringX(ctx context.Context) string {
-	v, err := ptgb.String(ctx)
-	if err != nil {
-		panic(err)
-	}
-	return v
-}
-
-// Ints returns list of ints from group-by. It is only allowed when querying group-by with one field.
-func (ptgb *PropertyTypeGroupBy) Ints(ctx context.Context) ([]int, error) {
-	if len(ptgb.fields) > 1 {
-		return nil, errors.New("ent: PropertyTypeGroupBy.Ints is not achievable when grouping more than 1 field")
-	}
-	var v []int
-	if err := ptgb.Scan(ctx, &v); err != nil {
-		return nil, err
-	}
-	return v, nil
-}
-
-// IntsX is like Ints, but panics if an error occurs.
-func (ptgb *PropertyTypeGroupBy) IntsX(ctx context.Context) []int {
-	v, err := ptgb.Ints(ctx)
-	if err != nil {
-		panic(err)
-	}
-	return v
-}
-
-// Int returns a single int from group-by. It is only allowed when querying group-by with one field.
-func (ptgb *PropertyTypeGroupBy) Int(ctx context.Context) (_ int, err error) {
-	var v []int
-	if v, err = ptgb.Ints(ctx); err != nil {
-		return
-	}
-	switch len(v) {
-	case 1:
-		return v[0], nil
-	case 0:
-		err = &NotFoundError{propertytype.Label}
-	default:
-		err = fmt.Errorf("ent: PropertyTypeGroupBy.Ints returned %d results when one was expected", len(v))
-	}
-	return
-}
-
-// IntX is like Int, but panics if an error occurs.
-func (ptgb *PropertyTypeGroupBy) IntX(ctx context.Context) int {
-	v, err := ptgb.Int(ctx)
-	if err != nil {
-		panic(err)
-	}
-	return v
-}
-
-// Float64s returns list of float64s from group-by. It is only allowed when querying group-by with one field.
-func (ptgb *PropertyTypeGroupBy) Float64s(ctx context.Context) ([]float64, error) {
-	if len(ptgb.fields) > 1 {
-		return nil, errors.New("ent: PropertyTypeGroupBy.Float64s is not achievable when grouping more than 1 field")
-	}
-	var v []float64
-	if err := ptgb.Scan(ctx, &v); err != nil {
-		return nil, err
-	}
-	return v, nil
-}
-
-// Float64sX is like Float64s, but panics if an error occurs.
-func (ptgb *PropertyTypeGroupBy) Float64sX(ctx context.Context) []float64 {
-	v, err := ptgb.Float64s(ctx)
-	if err != nil {
-		panic(err)
-	}
-	return v
-}
-
-// Float64 returns a single float64 from group-by. It is only allowed when querying group-by with one field.
-func (ptgb *PropertyTypeGroupBy) Float64(ctx context.Context) (_ float64, err error) {
-	var v []float64
-	if v, err = ptgb.Float64s(ctx); err != nil {
-		return
-	}
-	switch len(v) {
-	case 1:
-		return v[0], nil
-	case 0:
-		err = &NotFoundError{propertytype.Label}
-	default:
-		err = fmt.Errorf("ent: PropertyTypeGroupBy.Float64s returned %d results when one was expected", len(v))
-	}
-	return
-}
-
-// Float64X is like Float64, but panics if an error occurs.
-func (ptgb *PropertyTypeGroupBy) Float64X(ctx context.Context) float64 {
-	v, err := ptgb.Float64(ctx)
-	if err != nil {
-		panic(err)
-	}
-	return v
-}
-
-// Bools returns list of bools from group-by. It is only allowed when querying group-by with one field.
-func (ptgb *PropertyTypeGroupBy) Bools(ctx context.Context) ([]bool, error) {
-	if len(ptgb.fields) > 1 {
-		return nil, errors.New("ent: PropertyTypeGroupBy.Bools is not achievable when grouping more than 1 field")
-	}
-	var v []bool
-	if err := ptgb.Scan(ctx, &v); err != nil {
-		return nil, err
-	}
-	return v, nil
-}
-
-// BoolsX is like Bools, but panics if an error occurs.
-func (ptgb *PropertyTypeGroupBy) BoolsX(ctx context.Context) []bool {
-	v, err := ptgb.Bools(ctx)
-	if err != nil {
-		panic(err)
-	}
-	return v
-}
-
-// Bool returns a single bool from group-by. It is only allowed when querying group-by with one field.
-func (ptgb *PropertyTypeGroupBy) Bool(ctx context.Context) (_ bool, err error) {
-	var v []bool
-	if v, err = ptgb.Bools(ctx); err != nil {
-		return
-	}
-	switch len(v) {
-	case 1:
-		return v[0], nil
-	case 0:
-		err = &NotFoundError{propertytype.Label}
-	default:
-		err = fmt.Errorf("ent: PropertyTypeGroupBy.Bools returned %d results when one was expected", len(v))
-	}
-	return
-}
-
-// BoolX is like Bool, but panics if an error occurs.
-func (ptgb *PropertyTypeGroupBy) BoolX(ctx context.Context) bool {
-	v, err := ptgb.Bool(ctx)
-	if err != nil {
-		panic(err)
-	}
-	return v
-}
-
-func (ptgb *PropertyTypeGroupBy) sqlScan(ctx context.Context, v interface{}) error {
+func (ptgb *PropertyTypeGroupBy) sqlScan(ctx context.Context, v any) error {
 	for _, f := range ptgb.fields {
 		if !propertytype.ValidColumn(f) {
 			return &ValidationError{Name: f, err: fmt.Errorf("invalid field %q for group-by", f)}
@@ -781,246 +682,47 @@ func (ptgb *PropertyTypeGroupBy) sqlScan(ctx context.Context, v interface{}) err
 }
 
 func (ptgb *PropertyTypeGroupBy) sqlQuery() *sql.Selector {
-	selector := ptgb.sql
-	columns := make([]string, 0, len(ptgb.fields)+len(ptgb.fns))
-	columns = append(columns, ptgb.fields...)
+	selector := ptgb.sql.Select()
+	aggregation := make([]string, 0, len(ptgb.fns))
 	for _, fn := range ptgb.fns {
-		columns = append(columns, fn(selector, propertytype.ValidColumn))
+		aggregation = append(aggregation, fn(selector))
 	}
-	return selector.Select(columns...).GroupBy(ptgb.fields...)
+	// If no columns were selected in a custom aggregation function, the default
+	// selection is the fields used for "group-by", and the aggregation functions.
+	if len(selector.SelectedColumns()) == 0 {
+		columns := make([]string, 0, len(ptgb.fields)+len(ptgb.fns))
+		for _, f := range ptgb.fields {
+			columns = append(columns, selector.C(f))
+		}
+		columns = append(columns, aggregation...)
+		selector.Select(columns...)
+	}
+	return selector.GroupBy(selector.Columns(ptgb.fields...)...)
 }
 
-// PropertyTypeSelect is the builder for select fields of PropertyType entities.
+// PropertyTypeSelect is the builder for selecting fields of PropertyType entities.
 type PropertyTypeSelect struct {
-	config
-	fields []string
+	*PropertyTypeQuery
+	selector
 	// intermediate query (i.e. traversal path).
-	sql  *sql.Selector
-	path func(context.Context) (*sql.Selector, error)
+	sql *sql.Selector
 }
 
-// Scan applies the selector query and scan the result into the given value.
-func (pts *PropertyTypeSelect) Scan(ctx context.Context, v interface{}) error {
-	query, err := pts.path(ctx)
-	if err != nil {
+// Scan applies the selector query and scans the result into the given value.
+func (pts *PropertyTypeSelect) Scan(ctx context.Context, v any) error {
+	if err := pts.prepareQuery(ctx); err != nil {
 		return err
 	}
-	pts.sql = query
+	pts.sql = pts.PropertyTypeQuery.sqlQuery(ctx)
 	return pts.sqlScan(ctx, v)
 }
 
-// ScanX is like Scan, but panics if an error occurs.
-func (pts *PropertyTypeSelect) ScanX(ctx context.Context, v interface{}) {
-	if err := pts.Scan(ctx, v); err != nil {
-		panic(err)
-	}
-}
-
-// Strings returns list of strings from selector. It is only allowed when selecting one field.
-func (pts *PropertyTypeSelect) Strings(ctx context.Context) ([]string, error) {
-	if len(pts.fields) > 1 {
-		return nil, errors.New("ent: PropertyTypeSelect.Strings is not achievable when selecting more than 1 field")
-	}
-	var v []string
-	if err := pts.Scan(ctx, &v); err != nil {
-		return nil, err
-	}
-	return v, nil
-}
-
-// StringsX is like Strings, but panics if an error occurs.
-func (pts *PropertyTypeSelect) StringsX(ctx context.Context) []string {
-	v, err := pts.Strings(ctx)
-	if err != nil {
-		panic(err)
-	}
-	return v
-}
-
-// String returns a single string from selector. It is only allowed when selecting one field.
-func (pts *PropertyTypeSelect) String(ctx context.Context) (_ string, err error) {
-	var v []string
-	if v, err = pts.Strings(ctx); err != nil {
-		return
-	}
-	switch len(v) {
-	case 1:
-		return v[0], nil
-	case 0:
-		err = &NotFoundError{propertytype.Label}
-	default:
-		err = fmt.Errorf("ent: PropertyTypeSelect.Strings returned %d results when one was expected", len(v))
-	}
-	return
-}
-
-// StringX is like String, but panics if an error occurs.
-func (pts *PropertyTypeSelect) StringX(ctx context.Context) string {
-	v, err := pts.String(ctx)
-	if err != nil {
-		panic(err)
-	}
-	return v
-}
-
-// Ints returns list of ints from selector. It is only allowed when selecting one field.
-func (pts *PropertyTypeSelect) Ints(ctx context.Context) ([]int, error) {
-	if len(pts.fields) > 1 {
-		return nil, errors.New("ent: PropertyTypeSelect.Ints is not achievable when selecting more than 1 field")
-	}
-	var v []int
-	if err := pts.Scan(ctx, &v); err != nil {
-		return nil, err
-	}
-	return v, nil
-}
-
-// IntsX is like Ints, but panics if an error occurs.
-func (pts *PropertyTypeSelect) IntsX(ctx context.Context) []int {
-	v, err := pts.Ints(ctx)
-	if err != nil {
-		panic(err)
-	}
-	return v
-}
-
-// Int returns a single int from selector. It is only allowed when selecting one field.
-func (pts *PropertyTypeSelect) Int(ctx context.Context) (_ int, err error) {
-	var v []int
-	if v, err = pts.Ints(ctx); err != nil {
-		return
-	}
-	switch len(v) {
-	case 1:
-		return v[0], nil
-	case 0:
-		err = &NotFoundError{propertytype.Label}
-	default:
-		err = fmt.Errorf("ent: PropertyTypeSelect.Ints returned %d results when one was expected", len(v))
-	}
-	return
-}
-
-// IntX is like Int, but panics if an error occurs.
-func (pts *PropertyTypeSelect) IntX(ctx context.Context) int {
-	v, err := pts.Int(ctx)
-	if err != nil {
-		panic(err)
-	}
-	return v
-}
-
-// Float64s returns list of float64s from selector. It is only allowed when selecting one field.
-func (pts *PropertyTypeSelect) Float64s(ctx context.Context) ([]float64, error) {
-	if len(pts.fields) > 1 {
-		return nil, errors.New("ent: PropertyTypeSelect.Float64s is not achievable when selecting more than 1 field")
-	}
-	var v []float64
-	if err := pts.Scan(ctx, &v); err != nil {
-		return nil, err
-	}
-	return v, nil
-}
-
-// Float64sX is like Float64s, but panics if an error occurs.
-func (pts *PropertyTypeSelect) Float64sX(ctx context.Context) []float64 {
-	v, err := pts.Float64s(ctx)
-	if err != nil {
-		panic(err)
-	}
-	return v
-}
-
-// Float64 returns a single float64 from selector. It is only allowed when selecting one field.
-func (pts *PropertyTypeSelect) Float64(ctx context.Context) (_ float64, err error) {
-	var v []float64
-	if v, err = pts.Float64s(ctx); err != nil {
-		return
-	}
-	switch len(v) {
-	case 1:
-		return v[0], nil
-	case 0:
-		err = &NotFoundError{propertytype.Label}
-	default:
-		err = fmt.Errorf("ent: PropertyTypeSelect.Float64s returned %d results when one was expected", len(v))
-	}
-	return
-}
-
-// Float64X is like Float64, but panics if an error occurs.
-func (pts *PropertyTypeSelect) Float64X(ctx context.Context) float64 {
-	v, err := pts.Float64(ctx)
-	if err != nil {
-		panic(err)
-	}
-	return v
-}
-
-// Bools returns list of bools from selector. It is only allowed when selecting one field.
-func (pts *PropertyTypeSelect) Bools(ctx context.Context) ([]bool, error) {
-	if len(pts.fields) > 1 {
-		return nil, errors.New("ent: PropertyTypeSelect.Bools is not achievable when selecting more than 1 field")
-	}
-	var v []bool
-	if err := pts.Scan(ctx, &v); err != nil {
-		return nil, err
-	}
-	return v, nil
-}
-
-// BoolsX is like Bools, but panics if an error occurs.
-func (pts *PropertyTypeSelect) BoolsX(ctx context.Context) []bool {
-	v, err := pts.Bools(ctx)
-	if err != nil {
-		panic(err)
-	}
-	return v
-}
-
-// Bool returns a single bool from selector. It is only allowed when selecting one field.
-func (pts *PropertyTypeSelect) Bool(ctx context.Context) (_ bool, err error) {
-	var v []bool
-	if v, err = pts.Bools(ctx); err != nil {
-		return
-	}
-	switch len(v) {
-	case 1:
-		return v[0], nil
-	case 0:
-		err = &NotFoundError{propertytype.Label}
-	default:
-		err = fmt.Errorf("ent: PropertyTypeSelect.Bools returned %d results when one was expected", len(v))
-	}
-	return
-}
-
-// BoolX is like Bool, but panics if an error occurs.
-func (pts *PropertyTypeSelect) BoolX(ctx context.Context) bool {
-	v, err := pts.Bool(ctx)
-	if err != nil {
-		panic(err)
-	}
-	return v
-}
-
-func (pts *PropertyTypeSelect) sqlScan(ctx context.Context, v interface{}) error {
-	for _, f := range pts.fields {
-		if !propertytype.ValidColumn(f) {
-			return &ValidationError{Name: f, err: fmt.Errorf("invalid field %q for selection", f)}
-		}
-	}
+func (pts *PropertyTypeSelect) sqlScan(ctx context.Context, v any) error {
 	rows := &sql.Rows{}
-	query, args := pts.sqlQuery().Query()
+	query, args := pts.sql.Query()
 	if err := pts.driver.Query(ctx, query, args, rows); err != nil {
 		return err
 	}
 	defer rows.Close()
 	return sql.ScanSlice(rows, v)
-}
-
-func (pts *PropertyTypeSelect) sqlQuery() sql.Querier {
-	selector := pts.sql
-	selector.Select(selector.Columns(pts.fields...)...)
-	return selector
 }

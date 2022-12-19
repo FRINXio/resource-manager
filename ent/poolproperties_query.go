@@ -9,9 +9,9 @@ import (
 	"fmt"
 	"math"
 
-	"github.com/facebook/ent/dialect/sql"
-	"github.com/facebook/ent/dialect/sql/sqlgraph"
-	"github.com/facebook/ent/schema/field"
+	"entgo.io/ent/dialect/sql"
+	"entgo.io/ent/dialect/sql/sqlgraph"
+	"entgo.io/ent/schema/field"
 	"github.com/net-auto/resourceManager/ent/poolproperties"
 	"github.com/net-auto/resourceManager/ent/predicate"
 	"github.com/net-auto/resourceManager/ent/property"
@@ -22,22 +22,26 @@ import (
 // PoolPropertiesQuery is the builder for querying PoolProperties entities.
 type PoolPropertiesQuery struct {
 	config
-	limit      *int
-	offset     *int
-	order      []OrderFunc
-	unique     []string
-	predicates []predicate.PoolProperties
-	// eager-loading edges.
-	withPool         *ResourcePoolQuery
-	withResourceType *ResourceTypeQuery
-	withProperties   *PropertyQuery
-	withFKs          bool
+	limit                 *int
+	offset                *int
+	unique                *bool
+	order                 []OrderFunc
+	fields                []string
+	predicates            []predicate.PoolProperties
+	withPool              *ResourcePoolQuery
+	withResourceType      *ResourceTypeQuery
+	withProperties        *PropertyQuery
+	withFKs               bool
+	modifiers             []func(*sql.Selector)
+	loadTotal             []func(context.Context, []*PoolProperties) error
+	withNamedResourceType map[string]*ResourceTypeQuery
+	withNamedProperties   map[string]*PropertyQuery
 	// intermediate query (i.e. traversal path).
 	sql  *sql.Selector
 	path func(context.Context) (*sql.Selector, error)
 }
 
-// Where adds a new predicate for the builder.
+// Where adds a new predicate for the PoolPropertiesQuery builder.
 func (ppq *PoolPropertiesQuery) Where(ps ...predicate.PoolProperties) *PoolPropertiesQuery {
 	ppq.predicates = append(ppq.predicates, ps...)
 	return ppq
@@ -55,20 +59,27 @@ func (ppq *PoolPropertiesQuery) Offset(offset int) *PoolPropertiesQuery {
 	return ppq
 }
 
+// Unique configures the query builder to filter duplicate records on query.
+// By default, unique is set to true, and can be disabled using this method.
+func (ppq *PoolPropertiesQuery) Unique(unique bool) *PoolPropertiesQuery {
+	ppq.unique = &unique
+	return ppq
+}
+
 // Order adds an order step to the query.
 func (ppq *PoolPropertiesQuery) Order(o ...OrderFunc) *PoolPropertiesQuery {
 	ppq.order = append(ppq.order, o...)
 	return ppq
 }
 
-// QueryPool chains the current query on the pool edge.
+// QueryPool chains the current query on the "pool" edge.
 func (ppq *PoolPropertiesQuery) QueryPool() *ResourcePoolQuery {
 	query := &ResourcePoolQuery{config: ppq.config}
 	query.path = func(ctx context.Context) (fromU *sql.Selector, err error) {
 		if err := ppq.prepareQuery(ctx); err != nil {
 			return nil, err
 		}
-		selector := ppq.sqlQuery()
+		selector := ppq.sqlQuery(ctx)
 		if err := selector.Err(); err != nil {
 			return nil, err
 		}
@@ -83,14 +94,14 @@ func (ppq *PoolPropertiesQuery) QueryPool() *ResourcePoolQuery {
 	return query
 }
 
-// QueryResourceType chains the current query on the resourceType edge.
+// QueryResourceType chains the current query on the "resourceType" edge.
 func (ppq *PoolPropertiesQuery) QueryResourceType() *ResourceTypeQuery {
 	query := &ResourceTypeQuery{config: ppq.config}
 	query.path = func(ctx context.Context) (fromU *sql.Selector, err error) {
 		if err := ppq.prepareQuery(ctx); err != nil {
 			return nil, err
 		}
-		selector := ppq.sqlQuery()
+		selector := ppq.sqlQuery(ctx)
 		if err := selector.Err(); err != nil {
 			return nil, err
 		}
@@ -105,14 +116,14 @@ func (ppq *PoolPropertiesQuery) QueryResourceType() *ResourceTypeQuery {
 	return query
 }
 
-// QueryProperties chains the current query on the properties edge.
+// QueryProperties chains the current query on the "properties" edge.
 func (ppq *PoolPropertiesQuery) QueryProperties() *PropertyQuery {
 	query := &PropertyQuery{config: ppq.config}
 	query.path = func(ctx context.Context) (fromU *sql.Selector, err error) {
 		if err := ppq.prepareQuery(ctx); err != nil {
 			return nil, err
 		}
-		selector := ppq.sqlQuery()
+		selector := ppq.sqlQuery(ctx)
 		if err := selector.Err(); err != nil {
 			return nil, err
 		}
@@ -127,7 +138,8 @@ func (ppq *PoolPropertiesQuery) QueryProperties() *PropertyQuery {
 	return query
 }
 
-// First returns the first PoolProperties entity in the query. Returns *NotFoundError when no poolproperties was found.
+// First returns the first PoolProperties entity from the query.
+// Returns a *NotFoundError when no PoolProperties was found.
 func (ppq *PoolPropertiesQuery) First(ctx context.Context) (*PoolProperties, error) {
 	nodes, err := ppq.Limit(1).All(ctx)
 	if err != nil {
@@ -148,7 +160,8 @@ func (ppq *PoolPropertiesQuery) FirstX(ctx context.Context) *PoolProperties {
 	return node
 }
 
-// FirstID returns the first PoolProperties id in the query. Returns *NotFoundError when no id was found.
+// FirstID returns the first PoolProperties ID from the query.
+// Returns a *NotFoundError when no PoolProperties ID was found.
 func (ppq *PoolPropertiesQuery) FirstID(ctx context.Context) (id int, err error) {
 	var ids []int
 	if ids, err = ppq.Limit(1).IDs(ctx); err != nil {
@@ -170,7 +183,9 @@ func (ppq *PoolPropertiesQuery) FirstIDX(ctx context.Context) int {
 	return id
 }
 
-// Only returns the only PoolProperties entity in the query, returns an error if not exactly one entity was returned.
+// Only returns a single PoolProperties entity found by the query, ensuring it only returns one.
+// Returns a *NotSingularError when more than one PoolProperties entity is found.
+// Returns a *NotFoundError when no PoolProperties entities are found.
 func (ppq *PoolPropertiesQuery) Only(ctx context.Context) (*PoolProperties, error) {
 	nodes, err := ppq.Limit(2).All(ctx)
 	if err != nil {
@@ -195,7 +210,9 @@ func (ppq *PoolPropertiesQuery) OnlyX(ctx context.Context) *PoolProperties {
 	return node
 }
 
-// OnlyID returns the only PoolProperties id in the query, returns an error if not exactly one id was returned.
+// OnlyID is like Only, but returns the only PoolProperties ID in the query.
+// Returns a *NotSingularError when more than one PoolProperties ID is found.
+// Returns a *NotFoundError when no entities are found.
 func (ppq *PoolPropertiesQuery) OnlyID(ctx context.Context) (id int, err error) {
 	var ids []int
 	if ids, err = ppq.Limit(2).IDs(ctx); err != nil {
@@ -238,7 +255,7 @@ func (ppq *PoolPropertiesQuery) AllX(ctx context.Context) []*PoolProperties {
 	return nodes
 }
 
-// IDs executes the query and returns a list of PoolProperties ids.
+// IDs executes the query and returns a list of PoolProperties IDs.
 func (ppq *PoolPropertiesQuery) IDs(ctx context.Context) ([]int, error) {
 	var ids []int
 	if err := ppq.Select(poolproperties.FieldID).Scan(ctx, &ids); err != nil {
@@ -290,24 +307,30 @@ func (ppq *PoolPropertiesQuery) ExistX(ctx context.Context) bool {
 	return exist
 }
 
-// Clone returns a duplicate of the query builder, including all associated steps. It can be
+// Clone returns a duplicate of the PoolPropertiesQuery builder, including all associated steps. It can be
 // used to prepare common query builders and use them differently after the clone is made.
 func (ppq *PoolPropertiesQuery) Clone() *PoolPropertiesQuery {
+	if ppq == nil {
+		return nil
+	}
 	return &PoolPropertiesQuery{
-		config:     ppq.config,
-		limit:      ppq.limit,
-		offset:     ppq.offset,
-		order:      append([]OrderFunc{}, ppq.order...),
-		unique:     append([]string{}, ppq.unique...),
-		predicates: append([]predicate.PoolProperties{}, ppq.predicates...),
+		config:           ppq.config,
+		limit:            ppq.limit,
+		offset:           ppq.offset,
+		order:            append([]OrderFunc{}, ppq.order...),
+		predicates:       append([]predicate.PoolProperties{}, ppq.predicates...),
+		withPool:         ppq.withPool.Clone(),
+		withResourceType: ppq.withResourceType.Clone(),
+		withProperties:   ppq.withProperties.Clone(),
 		// clone intermediate query.
-		sql:  ppq.sql.Clone(),
-		path: ppq.path,
+		sql:    ppq.sql.Clone(),
+		path:   ppq.path,
+		unique: ppq.unique,
 	}
 }
 
-//  WithPool tells the query-builder to eager-loads the nodes that are connected to
-// the "pool" edge. The optional arguments used to configure the query builder of the edge.
+// WithPool tells the query-builder to eager-load the nodes that are connected to
+// the "pool" edge. The optional arguments are used to configure the query builder of the edge.
 func (ppq *PoolPropertiesQuery) WithPool(opts ...func(*ResourcePoolQuery)) *PoolPropertiesQuery {
 	query := &ResourcePoolQuery{config: ppq.config}
 	for _, opt := range opts {
@@ -317,8 +340,8 @@ func (ppq *PoolPropertiesQuery) WithPool(opts ...func(*ResourcePoolQuery)) *Pool
 	return ppq
 }
 
-//  WithResourceType tells the query-builder to eager-loads the nodes that are connected to
-// the "resourceType" edge. The optional arguments used to configure the query builder of the edge.
+// WithResourceType tells the query-builder to eager-load the nodes that are connected to
+// the "resourceType" edge. The optional arguments are used to configure the query builder of the edge.
 func (ppq *PoolPropertiesQuery) WithResourceType(opts ...func(*ResourceTypeQuery)) *PoolPropertiesQuery {
 	query := &ResourceTypeQuery{config: ppq.config}
 	for _, opt := range opts {
@@ -328,8 +351,8 @@ func (ppq *PoolPropertiesQuery) WithResourceType(opts ...func(*ResourceTypeQuery
 	return ppq
 }
 
-//  WithProperties tells the query-builder to eager-loads the nodes that are connected to
-// the "properties" edge. The optional arguments used to configure the query builder of the edge.
+// WithProperties tells the query-builder to eager-load the nodes that are connected to
+// the "properties" edge. The optional arguments are used to configure the query builder of the edge.
 func (ppq *PoolPropertiesQuery) WithProperties(opts ...func(*PropertyQuery)) *PoolPropertiesQuery {
 	query := &PropertyQuery{config: ppq.config}
 	for _, opt := range opts {
@@ -339,34 +362,38 @@ func (ppq *PoolPropertiesQuery) WithProperties(opts ...func(*PropertyQuery)) *Po
 	return ppq
 }
 
-// GroupBy used to group vertices by one or more fields/columns.
+// GroupBy is used to group vertices by one or more fields/columns.
 // It is often used with aggregate functions, like: count, max, mean, min, sum.
 func (ppq *PoolPropertiesQuery) GroupBy(field string, fields ...string) *PoolPropertiesGroupBy {
-	group := &PoolPropertiesGroupBy{config: ppq.config}
-	group.fields = append([]string{field}, fields...)
-	group.path = func(ctx context.Context) (prev *sql.Selector, err error) {
+	grbuild := &PoolPropertiesGroupBy{config: ppq.config}
+	grbuild.fields = append([]string{field}, fields...)
+	grbuild.path = func(ctx context.Context) (prev *sql.Selector, err error) {
 		if err := ppq.prepareQuery(ctx); err != nil {
 			return nil, err
 		}
-		return ppq.sqlQuery(), nil
+		return ppq.sqlQuery(ctx), nil
 	}
-	return group
+	grbuild.label = poolproperties.Label
+	grbuild.flds, grbuild.scan = &grbuild.fields, grbuild.Scan
+	return grbuild
 }
 
-// Select one or more fields from the given query.
-func (ppq *PoolPropertiesQuery) Select(field string, fields ...string) *PoolPropertiesSelect {
-	selector := &PoolPropertiesSelect{config: ppq.config}
-	selector.fields = append([]string{field}, fields...)
-	selector.path = func(ctx context.Context) (prev *sql.Selector, err error) {
-		if err := ppq.prepareQuery(ctx); err != nil {
-			return nil, err
-		}
-		return ppq.sqlQuery(), nil
-	}
-	return selector
+// Select allows the selection one or more fields/columns for the given query,
+// instead of selecting all fields in the entity.
+func (ppq *PoolPropertiesQuery) Select(fields ...string) *PoolPropertiesSelect {
+	ppq.fields = append(ppq.fields, fields...)
+	selbuild := &PoolPropertiesSelect{PoolPropertiesQuery: ppq}
+	selbuild.label = poolproperties.Label
+	selbuild.flds, selbuild.scan = &ppq.fields, selbuild.Scan
+	return selbuild
 }
 
 func (ppq *PoolPropertiesQuery) prepareQuery(ctx context.Context) error {
+	for _, f := range ppq.fields {
+		if !poolproperties.ValidColumn(f) {
+			return &ValidationError{Name: f, err: fmt.Errorf("ent: invalid field %q for query", f)}
+		}
+	}
 	if ppq.path != nil {
 		prev, err := ppq.path(ctx)
 		if err != nil {
@@ -374,13 +401,16 @@ func (ppq *PoolPropertiesQuery) prepareQuery(ctx context.Context) error {
 		}
 		ppq.sql = prev
 	}
+	if poolproperties.Policy == nil {
+		return errors.New("ent: uninitialized poolproperties.Policy (forgotten import ent/runtime?)")
+	}
 	if err := poolproperties.Policy.EvalQuery(ctx, ppq); err != nil {
 		return err
 	}
 	return nil
 }
 
-func (ppq *PoolPropertiesQuery) sqlAll(ctx context.Context) ([]*PoolProperties, error) {
+func (ppq *PoolPropertiesQuery) sqlAll(ctx context.Context, hooks ...queryHook) ([]*PoolProperties, error) {
 	var (
 		nodes       = []*PoolProperties{}
 		withFKs     = ppq.withFKs
@@ -397,22 +427,20 @@ func (ppq *PoolPropertiesQuery) sqlAll(ctx context.Context) ([]*PoolProperties, 
 	if withFKs {
 		_spec.Node.Columns = append(_spec.Node.Columns, poolproperties.ForeignKeys...)
 	}
-	_spec.ScanValues = func() []interface{} {
+	_spec.ScanValues = func(columns []string) ([]any, error) {
+		return (*PoolProperties).scanValues(nil, columns)
+	}
+	_spec.Assign = func(columns []string, values []any) error {
 		node := &PoolProperties{config: ppq.config}
 		nodes = append(nodes, node)
-		values := node.scanValues()
-		if withFKs {
-			values = append(values, node.fkValues()...)
-		}
-		return values
-	}
-	_spec.Assign = func(values ...interface{}) error {
-		if len(nodes) == 0 {
-			return fmt.Errorf("ent: Assign called without calling ScanValues")
-		}
-		node := nodes[len(nodes)-1]
 		node.Edges.loadedTypes = loadedTypes
-		return node.assignValues(values...)
+		return node.assignValues(columns, values)
+	}
+	if len(ppq.modifiers) > 0 {
+		_spec.Modifiers = ppq.modifiers
+	}
+	for i := range hooks {
+		hooks[i](ctx, _spec)
 	}
 	if err := sqlgraph.QueryNodes(ctx, ppq.driver, _spec); err != nil {
 		return nil, err
@@ -420,137 +448,183 @@ func (ppq *PoolPropertiesQuery) sqlAll(ctx context.Context) ([]*PoolProperties, 
 	if len(nodes) == 0 {
 		return nodes, nil
 	}
-
 	if query := ppq.withPool; query != nil {
-		ids := make([]int, 0, len(nodes))
-		nodeids := make(map[int][]*PoolProperties)
-		for i := range nodes {
-			if fk := nodes[i].resource_pool_pool_properties; fk != nil {
-				ids = append(ids, *fk)
-				nodeids[*fk] = append(nodeids[*fk], nodes[i])
-			}
-		}
-		query.Where(resourcepool.IDIn(ids...))
-		neighbors, err := query.All(ctx)
-		if err != nil {
+		if err := ppq.loadPool(ctx, query, nodes, nil,
+			func(n *PoolProperties, e *ResourcePool) { n.Edges.Pool = e }); err != nil {
 			return nil, err
 		}
-		for _, n := range neighbors {
-			nodes, ok := nodeids[n.ID]
-			if !ok {
-				return nil, fmt.Errorf(`unexpected foreign-key "resource_pool_pool_properties" returned %v`, n.ID)
-			}
-			for i := range nodes {
-				nodes[i].Edges.Pool = n
-			}
-		}
 	}
-
 	if query := ppq.withResourceType; query != nil {
-		fks := make([]driver.Value, 0, len(nodes))
-		ids := make(map[int]*PoolProperties, len(nodes))
-		for _, node := range nodes {
-			ids[node.ID] = node
-			fks = append(fks, node.ID)
-			node.Edges.ResourceType = []*ResourceType{}
-		}
-		var (
-			edgeids []int
-			edges   = make(map[int][]*PoolProperties)
-		)
-		_spec := &sqlgraph.EdgeQuerySpec{
-			Edge: &sqlgraph.EdgeSpec{
-				Inverse: false,
-				Table:   poolproperties.ResourceTypeTable,
-				Columns: poolproperties.ResourceTypePrimaryKey,
-			},
-			Predicate: func(s *sql.Selector) {
-				s.Where(sql.InValues(poolproperties.ResourceTypePrimaryKey[0], fks...))
-			},
-
-			ScanValues: func() [2]interface{} {
-				return [2]interface{}{&sql.NullInt64{}, &sql.NullInt64{}}
-			},
-			Assign: func(out, in interface{}) error {
-				eout, ok := out.(*sql.NullInt64)
-				if !ok || eout == nil {
-					return fmt.Errorf("unexpected id value for edge-out")
-				}
-				ein, ok := in.(*sql.NullInt64)
-				if !ok || ein == nil {
-					return fmt.Errorf("unexpected id value for edge-in")
-				}
-				outValue := int(eout.Int64)
-				inValue := int(ein.Int64)
-				node, ok := ids[outValue]
-				if !ok {
-					return fmt.Errorf("unexpected node id in edges: %v", outValue)
-				}
-				edgeids = append(edgeids, inValue)
-				edges[inValue] = append(edges[inValue], node)
-				return nil
-			},
-		}
-		if err := sqlgraph.QueryEdges(ctx, ppq.driver, _spec); err != nil {
-			return nil, fmt.Errorf(`query edges "resourceType": %v`, err)
-		}
-		query.Where(resourcetype.IDIn(edgeids...))
-		neighbors, err := query.All(ctx)
-		if err != nil {
+		if err := ppq.loadResourceType(ctx, query, nodes,
+			func(n *PoolProperties) { n.Edges.ResourceType = []*ResourceType{} },
+			func(n *PoolProperties, e *ResourceType) { n.Edges.ResourceType = append(n.Edges.ResourceType, e) }); err != nil {
 			return nil, err
 		}
-		for _, n := range neighbors {
-			nodes, ok := edges[n.ID]
-			if !ok {
-				return nil, fmt.Errorf(`unexpected "resourceType" node returned %v`, n.ID)
-			}
-			for i := range nodes {
-				nodes[i].Edges.ResourceType = append(nodes[i].Edges.ResourceType, n)
-			}
-		}
 	}
-
 	if query := ppq.withProperties; query != nil {
-		fks := make([]driver.Value, 0, len(nodes))
-		nodeids := make(map[int]*PoolProperties)
-		for i := range nodes {
-			fks = append(fks, nodes[i].ID)
-			nodeids[nodes[i].ID] = nodes[i]
-			nodes[i].Edges.Properties = []*Property{}
-		}
-		query.withFKs = true
-		query.Where(predicate.Property(func(s *sql.Selector) {
-			s.Where(sql.InValues(poolproperties.PropertiesColumn, fks...))
-		}))
-		neighbors, err := query.All(ctx)
-		if err != nil {
+		if err := ppq.loadProperties(ctx, query, nodes,
+			func(n *PoolProperties) { n.Edges.Properties = []*Property{} },
+			func(n *PoolProperties, e *Property) { n.Edges.Properties = append(n.Edges.Properties, e) }); err != nil {
 			return nil, err
 		}
-		for _, n := range neighbors {
-			fk := n.pool_properties_properties
-			if fk == nil {
-				return nil, fmt.Errorf(`foreign-key "pool_properties_properties" is nil for node %v`, n.ID)
-			}
-			node, ok := nodeids[*fk]
-			if !ok {
-				return nil, fmt.Errorf(`unexpected foreign-key "pool_properties_properties" returned %v for node %v`, *fk, n.ID)
-			}
-			node.Edges.Properties = append(node.Edges.Properties, n)
+	}
+	for name, query := range ppq.withNamedResourceType {
+		if err := ppq.loadResourceType(ctx, query, nodes,
+			func(n *PoolProperties) { n.appendNamedResourceType(name) },
+			func(n *PoolProperties, e *ResourceType) { n.appendNamedResourceType(name, e) }); err != nil {
+			return nil, err
 		}
 	}
-
+	for name, query := range ppq.withNamedProperties {
+		if err := ppq.loadProperties(ctx, query, nodes,
+			func(n *PoolProperties) { n.appendNamedProperties(name) },
+			func(n *PoolProperties, e *Property) { n.appendNamedProperties(name, e) }); err != nil {
+			return nil, err
+		}
+	}
+	for i := range ppq.loadTotal {
+		if err := ppq.loadTotal[i](ctx, nodes); err != nil {
+			return nil, err
+		}
+	}
 	return nodes, nil
+}
+
+func (ppq *PoolPropertiesQuery) loadPool(ctx context.Context, query *ResourcePoolQuery, nodes []*PoolProperties, init func(*PoolProperties), assign func(*PoolProperties, *ResourcePool)) error {
+	ids := make([]int, 0, len(nodes))
+	nodeids := make(map[int][]*PoolProperties)
+	for i := range nodes {
+		if nodes[i].resource_pool_pool_properties == nil {
+			continue
+		}
+		fk := *nodes[i].resource_pool_pool_properties
+		if _, ok := nodeids[fk]; !ok {
+			ids = append(ids, fk)
+		}
+		nodeids[fk] = append(nodeids[fk], nodes[i])
+	}
+	query.Where(resourcepool.IDIn(ids...))
+	neighbors, err := query.All(ctx)
+	if err != nil {
+		return err
+	}
+	for _, n := range neighbors {
+		nodes, ok := nodeids[n.ID]
+		if !ok {
+			return fmt.Errorf(`unexpected foreign-key "resource_pool_pool_properties" returned %v`, n.ID)
+		}
+		for i := range nodes {
+			assign(nodes[i], n)
+		}
+	}
+	return nil
+}
+func (ppq *PoolPropertiesQuery) loadResourceType(ctx context.Context, query *ResourceTypeQuery, nodes []*PoolProperties, init func(*PoolProperties), assign func(*PoolProperties, *ResourceType)) error {
+	edgeIDs := make([]driver.Value, len(nodes))
+	byID := make(map[int]*PoolProperties)
+	nids := make(map[int]map[*PoolProperties]struct{})
+	for i, node := range nodes {
+		edgeIDs[i] = node.ID
+		byID[node.ID] = node
+		if init != nil {
+			init(node)
+		}
+	}
+	query.Where(func(s *sql.Selector) {
+		joinT := sql.Table(poolproperties.ResourceTypeTable)
+		s.Join(joinT).On(s.C(resourcetype.FieldID), joinT.C(poolproperties.ResourceTypePrimaryKey[1]))
+		s.Where(sql.InValues(joinT.C(poolproperties.ResourceTypePrimaryKey[0]), edgeIDs...))
+		columns := s.SelectedColumns()
+		s.Select(joinT.C(poolproperties.ResourceTypePrimaryKey[0]))
+		s.AppendSelect(columns...)
+		s.SetDistinct(false)
+	})
+	if err := query.prepareQuery(ctx); err != nil {
+		return err
+	}
+	neighbors, err := query.sqlAll(ctx, func(_ context.Context, spec *sqlgraph.QuerySpec) {
+		assign := spec.Assign
+		values := spec.ScanValues
+		spec.ScanValues = func(columns []string) ([]any, error) {
+			values, err := values(columns[1:])
+			if err != nil {
+				return nil, err
+			}
+			return append([]any{new(sql.NullInt64)}, values...), nil
+		}
+		spec.Assign = func(columns []string, values []any) error {
+			outValue := int(values[0].(*sql.NullInt64).Int64)
+			inValue := int(values[1].(*sql.NullInt64).Int64)
+			if nids[inValue] == nil {
+				nids[inValue] = map[*PoolProperties]struct{}{byID[outValue]: struct{}{}}
+				return assign(columns[1:], values[1:])
+			}
+			nids[inValue][byID[outValue]] = struct{}{}
+			return nil
+		}
+	})
+	if err != nil {
+		return err
+	}
+	for _, n := range neighbors {
+		nodes, ok := nids[n.ID]
+		if !ok {
+			return fmt.Errorf(`unexpected "resourceType" node returned %v`, n.ID)
+		}
+		for kn := range nodes {
+			assign(kn, n)
+		}
+	}
+	return nil
+}
+func (ppq *PoolPropertiesQuery) loadProperties(ctx context.Context, query *PropertyQuery, nodes []*PoolProperties, init func(*PoolProperties), assign func(*PoolProperties, *Property)) error {
+	fks := make([]driver.Value, 0, len(nodes))
+	nodeids := make(map[int]*PoolProperties)
+	for i := range nodes {
+		fks = append(fks, nodes[i].ID)
+		nodeids[nodes[i].ID] = nodes[i]
+		if init != nil {
+			init(nodes[i])
+		}
+	}
+	query.withFKs = true
+	query.Where(predicate.Property(func(s *sql.Selector) {
+		s.Where(sql.InValues(poolproperties.PropertiesColumn, fks...))
+	}))
+	neighbors, err := query.All(ctx)
+	if err != nil {
+		return err
+	}
+	for _, n := range neighbors {
+		fk := n.pool_properties_properties
+		if fk == nil {
+			return fmt.Errorf(`foreign-key "pool_properties_properties" is nil for node %v`, n.ID)
+		}
+		node, ok := nodeids[*fk]
+		if !ok {
+			return fmt.Errorf(`unexpected foreign-key "pool_properties_properties" returned %v for node %v`, *fk, n.ID)
+		}
+		assign(node, n)
+	}
+	return nil
 }
 
 func (ppq *PoolPropertiesQuery) sqlCount(ctx context.Context) (int, error) {
 	_spec := ppq.querySpec()
+	if len(ppq.modifiers) > 0 {
+		_spec.Modifiers = ppq.modifiers
+	}
+	_spec.Node.Columns = ppq.fields
+	if len(ppq.fields) > 0 {
+		_spec.Unique = ppq.unique != nil && *ppq.unique
+	}
 	return sqlgraph.CountNodes(ctx, ppq.driver, _spec)
 }
 
 func (ppq *PoolPropertiesQuery) sqlExist(ctx context.Context) (bool, error) {
 	n, err := ppq.sqlCount(ctx)
 	if err != nil {
-		return false, fmt.Errorf("ent: check existence: %v", err)
+		return false, fmt.Errorf("ent: check existence: %w", err)
 	}
 	return n > 0, nil
 }
@@ -568,6 +642,18 @@ func (ppq *PoolPropertiesQuery) querySpec() *sqlgraph.QuerySpec {
 		From:   ppq.sql,
 		Unique: true,
 	}
+	if unique := ppq.unique; unique != nil {
+		_spec.Unique = *unique
+	}
+	if fields := ppq.fields; len(fields) > 0 {
+		_spec.Node.Columns = make([]string, 0, len(fields))
+		_spec.Node.Columns = append(_spec.Node.Columns, poolproperties.FieldID)
+		for i := range fields {
+			if fields[i] != poolproperties.FieldID {
+				_spec.Node.Columns = append(_spec.Node.Columns, fields[i])
+			}
+		}
+	}
 	if ps := ppq.predicates; len(ps) > 0 {
 		_spec.Predicate = func(selector *sql.Selector) {
 			for i := range ps {
@@ -584,26 +670,33 @@ func (ppq *PoolPropertiesQuery) querySpec() *sqlgraph.QuerySpec {
 	if ps := ppq.order; len(ps) > 0 {
 		_spec.Order = func(selector *sql.Selector) {
 			for i := range ps {
-				ps[i](selector, poolproperties.ValidColumn)
+				ps[i](selector)
 			}
 		}
 	}
 	return _spec
 }
 
-func (ppq *PoolPropertiesQuery) sqlQuery() *sql.Selector {
+func (ppq *PoolPropertiesQuery) sqlQuery(ctx context.Context) *sql.Selector {
 	builder := sql.Dialect(ppq.driver.Dialect())
 	t1 := builder.Table(poolproperties.Table)
-	selector := builder.Select(t1.Columns(poolproperties.Columns...)...).From(t1)
+	columns := ppq.fields
+	if len(columns) == 0 {
+		columns = poolproperties.Columns
+	}
+	selector := builder.Select(t1.Columns(columns...)...).From(t1)
 	if ppq.sql != nil {
 		selector = ppq.sql
-		selector.Select(selector.Columns(poolproperties.Columns...)...)
+		selector.Select(selector.Columns(columns...)...)
+	}
+	if ppq.unique != nil && *ppq.unique {
+		selector.Distinct()
 	}
 	for _, p := range ppq.predicates {
 		p(selector)
 	}
 	for _, p := range ppq.order {
-		p(selector, poolproperties.ValidColumn)
+		p(selector)
 	}
 	if offset := ppq.offset; offset != nil {
 		// limit is mandatory for offset clause. We start
@@ -616,9 +709,38 @@ func (ppq *PoolPropertiesQuery) sqlQuery() *sql.Selector {
 	return selector
 }
 
-// PoolPropertiesGroupBy is the builder for group-by PoolProperties entities.
+// WithNamedResourceType tells the query-builder to eager-load the nodes that are connected to the "resourceType"
+// edge with the given name. The optional arguments are used to configure the query builder of the edge.
+func (ppq *PoolPropertiesQuery) WithNamedResourceType(name string, opts ...func(*ResourceTypeQuery)) *PoolPropertiesQuery {
+	query := &ResourceTypeQuery{config: ppq.config}
+	for _, opt := range opts {
+		opt(query)
+	}
+	if ppq.withNamedResourceType == nil {
+		ppq.withNamedResourceType = make(map[string]*ResourceTypeQuery)
+	}
+	ppq.withNamedResourceType[name] = query
+	return ppq
+}
+
+// WithNamedProperties tells the query-builder to eager-load the nodes that are connected to the "properties"
+// edge with the given name. The optional arguments are used to configure the query builder of the edge.
+func (ppq *PoolPropertiesQuery) WithNamedProperties(name string, opts ...func(*PropertyQuery)) *PoolPropertiesQuery {
+	query := &PropertyQuery{config: ppq.config}
+	for _, opt := range opts {
+		opt(query)
+	}
+	if ppq.withNamedProperties == nil {
+		ppq.withNamedProperties = make(map[string]*PropertyQuery)
+	}
+	ppq.withNamedProperties[name] = query
+	return ppq
+}
+
+// PoolPropertiesGroupBy is the group-by builder for PoolProperties entities.
 type PoolPropertiesGroupBy struct {
 	config
+	selector
 	fields []string
 	fns    []AggregateFunc
 	// intermediate query (i.e. traversal path).
@@ -632,8 +754,8 @@ func (ppgb *PoolPropertiesGroupBy) Aggregate(fns ...AggregateFunc) *PoolProperti
 	return ppgb
 }
 
-// Scan applies the group-by query and scan the result into the given value.
-func (ppgb *PoolPropertiesGroupBy) Scan(ctx context.Context, v interface{}) error {
+// Scan applies the group-by query and scans the result into the given value.
+func (ppgb *PoolPropertiesGroupBy) Scan(ctx context.Context, v any) error {
 	query, err := ppgb.path(ctx)
 	if err != nil {
 		return err
@@ -642,202 +764,7 @@ func (ppgb *PoolPropertiesGroupBy) Scan(ctx context.Context, v interface{}) erro
 	return ppgb.sqlScan(ctx, v)
 }
 
-// ScanX is like Scan, but panics if an error occurs.
-func (ppgb *PoolPropertiesGroupBy) ScanX(ctx context.Context, v interface{}) {
-	if err := ppgb.Scan(ctx, v); err != nil {
-		panic(err)
-	}
-}
-
-// Strings returns list of strings from group-by. It is only allowed when querying group-by with one field.
-func (ppgb *PoolPropertiesGroupBy) Strings(ctx context.Context) ([]string, error) {
-	if len(ppgb.fields) > 1 {
-		return nil, errors.New("ent: PoolPropertiesGroupBy.Strings is not achievable when grouping more than 1 field")
-	}
-	var v []string
-	if err := ppgb.Scan(ctx, &v); err != nil {
-		return nil, err
-	}
-	return v, nil
-}
-
-// StringsX is like Strings, but panics if an error occurs.
-func (ppgb *PoolPropertiesGroupBy) StringsX(ctx context.Context) []string {
-	v, err := ppgb.Strings(ctx)
-	if err != nil {
-		panic(err)
-	}
-	return v
-}
-
-// String returns a single string from group-by. It is only allowed when querying group-by with one field.
-func (ppgb *PoolPropertiesGroupBy) String(ctx context.Context) (_ string, err error) {
-	var v []string
-	if v, err = ppgb.Strings(ctx); err != nil {
-		return
-	}
-	switch len(v) {
-	case 1:
-		return v[0], nil
-	case 0:
-		err = &NotFoundError{poolproperties.Label}
-	default:
-		err = fmt.Errorf("ent: PoolPropertiesGroupBy.Strings returned %d results when one was expected", len(v))
-	}
-	return
-}
-
-// StringX is like String, but panics if an error occurs.
-func (ppgb *PoolPropertiesGroupBy) StringX(ctx context.Context) string {
-	v, err := ppgb.String(ctx)
-	if err != nil {
-		panic(err)
-	}
-	return v
-}
-
-// Ints returns list of ints from group-by. It is only allowed when querying group-by with one field.
-func (ppgb *PoolPropertiesGroupBy) Ints(ctx context.Context) ([]int, error) {
-	if len(ppgb.fields) > 1 {
-		return nil, errors.New("ent: PoolPropertiesGroupBy.Ints is not achievable when grouping more than 1 field")
-	}
-	var v []int
-	if err := ppgb.Scan(ctx, &v); err != nil {
-		return nil, err
-	}
-	return v, nil
-}
-
-// IntsX is like Ints, but panics if an error occurs.
-func (ppgb *PoolPropertiesGroupBy) IntsX(ctx context.Context) []int {
-	v, err := ppgb.Ints(ctx)
-	if err != nil {
-		panic(err)
-	}
-	return v
-}
-
-// Int returns a single int from group-by. It is only allowed when querying group-by with one field.
-func (ppgb *PoolPropertiesGroupBy) Int(ctx context.Context) (_ int, err error) {
-	var v []int
-	if v, err = ppgb.Ints(ctx); err != nil {
-		return
-	}
-	switch len(v) {
-	case 1:
-		return v[0], nil
-	case 0:
-		err = &NotFoundError{poolproperties.Label}
-	default:
-		err = fmt.Errorf("ent: PoolPropertiesGroupBy.Ints returned %d results when one was expected", len(v))
-	}
-	return
-}
-
-// IntX is like Int, but panics if an error occurs.
-func (ppgb *PoolPropertiesGroupBy) IntX(ctx context.Context) int {
-	v, err := ppgb.Int(ctx)
-	if err != nil {
-		panic(err)
-	}
-	return v
-}
-
-// Float64s returns list of float64s from group-by. It is only allowed when querying group-by with one field.
-func (ppgb *PoolPropertiesGroupBy) Float64s(ctx context.Context) ([]float64, error) {
-	if len(ppgb.fields) > 1 {
-		return nil, errors.New("ent: PoolPropertiesGroupBy.Float64s is not achievable when grouping more than 1 field")
-	}
-	var v []float64
-	if err := ppgb.Scan(ctx, &v); err != nil {
-		return nil, err
-	}
-	return v, nil
-}
-
-// Float64sX is like Float64s, but panics if an error occurs.
-func (ppgb *PoolPropertiesGroupBy) Float64sX(ctx context.Context) []float64 {
-	v, err := ppgb.Float64s(ctx)
-	if err != nil {
-		panic(err)
-	}
-	return v
-}
-
-// Float64 returns a single float64 from group-by. It is only allowed when querying group-by with one field.
-func (ppgb *PoolPropertiesGroupBy) Float64(ctx context.Context) (_ float64, err error) {
-	var v []float64
-	if v, err = ppgb.Float64s(ctx); err != nil {
-		return
-	}
-	switch len(v) {
-	case 1:
-		return v[0], nil
-	case 0:
-		err = &NotFoundError{poolproperties.Label}
-	default:
-		err = fmt.Errorf("ent: PoolPropertiesGroupBy.Float64s returned %d results when one was expected", len(v))
-	}
-	return
-}
-
-// Float64X is like Float64, but panics if an error occurs.
-func (ppgb *PoolPropertiesGroupBy) Float64X(ctx context.Context) float64 {
-	v, err := ppgb.Float64(ctx)
-	if err != nil {
-		panic(err)
-	}
-	return v
-}
-
-// Bools returns list of bools from group-by. It is only allowed when querying group-by with one field.
-func (ppgb *PoolPropertiesGroupBy) Bools(ctx context.Context) ([]bool, error) {
-	if len(ppgb.fields) > 1 {
-		return nil, errors.New("ent: PoolPropertiesGroupBy.Bools is not achievable when grouping more than 1 field")
-	}
-	var v []bool
-	if err := ppgb.Scan(ctx, &v); err != nil {
-		return nil, err
-	}
-	return v, nil
-}
-
-// BoolsX is like Bools, but panics if an error occurs.
-func (ppgb *PoolPropertiesGroupBy) BoolsX(ctx context.Context) []bool {
-	v, err := ppgb.Bools(ctx)
-	if err != nil {
-		panic(err)
-	}
-	return v
-}
-
-// Bool returns a single bool from group-by. It is only allowed when querying group-by with one field.
-func (ppgb *PoolPropertiesGroupBy) Bool(ctx context.Context) (_ bool, err error) {
-	var v []bool
-	if v, err = ppgb.Bools(ctx); err != nil {
-		return
-	}
-	switch len(v) {
-	case 1:
-		return v[0], nil
-	case 0:
-		err = &NotFoundError{poolproperties.Label}
-	default:
-		err = fmt.Errorf("ent: PoolPropertiesGroupBy.Bools returned %d results when one was expected", len(v))
-	}
-	return
-}
-
-// BoolX is like Bool, but panics if an error occurs.
-func (ppgb *PoolPropertiesGroupBy) BoolX(ctx context.Context) bool {
-	v, err := ppgb.Bool(ctx)
-	if err != nil {
-		panic(err)
-	}
-	return v
-}
-
-func (ppgb *PoolPropertiesGroupBy) sqlScan(ctx context.Context, v interface{}) error {
+func (ppgb *PoolPropertiesGroupBy) sqlScan(ctx context.Context, v any) error {
 	for _, f := range ppgb.fields {
 		if !poolproperties.ValidColumn(f) {
 			return &ValidationError{Name: f, err: fmt.Errorf("invalid field %q for group-by", f)}
@@ -857,246 +784,47 @@ func (ppgb *PoolPropertiesGroupBy) sqlScan(ctx context.Context, v interface{}) e
 }
 
 func (ppgb *PoolPropertiesGroupBy) sqlQuery() *sql.Selector {
-	selector := ppgb.sql
-	columns := make([]string, 0, len(ppgb.fields)+len(ppgb.fns))
-	columns = append(columns, ppgb.fields...)
+	selector := ppgb.sql.Select()
+	aggregation := make([]string, 0, len(ppgb.fns))
 	for _, fn := range ppgb.fns {
-		columns = append(columns, fn(selector, poolproperties.ValidColumn))
+		aggregation = append(aggregation, fn(selector))
 	}
-	return selector.Select(columns...).GroupBy(ppgb.fields...)
+	// If no columns were selected in a custom aggregation function, the default
+	// selection is the fields used for "group-by", and the aggregation functions.
+	if len(selector.SelectedColumns()) == 0 {
+		columns := make([]string, 0, len(ppgb.fields)+len(ppgb.fns))
+		for _, f := range ppgb.fields {
+			columns = append(columns, selector.C(f))
+		}
+		columns = append(columns, aggregation...)
+		selector.Select(columns...)
+	}
+	return selector.GroupBy(selector.Columns(ppgb.fields...)...)
 }
 
-// PoolPropertiesSelect is the builder for select fields of PoolProperties entities.
+// PoolPropertiesSelect is the builder for selecting fields of PoolProperties entities.
 type PoolPropertiesSelect struct {
-	config
-	fields []string
+	*PoolPropertiesQuery
+	selector
 	// intermediate query (i.e. traversal path).
-	sql  *sql.Selector
-	path func(context.Context) (*sql.Selector, error)
+	sql *sql.Selector
 }
 
-// Scan applies the selector query and scan the result into the given value.
-func (pps *PoolPropertiesSelect) Scan(ctx context.Context, v interface{}) error {
-	query, err := pps.path(ctx)
-	if err != nil {
+// Scan applies the selector query and scans the result into the given value.
+func (pps *PoolPropertiesSelect) Scan(ctx context.Context, v any) error {
+	if err := pps.prepareQuery(ctx); err != nil {
 		return err
 	}
-	pps.sql = query
+	pps.sql = pps.PoolPropertiesQuery.sqlQuery(ctx)
 	return pps.sqlScan(ctx, v)
 }
 
-// ScanX is like Scan, but panics if an error occurs.
-func (pps *PoolPropertiesSelect) ScanX(ctx context.Context, v interface{}) {
-	if err := pps.Scan(ctx, v); err != nil {
-		panic(err)
-	}
-}
-
-// Strings returns list of strings from selector. It is only allowed when selecting one field.
-func (pps *PoolPropertiesSelect) Strings(ctx context.Context) ([]string, error) {
-	if len(pps.fields) > 1 {
-		return nil, errors.New("ent: PoolPropertiesSelect.Strings is not achievable when selecting more than 1 field")
-	}
-	var v []string
-	if err := pps.Scan(ctx, &v); err != nil {
-		return nil, err
-	}
-	return v, nil
-}
-
-// StringsX is like Strings, but panics if an error occurs.
-func (pps *PoolPropertiesSelect) StringsX(ctx context.Context) []string {
-	v, err := pps.Strings(ctx)
-	if err != nil {
-		panic(err)
-	}
-	return v
-}
-
-// String returns a single string from selector. It is only allowed when selecting one field.
-func (pps *PoolPropertiesSelect) String(ctx context.Context) (_ string, err error) {
-	var v []string
-	if v, err = pps.Strings(ctx); err != nil {
-		return
-	}
-	switch len(v) {
-	case 1:
-		return v[0], nil
-	case 0:
-		err = &NotFoundError{poolproperties.Label}
-	default:
-		err = fmt.Errorf("ent: PoolPropertiesSelect.Strings returned %d results when one was expected", len(v))
-	}
-	return
-}
-
-// StringX is like String, but panics if an error occurs.
-func (pps *PoolPropertiesSelect) StringX(ctx context.Context) string {
-	v, err := pps.String(ctx)
-	if err != nil {
-		panic(err)
-	}
-	return v
-}
-
-// Ints returns list of ints from selector. It is only allowed when selecting one field.
-func (pps *PoolPropertiesSelect) Ints(ctx context.Context) ([]int, error) {
-	if len(pps.fields) > 1 {
-		return nil, errors.New("ent: PoolPropertiesSelect.Ints is not achievable when selecting more than 1 field")
-	}
-	var v []int
-	if err := pps.Scan(ctx, &v); err != nil {
-		return nil, err
-	}
-	return v, nil
-}
-
-// IntsX is like Ints, but panics if an error occurs.
-func (pps *PoolPropertiesSelect) IntsX(ctx context.Context) []int {
-	v, err := pps.Ints(ctx)
-	if err != nil {
-		panic(err)
-	}
-	return v
-}
-
-// Int returns a single int from selector. It is only allowed when selecting one field.
-func (pps *PoolPropertiesSelect) Int(ctx context.Context) (_ int, err error) {
-	var v []int
-	if v, err = pps.Ints(ctx); err != nil {
-		return
-	}
-	switch len(v) {
-	case 1:
-		return v[0], nil
-	case 0:
-		err = &NotFoundError{poolproperties.Label}
-	default:
-		err = fmt.Errorf("ent: PoolPropertiesSelect.Ints returned %d results when one was expected", len(v))
-	}
-	return
-}
-
-// IntX is like Int, but panics if an error occurs.
-func (pps *PoolPropertiesSelect) IntX(ctx context.Context) int {
-	v, err := pps.Int(ctx)
-	if err != nil {
-		panic(err)
-	}
-	return v
-}
-
-// Float64s returns list of float64s from selector. It is only allowed when selecting one field.
-func (pps *PoolPropertiesSelect) Float64s(ctx context.Context) ([]float64, error) {
-	if len(pps.fields) > 1 {
-		return nil, errors.New("ent: PoolPropertiesSelect.Float64s is not achievable when selecting more than 1 field")
-	}
-	var v []float64
-	if err := pps.Scan(ctx, &v); err != nil {
-		return nil, err
-	}
-	return v, nil
-}
-
-// Float64sX is like Float64s, but panics if an error occurs.
-func (pps *PoolPropertiesSelect) Float64sX(ctx context.Context) []float64 {
-	v, err := pps.Float64s(ctx)
-	if err != nil {
-		panic(err)
-	}
-	return v
-}
-
-// Float64 returns a single float64 from selector. It is only allowed when selecting one field.
-func (pps *PoolPropertiesSelect) Float64(ctx context.Context) (_ float64, err error) {
-	var v []float64
-	if v, err = pps.Float64s(ctx); err != nil {
-		return
-	}
-	switch len(v) {
-	case 1:
-		return v[0], nil
-	case 0:
-		err = &NotFoundError{poolproperties.Label}
-	default:
-		err = fmt.Errorf("ent: PoolPropertiesSelect.Float64s returned %d results when one was expected", len(v))
-	}
-	return
-}
-
-// Float64X is like Float64, but panics if an error occurs.
-func (pps *PoolPropertiesSelect) Float64X(ctx context.Context) float64 {
-	v, err := pps.Float64(ctx)
-	if err != nil {
-		panic(err)
-	}
-	return v
-}
-
-// Bools returns list of bools from selector. It is only allowed when selecting one field.
-func (pps *PoolPropertiesSelect) Bools(ctx context.Context) ([]bool, error) {
-	if len(pps.fields) > 1 {
-		return nil, errors.New("ent: PoolPropertiesSelect.Bools is not achievable when selecting more than 1 field")
-	}
-	var v []bool
-	if err := pps.Scan(ctx, &v); err != nil {
-		return nil, err
-	}
-	return v, nil
-}
-
-// BoolsX is like Bools, but panics if an error occurs.
-func (pps *PoolPropertiesSelect) BoolsX(ctx context.Context) []bool {
-	v, err := pps.Bools(ctx)
-	if err != nil {
-		panic(err)
-	}
-	return v
-}
-
-// Bool returns a single bool from selector. It is only allowed when selecting one field.
-func (pps *PoolPropertiesSelect) Bool(ctx context.Context) (_ bool, err error) {
-	var v []bool
-	if v, err = pps.Bools(ctx); err != nil {
-		return
-	}
-	switch len(v) {
-	case 1:
-		return v[0], nil
-	case 0:
-		err = &NotFoundError{poolproperties.Label}
-	default:
-		err = fmt.Errorf("ent: PoolPropertiesSelect.Bools returned %d results when one was expected", len(v))
-	}
-	return
-}
-
-// BoolX is like Bool, but panics if an error occurs.
-func (pps *PoolPropertiesSelect) BoolX(ctx context.Context) bool {
-	v, err := pps.Bool(ctx)
-	if err != nil {
-		panic(err)
-	}
-	return v
-}
-
-func (pps *PoolPropertiesSelect) sqlScan(ctx context.Context, v interface{}) error {
-	for _, f := range pps.fields {
-		if !poolproperties.ValidColumn(f) {
-			return &ValidationError{Name: f, err: fmt.Errorf("invalid field %q for selection", f)}
-		}
-	}
+func (pps *PoolPropertiesSelect) sqlScan(ctx context.Context, v any) error {
 	rows := &sql.Rows{}
-	query, args := pps.sqlQuery().Query()
+	query, args := pps.sql.Query()
 	if err := pps.driver.Query(ctx, query, args, rows); err != nil {
 		return err
 	}
 	defer rows.Close()
 	return sql.ScanSlice(rows, v)
-}
-
-func (pps *PoolPropertiesSelect) sqlQuery() sql.Querier {
-	selector := pps.sql
-	selector.Select(selector.Columns(pps.fields...)...)
-	return selector
 }

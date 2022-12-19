@@ -7,7 +7,7 @@ import (
 	"io"
 	"strconv"
 
-	"github.com/facebook/ent"
+	"entgo.io/ent"
 )
 
 const (
@@ -23,19 +23,26 @@ const (
 	FieldLang = "lang"
 	// FieldScript holds the string denoting the script field in the database.
 	FieldScript = "script"
-
 	// EdgePools holds the string denoting the pools edge name in mutations.
 	EdgePools = "pools"
-
+	// EdgePoolPropertyTypes holds the string denoting the pool_property_types edge name in mutations.
+	EdgePoolPropertyTypes = "pool_property_types"
 	// Table holds the table name of the allocationstrategy in the database.
 	Table = "allocation_strategies"
-	// PoolsTable is the table the holds the pools relation/edge.
+	// PoolsTable is the table that holds the pools relation/edge.
 	PoolsTable = "resource_pools"
 	// PoolsInverseTable is the table name for the ResourcePool entity.
 	// It exists in this package in order to avoid circular dependency with the "resourcepool" package.
 	PoolsInverseTable = "resource_pools"
 	// PoolsColumn is the table column denoting the pools relation/edge.
 	PoolsColumn = "resource_pool_allocation_strategy"
+	// PoolPropertyTypesTable is the table that holds the pool_property_types relation/edge.
+	PoolPropertyTypesTable = "property_types"
+	// PoolPropertyTypesInverseTable is the table name for the PropertyType entity.
+	// It exists in this package in order to avoid circular dependency with the "propertytype" package.
+	PoolPropertyTypesInverseTable = "property_types"
+	// PoolPropertyTypesColumn is the table column denoting the pool_property_types relation/edge.
+	PoolPropertyTypesColumn = "allocation_strategy_pool_property_types"
 )
 
 // Columns holds all SQL columns for allocationstrategy fields.
@@ -62,7 +69,6 @@ func ValidColumn(column string) bool {
 // it should be imported in the main as follows:
 //
 //	import _ "github.com/net-auto/resourceManager/ent/runtime"
-//
 var (
 	Hooks  [1]ent.Hook
 	Policy ent.Policy
@@ -72,10 +78,10 @@ var (
 	ScriptValidator func(string) error
 )
 
-// Lang defines the type for the lang enum field.
+// Lang defines the type for the "lang" enum field.
 type Lang string
 
-// LangJs is the default Lang.
+// LangJs is the default value of the Lang enum.
 const DefaultLang = LangJs
 
 // Lang values.
@@ -100,18 +106,18 @@ func LangValidator(l Lang) error {
 }
 
 // MarshalGQL implements graphql.Marshaler interface.
-func (l Lang) MarshalGQL(w io.Writer) {
-	io.WriteString(w, strconv.Quote(l.String()))
+func (e Lang) MarshalGQL(w io.Writer) {
+	io.WriteString(w, strconv.Quote(e.String()))
 }
 
 // UnmarshalGQL implements graphql.Unmarshaler interface.
-func (l *Lang) UnmarshalGQL(val interface{}) error {
+func (e *Lang) UnmarshalGQL(val interface{}) error {
 	str, ok := val.(string)
 	if !ok {
 		return fmt.Errorf("enum %T must be a string", val)
 	}
-	*l = Lang(str)
-	if err := LangValidator(*l); err != nil {
+	*e = Lang(str)
+	if err := LangValidator(*e); err != nil {
 		return fmt.Errorf("%s is not a valid Lang", str)
 	}
 	return nil

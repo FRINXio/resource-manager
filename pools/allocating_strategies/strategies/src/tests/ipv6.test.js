@@ -108,7 +108,7 @@ test("ipv6 capacity 24 mask", () => {
         { 'prefix': 110, 'address': "dead::"},
         {"subnet": true});
     expect(capacity)
-        .toStrictEqual({freeCapacity: 262144, utilizedCapacity: 1})
+        .toStrictEqual({freeCapacity: "262144", utilizedCapacity: "1"})
 })
 
 function addr(ip) {

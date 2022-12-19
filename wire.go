@@ -2,21 +2,22 @@
 // Use of this source code is governed by a BSD-style
 // license that can be found in the LICENSE file.
 
-//+build wireinject
+//go:build wireinject
+// +build wireinject
 
 package main
 
 import (
 	"context"
 	"contrib.go.opencensus.io/integrations/ocsql"
-	symphLogger "github.com/facebookincubator/symphony/pkg/log"
-	"github.com/facebookincubator/symphony/pkg/server/metrics"
-	"github.com/facebookincubator/symphony/pkg/server/xserver"
-	"github.com/facebookincubator/symphony/pkg/telemetry"
 	"github.com/google/wire"
 	"github.com/net-auto/resourceManager/ent"
 	"github.com/net-auto/resourceManager/graph/graphhttp"
 	logger "github.com/net-auto/resourceManager/logging"
+	"github.com/net-auto/resourceManager/logging/log"
+	"github.com/net-auto/resourceManager/server/metrics"
+	"github.com/net-auto/resourceManager/server/xserver"
+	"github.com/net-auto/resourceManager/telemetry"
 	"github.com/net-auto/resourceManager/viewer"
 	"go.opencensus.io/stats/view"
 	"go.uber.org/zap"
@@ -32,7 +33,7 @@ func newApplication(ctx context.Context, flags *cliFlags) (*application, func(),
 			"TelemetryConfig",
 		),
 		provideLogger,
-		symphLogger.ProvideZapLogger,
+		log.ProvideZapLogger,
 		wire.Struct(
 			new(application),
 			"*",
@@ -76,34 +77,34 @@ func (l rmLoggerSymphonyAdapter) Background() *zap.Logger {
 
 // For returns a context-aware logger.
 func (l rmLoggerSymphonyAdapter) For(ctx context.Context) *zap.Logger {
-	return l.Background().With(symphLogger.FieldsFromContext(ctx)...)
+	return l.Background().With(log.FieldsFromContext(ctx)...)
 }
 
 // provideLogger initializes RM logger and exposes it to the wiring system as symphony logger
-func provideLogger(ctx context.Context, cf *cliFlags) symphLogger.Logger {
+func provideLogger(ctx context.Context, cf *cliFlags) log.Logger {
 	logger.Init(cf.LogPath, cf.LogLevel, cf.LogWithColors)
 	var zapLevel zapcore.Level
 	switch cf.LogLevel {
 	case "trace":
 	case "debug":
 		zapLevel = zapcore.DebugLevel
-		break;
+		break
 	case "warn":
 		zapLevel = zapcore.WarnLevel
-		break;
+		break
 	case "error":
 		zapLevel = zapcore.ErrorLevel
-		break;
+		break
 	case "panic":
 		zapLevel = zapcore.PanicLevel
-		break;
+		break
 	case "fatal":
 		zapLevel = zapcore.FatalLevel
-		break;
+		break
 	case "info":
 	default:
 		zapLevel = zapcore.InfoLevel
-		break;
+		break
 	}
 	zapLevel.Enabled(zap.DebugLevel)
 	zapEncoder := zapcore.NewConsoleEncoder(zapcore.EncoderConfig{

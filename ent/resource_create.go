@@ -8,8 +8,8 @@ import (
 	"fmt"
 	"time"
 
-	"github.com/facebook/ent/dialect/sql/sqlgraph"
-	"github.com/facebook/ent/schema/field"
+	"entgo.io/ent/dialect/sql/sqlgraph"
+	"entgo.io/ent/schema/field"
 	"github.com/net-auto/resourceManager/ent/property"
 	"github.com/net-auto/resourceManager/ent/resource"
 	"github.com/net-auto/resourceManager/ent/resourcepool"
@@ -22,19 +22,19 @@ type ResourceCreate struct {
 	hooks    []Hook
 }
 
-// SetStatus sets the status field.
+// SetStatus sets the "status" field.
 func (rc *ResourceCreate) SetStatus(r resource.Status) *ResourceCreate {
 	rc.mutation.SetStatus(r)
 	return rc
 }
 
-// SetDescription sets the description field.
+// SetDescription sets the "description" field.
 func (rc *ResourceCreate) SetDescription(s string) *ResourceCreate {
 	rc.mutation.SetDescription(s)
 	return rc
 }
 
-// SetNillableDescription sets the description field if the given value is not nil.
+// SetNillableDescription sets the "description" field if the given value is not nil.
 func (rc *ResourceCreate) SetNillableDescription(s *string) *ResourceCreate {
 	if s != nil {
 		rc.SetDescription(*s)
@@ -42,19 +42,19 @@ func (rc *ResourceCreate) SetNillableDescription(s *string) *ResourceCreate {
 	return rc
 }
 
-// SetAlternateID sets the alternate_id field.
+// SetAlternateID sets the "alternate_id" field.
 func (rc *ResourceCreate) SetAlternateID(m map[string]interface{}) *ResourceCreate {
 	rc.mutation.SetAlternateID(m)
 	return rc
 }
 
-// SetUpdatedAt sets the updated_at field.
+// SetUpdatedAt sets the "updated_at" field.
 func (rc *ResourceCreate) SetUpdatedAt(t time.Time) *ResourceCreate {
 	rc.mutation.SetUpdatedAt(t)
 	return rc
 }
 
-// SetNillableUpdatedAt sets the updated_at field if the given value is not nil.
+// SetNillableUpdatedAt sets the "updated_at" field if the given value is not nil.
 func (rc *ResourceCreate) SetNillableUpdatedAt(t *time.Time) *ResourceCreate {
 	if t != nil {
 		rc.SetUpdatedAt(*t)
@@ -62,13 +62,13 @@ func (rc *ResourceCreate) SetNillableUpdatedAt(t *time.Time) *ResourceCreate {
 	return rc
 }
 
-// SetPoolID sets the pool edge to ResourcePool by id.
+// SetPoolID sets the "pool" edge to the ResourcePool entity by ID.
 func (rc *ResourceCreate) SetPoolID(id int) *ResourceCreate {
 	rc.mutation.SetPoolID(id)
 	return rc
 }
 
-// SetNillablePoolID sets the pool edge to ResourcePool by id if the given value is not nil.
+// SetNillablePoolID sets the "pool" edge to the ResourcePool entity by ID if the given value is not nil.
 func (rc *ResourceCreate) SetNillablePoolID(id *int) *ResourceCreate {
 	if id != nil {
 		rc = rc.SetPoolID(*id)
@@ -76,18 +76,18 @@ func (rc *ResourceCreate) SetNillablePoolID(id *int) *ResourceCreate {
 	return rc
 }
 
-// SetPool sets the pool edge to ResourcePool.
+// SetPool sets the "pool" edge to the ResourcePool entity.
 func (rc *ResourceCreate) SetPool(r *ResourcePool) *ResourceCreate {
 	return rc.SetPoolID(r.ID)
 }
 
-// AddPropertyIDs adds the properties edge to Property by ids.
+// AddPropertyIDs adds the "properties" edge to the Property entity by IDs.
 func (rc *ResourceCreate) AddPropertyIDs(ids ...int) *ResourceCreate {
 	rc.mutation.AddPropertyIDs(ids...)
 	return rc
 }
 
-// AddProperties adds the properties edges to Property.
+// AddProperties adds the "properties" edges to the Property entity.
 func (rc *ResourceCreate) AddProperties(p ...*Property) *ResourceCreate {
 	ids := make([]int, len(p))
 	for i := range p {
@@ -96,13 +96,13 @@ func (rc *ResourceCreate) AddProperties(p ...*Property) *ResourceCreate {
 	return rc.AddPropertyIDs(ids...)
 }
 
-// SetNestedPoolID sets the nested_pool edge to ResourcePool by id.
+// SetNestedPoolID sets the "nested_pool" edge to the ResourcePool entity by ID.
 func (rc *ResourceCreate) SetNestedPoolID(id int) *ResourceCreate {
 	rc.mutation.SetNestedPoolID(id)
 	return rc
 }
 
-// SetNillableNestedPoolID sets the nested_pool edge to ResourcePool by id if the given value is not nil.
+// SetNillableNestedPoolID sets the "nested_pool" edge to the ResourcePool entity by ID if the given value is not nil.
 func (rc *ResourceCreate) SetNillableNestedPoolID(id *int) *ResourceCreate {
 	if id != nil {
 		rc = rc.SetNestedPoolID(*id)
@@ -110,7 +110,7 @@ func (rc *ResourceCreate) SetNillableNestedPoolID(id *int) *ResourceCreate {
 	return rc
 }
 
-// SetNestedPool sets the nested_pool edge to ResourcePool.
+// SetNestedPool sets the "nested_pool" edge to the ResourcePool entity.
 func (rc *ResourceCreate) SetNestedPool(r *ResourcePool) *ResourceCreate {
 	return rc.SetNestedPoolID(r.ID)
 }
@@ -126,7 +126,9 @@ func (rc *ResourceCreate) Save(ctx context.Context) (*Resource, error) {
 		err  error
 		node *Resource
 	)
-	rc.defaults()
+	if err := rc.defaults(); err != nil {
+		return nil, err
+	}
 	if len(rc.hooks) == 0 {
 		if err = rc.check(); err != nil {
 			return nil, err
@@ -142,16 +144,28 @@ func (rc *ResourceCreate) Save(ctx context.Context) (*Resource, error) {
 				return nil, err
 			}
 			rc.mutation = mutation
-			node, err = rc.sqlSave(ctx)
+			if node, err = rc.sqlSave(ctx); err != nil {
+				return nil, err
+			}
+			mutation.id = &node.ID
 			mutation.done = true
 			return node, err
 		})
 		for i := len(rc.hooks) - 1; i >= 0; i-- {
+			if rc.hooks[i] == nil {
+				return nil, fmt.Errorf("ent: uninitialized hook (forgotten import ent/runtime?)")
+			}
 			mut = rc.hooks[i](mut)
 		}
-		if _, err := mut.Mutate(ctx, rc.mutation); err != nil {
+		v, err := mut.Mutate(ctx, rc.mutation)
+		if err != nil {
 			return nil, err
 		}
+		nv, ok := v.(*Resource)
+		if !ok {
+			return nil, fmt.Errorf("unexpected node type %T returned from ResourceMutation", v)
+		}
+		node = nv
 	}
 	return node, err
 }
@@ -165,26 +179,43 @@ func (rc *ResourceCreate) SaveX(ctx context.Context) *Resource {
 	return v
 }
 
+// Exec executes the query.
+func (rc *ResourceCreate) Exec(ctx context.Context) error {
+	_, err := rc.Save(ctx)
+	return err
+}
+
+// ExecX is like Exec, but panics if an error occurs.
+func (rc *ResourceCreate) ExecX(ctx context.Context) {
+	if err := rc.Exec(ctx); err != nil {
+		panic(err)
+	}
+}
+
 // defaults sets the default values of the builder before save.
-func (rc *ResourceCreate) defaults() {
+func (rc *ResourceCreate) defaults() error {
 	if _, ok := rc.mutation.UpdatedAt(); !ok {
+		if resource.DefaultUpdatedAt == nil {
+			return fmt.Errorf("ent: uninitialized resource.DefaultUpdatedAt (forgotten import ent/runtime?)")
+		}
 		v := resource.DefaultUpdatedAt()
 		rc.mutation.SetUpdatedAt(v)
 	}
+	return nil
 }
 
 // check runs all checks and user-defined validators on the builder.
 func (rc *ResourceCreate) check() error {
 	if _, ok := rc.mutation.Status(); !ok {
-		return &ValidationError{Name: "status", err: errors.New("ent: missing required field \"status\"")}
+		return &ValidationError{Name: "status", err: errors.New(`ent: missing required field "Resource.status"`)}
 	}
 	if v, ok := rc.mutation.Status(); ok {
 		if err := resource.StatusValidator(v); err != nil {
-			return &ValidationError{Name: "status", err: fmt.Errorf("ent: validator failed for field \"status\": %w", err)}
+			return &ValidationError{Name: "status", err: fmt.Errorf(`ent: validator failed for field "Resource.status": %w`, err)}
 		}
 	}
 	if _, ok := rc.mutation.UpdatedAt(); !ok {
-		return &ValidationError{Name: "updated_at", err: errors.New("ent: missing required field \"updated_at\"")}
+		return &ValidationError{Name: "updated_at", err: errors.New(`ent: missing required field "Resource.updated_at"`)}
 	}
 	return nil
 }
@@ -192,8 +223,8 @@ func (rc *ResourceCreate) check() error {
 func (rc *ResourceCreate) sqlSave(ctx context.Context) (*Resource, error) {
 	_node, _spec := rc.createSpec()
 	if err := sqlgraph.CreateNode(ctx, rc.driver, _spec); err != nil {
-		if cerr, ok := isSQLConstraintError(err); ok {
-			err = cerr
+		if sqlgraph.IsConstraintError(err) {
+			err = &ConstraintError{msg: err.Error(), wrap: err}
 		}
 		return nil, err
 	}
@@ -262,6 +293,7 @@ func (rc *ResourceCreate) createSpec() (*Resource, *sqlgraph.CreateSpec) {
 		for _, k := range nodes {
 			edge.Target.Nodes = append(edge.Target.Nodes, k)
 		}
+		_node.resource_pool_claims = &nodes[0]
 		_spec.Edges = append(_spec.Edges, edge)
 	}
 	if nodes := rc.mutation.PropertiesIDs(); len(nodes) > 0 {
@@ -305,7 +337,7 @@ func (rc *ResourceCreate) createSpec() (*Resource, *sqlgraph.CreateSpec) {
 	return _node, _spec
 }
 
-// ResourceCreateBulk is the builder for creating a bulk of Resource entities.
+// ResourceCreateBulk is the builder for creating many Resource entities in bulk.
 type ResourceCreateBulk struct {
 	config
 	builders []*ResourceCreate
@@ -334,19 +366,23 @@ func (rcb *ResourceCreateBulk) Save(ctx context.Context) ([]*Resource, error) {
 				if i < len(mutators)-1 {
 					_, err = mutators[i+1].Mutate(root, rcb.builders[i+1].mutation)
 				} else {
+					spec := &sqlgraph.BatchCreateSpec{Nodes: specs}
 					// Invoke the actual operation on the latest mutation in the chain.
-					if err = sqlgraph.BatchCreate(ctx, rcb.driver, &sqlgraph.BatchCreateSpec{Nodes: specs}); err != nil {
-						if cerr, ok := isSQLConstraintError(err); ok {
-							err = cerr
+					if err = sqlgraph.BatchCreate(ctx, rcb.driver, spec); err != nil {
+						if sqlgraph.IsConstraintError(err) {
+							err = &ConstraintError{msg: err.Error(), wrap: err}
 						}
 					}
 				}
-				mutation.done = true
 				if err != nil {
 					return nil, err
 				}
-				id := specs[i].ID.Value.(int64)
-				nodes[i].ID = int(id)
+				mutation.id = &nodes[i].ID
+				if specs[i].ID.Value != nil {
+					id := specs[i].ID.Value.(int64)
+					nodes[i].ID = int(id)
+				}
+				mutation.done = true
 				return nodes[i], nil
 			})
 			for i := len(builder.hooks) - 1; i >= 0; i-- {
@@ -363,11 +399,24 @@ func (rcb *ResourceCreateBulk) Save(ctx context.Context) ([]*Resource, error) {
 	return nodes, nil
 }
 
-// SaveX calls Save and panics if Save returns an error.
+// SaveX is like Save, but panics if an error occurs.
 func (rcb *ResourceCreateBulk) SaveX(ctx context.Context) []*Resource {
 	v, err := rcb.Save(ctx)
 	if err != nil {
 		panic(err)
 	}
 	return v
+}
+
+// Exec executes the query.
+func (rcb *ResourceCreateBulk) Exec(ctx context.Context) error {
+	_, err := rcb.Save(ctx)
+	return err
+}
+
+// ExecX is like Exec, but panics if an error occurs.
+func (rcb *ResourceCreateBulk) ExecX(ctx context.Context) {
+	if err := rcb.Exec(ctx); err != nil {
+		panic(err)
+	}
 }

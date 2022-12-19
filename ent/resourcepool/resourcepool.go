@@ -7,7 +7,7 @@ import (
 	"io"
 	"strconv"
 
-	"github.com/facebook/ent"
+	"entgo.io/ent"
 )
 
 const (
@@ -23,7 +23,6 @@ const (
 	FieldPoolType = "pool_type"
 	// FieldDealocationSafetyPeriod holds the string denoting the dealocation_safety_period field in the database.
 	FieldDealocationSafetyPeriod = "dealocation_safety_period"
-
 	// EdgeResourceType holds the string denoting the resource_type edge name in mutations.
 	EdgeResourceType = "resource_type"
 	// EdgeTags holds the string denoting the tags edge name in mutations.
@@ -36,43 +35,42 @@ const (
 	EdgeAllocationStrategy = "allocation_strategy"
 	// EdgeParentResource holds the string denoting the parent_resource edge name in mutations.
 	EdgeParentResource = "parent_resource"
-
 	// Table holds the table name of the resourcepool in the database.
 	Table = "resource_pools"
-	// ResourceTypeTable is the table the holds the resource_type relation/edge.
+	// ResourceTypeTable is the table that holds the resource_type relation/edge.
 	ResourceTypeTable = "resource_pools"
 	// ResourceTypeInverseTable is the table name for the ResourceType entity.
 	// It exists in this package in order to avoid circular dependency with the "resourcetype" package.
 	ResourceTypeInverseTable = "resource_types"
 	// ResourceTypeColumn is the table column denoting the resource_type relation/edge.
 	ResourceTypeColumn = "resource_type_pools"
-	// TagsTable is the table the holds the tags relation/edge. The primary key declared below.
+	// TagsTable is the table that holds the tags relation/edge. The primary key declared below.
 	TagsTable = "tag_pools"
 	// TagsInverseTable is the table name for the Tag entity.
 	// It exists in this package in order to avoid circular dependency with the "tag" package.
 	TagsInverseTable = "tags"
-	// ClaimsTable is the table the holds the claims relation/edge.
+	// ClaimsTable is the table that holds the claims relation/edge.
 	ClaimsTable = "resources"
 	// ClaimsInverseTable is the table name for the Resource entity.
 	// It exists in this package in order to avoid circular dependency with the "resource" package.
 	ClaimsInverseTable = "resources"
 	// ClaimsColumn is the table column denoting the claims relation/edge.
 	ClaimsColumn = "resource_pool_claims"
-	// PoolPropertiesTable is the table the holds the poolProperties relation/edge.
+	// PoolPropertiesTable is the table that holds the poolProperties relation/edge.
 	PoolPropertiesTable = "pool_properties"
 	// PoolPropertiesInverseTable is the table name for the PoolProperties entity.
 	// It exists in this package in order to avoid circular dependency with the "poolproperties" package.
 	PoolPropertiesInverseTable = "pool_properties"
 	// PoolPropertiesColumn is the table column denoting the poolProperties relation/edge.
 	PoolPropertiesColumn = "resource_pool_pool_properties"
-	// AllocationStrategyTable is the table the holds the allocation_strategy relation/edge.
+	// AllocationStrategyTable is the table that holds the allocation_strategy relation/edge.
 	AllocationStrategyTable = "resource_pools"
 	// AllocationStrategyInverseTable is the table name for the AllocationStrategy entity.
 	// It exists in this package in order to avoid circular dependency with the "allocationstrategy" package.
 	AllocationStrategyInverseTable = "allocation_strategies"
 	// AllocationStrategyColumn is the table column denoting the allocation_strategy relation/edge.
 	AllocationStrategyColumn = "resource_pool_allocation_strategy"
-	// ParentResourceTable is the table the holds the parent_resource relation/edge.
+	// ParentResourceTable is the table that holds the parent_resource relation/edge.
 	ParentResourceTable = "resource_pools"
 	// ParentResourceInverseTable is the table name for the Resource entity.
 	// It exists in this package in order to avoid circular dependency with the "resource" package.
@@ -90,7 +88,8 @@ var Columns = []string{
 	FieldDealocationSafetyPeriod,
 }
 
-// ForeignKeys holds the SQL foreign-keys that are owned by the ResourcePool type.
+// ForeignKeys holds the SQL foreign-keys that are owned by the "resource_pools"
+// table and are not defined as standalone fields in the schema.
 var ForeignKeys = []string{
 	"resource_nested_pool",
 	"resource_pool_allocation_strategy",
@@ -123,17 +122,16 @@ func ValidColumn(column string) bool {
 // it should be imported in the main as follows:
 //
 //	import _ "github.com/net-auto/resourceManager/ent/runtime"
-//
 var (
 	Hooks  [1]ent.Hook
 	Policy ent.Policy
 	// NameValidator is a validator for the "name" field. It is called by the builders before save.
 	NameValidator func(string) error
-	// DefaultDealocationSafetyPeriod holds the default value on creation for the dealocation_safety_period field.
+	// DefaultDealocationSafetyPeriod holds the default value on creation for the "dealocation_safety_period" field.
 	DefaultDealocationSafetyPeriod int
 )
 
-// PoolType defines the type for the pool_type enum field.
+// PoolType defines the type for the "pool_type" enum field.
 type PoolType string
 
 // PoolType values.
@@ -158,18 +156,18 @@ func PoolTypeValidator(pt PoolType) error {
 }
 
 // MarshalGQL implements graphql.Marshaler interface.
-func (pt PoolType) MarshalGQL(w io.Writer) {
-	io.WriteString(w, strconv.Quote(pt.String()))
+func (e PoolType) MarshalGQL(w io.Writer) {
+	io.WriteString(w, strconv.Quote(e.String()))
 }
 
 // UnmarshalGQL implements graphql.Unmarshaler interface.
-func (pt *PoolType) UnmarshalGQL(val interface{}) error {
+func (e *PoolType) UnmarshalGQL(val interface{}) error {
 	str, ok := val.(string)
 	if !ok {
 		return fmt.Errorf("enum %T must be a string", val)
 	}
-	*pt = PoolType(str)
-	if err := PoolTypeValidator(*pt); err != nil {
+	*e = PoolType(str)
+	if err := PoolTypeValidator(*e); err != nil {
 		return fmt.Errorf("%s is not a valid PoolType", str)
 	}
 	return nil

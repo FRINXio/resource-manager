@@ -2,23 +2,29 @@ package src
 
 import (
 	"encoding/json"
+	"fmt"
 	"github.com/pkg/errors"
+	"regexp"
+	"strconv"
 )
 
 type Vlan struct {
-	currentResources []map[string]interface{}
+	currentResources       []map[string]interface{}
 	resourcePoolProperties map[string]interface{}
+	userInput              map[string]interface{}
 }
 
-func NewVlan(currentResources []map[string]interface{}, resourcePoolProperties map[string]interface{}) Vlan {
-	return Vlan{currentResources, resourcePoolProperties}
+func NewVlan(currentResources []map[string]interface{},
+	resourcePoolProperties map[string]interface{},
+	userInput map[string]interface{}) Vlan {
+	return Vlan{currentResources, resourcePoolProperties, userInput}
 }
 
 func UtilizedCapacity(allocatedRanges []map[string]interface{}, newlyAllocatedVlan float64) float64 {
 	return float64(len(allocatedRanges)) + newlyAllocatedVlan
 }
 
-func FreeCapacity(vlanRange map[string]interface{}, utilisedCapacity float64) float64 {
+func (vlan *Vlan) FreeCapacity(vlanRange map[string]interface{}, utilisedCapacity float64) float64 {
 	return float64(vlanRange["to"].(int) - vlanRange["from"].(int) + 1 - int(utilisedCapacity))
 }
 
@@ -32,20 +38,19 @@ func contains(slice []float64, val float64) bool {
 }
 
 func NumberToInt(number interface{}) (interface{}, error) {
-	var newNumber int
 	switch number.(type) {
 	case json.Number:
 		intVal64, err := number.(json.Number).Float64()
 		if err != nil {
 			return nil, errors.New("Unable to convert a json number")
 		}
-		newNumber = int(intVal64)
+		return int(intVal64), nil
 	case float64:
-		newNumber = int(number.(float64))
+		return int(number.(float64)), nil
 	case int:
-		newNumber = number.(int)
+		return number.(int), nil
 	}
-	return newNumber, nil
+	return nil, errors.New("Unable to convert number: " + number.(string) + " to a known type")
 }
 
 func (vlan *Vlan) Invoke() (map[string]interface{}, error) {
@@ -89,9 +94,32 @@ func (vlan *Vlan) Invoke() (map[string]interface{}, error) {
 		return nil, err
 	}
 
+	if value, ok := vlan.userInput["desiredValue"]; ok {
+		re := regexp.MustCompile(`^\d+$`)
+		if re.MatchString(value.(string)) {
+			desiredValueNum, err := strconv.Atoi(value.(string))
+			if err != nil {
+				return nil, err
+			}
+			if desiredValueNum >= from.(int) && desiredValueNum < to.(int) {
+				if contains(currentResourcesSet, float64(desiredValueNum)) {
+					return nil, errors.New("VLAN " + value.(string) + " was already claimed.")
+				}
+				vlanProperties := make(map[string]interface{})
+				vlanProperties["vlan"] = float64(desiredValueNum)
+				return vlanProperties, nil
+			} else {
+				return nil, errors.New("VLAN " + value.(string) + " is out of range: " +
+					strconv.Itoa(from.(int)) + " - " + strconv.Itoa(to.(int)))
+			}
+		} else {
+			return nil, errors.New("VLAN must be a number. Received: " + value.(string) + ".")
+		}
+	}
+
 	for i := from.(int); i <= to.(int); i++ {
 		if !contains(currentResourcesSet, float64(i)) {
-			// FIXME How to pass these stats ?
+			// FIXME How to pass these stats
 			// logStats(i, parentRange, currentResourcesUnwrapped)
 			vlanProperties := make(map[string]interface{})
 			vlanProperties["vlan"] = float64(i)
@@ -103,7 +131,8 @@ func (vlan *Vlan) Invoke() (map[string]interface{}, error) {
 
 func (vlan *Vlan) Capacity() (map[string]interface{}, error) {
 	var result = make(map[string]interface{})
-	result["freeCapacity"] = FreeCapacity(vlan.resourcePoolProperties, float64(len(vlan.currentResources)))
-	result["utilizedCapacity"] = float64(len(vlan.currentResources))
+	freeCapacity := vlan.FreeCapacity(vlan.resourcePoolProperties, float64(len(vlan.currentResources)))
+	result["freeCapacity"] = fmt.Sprintf("%v", freeCapacity)
+	result["utilizedCapacity"] = strconv.Itoa(len(vlan.currentResources))
 	return result, nil
 }

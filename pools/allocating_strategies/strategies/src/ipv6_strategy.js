@@ -6,7 +6,7 @@ import {
     parsePrefix,
     prefixToStr,
     subnetAddresses
-} from "./ipv6utils";
+} from "./ipv6-utils";
 
 // framework managed constants
 var currentResources = []
@@ -40,7 +40,10 @@ function freeCapacity(parentPrefix, utilisedCapacity) {
 function capacity() {
     let subnetItself = userInput.subnet ? BigInt(1) : BigInt(0);
     let freeInTotal = hostsInMask(resourcePoolProperties.address, resourcePoolProperties.prefix) + subnetItself;
-    return { freeCapacity: Number(freeInTotal - BigInt(currentResources.length)), utilizedCapacity: currentResources.length };
+    return {
+        freeCapacity: String(freeInTotal - BigInt(currentResources.length)),
+        utilizedCapacity: String(currentResources.length)
+    };
 }
 
 // log utilisation stats

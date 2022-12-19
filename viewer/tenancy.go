@@ -10,19 +10,19 @@ import (
 	"context"
 	"database/sql"
 	"fmt"
+	"github.com/net-auto/resourceManager/logging/log"
 	"net/url"
 	"runtime"
 	"strings"
 	"sync"
 
-	"github.com/facebookincubator/symphony/pkg/log"
 	"github.com/net-auto/resourceManager/ent/migrate"
 	pools "github.com/net-auto/resourceManager/pools/allocating_strategies"
 	"github.com/net-auto/resourceManager/psql"
 	"go.uber.org/zap"
 
-	"github.com/facebook/ent/dialect"
-	entsql "github.com/facebook/ent/dialect/sql"
+	"entgo.io/ent/dialect"
+	entsql "entgo.io/ent/dialect/sql"
 	"github.com/net-auto/resourceManager/ent"
 
 	"gocloud.dev/server/health"
@@ -217,7 +217,6 @@ func NewTenancyContext(parent context.Context, tenancy Tenancy) context.Context 
 
 func (m *PsqlTenancy) migrate(ctx context.Context, client *ent.Client, logger *zap.Logger) error {
 	if err := client.Schema.Create(ctx,
-		migrate.WithFixture(false),
 		migrate.WithGlobalUniqueID(true),
 	); err != nil {
 		logger.Error("tenancy migrate", zap.Error(err))

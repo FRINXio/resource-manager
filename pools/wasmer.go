@@ -102,6 +102,7 @@ type ScriptInvoker interface {
 }
 
 func InvokeAllocationStrategy(
+	ctx context.Context,
 	invoker ScriptInvoker,
 	strat *ent.AllocationStrategy,
 	userInput map[string]interface{},
@@ -117,7 +118,7 @@ func InvokeAllocationStrategy(
 	case allocationstrategy.LangPy:
 		return invoker.invokePy(strat.Script, userInput, resourcePool, currentResources, poolPropertiesMaps, functionName)
 	case allocationstrategy.LangGo:
-		return invokeGo(strat, userInput, resourcePool, currentResources, poolPropertiesMaps, functionName)
+		return invokeGo(ctx, strat, userInput, resourcePool, currentResources, poolPropertiesMaps, functionName)
 	default:
 		err := errors.Errorf("Unknown language \"%s\" for strategy \"%s\"", strat.Lang, strat.Name)
 		log.Error(nil, err, "Unknown strategy language")
@@ -162,6 +163,7 @@ func runStrategy(goStrategy GoStrategy, functionName string) (map[string]interfa
 }
 
 func invokeGo(
+	ctx context.Context,
 	strategy *ent.AllocationStrategy,
 	userInput map[string]interface{},
 	resourcePool model.ResourcePoolInput,
@@ -181,15 +183,22 @@ func invokeGo(
 	switch strategy.Name {
 	case "vlan":
 		// TODO: Pass currentResourcesArray as pointer
-		vlan := strategies.NewVlan(currentResourcesArray, poolPropertiesMaps)
+		vlan := strategies.NewVlan(currentResourcesArray, poolPropertiesMaps, userInput)
 		goStrategy = &vlan
 	case "unique_id":
-		// TODO: Pass currentResourcesArray as pointer
-		id := strategies.NewUniqueId(currentResourcesArray, poolPropertiesMaps)
+		id := strategies.NewUniqueId(ctx, resourcePool.ResourcePoolID, poolPropertiesMaps, userInput)
 		goStrategy = &id
 	case "ipv4":
 		// TODO: Pass currentResourcesArray as pointer
 		id := strategies.NewIpv4(currentResourcesArray, poolPropertiesMaps, userInput)
+		goStrategy = &id
+	case "ipv6":
+		// TODO: Pass currentResourcesArray as pointer
+		id := strategies.NewIpv6(currentResourcesArray, poolPropertiesMaps, userInput)
+		goStrategy = &id
+	case "ipv6_prefix":
+		// TODO: Pass currentResourcesArray as pointer
+		id := strategies.NewIpv6Prefix(currentResourcesArray, poolPropertiesMaps, userInput)
 		goStrategy = &id
 	case "ipv4_prefix":
 		// TODO: Pass currentResourcesArray as pointer
@@ -309,8 +318,8 @@ func (wasmer Wasmer) invoke(name string, arg ...string) (map[string]interface{},
 	if err := json.Unmarshal(stdout, &m); err != nil {
 		log.Error(nil, err, "Parsing error")
 		return nil, stderr, errors.Wrapf(err,
-			"Unable to parse allocation function output as flat JSON: \"%s\". " +
-			"Error output: \"%s\"", string(stdout), stderr)
+			"Unable to parse allocation function output as flat JSON: \"%s\". "+
+				"Error output: \"%s\"", string(stdout), stderr)
 	}
 	return m, stderr, nil
 }

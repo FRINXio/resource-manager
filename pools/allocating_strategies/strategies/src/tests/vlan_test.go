@@ -35,7 +35,7 @@ func vlanRange(from int, to int) map[string]interface{} {
 func TestMissingParentRange(t *testing.T) {
 	var allocated []map[string]interface{}
 	var resourcePool = map[string]interface{}{}
-	vlanStruct := src.NewVlan(allocated, resourcePool)
+	vlanStruct := src.NewVlan(allocated, resourcePool, nil)
 
 	output, err := vlanStruct.Invoke()
 
@@ -53,7 +53,7 @@ func TestMissingParentRange(t *testing.T) {
 func TestAllocateVlan(t *testing.T) {
 	var allocated []map[string]interface{}
 	var resourcePool = map[string]interface{}{"from": 0, "to": 4095}
-	vlanStruct := src.NewVlan(allocated, resourcePool)
+	vlanStruct := src.NewVlan(allocated, resourcePool, nil)
 	output, err := vlanStruct.Invoke()
 	expectedOutput := map[string]interface{}{"vlan": float64(0)}
 	eq := reflect.DeepEqual(output, expectedOutput)
@@ -67,7 +67,7 @@ func TestAllocateVlan(t *testing.T) {
 
 	allocated = []map[string]interface{}{vlan(1)}
 	resourcePool = map[string]interface{}{"from": 0, "to": 4095}
-	vlanStruct = src.NewVlan(allocated, resourcePool)
+	vlanStruct = src.NewVlan(allocated, resourcePool, nil)
 	output, err = vlanStruct.Invoke()
 	expectedOutput = map[string]interface{}{"vlan": float64(0)}
 	eq = reflect.DeepEqual(output, expectedOutput)
@@ -77,7 +77,7 @@ func TestAllocateVlan(t *testing.T) {
 
 	allocated = []map[string]interface{}{vlan(278)}
 	resourcePool = map[string]interface{}{"from": 278, "to": 333}
-	vlanStruct = src.NewVlan(allocated, resourcePool)
+	vlanStruct = src.NewVlan(allocated, resourcePool, nil)
 	output, err = vlanStruct.Invoke()
 	expectedOutput = map[string]interface{}{"vlan": float64(279)}
 	eq = reflect.DeepEqual(output, expectedOutput)
@@ -86,7 +86,7 @@ func TestAllocateVlan(t *testing.T) {
 	}
 
 	resourcePool = map[string]interface{}{"from": 0, "to": 4095}
-	vlanStruct = src.NewVlan(vlans(0, 4094), resourcePool)
+	vlanStruct = src.NewVlan(vlans(0, 4094), resourcePool, nil)
 	output, err = vlanStruct.Invoke()
 	expectedOutput = map[string]interface{}{"vlan": float64(4095)}
 	eq = reflect.DeepEqual(output, expectedOutput)
@@ -97,7 +97,7 @@ func TestAllocateVlan(t *testing.T) {
 
 func TestAllocateVlanFull(t *testing.T) {
 	var resourcePool = map[string]interface{}{"from": 0, "to": 4095}
-	vlanStruct := src.NewVlan(vlans(0, 4095), resourcePool)
+	vlanStruct := src.NewVlan(vlans(0, 4095), resourcePool, nil)
 	output, err := vlanStruct.Invoke()
 	eq := reflect.DeepEqual(output, (map[string]interface{})(nil))
 	if !eq {
@@ -113,9 +113,9 @@ func TestAllocateVlanFull(t *testing.T) {
 func TestVlanCapacityMeasureEmpty(t *testing.T) {
 	var allocated []map[string]interface{}
 	var resourcePool = map[string]interface{}{"from": 0, "to": 4095}
-	vlanStruct := src.NewVlan(allocated, resourcePool)
+	vlanStruct := src.NewVlan(allocated, resourcePool, nil)
 	output, _ := vlanStruct.Capacity()
-	expectedOutput := map[string]interface{}{"freeCapacity": float64(4096), "utilizedCapacity": float64(0)}
+	expectedOutput := map[string]interface{}{"freeCapacity": "4096", "utilizedCapacity": "0"}
 	eq := reflect.DeepEqual(output, expectedOutput)
 	if !eq {
 		t.Fatalf("different output of %s expected, got: %s", expectedOutput, output)
@@ -124,9 +124,9 @@ func TestVlanCapacityMeasureEmpty(t *testing.T) {
 
 func TestVlanCapacityMeasureFull(t *testing.T) {
 	var resourcePool = map[string]interface{}{"from": 0, "to": 4095}
-	vlanStruct := src.NewVlan(vlans(0, 4095), resourcePool)
+	vlanStruct := src.NewVlan(vlans(0, 4095), resourcePool, nil)
 	output, _ := vlanStruct.Capacity()
-	expectedOutput := map[string]interface{}{"freeCapacity": float64(0), "utilizedCapacity": float64(4096)}
+	expectedOutput := map[string]interface{}{"freeCapacity": "0", "utilizedCapacity": "4096"}
 	eq := reflect.DeepEqual(output, expectedOutput)
 	if !eq {
 		t.Fatalf("different output of %s expected, got: %s", expectedOutput, output)
@@ -134,8 +134,9 @@ func TestVlanCapacityMeasureFull(t *testing.T) {
 }
 
 func TestFreeCapacity(t *testing.T) {
-	vlanRangeProperties, _ := vlanRange(100, 900)["Properties"]
-	output := src.FreeCapacity(vlanRangeProperties.(map[string]interface{}), float64(100))
+	var resourcePool = map[string]interface{}{"from": 100, "to": 900}
+	vlanStruct := src.NewVlan(vlans(100, 900), resourcePool, nil)
+	output := vlanStruct.FreeCapacity(resourcePool, float64(100))
 	expectedOutput := float64(701)
 	eq := reflect.DeepEqual(output, expectedOutput)
 	if !eq {
@@ -151,5 +152,58 @@ func TestUtilisation(t *testing.T) {
 	eq := reflect.DeepEqual(output, expectedOutput)
 	if !eq {
 		t.Fatalf("different output of %f expected, got: %f", expectedOutput, output)
+	}
+}
+
+func TestVlanDesireValue(t *testing.T) {
+	var allocated []map[string]interface{}
+	var resourcePool = map[string]interface{}{"from": 0, "to": 4095}
+	var userInput = map[string]interface{}{"desiredValue": "1111"}
+	vlanStruct := src.NewVlan(allocated, resourcePool, userInput)
+	output, err := vlanStruct.Invoke()
+	expectedOutput := map[string]interface{}{"vlan": float64(1111)}
+	if eq := reflect.DeepEqual(output, expectedOutput); !eq {
+		t.Fatalf("different output of %s expected, got: %s", expectedOutput, output)
+	}
+	if eq := reflect.DeepEqual(err, nil); !eq {
+		t.Fatalf("different output of nil expected, got: %s", err)
+	}
+
+	// DesiredValue out of address/prefix
+	userInput = map[string]interface{}{"desiredValue": "4096"}
+	vlanStruct = src.NewVlan(allocated, resourcePool, userInput)
+	output, err = vlanStruct.Invoke()
+	expectedOutputError := errors.New("VLAN 4096 is out of range: 0 - 4095")
+	if eq := reflect.DeepEqual(output, (map[string]interface{})(nil)); !eq {
+		t.Fatalf("different output of nil expected, got: %s", output)
+	}
+	if eq := reflect.DeepEqual(err.Error(), expectedOutputError.Error()); !eq {
+		t.Fatalf("different output of %s expected, got: %s", expectedOutputError, err)
+	}
+
+	// Already claimed desiredValue
+	allocated = []map[string]interface{}{vlan(278)}
+	userInput = map[string]interface{}{"desiredValue": "278"}
+	vlanStruct = src.NewVlan(allocated, resourcePool, userInput)
+	output, err = vlanStruct.Invoke()
+	expectedOutputError = errors.New("VLAN 278 was already claimed.")
+	if eq := reflect.DeepEqual(output, (map[string]interface{})(nil)); !eq {
+		t.Fatalf("different output of nil expected, got: %s", output)
+	}
+	if eq := reflect.DeepEqual(err.Error(), expectedOutputError.Error()); !eq {
+		t.Fatalf("different output of %s expected, got: %s", expectedOutputError, err)
+	}
+
+	// Wrong desiredValue input format
+	allocated = []map[string]interface{}{}
+	userInput = map[string]interface{}{"desiredValue": "Hello World"}
+	vlanStruct = src.NewVlan(allocated, resourcePool, userInput)
+	output, err = vlanStruct.Invoke()
+	expectedOutputError = errors.New("VLAN must be a number. Received: Hello World.")
+	if eq := reflect.DeepEqual(output, (map[string]interface{})(nil)); !eq {
+		t.Fatalf("different output of nil expected, got: %s", output)
+	}
+	if eq := reflect.DeepEqual(err.Error(), expectedOutputError.Error()); !eq {
+		t.Fatalf("different output of %s expected, got: %s", expectedOutputError, err)
 	}
 }

@@ -9,30 +9,36 @@ import (
 	"fmt"
 	"math"
 
-	"github.com/facebook/ent/dialect/sql"
-	"github.com/facebook/ent/dialect/sql/sqlgraph"
-	"github.com/facebook/ent/schema/field"
+	"entgo.io/ent/dialect/sql"
+	"entgo.io/ent/dialect/sql/sqlgraph"
+	"entgo.io/ent/schema/field"
 	"github.com/net-auto/resourceManager/ent/allocationstrategy"
 	"github.com/net-auto/resourceManager/ent/predicate"
+	"github.com/net-auto/resourceManager/ent/propertytype"
 	"github.com/net-auto/resourceManager/ent/resourcepool"
 )
 
 // AllocationStrategyQuery is the builder for querying AllocationStrategy entities.
 type AllocationStrategyQuery struct {
 	config
-	limit      *int
-	offset     *int
-	order      []OrderFunc
-	unique     []string
-	predicates []predicate.AllocationStrategy
-	// eager-loading edges.
-	withPools *ResourcePoolQuery
+	limit                      *int
+	offset                     *int
+	unique                     *bool
+	order                      []OrderFunc
+	fields                     []string
+	predicates                 []predicate.AllocationStrategy
+	withPools                  *ResourcePoolQuery
+	withPoolPropertyTypes      *PropertyTypeQuery
+	modifiers                  []func(*sql.Selector)
+	loadTotal                  []func(context.Context, []*AllocationStrategy) error
+	withNamedPools             map[string]*ResourcePoolQuery
+	withNamedPoolPropertyTypes map[string]*PropertyTypeQuery
 	// intermediate query (i.e. traversal path).
 	sql  *sql.Selector
 	path func(context.Context) (*sql.Selector, error)
 }
 
-// Where adds a new predicate for the builder.
+// Where adds a new predicate for the AllocationStrategyQuery builder.
 func (asq *AllocationStrategyQuery) Where(ps ...predicate.AllocationStrategy) *AllocationStrategyQuery {
 	asq.predicates = append(asq.predicates, ps...)
 	return asq
@@ -50,20 +56,27 @@ func (asq *AllocationStrategyQuery) Offset(offset int) *AllocationStrategyQuery 
 	return asq
 }
 
+// Unique configures the query builder to filter duplicate records on query.
+// By default, unique is set to true, and can be disabled using this method.
+func (asq *AllocationStrategyQuery) Unique(unique bool) *AllocationStrategyQuery {
+	asq.unique = &unique
+	return asq
+}
+
 // Order adds an order step to the query.
 func (asq *AllocationStrategyQuery) Order(o ...OrderFunc) *AllocationStrategyQuery {
 	asq.order = append(asq.order, o...)
 	return asq
 }
 
-// QueryPools chains the current query on the pools edge.
+// QueryPools chains the current query on the "pools" edge.
 func (asq *AllocationStrategyQuery) QueryPools() *ResourcePoolQuery {
 	query := &ResourcePoolQuery{config: asq.config}
 	query.path = func(ctx context.Context) (fromU *sql.Selector, err error) {
 		if err := asq.prepareQuery(ctx); err != nil {
 			return nil, err
 		}
-		selector := asq.sqlQuery()
+		selector := asq.sqlQuery(ctx)
 		if err := selector.Err(); err != nil {
 			return nil, err
 		}
@@ -78,7 +91,30 @@ func (asq *AllocationStrategyQuery) QueryPools() *ResourcePoolQuery {
 	return query
 }
 
-// First returns the first AllocationStrategy entity in the query. Returns *NotFoundError when no allocationstrategy was found.
+// QueryPoolPropertyTypes chains the current query on the "pool_property_types" edge.
+func (asq *AllocationStrategyQuery) QueryPoolPropertyTypes() *PropertyTypeQuery {
+	query := &PropertyTypeQuery{config: asq.config}
+	query.path = func(ctx context.Context) (fromU *sql.Selector, err error) {
+		if err := asq.prepareQuery(ctx); err != nil {
+			return nil, err
+		}
+		selector := asq.sqlQuery(ctx)
+		if err := selector.Err(); err != nil {
+			return nil, err
+		}
+		step := sqlgraph.NewStep(
+			sqlgraph.From(allocationstrategy.Table, allocationstrategy.FieldID, selector),
+			sqlgraph.To(propertytype.Table, propertytype.FieldID),
+			sqlgraph.Edge(sqlgraph.O2M, false, allocationstrategy.PoolPropertyTypesTable, allocationstrategy.PoolPropertyTypesColumn),
+		)
+		fromU = sqlgraph.SetNeighbors(asq.driver.Dialect(), step)
+		return fromU, nil
+	}
+	return query
+}
+
+// First returns the first AllocationStrategy entity from the query.
+// Returns a *NotFoundError when no AllocationStrategy was found.
 func (asq *AllocationStrategyQuery) First(ctx context.Context) (*AllocationStrategy, error) {
 	nodes, err := asq.Limit(1).All(ctx)
 	if err != nil {
@@ -99,7 +135,8 @@ func (asq *AllocationStrategyQuery) FirstX(ctx context.Context) *AllocationStrat
 	return node
 }
 
-// FirstID returns the first AllocationStrategy id in the query. Returns *NotFoundError when no id was found.
+// FirstID returns the first AllocationStrategy ID from the query.
+// Returns a *NotFoundError when no AllocationStrategy ID was found.
 func (asq *AllocationStrategyQuery) FirstID(ctx context.Context) (id int, err error) {
 	var ids []int
 	if ids, err = asq.Limit(1).IDs(ctx); err != nil {
@@ -121,7 +158,9 @@ func (asq *AllocationStrategyQuery) FirstIDX(ctx context.Context) int {
 	return id
 }
 
-// Only returns the only AllocationStrategy entity in the query, returns an error if not exactly one entity was returned.
+// Only returns a single AllocationStrategy entity found by the query, ensuring it only returns one.
+// Returns a *NotSingularError when more than one AllocationStrategy entity is found.
+// Returns a *NotFoundError when no AllocationStrategy entities are found.
 func (asq *AllocationStrategyQuery) Only(ctx context.Context) (*AllocationStrategy, error) {
 	nodes, err := asq.Limit(2).All(ctx)
 	if err != nil {
@@ -146,7 +185,9 @@ func (asq *AllocationStrategyQuery) OnlyX(ctx context.Context) *AllocationStrate
 	return node
 }
 
-// OnlyID returns the only AllocationStrategy id in the query, returns an error if not exactly one id was returned.
+// OnlyID is like Only, but returns the only AllocationStrategy ID in the query.
+// Returns a *NotSingularError when more than one AllocationStrategy ID is found.
+// Returns a *NotFoundError when no entities are found.
 func (asq *AllocationStrategyQuery) OnlyID(ctx context.Context) (id int, err error) {
 	var ids []int
 	if ids, err = asq.Limit(2).IDs(ctx); err != nil {
@@ -189,7 +230,7 @@ func (asq *AllocationStrategyQuery) AllX(ctx context.Context) []*AllocationStrat
 	return nodes
 }
 
-// IDs executes the query and returns a list of AllocationStrategy ids.
+// IDs executes the query and returns a list of AllocationStrategy IDs.
 func (asq *AllocationStrategyQuery) IDs(ctx context.Context) ([]int, error) {
 	var ids []int
 	if err := asq.Select(allocationstrategy.FieldID).Scan(ctx, &ids); err != nil {
@@ -241,24 +282,29 @@ func (asq *AllocationStrategyQuery) ExistX(ctx context.Context) bool {
 	return exist
 }
 
-// Clone returns a duplicate of the query builder, including all associated steps. It can be
+// Clone returns a duplicate of the AllocationStrategyQuery builder, including all associated steps. It can be
 // used to prepare common query builders and use them differently after the clone is made.
 func (asq *AllocationStrategyQuery) Clone() *AllocationStrategyQuery {
+	if asq == nil {
+		return nil
+	}
 	return &AllocationStrategyQuery{
-		config:     asq.config,
-		limit:      asq.limit,
-		offset:     asq.offset,
-		order:      append([]OrderFunc{}, asq.order...),
-		unique:     append([]string{}, asq.unique...),
-		predicates: append([]predicate.AllocationStrategy{}, asq.predicates...),
+		config:                asq.config,
+		limit:                 asq.limit,
+		offset:                asq.offset,
+		order:                 append([]OrderFunc{}, asq.order...),
+		predicates:            append([]predicate.AllocationStrategy{}, asq.predicates...),
+		withPools:             asq.withPools.Clone(),
+		withPoolPropertyTypes: asq.withPoolPropertyTypes.Clone(),
 		// clone intermediate query.
-		sql:  asq.sql.Clone(),
-		path: asq.path,
+		sql:    asq.sql.Clone(),
+		path:   asq.path,
+		unique: asq.unique,
 	}
 }
 
-//  WithPools tells the query-builder to eager-loads the nodes that are connected to
-// the "pools" edge. The optional arguments used to configure the query builder of the edge.
+// WithPools tells the query-builder to eager-load the nodes that are connected to
+// the "pools" edge. The optional arguments are used to configure the query builder of the edge.
 func (asq *AllocationStrategyQuery) WithPools(opts ...func(*ResourcePoolQuery)) *AllocationStrategyQuery {
 	query := &ResourcePoolQuery{config: asq.config}
 	for _, opt := range opts {
@@ -268,7 +314,18 @@ func (asq *AllocationStrategyQuery) WithPools(opts ...func(*ResourcePoolQuery)) 
 	return asq
 }
 
-// GroupBy used to group vertices by one or more fields/columns.
+// WithPoolPropertyTypes tells the query-builder to eager-load the nodes that are connected to
+// the "pool_property_types" edge. The optional arguments are used to configure the query builder of the edge.
+func (asq *AllocationStrategyQuery) WithPoolPropertyTypes(opts ...func(*PropertyTypeQuery)) *AllocationStrategyQuery {
+	query := &PropertyTypeQuery{config: asq.config}
+	for _, opt := range opts {
+		opt(query)
+	}
+	asq.withPoolPropertyTypes = query
+	return asq
+}
+
+// GroupBy is used to group vertices by one or more fields/columns.
 // It is often used with aggregate functions, like: count, max, mean, min, sum.
 //
 // Example:
@@ -282,20 +339,22 @@ func (asq *AllocationStrategyQuery) WithPools(opts ...func(*ResourcePoolQuery)) 
 //		GroupBy(allocationstrategy.FieldName).
 //		Aggregate(ent.Count()).
 //		Scan(ctx, &v)
-//
 func (asq *AllocationStrategyQuery) GroupBy(field string, fields ...string) *AllocationStrategyGroupBy {
-	group := &AllocationStrategyGroupBy{config: asq.config}
-	group.fields = append([]string{field}, fields...)
-	group.path = func(ctx context.Context) (prev *sql.Selector, err error) {
+	grbuild := &AllocationStrategyGroupBy{config: asq.config}
+	grbuild.fields = append([]string{field}, fields...)
+	grbuild.path = func(ctx context.Context) (prev *sql.Selector, err error) {
 		if err := asq.prepareQuery(ctx); err != nil {
 			return nil, err
 		}
-		return asq.sqlQuery(), nil
+		return asq.sqlQuery(ctx), nil
 	}
-	return group
+	grbuild.label = allocationstrategy.Label
+	grbuild.flds, grbuild.scan = &grbuild.fields, grbuild.Scan
+	return grbuild
 }
 
-// Select one or more fields from the given query.
+// Select allows the selection one or more fields/columns for the given query,
+// instead of selecting all fields in the entity.
 //
 // Example:
 //
@@ -306,20 +365,20 @@ func (asq *AllocationStrategyQuery) GroupBy(field string, fields ...string) *All
 //	client.AllocationStrategy.Query().
 //		Select(allocationstrategy.FieldName).
 //		Scan(ctx, &v)
-//
-func (asq *AllocationStrategyQuery) Select(field string, fields ...string) *AllocationStrategySelect {
-	selector := &AllocationStrategySelect{config: asq.config}
-	selector.fields = append([]string{field}, fields...)
-	selector.path = func(ctx context.Context) (prev *sql.Selector, err error) {
-		if err := asq.prepareQuery(ctx); err != nil {
-			return nil, err
-		}
-		return asq.sqlQuery(), nil
-	}
-	return selector
+func (asq *AllocationStrategyQuery) Select(fields ...string) *AllocationStrategySelect {
+	asq.fields = append(asq.fields, fields...)
+	selbuild := &AllocationStrategySelect{AllocationStrategyQuery: asq}
+	selbuild.label = allocationstrategy.Label
+	selbuild.flds, selbuild.scan = &asq.fields, selbuild.Scan
+	return selbuild
 }
 
 func (asq *AllocationStrategyQuery) prepareQuery(ctx context.Context) error {
+	for _, f := range asq.fields {
+		if !allocationstrategy.ValidColumn(f) {
+			return &ValidationError{Name: f, err: fmt.Errorf("ent: invalid field %q for query", f)}
+		}
+	}
 	if asq.path != nil {
 		prev, err := asq.path(ctx)
 		if err != nil {
@@ -327,33 +386,38 @@ func (asq *AllocationStrategyQuery) prepareQuery(ctx context.Context) error {
 		}
 		asq.sql = prev
 	}
+	if allocationstrategy.Policy == nil {
+		return errors.New("ent: uninitialized allocationstrategy.Policy (forgotten import ent/runtime?)")
+	}
 	if err := allocationstrategy.Policy.EvalQuery(ctx, asq); err != nil {
 		return err
 	}
 	return nil
 }
 
-func (asq *AllocationStrategyQuery) sqlAll(ctx context.Context) ([]*AllocationStrategy, error) {
+func (asq *AllocationStrategyQuery) sqlAll(ctx context.Context, hooks ...queryHook) ([]*AllocationStrategy, error) {
 	var (
 		nodes       = []*AllocationStrategy{}
 		_spec       = asq.querySpec()
-		loadedTypes = [1]bool{
+		loadedTypes = [2]bool{
 			asq.withPools != nil,
+			asq.withPoolPropertyTypes != nil,
 		}
 	)
-	_spec.ScanValues = func() []interface{} {
+	_spec.ScanValues = func(columns []string) ([]any, error) {
+		return (*AllocationStrategy).scanValues(nil, columns)
+	}
+	_spec.Assign = func(columns []string, values []any) error {
 		node := &AllocationStrategy{config: asq.config}
 		nodes = append(nodes, node)
-		values := node.scanValues()
-		return values
-	}
-	_spec.Assign = func(values ...interface{}) error {
-		if len(nodes) == 0 {
-			return fmt.Errorf("ent: Assign called without calling ScanValues")
-		}
-		node := nodes[len(nodes)-1]
 		node.Edges.loadedTypes = loadedTypes
-		return node.assignValues(values...)
+		return node.assignValues(columns, values)
+	}
+	if len(asq.modifiers) > 0 {
+		_spec.Modifiers = asq.modifiers
+	}
+	for i := range hooks {
+		hooks[i](ctx, _spec)
 	}
 	if err := sqlgraph.QueryNodes(ctx, asq.driver, _spec); err != nil {
 		return nil, err
@@ -361,48 +425,123 @@ func (asq *AllocationStrategyQuery) sqlAll(ctx context.Context) ([]*AllocationSt
 	if len(nodes) == 0 {
 		return nodes, nil
 	}
-
 	if query := asq.withPools; query != nil {
-		fks := make([]driver.Value, 0, len(nodes))
-		nodeids := make(map[int]*AllocationStrategy)
-		for i := range nodes {
-			fks = append(fks, nodes[i].ID)
-			nodeids[nodes[i].ID] = nodes[i]
-			nodes[i].Edges.Pools = []*ResourcePool{}
-		}
-		query.withFKs = true
-		query.Where(predicate.ResourcePool(func(s *sql.Selector) {
-			s.Where(sql.InValues(allocationstrategy.PoolsColumn, fks...))
-		}))
-		neighbors, err := query.All(ctx)
-		if err != nil {
+		if err := asq.loadPools(ctx, query, nodes,
+			func(n *AllocationStrategy) { n.Edges.Pools = []*ResourcePool{} },
+			func(n *AllocationStrategy, e *ResourcePool) { n.Edges.Pools = append(n.Edges.Pools, e) }); err != nil {
 			return nil, err
 		}
-		for _, n := range neighbors {
-			fk := n.resource_pool_allocation_strategy
-			if fk == nil {
-				return nil, fmt.Errorf(`foreign-key "resource_pool_allocation_strategy" is nil for node %v`, n.ID)
-			}
-			node, ok := nodeids[*fk]
-			if !ok {
-				return nil, fmt.Errorf(`unexpected foreign-key "resource_pool_allocation_strategy" returned %v for node %v`, *fk, n.ID)
-			}
-			node.Edges.Pools = append(node.Edges.Pools, n)
+	}
+	if query := asq.withPoolPropertyTypes; query != nil {
+		if err := asq.loadPoolPropertyTypes(ctx, query, nodes,
+			func(n *AllocationStrategy) { n.Edges.PoolPropertyTypes = []*PropertyType{} },
+			func(n *AllocationStrategy, e *PropertyType) {
+				n.Edges.PoolPropertyTypes = append(n.Edges.PoolPropertyTypes, e)
+			}); err != nil {
+			return nil, err
 		}
 	}
-
+	for name, query := range asq.withNamedPools {
+		if err := asq.loadPools(ctx, query, nodes,
+			func(n *AllocationStrategy) { n.appendNamedPools(name) },
+			func(n *AllocationStrategy, e *ResourcePool) { n.appendNamedPools(name, e) }); err != nil {
+			return nil, err
+		}
+	}
+	for name, query := range asq.withNamedPoolPropertyTypes {
+		if err := asq.loadPoolPropertyTypes(ctx, query, nodes,
+			func(n *AllocationStrategy) { n.appendNamedPoolPropertyTypes(name) },
+			func(n *AllocationStrategy, e *PropertyType) { n.appendNamedPoolPropertyTypes(name, e) }); err != nil {
+			return nil, err
+		}
+	}
+	for i := range asq.loadTotal {
+		if err := asq.loadTotal[i](ctx, nodes); err != nil {
+			return nil, err
+		}
+	}
 	return nodes, nil
+}
+
+func (asq *AllocationStrategyQuery) loadPools(ctx context.Context, query *ResourcePoolQuery, nodes []*AllocationStrategy, init func(*AllocationStrategy), assign func(*AllocationStrategy, *ResourcePool)) error {
+	fks := make([]driver.Value, 0, len(nodes))
+	nodeids := make(map[int]*AllocationStrategy)
+	for i := range nodes {
+		fks = append(fks, nodes[i].ID)
+		nodeids[nodes[i].ID] = nodes[i]
+		if init != nil {
+			init(nodes[i])
+		}
+	}
+	query.withFKs = true
+	query.Where(predicate.ResourcePool(func(s *sql.Selector) {
+		s.Where(sql.InValues(allocationstrategy.PoolsColumn, fks...))
+	}))
+	neighbors, err := query.All(ctx)
+	if err != nil {
+		return err
+	}
+	for _, n := range neighbors {
+		fk := n.resource_pool_allocation_strategy
+		if fk == nil {
+			return fmt.Errorf(`foreign-key "resource_pool_allocation_strategy" is nil for node %v`, n.ID)
+		}
+		node, ok := nodeids[*fk]
+		if !ok {
+			return fmt.Errorf(`unexpected foreign-key "resource_pool_allocation_strategy" returned %v for node %v`, *fk, n.ID)
+		}
+		assign(node, n)
+	}
+	return nil
+}
+func (asq *AllocationStrategyQuery) loadPoolPropertyTypes(ctx context.Context, query *PropertyTypeQuery, nodes []*AllocationStrategy, init func(*AllocationStrategy), assign func(*AllocationStrategy, *PropertyType)) error {
+	fks := make([]driver.Value, 0, len(nodes))
+	nodeids := make(map[int]*AllocationStrategy)
+	for i := range nodes {
+		fks = append(fks, nodes[i].ID)
+		nodeids[nodes[i].ID] = nodes[i]
+		if init != nil {
+			init(nodes[i])
+		}
+	}
+	query.withFKs = true
+	query.Where(predicate.PropertyType(func(s *sql.Selector) {
+		s.Where(sql.InValues(allocationstrategy.PoolPropertyTypesColumn, fks...))
+	}))
+	neighbors, err := query.All(ctx)
+	if err != nil {
+		return err
+	}
+	for _, n := range neighbors {
+		fk := n.allocation_strategy_pool_property_types
+		if fk == nil {
+			return fmt.Errorf(`foreign-key "allocation_strategy_pool_property_types" is nil for node %v`, n.ID)
+		}
+		node, ok := nodeids[*fk]
+		if !ok {
+			return fmt.Errorf(`unexpected foreign-key "allocation_strategy_pool_property_types" returned %v for node %v`, *fk, n.ID)
+		}
+		assign(node, n)
+	}
+	return nil
 }
 
 func (asq *AllocationStrategyQuery) sqlCount(ctx context.Context) (int, error) {
 	_spec := asq.querySpec()
+	if len(asq.modifiers) > 0 {
+		_spec.Modifiers = asq.modifiers
+	}
+	_spec.Node.Columns = asq.fields
+	if len(asq.fields) > 0 {
+		_spec.Unique = asq.unique != nil && *asq.unique
+	}
 	return sqlgraph.CountNodes(ctx, asq.driver, _spec)
 }
 
 func (asq *AllocationStrategyQuery) sqlExist(ctx context.Context) (bool, error) {
 	n, err := asq.sqlCount(ctx)
 	if err != nil {
-		return false, fmt.Errorf("ent: check existence: %v", err)
+		return false, fmt.Errorf("ent: check existence: %w", err)
 	}
 	return n > 0, nil
 }
@@ -420,6 +559,18 @@ func (asq *AllocationStrategyQuery) querySpec() *sqlgraph.QuerySpec {
 		From:   asq.sql,
 		Unique: true,
 	}
+	if unique := asq.unique; unique != nil {
+		_spec.Unique = *unique
+	}
+	if fields := asq.fields; len(fields) > 0 {
+		_spec.Node.Columns = make([]string, 0, len(fields))
+		_spec.Node.Columns = append(_spec.Node.Columns, allocationstrategy.FieldID)
+		for i := range fields {
+			if fields[i] != allocationstrategy.FieldID {
+				_spec.Node.Columns = append(_spec.Node.Columns, fields[i])
+			}
+		}
+	}
 	if ps := asq.predicates; len(ps) > 0 {
 		_spec.Predicate = func(selector *sql.Selector) {
 			for i := range ps {
@@ -436,26 +587,33 @@ func (asq *AllocationStrategyQuery) querySpec() *sqlgraph.QuerySpec {
 	if ps := asq.order; len(ps) > 0 {
 		_spec.Order = func(selector *sql.Selector) {
 			for i := range ps {
-				ps[i](selector, allocationstrategy.ValidColumn)
+				ps[i](selector)
 			}
 		}
 	}
 	return _spec
 }
 
-func (asq *AllocationStrategyQuery) sqlQuery() *sql.Selector {
+func (asq *AllocationStrategyQuery) sqlQuery(ctx context.Context) *sql.Selector {
 	builder := sql.Dialect(asq.driver.Dialect())
 	t1 := builder.Table(allocationstrategy.Table)
-	selector := builder.Select(t1.Columns(allocationstrategy.Columns...)...).From(t1)
+	columns := asq.fields
+	if len(columns) == 0 {
+		columns = allocationstrategy.Columns
+	}
+	selector := builder.Select(t1.Columns(columns...)...).From(t1)
 	if asq.sql != nil {
 		selector = asq.sql
-		selector.Select(selector.Columns(allocationstrategy.Columns...)...)
+		selector.Select(selector.Columns(columns...)...)
+	}
+	if asq.unique != nil && *asq.unique {
+		selector.Distinct()
 	}
 	for _, p := range asq.predicates {
 		p(selector)
 	}
 	for _, p := range asq.order {
-		p(selector, allocationstrategy.ValidColumn)
+		p(selector)
 	}
 	if offset := asq.offset; offset != nil {
 		// limit is mandatory for offset clause. We start
@@ -468,9 +626,38 @@ func (asq *AllocationStrategyQuery) sqlQuery() *sql.Selector {
 	return selector
 }
 
-// AllocationStrategyGroupBy is the builder for group-by AllocationStrategy entities.
+// WithNamedPools tells the query-builder to eager-load the nodes that are connected to the "pools"
+// edge with the given name. The optional arguments are used to configure the query builder of the edge.
+func (asq *AllocationStrategyQuery) WithNamedPools(name string, opts ...func(*ResourcePoolQuery)) *AllocationStrategyQuery {
+	query := &ResourcePoolQuery{config: asq.config}
+	for _, opt := range opts {
+		opt(query)
+	}
+	if asq.withNamedPools == nil {
+		asq.withNamedPools = make(map[string]*ResourcePoolQuery)
+	}
+	asq.withNamedPools[name] = query
+	return asq
+}
+
+// WithNamedPoolPropertyTypes tells the query-builder to eager-load the nodes that are connected to the "pool_property_types"
+// edge with the given name. The optional arguments are used to configure the query builder of the edge.
+func (asq *AllocationStrategyQuery) WithNamedPoolPropertyTypes(name string, opts ...func(*PropertyTypeQuery)) *AllocationStrategyQuery {
+	query := &PropertyTypeQuery{config: asq.config}
+	for _, opt := range opts {
+		opt(query)
+	}
+	if asq.withNamedPoolPropertyTypes == nil {
+		asq.withNamedPoolPropertyTypes = make(map[string]*PropertyTypeQuery)
+	}
+	asq.withNamedPoolPropertyTypes[name] = query
+	return asq
+}
+
+// AllocationStrategyGroupBy is the group-by builder for AllocationStrategy entities.
 type AllocationStrategyGroupBy struct {
 	config
+	selector
 	fields []string
 	fns    []AggregateFunc
 	// intermediate query (i.e. traversal path).
@@ -484,8 +671,8 @@ func (asgb *AllocationStrategyGroupBy) Aggregate(fns ...AggregateFunc) *Allocati
 	return asgb
 }
 
-// Scan applies the group-by query and scan the result into the given value.
-func (asgb *AllocationStrategyGroupBy) Scan(ctx context.Context, v interface{}) error {
+// Scan applies the group-by query and scans the result into the given value.
+func (asgb *AllocationStrategyGroupBy) Scan(ctx context.Context, v any) error {
 	query, err := asgb.path(ctx)
 	if err != nil {
 		return err
@@ -494,202 +681,7 @@ func (asgb *AllocationStrategyGroupBy) Scan(ctx context.Context, v interface{}) 
 	return asgb.sqlScan(ctx, v)
 }
 
-// ScanX is like Scan, but panics if an error occurs.
-func (asgb *AllocationStrategyGroupBy) ScanX(ctx context.Context, v interface{}) {
-	if err := asgb.Scan(ctx, v); err != nil {
-		panic(err)
-	}
-}
-
-// Strings returns list of strings from group-by. It is only allowed when querying group-by with one field.
-func (asgb *AllocationStrategyGroupBy) Strings(ctx context.Context) ([]string, error) {
-	if len(asgb.fields) > 1 {
-		return nil, errors.New("ent: AllocationStrategyGroupBy.Strings is not achievable when grouping more than 1 field")
-	}
-	var v []string
-	if err := asgb.Scan(ctx, &v); err != nil {
-		return nil, err
-	}
-	return v, nil
-}
-
-// StringsX is like Strings, but panics if an error occurs.
-func (asgb *AllocationStrategyGroupBy) StringsX(ctx context.Context) []string {
-	v, err := asgb.Strings(ctx)
-	if err != nil {
-		panic(err)
-	}
-	return v
-}
-
-// String returns a single string from group-by. It is only allowed when querying group-by with one field.
-func (asgb *AllocationStrategyGroupBy) String(ctx context.Context) (_ string, err error) {
-	var v []string
-	if v, err = asgb.Strings(ctx); err != nil {
-		return
-	}
-	switch len(v) {
-	case 1:
-		return v[0], nil
-	case 0:
-		err = &NotFoundError{allocationstrategy.Label}
-	default:
-		err = fmt.Errorf("ent: AllocationStrategyGroupBy.Strings returned %d results when one was expected", len(v))
-	}
-	return
-}
-
-// StringX is like String, but panics if an error occurs.
-func (asgb *AllocationStrategyGroupBy) StringX(ctx context.Context) string {
-	v, err := asgb.String(ctx)
-	if err != nil {
-		panic(err)
-	}
-	return v
-}
-
-// Ints returns list of ints from group-by. It is only allowed when querying group-by with one field.
-func (asgb *AllocationStrategyGroupBy) Ints(ctx context.Context) ([]int, error) {
-	if len(asgb.fields) > 1 {
-		return nil, errors.New("ent: AllocationStrategyGroupBy.Ints is not achievable when grouping more than 1 field")
-	}
-	var v []int
-	if err := asgb.Scan(ctx, &v); err != nil {
-		return nil, err
-	}
-	return v, nil
-}
-
-// IntsX is like Ints, but panics if an error occurs.
-func (asgb *AllocationStrategyGroupBy) IntsX(ctx context.Context) []int {
-	v, err := asgb.Ints(ctx)
-	if err != nil {
-		panic(err)
-	}
-	return v
-}
-
-// Int returns a single int from group-by. It is only allowed when querying group-by with one field.
-func (asgb *AllocationStrategyGroupBy) Int(ctx context.Context) (_ int, err error) {
-	var v []int
-	if v, err = asgb.Ints(ctx); err != nil {
-		return
-	}
-	switch len(v) {
-	case 1:
-		return v[0], nil
-	case 0:
-		err = &NotFoundError{allocationstrategy.Label}
-	default:
-		err = fmt.Errorf("ent: AllocationStrategyGroupBy.Ints returned %d results when one was expected", len(v))
-	}
-	return
-}
-
-// IntX is like Int, but panics if an error occurs.
-func (asgb *AllocationStrategyGroupBy) IntX(ctx context.Context) int {
-	v, err := asgb.Int(ctx)
-	if err != nil {
-		panic(err)
-	}
-	return v
-}
-
-// Float64s returns list of float64s from group-by. It is only allowed when querying group-by with one field.
-func (asgb *AllocationStrategyGroupBy) Float64s(ctx context.Context) ([]float64, error) {
-	if len(asgb.fields) > 1 {
-		return nil, errors.New("ent: AllocationStrategyGroupBy.Float64s is not achievable when grouping more than 1 field")
-	}
-	var v []float64
-	if err := asgb.Scan(ctx, &v); err != nil {
-		return nil, err
-	}
-	return v, nil
-}
-
-// Float64sX is like Float64s, but panics if an error occurs.
-func (asgb *AllocationStrategyGroupBy) Float64sX(ctx context.Context) []float64 {
-	v, err := asgb.Float64s(ctx)
-	if err != nil {
-		panic(err)
-	}
-	return v
-}
-
-// Float64 returns a single float64 from group-by. It is only allowed when querying group-by with one field.
-func (asgb *AllocationStrategyGroupBy) Float64(ctx context.Context) (_ float64, err error) {
-	var v []float64
-	if v, err = asgb.Float64s(ctx); err != nil {
-		return
-	}
-	switch len(v) {
-	case 1:
-		return v[0], nil
-	case 0:
-		err = &NotFoundError{allocationstrategy.Label}
-	default:
-		err = fmt.Errorf("ent: AllocationStrategyGroupBy.Float64s returned %d results when one was expected", len(v))
-	}
-	return
-}
-
-// Float64X is like Float64, but panics if an error occurs.
-func (asgb *AllocationStrategyGroupBy) Float64X(ctx context.Context) float64 {
-	v, err := asgb.Float64(ctx)
-	if err != nil {
-		panic(err)
-	}
-	return v
-}
-
-// Bools returns list of bools from group-by. It is only allowed when querying group-by with one field.
-func (asgb *AllocationStrategyGroupBy) Bools(ctx context.Context) ([]bool, error) {
-	if len(asgb.fields) > 1 {
-		return nil, errors.New("ent: AllocationStrategyGroupBy.Bools is not achievable when grouping more than 1 field")
-	}
-	var v []bool
-	if err := asgb.Scan(ctx, &v); err != nil {
-		return nil, err
-	}
-	return v, nil
-}
-
-// BoolsX is like Bools, but panics if an error occurs.
-func (asgb *AllocationStrategyGroupBy) BoolsX(ctx context.Context) []bool {
-	v, err := asgb.Bools(ctx)
-	if err != nil {
-		panic(err)
-	}
-	return v
-}
-
-// Bool returns a single bool from group-by. It is only allowed when querying group-by with one field.
-func (asgb *AllocationStrategyGroupBy) Bool(ctx context.Context) (_ bool, err error) {
-	var v []bool
-	if v, err = asgb.Bools(ctx); err != nil {
-		return
-	}
-	switch len(v) {
-	case 1:
-		return v[0], nil
-	case 0:
-		err = &NotFoundError{allocationstrategy.Label}
-	default:
-		err = fmt.Errorf("ent: AllocationStrategyGroupBy.Bools returned %d results when one was expected", len(v))
-	}
-	return
-}
-
-// BoolX is like Bool, but panics if an error occurs.
-func (asgb *AllocationStrategyGroupBy) BoolX(ctx context.Context) bool {
-	v, err := asgb.Bool(ctx)
-	if err != nil {
-		panic(err)
-	}
-	return v
-}
-
-func (asgb *AllocationStrategyGroupBy) sqlScan(ctx context.Context, v interface{}) error {
+func (asgb *AllocationStrategyGroupBy) sqlScan(ctx context.Context, v any) error {
 	for _, f := range asgb.fields {
 		if !allocationstrategy.ValidColumn(f) {
 			return &ValidationError{Name: f, err: fmt.Errorf("invalid field %q for group-by", f)}
@@ -709,246 +701,47 @@ func (asgb *AllocationStrategyGroupBy) sqlScan(ctx context.Context, v interface{
 }
 
 func (asgb *AllocationStrategyGroupBy) sqlQuery() *sql.Selector {
-	selector := asgb.sql
-	columns := make([]string, 0, len(asgb.fields)+len(asgb.fns))
-	columns = append(columns, asgb.fields...)
+	selector := asgb.sql.Select()
+	aggregation := make([]string, 0, len(asgb.fns))
 	for _, fn := range asgb.fns {
-		columns = append(columns, fn(selector, allocationstrategy.ValidColumn))
+		aggregation = append(aggregation, fn(selector))
 	}
-	return selector.Select(columns...).GroupBy(asgb.fields...)
+	// If no columns were selected in a custom aggregation function, the default
+	// selection is the fields used for "group-by", and the aggregation functions.
+	if len(selector.SelectedColumns()) == 0 {
+		columns := make([]string, 0, len(asgb.fields)+len(asgb.fns))
+		for _, f := range asgb.fields {
+			columns = append(columns, selector.C(f))
+		}
+		columns = append(columns, aggregation...)
+		selector.Select(columns...)
+	}
+	return selector.GroupBy(selector.Columns(asgb.fields...)...)
 }
 
-// AllocationStrategySelect is the builder for select fields of AllocationStrategy entities.
+// AllocationStrategySelect is the builder for selecting fields of AllocationStrategy entities.
 type AllocationStrategySelect struct {
-	config
-	fields []string
+	*AllocationStrategyQuery
+	selector
 	// intermediate query (i.e. traversal path).
-	sql  *sql.Selector
-	path func(context.Context) (*sql.Selector, error)
+	sql *sql.Selector
 }
 
-// Scan applies the selector query and scan the result into the given value.
-func (ass *AllocationStrategySelect) Scan(ctx context.Context, v interface{}) error {
-	query, err := ass.path(ctx)
-	if err != nil {
+// Scan applies the selector query and scans the result into the given value.
+func (ass *AllocationStrategySelect) Scan(ctx context.Context, v any) error {
+	if err := ass.prepareQuery(ctx); err != nil {
 		return err
 	}
-	ass.sql = query
+	ass.sql = ass.AllocationStrategyQuery.sqlQuery(ctx)
 	return ass.sqlScan(ctx, v)
 }
 
-// ScanX is like Scan, but panics if an error occurs.
-func (ass *AllocationStrategySelect) ScanX(ctx context.Context, v interface{}) {
-	if err := ass.Scan(ctx, v); err != nil {
-		panic(err)
-	}
-}
-
-// Strings returns list of strings from selector. It is only allowed when selecting one field.
-func (ass *AllocationStrategySelect) Strings(ctx context.Context) ([]string, error) {
-	if len(ass.fields) > 1 {
-		return nil, errors.New("ent: AllocationStrategySelect.Strings is not achievable when selecting more than 1 field")
-	}
-	var v []string
-	if err := ass.Scan(ctx, &v); err != nil {
-		return nil, err
-	}
-	return v, nil
-}
-
-// StringsX is like Strings, but panics if an error occurs.
-func (ass *AllocationStrategySelect) StringsX(ctx context.Context) []string {
-	v, err := ass.Strings(ctx)
-	if err != nil {
-		panic(err)
-	}
-	return v
-}
-
-// String returns a single string from selector. It is only allowed when selecting one field.
-func (ass *AllocationStrategySelect) String(ctx context.Context) (_ string, err error) {
-	var v []string
-	if v, err = ass.Strings(ctx); err != nil {
-		return
-	}
-	switch len(v) {
-	case 1:
-		return v[0], nil
-	case 0:
-		err = &NotFoundError{allocationstrategy.Label}
-	default:
-		err = fmt.Errorf("ent: AllocationStrategySelect.Strings returned %d results when one was expected", len(v))
-	}
-	return
-}
-
-// StringX is like String, but panics if an error occurs.
-func (ass *AllocationStrategySelect) StringX(ctx context.Context) string {
-	v, err := ass.String(ctx)
-	if err != nil {
-		panic(err)
-	}
-	return v
-}
-
-// Ints returns list of ints from selector. It is only allowed when selecting one field.
-func (ass *AllocationStrategySelect) Ints(ctx context.Context) ([]int, error) {
-	if len(ass.fields) > 1 {
-		return nil, errors.New("ent: AllocationStrategySelect.Ints is not achievable when selecting more than 1 field")
-	}
-	var v []int
-	if err := ass.Scan(ctx, &v); err != nil {
-		return nil, err
-	}
-	return v, nil
-}
-
-// IntsX is like Ints, but panics if an error occurs.
-func (ass *AllocationStrategySelect) IntsX(ctx context.Context) []int {
-	v, err := ass.Ints(ctx)
-	if err != nil {
-		panic(err)
-	}
-	return v
-}
-
-// Int returns a single int from selector. It is only allowed when selecting one field.
-func (ass *AllocationStrategySelect) Int(ctx context.Context) (_ int, err error) {
-	var v []int
-	if v, err = ass.Ints(ctx); err != nil {
-		return
-	}
-	switch len(v) {
-	case 1:
-		return v[0], nil
-	case 0:
-		err = &NotFoundError{allocationstrategy.Label}
-	default:
-		err = fmt.Errorf("ent: AllocationStrategySelect.Ints returned %d results when one was expected", len(v))
-	}
-	return
-}
-
-// IntX is like Int, but panics if an error occurs.
-func (ass *AllocationStrategySelect) IntX(ctx context.Context) int {
-	v, err := ass.Int(ctx)
-	if err != nil {
-		panic(err)
-	}
-	return v
-}
-
-// Float64s returns list of float64s from selector. It is only allowed when selecting one field.
-func (ass *AllocationStrategySelect) Float64s(ctx context.Context) ([]float64, error) {
-	if len(ass.fields) > 1 {
-		return nil, errors.New("ent: AllocationStrategySelect.Float64s is not achievable when selecting more than 1 field")
-	}
-	var v []float64
-	if err := ass.Scan(ctx, &v); err != nil {
-		return nil, err
-	}
-	return v, nil
-}
-
-// Float64sX is like Float64s, but panics if an error occurs.
-func (ass *AllocationStrategySelect) Float64sX(ctx context.Context) []float64 {
-	v, err := ass.Float64s(ctx)
-	if err != nil {
-		panic(err)
-	}
-	return v
-}
-
-// Float64 returns a single float64 from selector. It is only allowed when selecting one field.
-func (ass *AllocationStrategySelect) Float64(ctx context.Context) (_ float64, err error) {
-	var v []float64
-	if v, err = ass.Float64s(ctx); err != nil {
-		return
-	}
-	switch len(v) {
-	case 1:
-		return v[0], nil
-	case 0:
-		err = &NotFoundError{allocationstrategy.Label}
-	default:
-		err = fmt.Errorf("ent: AllocationStrategySelect.Float64s returned %d results when one was expected", len(v))
-	}
-	return
-}
-
-// Float64X is like Float64, but panics if an error occurs.
-func (ass *AllocationStrategySelect) Float64X(ctx context.Context) float64 {
-	v, err := ass.Float64(ctx)
-	if err != nil {
-		panic(err)
-	}
-	return v
-}
-
-// Bools returns list of bools from selector. It is only allowed when selecting one field.
-func (ass *AllocationStrategySelect) Bools(ctx context.Context) ([]bool, error) {
-	if len(ass.fields) > 1 {
-		return nil, errors.New("ent: AllocationStrategySelect.Bools is not achievable when selecting more than 1 field")
-	}
-	var v []bool
-	if err := ass.Scan(ctx, &v); err != nil {
-		return nil, err
-	}
-	return v, nil
-}
-
-// BoolsX is like Bools, but panics if an error occurs.
-func (ass *AllocationStrategySelect) BoolsX(ctx context.Context) []bool {
-	v, err := ass.Bools(ctx)
-	if err != nil {
-		panic(err)
-	}
-	return v
-}
-
-// Bool returns a single bool from selector. It is only allowed when selecting one field.
-func (ass *AllocationStrategySelect) Bool(ctx context.Context) (_ bool, err error) {
-	var v []bool
-	if v, err = ass.Bools(ctx); err != nil {
-		return
-	}
-	switch len(v) {
-	case 1:
-		return v[0], nil
-	case 0:
-		err = &NotFoundError{allocationstrategy.Label}
-	default:
-		err = fmt.Errorf("ent: AllocationStrategySelect.Bools returned %d results when one was expected", len(v))
-	}
-	return
-}
-
-// BoolX is like Bool, but panics if an error occurs.
-func (ass *AllocationStrategySelect) BoolX(ctx context.Context) bool {
-	v, err := ass.Bool(ctx)
-	if err != nil {
-		panic(err)
-	}
-	return v
-}
-
-func (ass *AllocationStrategySelect) sqlScan(ctx context.Context, v interface{}) error {
-	for _, f := range ass.fields {
-		if !allocationstrategy.ValidColumn(f) {
-			return &ValidationError{Name: f, err: fmt.Errorf("invalid field %q for selection", f)}
-		}
-	}
+func (ass *AllocationStrategySelect) sqlScan(ctx context.Context, v any) error {
 	rows := &sql.Rows{}
-	query, args := ass.sqlQuery().Query()
+	query, args := ass.sql.Query()
 	if err := ass.driver.Query(ctx, query, args, rows); err != nil {
 		return err
 	}
 	defer rows.Close()
 	return sql.ScanSlice(rows, v)
-}
-
-func (ass *AllocationStrategySelect) sqlQuery() sql.Querier {
-	selector := ass.sql
-	selector.Select(selector.Columns(ass.fields...)...)
-	return selector
 }

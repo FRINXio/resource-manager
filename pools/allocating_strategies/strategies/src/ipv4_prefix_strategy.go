@@ -5,18 +5,17 @@ import (
 	"math"
 	"sort"
 	"strconv"
-
 )
 
 type Ipv4Struct struct {
 	address string
-	prefix int
+	prefix  int
 }
 
 type Ipv4Prefix struct {
-	currentResources []map[string]interface{}
+	currentResources       []map[string]interface{}
 	resourcePoolProperties map[string]interface{}
-	userInput map[string]interface{}
+	userInput              map[string]interface{}
 }
 
 func NewIpv4Prefix(currentResources []map[string]interface{},
@@ -71,7 +70,7 @@ func (ipv4prefix *Ipv4Prefix) Capacity() (map[string]interface{}, error) {
 	if !ok {
 		return nil, errors.New("Unable to extract prefix resources")
 	}
-	totalCapacity := hostsInMask(rootAddressStr.(string), rootMask.(int));
+	totalCapacity := hostsInMask(rootAddressStr.(string), rootMask.(int))
 	allocatedCapacity := 0
 	var subnetItself = 0
 	if subnet, ok := ipv4prefix.userInput["subnet"]; ok && subnet.(bool) {
@@ -101,19 +100,19 @@ func prefixesCapacity(currentResources []map[string]interface{}) int {
 	return width
 }
 
-
 // calculate the nearest possible address for a subnet where mask === newSubnetMask
-//  that is outside of allocatedSubnet
+//
+//	that is outside of allocatedSubnet
 func findNextFreeSubnetAddress(allocatedSubnet Ipv4Struct, newSubnetMask int) int {
 	// find the first address after currently iterated allocated subnet
 	addressNumber, _ := inetAton(allocatedSubnet.address)
 	nextAvailableAddressNum := addressNumber + subnetAddresses(allocatedSubnet.prefix)
 	// remove any bites from the address above after newSubnetMask
 	newSubnetMaskNegative := 32 - newSubnetMask
-	possibleSubnetNum := int(uint(nextAvailableAddressNum) >> newSubnetMaskNegative) << newSubnetMaskNegative
+	possibleSubnetNum := int(uint(nextAvailableAddressNum)>>newSubnetMaskNegative) << newSubnetMaskNegative
 	// keep going until we find an address outside of currently iterated allocated subnet
 	for nextAvailableAddressNum > int(possibleSubnetNum) {
-		possibleSubnetNum = (int(uint(possibleSubnetNum) >> newSubnetMaskNegative) + 1) << newSubnetMaskNegative
+		possibleSubnetNum = (int(uint(possibleSubnetNum)>>newSubnetMaskNegative) + 1) << newSubnetMaskNegative
 	}
 	return possibleSubnetNum
 }
@@ -122,7 +121,7 @@ func (ipv4prefix *Ipv4Prefix) calculateDesiredSubnetMask() (int, int) {
 	desiredSize, _ := ipv4prefix.userInput["desiredSize"]
 	desiredSize, _ = NumberToInt(desiredSize)
 	newSubnetBits := math.Ceil(math.Log(float64(desiredSize.(int))) / math.Log(2))
-    newSubnetMask := 32 - newSubnetBits
+	newSubnetMask := 32 - newSubnetBits
 	newSubnetCapacity := subnetAddresses(int(newSubnetMask))
 	return int(newSubnetMask), newSubnetCapacity
 }
@@ -177,7 +176,7 @@ func (ipv4prefix *Ipv4Prefix) Invoke() (map[string]interface{}, error) {
 		if err != nil {
 			return nil, err
 		}
-		currentResourcesStruct = append(currentResourcesStruct,Ipv4Struct{address: address, prefix: prefix})
+		currentResourcesStruct = append(currentResourcesStruct, Ipv4Struct{address: address, prefix: prefix})
 	}
 
 	// compare prefixes based on their broadcast address
@@ -207,7 +206,7 @@ func (ipv4prefix *Ipv4Prefix) Invoke() (map[string]interface{}, error) {
 	}
 
 	// check if there is any space left at the end of parent range
-	if possibleSubnetNum + newSubnetCapacity <= rootAddressNum + rootCapacity {
+	if possibleSubnetNum+newSubnetCapacity <= rootAddressNum+rootCapacity {
 		// there sure is some space, use it !
 		result["address"] = inetNtoa(possibleSubnetNum)
 		result["prefix"] = newSubnetMask

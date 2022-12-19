@@ -6,7 +6,7 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/facebook/ent/dialect/sql"
+	"entgo.io/ent/dialect/sql"
 	"github.com/net-auto/resourceManager/ent/propertytype"
 	"github.com/net-auto/resourceManager/ent/resourcetype"
 )
@@ -54,19 +54,24 @@ type PropertyType struct {
 	NodeType string `json:"nodeType,omitempty"`
 	// Edges holds the relations/edges for other nodes in the graph.
 	// The values are being populated by the PropertyTypeQuery when eager-loading is set.
-	Edges                        PropertyTypeEdges `json:"edges"`
-	resource_type_property_types *int
+	Edges                                   PropertyTypeEdges `json:"edges"`
+	allocation_strategy_pool_property_types *int
+	resource_type_property_types            *int
 }
 
 // PropertyTypeEdges holds the relations/edges for other nodes in the graph.
 type PropertyTypeEdges struct {
 	// Properties holds the value of the properties edge.
-	Properties []*Property
+	Properties []*Property `json:"properties,omitempty"`
 	// ResourceType holds the value of the resource_type edge.
-	ResourceType *ResourceType
+	ResourceType *ResourceType `json:"resource_type,omitempty"`
 	// loadedTypes holds the information for reporting if a
 	// type was loaded (or requested) in eager-loading or not.
 	loadedTypes [2]bool
+	// totalCount holds the count of the edges above.
+	totalCount [2]map[string]int
+
+	namedProperties map[string][]*Property
 }
 
 // PropertiesOrErr returns the Properties value or an error if the edge
@@ -83,8 +88,7 @@ func (e PropertyTypeEdges) PropertiesOrErr() ([]*Property, error) {
 func (e PropertyTypeEdges) ResourceTypeOrErr() (*ResourceType, error) {
 	if e.loadedTypes[1] {
 		if e.ResourceType == nil {
-			// The edge resource_type was loaded in eager-loading,
-			// but was not found.
+			// Edge was loaded but was not found.
 			return nil, &NotFoundError{label: resourcetype.Label}
 		}
 		return e.ResourceType, nil
@@ -93,184 +97,203 @@ func (e PropertyTypeEdges) ResourceTypeOrErr() (*ResourceType, error) {
 }
 
 // scanValues returns the types for scanning values from sql.Rows.
-func (*PropertyType) scanValues() []interface{} {
-	return []interface{}{
-		&sql.NullInt64{},   // id
-		&sql.NullString{},  // type
-		&sql.NullString{},  // name
-		&sql.NullString{},  // external_id
-		&sql.NullInt64{},   // index
-		&sql.NullString{},  // category
-		&sql.NullInt64{},   // int_val
-		&sql.NullBool{},    // bool_val
-		&sql.NullFloat64{}, // float_val
-		&sql.NullFloat64{}, // latitude_val
-		&sql.NullFloat64{}, // longitude_val
-		&sql.NullString{},  // string_val
-		&sql.NullFloat64{}, // range_from_val
-		&sql.NullFloat64{}, // range_to_val
-		&sql.NullBool{},    // is_instance_property
-		&sql.NullBool{},    // editable
-		&sql.NullBool{},    // mandatory
-		&sql.NullBool{},    // deleted
-		&sql.NullString{},  // nodeType
+func (*PropertyType) scanValues(columns []string) ([]any, error) {
+	values := make([]any, len(columns))
+	for i := range columns {
+		switch columns[i] {
+		case propertytype.FieldBoolVal, propertytype.FieldIsInstanceProperty, propertytype.FieldEditable, propertytype.FieldMandatory, propertytype.FieldDeleted:
+			values[i] = new(sql.NullBool)
+		case propertytype.FieldFloatVal, propertytype.FieldLatitudeVal, propertytype.FieldLongitudeVal, propertytype.FieldRangeFromVal, propertytype.FieldRangeToVal:
+			values[i] = new(sql.NullFloat64)
+		case propertytype.FieldID, propertytype.FieldIndex, propertytype.FieldIntVal:
+			values[i] = new(sql.NullInt64)
+		case propertytype.FieldType, propertytype.FieldName, propertytype.FieldExternalID, propertytype.FieldCategory, propertytype.FieldStringVal, propertytype.FieldNodeType:
+			values[i] = new(sql.NullString)
+		case propertytype.ForeignKeys[0]: // allocation_strategy_pool_property_types
+			values[i] = new(sql.NullInt64)
+		case propertytype.ForeignKeys[1]: // resource_type_property_types
+			values[i] = new(sql.NullInt64)
+		default:
+			return nil, fmt.Errorf("unexpected column %q for type PropertyType", columns[i])
+		}
 	}
-}
-
-// fkValues returns the types for scanning foreign-keys values from sql.Rows.
-func (*PropertyType) fkValues() []interface{} {
-	return []interface{}{
-		&sql.NullInt64{}, // resource_type_property_types
-	}
+	return values, nil
 }
 
 // assignValues assigns the values that were returned from sql.Rows (after scanning)
 // to the PropertyType fields.
-func (pt *PropertyType) assignValues(values ...interface{}) error {
-	if m, n := len(values), len(propertytype.Columns); m < n {
+func (pt *PropertyType) assignValues(columns []string, values []any) error {
+	if m, n := len(values), len(columns); m < n {
 		return fmt.Errorf("mismatch number of scan values: %d != %d", m, n)
 	}
-	value, ok := values[0].(*sql.NullInt64)
-	if !ok {
-		return fmt.Errorf("unexpected type %T for field id", value)
-	}
-	pt.ID = int(value.Int64)
-	values = values[1:]
-	if value, ok := values[0].(*sql.NullString); !ok {
-		return fmt.Errorf("unexpected type %T for field type", values[0])
-	} else if value.Valid {
-		pt.Type = propertytype.Type(value.String)
-	}
-	if value, ok := values[1].(*sql.NullString); !ok {
-		return fmt.Errorf("unexpected type %T for field name", values[1])
-	} else if value.Valid {
-		pt.Name = value.String
-	}
-	if value, ok := values[2].(*sql.NullString); !ok {
-		return fmt.Errorf("unexpected type %T for field external_id", values[2])
-	} else if value.Valid {
-		pt.ExternalID = value.String
-	}
-	if value, ok := values[3].(*sql.NullInt64); !ok {
-		return fmt.Errorf("unexpected type %T for field index", values[3])
-	} else if value.Valid {
-		pt.Index = int(value.Int64)
-	}
-	if value, ok := values[4].(*sql.NullString); !ok {
-		return fmt.Errorf("unexpected type %T for field category", values[4])
-	} else if value.Valid {
-		pt.Category = value.String
-	}
-	if value, ok := values[5].(*sql.NullInt64); !ok {
-		return fmt.Errorf("unexpected type %T for field int_val", values[5])
-	} else if value.Valid {
-		pt.IntVal = new(int)
-		*pt.IntVal = int(value.Int64)
-	}
-	if value, ok := values[6].(*sql.NullBool); !ok {
-		return fmt.Errorf("unexpected type %T for field bool_val", values[6])
-	} else if value.Valid {
-		pt.BoolVal = new(bool)
-		*pt.BoolVal = value.Bool
-	}
-	if value, ok := values[7].(*sql.NullFloat64); !ok {
-		return fmt.Errorf("unexpected type %T for field float_val", values[7])
-	} else if value.Valid {
-		pt.FloatVal = new(float64)
-		*pt.FloatVal = value.Float64
-	}
-	if value, ok := values[8].(*sql.NullFloat64); !ok {
-		return fmt.Errorf("unexpected type %T for field latitude_val", values[8])
-	} else if value.Valid {
-		pt.LatitudeVal = new(float64)
-		*pt.LatitudeVal = value.Float64
-	}
-	if value, ok := values[9].(*sql.NullFloat64); !ok {
-		return fmt.Errorf("unexpected type %T for field longitude_val", values[9])
-	} else if value.Valid {
-		pt.LongitudeVal = new(float64)
-		*pt.LongitudeVal = value.Float64
-	}
-	if value, ok := values[10].(*sql.NullString); !ok {
-		return fmt.Errorf("unexpected type %T for field string_val", values[10])
-	} else if value.Valid {
-		pt.StringVal = new(string)
-		*pt.StringVal = value.String
-	}
-	if value, ok := values[11].(*sql.NullFloat64); !ok {
-		return fmt.Errorf("unexpected type %T for field range_from_val", values[11])
-	} else if value.Valid {
-		pt.RangeFromVal = new(float64)
-		*pt.RangeFromVal = value.Float64
-	}
-	if value, ok := values[12].(*sql.NullFloat64); !ok {
-		return fmt.Errorf("unexpected type %T for field range_to_val", values[12])
-	} else if value.Valid {
-		pt.RangeToVal = new(float64)
-		*pt.RangeToVal = value.Float64
-	}
-	if value, ok := values[13].(*sql.NullBool); !ok {
-		return fmt.Errorf("unexpected type %T for field is_instance_property", values[13])
-	} else if value.Valid {
-		pt.IsInstanceProperty = value.Bool
-	}
-	if value, ok := values[14].(*sql.NullBool); !ok {
-		return fmt.Errorf("unexpected type %T for field editable", values[14])
-	} else if value.Valid {
-		pt.Editable = value.Bool
-	}
-	if value, ok := values[15].(*sql.NullBool); !ok {
-		return fmt.Errorf("unexpected type %T for field mandatory", values[15])
-	} else if value.Valid {
-		pt.Mandatory = value.Bool
-	}
-	if value, ok := values[16].(*sql.NullBool); !ok {
-		return fmt.Errorf("unexpected type %T for field deleted", values[16])
-	} else if value.Valid {
-		pt.Deleted = value.Bool
-	}
-	if value, ok := values[17].(*sql.NullString); !ok {
-		return fmt.Errorf("unexpected type %T for field nodeType", values[17])
-	} else if value.Valid {
-		pt.NodeType = value.String
-	}
-	values = values[18:]
-	if len(values) == len(propertytype.ForeignKeys) {
-		if value, ok := values[0].(*sql.NullInt64); !ok {
-			return fmt.Errorf("unexpected type %T for edge-field resource_type_property_types", value)
-		} else if value.Valid {
-			pt.resource_type_property_types = new(int)
-			*pt.resource_type_property_types = int(value.Int64)
+	for i := range columns {
+		switch columns[i] {
+		case propertytype.FieldID:
+			value, ok := values[i].(*sql.NullInt64)
+			if !ok {
+				return fmt.Errorf("unexpected type %T for field id", value)
+			}
+			pt.ID = int(value.Int64)
+		case propertytype.FieldType:
+			if value, ok := values[i].(*sql.NullString); !ok {
+				return fmt.Errorf("unexpected type %T for field type", values[i])
+			} else if value.Valid {
+				pt.Type = propertytype.Type(value.String)
+			}
+		case propertytype.FieldName:
+			if value, ok := values[i].(*sql.NullString); !ok {
+				return fmt.Errorf("unexpected type %T for field name", values[i])
+			} else if value.Valid {
+				pt.Name = value.String
+			}
+		case propertytype.FieldExternalID:
+			if value, ok := values[i].(*sql.NullString); !ok {
+				return fmt.Errorf("unexpected type %T for field external_id", values[i])
+			} else if value.Valid {
+				pt.ExternalID = value.String
+			}
+		case propertytype.FieldIndex:
+			if value, ok := values[i].(*sql.NullInt64); !ok {
+				return fmt.Errorf("unexpected type %T for field index", values[i])
+			} else if value.Valid {
+				pt.Index = int(value.Int64)
+			}
+		case propertytype.FieldCategory:
+			if value, ok := values[i].(*sql.NullString); !ok {
+				return fmt.Errorf("unexpected type %T for field category", values[i])
+			} else if value.Valid {
+				pt.Category = value.String
+			}
+		case propertytype.FieldIntVal:
+			if value, ok := values[i].(*sql.NullInt64); !ok {
+				return fmt.Errorf("unexpected type %T for field int_val", values[i])
+			} else if value.Valid {
+				pt.IntVal = new(int)
+				*pt.IntVal = int(value.Int64)
+			}
+		case propertytype.FieldBoolVal:
+			if value, ok := values[i].(*sql.NullBool); !ok {
+				return fmt.Errorf("unexpected type %T for field bool_val", values[i])
+			} else if value.Valid {
+				pt.BoolVal = new(bool)
+				*pt.BoolVal = value.Bool
+			}
+		case propertytype.FieldFloatVal:
+			if value, ok := values[i].(*sql.NullFloat64); !ok {
+				return fmt.Errorf("unexpected type %T for field float_val", values[i])
+			} else if value.Valid {
+				pt.FloatVal = new(float64)
+				*pt.FloatVal = value.Float64
+			}
+		case propertytype.FieldLatitudeVal:
+			if value, ok := values[i].(*sql.NullFloat64); !ok {
+				return fmt.Errorf("unexpected type %T for field latitude_val", values[i])
+			} else if value.Valid {
+				pt.LatitudeVal = new(float64)
+				*pt.LatitudeVal = value.Float64
+			}
+		case propertytype.FieldLongitudeVal:
+			if value, ok := values[i].(*sql.NullFloat64); !ok {
+				return fmt.Errorf("unexpected type %T for field longitude_val", values[i])
+			} else if value.Valid {
+				pt.LongitudeVal = new(float64)
+				*pt.LongitudeVal = value.Float64
+			}
+		case propertytype.FieldStringVal:
+			if value, ok := values[i].(*sql.NullString); !ok {
+				return fmt.Errorf("unexpected type %T for field string_val", values[i])
+			} else if value.Valid {
+				pt.StringVal = new(string)
+				*pt.StringVal = value.String
+			}
+		case propertytype.FieldRangeFromVal:
+			if value, ok := values[i].(*sql.NullFloat64); !ok {
+				return fmt.Errorf("unexpected type %T for field range_from_val", values[i])
+			} else if value.Valid {
+				pt.RangeFromVal = new(float64)
+				*pt.RangeFromVal = value.Float64
+			}
+		case propertytype.FieldRangeToVal:
+			if value, ok := values[i].(*sql.NullFloat64); !ok {
+				return fmt.Errorf("unexpected type %T for field range_to_val", values[i])
+			} else if value.Valid {
+				pt.RangeToVal = new(float64)
+				*pt.RangeToVal = value.Float64
+			}
+		case propertytype.FieldIsInstanceProperty:
+			if value, ok := values[i].(*sql.NullBool); !ok {
+				return fmt.Errorf("unexpected type %T for field is_instance_property", values[i])
+			} else if value.Valid {
+				pt.IsInstanceProperty = value.Bool
+			}
+		case propertytype.FieldEditable:
+			if value, ok := values[i].(*sql.NullBool); !ok {
+				return fmt.Errorf("unexpected type %T for field editable", values[i])
+			} else if value.Valid {
+				pt.Editable = value.Bool
+			}
+		case propertytype.FieldMandatory:
+			if value, ok := values[i].(*sql.NullBool); !ok {
+				return fmt.Errorf("unexpected type %T for field mandatory", values[i])
+			} else if value.Valid {
+				pt.Mandatory = value.Bool
+			}
+		case propertytype.FieldDeleted:
+			if value, ok := values[i].(*sql.NullBool); !ok {
+				return fmt.Errorf("unexpected type %T for field deleted", values[i])
+			} else if value.Valid {
+				pt.Deleted = value.Bool
+			}
+		case propertytype.FieldNodeType:
+			if value, ok := values[i].(*sql.NullString); !ok {
+				return fmt.Errorf("unexpected type %T for field nodeType", values[i])
+			} else if value.Valid {
+				pt.NodeType = value.String
+			}
+		case propertytype.ForeignKeys[0]:
+			if value, ok := values[i].(*sql.NullInt64); !ok {
+				return fmt.Errorf("unexpected type %T for edge-field allocation_strategy_pool_property_types", value)
+			} else if value.Valid {
+				pt.allocation_strategy_pool_property_types = new(int)
+				*pt.allocation_strategy_pool_property_types = int(value.Int64)
+			}
+		case propertytype.ForeignKeys[1]:
+			if value, ok := values[i].(*sql.NullInt64); !ok {
+				return fmt.Errorf("unexpected type %T for edge-field resource_type_property_types", value)
+			} else if value.Valid {
+				pt.resource_type_property_types = new(int)
+				*pt.resource_type_property_types = int(value.Int64)
+			}
 		}
 	}
 	return nil
 }
 
-// QueryProperties queries the properties edge of the PropertyType.
+// QueryProperties queries the "properties" edge of the PropertyType entity.
 func (pt *PropertyType) QueryProperties() *PropertyQuery {
 	return (&PropertyTypeClient{config: pt.config}).QueryProperties(pt)
 }
 
-// QueryResourceType queries the resource_type edge of the PropertyType.
+// QueryResourceType queries the "resource_type" edge of the PropertyType entity.
 func (pt *PropertyType) QueryResourceType() *ResourceTypeQuery {
 	return (&PropertyTypeClient{config: pt.config}).QueryResourceType(pt)
 }
 
 // Update returns a builder for updating this PropertyType.
-// Note that, you need to call PropertyType.Unwrap() before calling this method, if this PropertyType
+// Note that you need to call PropertyType.Unwrap() before calling this method if this PropertyType
 // was returned from a transaction, and the transaction was committed or rolled back.
 func (pt *PropertyType) Update() *PropertyTypeUpdateOne {
 	return (&PropertyTypeClient{config: pt.config}).UpdateOne(pt)
 }
 
-// Unwrap unwraps the entity that was returned from a transaction after it was closed,
-// so that all next queries will be executed through the driver which created the transaction.
+// Unwrap unwraps the PropertyType entity that was returned from a transaction after it was closed,
+// so that all future queries will be executed through the driver which created the transaction.
 func (pt *PropertyType) Unwrap() *PropertyType {
-	tx, ok := pt.config.driver.(*txDriver)
+	_tx, ok := pt.config.driver.(*txDriver)
 	if !ok {
 		panic("ent: PropertyType is not a transactional entity")
 	}
-	pt.config.driver = tx.drv
+	pt.config.driver = _tx.drv
 	return pt
 }
 
@@ -278,61 +301,102 @@ func (pt *PropertyType) Unwrap() *PropertyType {
 func (pt *PropertyType) String() string {
 	var builder strings.Builder
 	builder.WriteString("PropertyType(")
-	builder.WriteString(fmt.Sprintf("id=%v", pt.ID))
-	builder.WriteString(", type=")
+	builder.WriteString(fmt.Sprintf("id=%v, ", pt.ID))
+	builder.WriteString("type=")
 	builder.WriteString(fmt.Sprintf("%v", pt.Type))
-	builder.WriteString(", name=")
+	builder.WriteString(", ")
+	builder.WriteString("name=")
 	builder.WriteString(pt.Name)
-	builder.WriteString(", external_id=")
+	builder.WriteString(", ")
+	builder.WriteString("external_id=")
 	builder.WriteString(pt.ExternalID)
-	builder.WriteString(", index=")
+	builder.WriteString(", ")
+	builder.WriteString("index=")
 	builder.WriteString(fmt.Sprintf("%v", pt.Index))
-	builder.WriteString(", category=")
+	builder.WriteString(", ")
+	builder.WriteString("category=")
 	builder.WriteString(pt.Category)
+	builder.WriteString(", ")
 	if v := pt.IntVal; v != nil {
-		builder.WriteString(", int_val=")
+		builder.WriteString("int_val=")
 		builder.WriteString(fmt.Sprintf("%v", *v))
 	}
+	builder.WriteString(", ")
 	if v := pt.BoolVal; v != nil {
-		builder.WriteString(", bool_val=")
+		builder.WriteString("bool_val=")
 		builder.WriteString(fmt.Sprintf("%v", *v))
 	}
+	builder.WriteString(", ")
 	if v := pt.FloatVal; v != nil {
-		builder.WriteString(", float_val=")
+		builder.WriteString("float_val=")
 		builder.WriteString(fmt.Sprintf("%v", *v))
 	}
+	builder.WriteString(", ")
 	if v := pt.LatitudeVal; v != nil {
-		builder.WriteString(", latitude_val=")
+		builder.WriteString("latitude_val=")
 		builder.WriteString(fmt.Sprintf("%v", *v))
 	}
+	builder.WriteString(", ")
 	if v := pt.LongitudeVal; v != nil {
-		builder.WriteString(", longitude_val=")
+		builder.WriteString("longitude_val=")
 		builder.WriteString(fmt.Sprintf("%v", *v))
 	}
+	builder.WriteString(", ")
 	if v := pt.StringVal; v != nil {
-		builder.WriteString(", string_val=")
+		builder.WriteString("string_val=")
 		builder.WriteString(*v)
 	}
+	builder.WriteString(", ")
 	if v := pt.RangeFromVal; v != nil {
-		builder.WriteString(", range_from_val=")
+		builder.WriteString("range_from_val=")
 		builder.WriteString(fmt.Sprintf("%v", *v))
 	}
+	builder.WriteString(", ")
 	if v := pt.RangeToVal; v != nil {
-		builder.WriteString(", range_to_val=")
+		builder.WriteString("range_to_val=")
 		builder.WriteString(fmt.Sprintf("%v", *v))
 	}
-	builder.WriteString(", is_instance_property=")
+	builder.WriteString(", ")
+	builder.WriteString("is_instance_property=")
 	builder.WriteString(fmt.Sprintf("%v", pt.IsInstanceProperty))
-	builder.WriteString(", editable=")
+	builder.WriteString(", ")
+	builder.WriteString("editable=")
 	builder.WriteString(fmt.Sprintf("%v", pt.Editable))
-	builder.WriteString(", mandatory=")
+	builder.WriteString(", ")
+	builder.WriteString("mandatory=")
 	builder.WriteString(fmt.Sprintf("%v", pt.Mandatory))
-	builder.WriteString(", deleted=")
+	builder.WriteString(", ")
+	builder.WriteString("deleted=")
 	builder.WriteString(fmt.Sprintf("%v", pt.Deleted))
-	builder.WriteString(", nodeType=")
+	builder.WriteString(", ")
+	builder.WriteString("nodeType=")
 	builder.WriteString(pt.NodeType)
 	builder.WriteByte(')')
 	return builder.String()
+}
+
+// NamedProperties returns the Properties named value or an error if the edge was not
+// loaded in eager-loading with this name.
+func (pt *PropertyType) NamedProperties(name string) ([]*Property, error) {
+	if pt.Edges.namedProperties == nil {
+		return nil, &NotLoadedError{edge: name}
+	}
+	nodes, ok := pt.Edges.namedProperties[name]
+	if !ok {
+		return nil, &NotLoadedError{edge: name}
+	}
+	return nodes, nil
+}
+
+func (pt *PropertyType) appendNamedProperties(name string, edges ...*Property) {
+	if pt.Edges.namedProperties == nil {
+		pt.Edges.namedProperties = make(map[string][]*Property)
+	}
+	if len(edges) == 0 {
+		pt.Edges.namedProperties[name] = []*Property{}
+	} else {
+		pt.Edges.namedProperties[name] = append(pt.Edges.namedProperties[name], edges...)
+	}
 }
 
 // PropertyTypes is a parsable slice of PropertyType.

@@ -4,6 +4,7 @@ package ent
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"log"
 
@@ -18,9 +19,9 @@ import (
 	"github.com/net-auto/resourceManager/ent/resourcetype"
 	"github.com/net-auto/resourceManager/ent/tag"
 
-	"github.com/facebook/ent/dialect"
-	"github.com/facebook/ent/dialect/sql"
-	"github.com/facebook/ent/dialect/sql/sqlgraph"
+	"entgo.io/ent/dialect"
+	"entgo.io/ent/dialect/sql"
+	"entgo.io/ent/dialect/sql/sqlgraph"
 )
 
 // Client is the client that holds all ent builders.
@@ -89,13 +90,14 @@ func Open(driverName, dataSourceName string, options ...Option) (*Client, error)
 // is used until the transaction is committed or rolled back.
 func (c *Client) Tx(ctx context.Context) (*Tx, error) {
 	if _, ok := c.driver.(*txDriver); ok {
-		return nil, fmt.Errorf("ent: cannot start a transaction within a transaction")
+		return nil, errors.New("ent: cannot start a transaction within a transaction")
 	}
 	tx, err := newTx(ctx, c.driver)
 	if err != nil {
-		return nil, fmt.Errorf("ent: starting a transaction: %v", err)
+		return nil, fmt.Errorf("ent: starting a transaction: %w", err)
 	}
-	cfg := config{driver: tx, log: c.log, debug: c.debug, hooks: c.hooks}
+	cfg := c.config
+	cfg.driver = tx
 	return &Tx{
 		ctx:                ctx,
 		config:             cfg,
@@ -110,17 +112,21 @@ func (c *Client) Tx(ctx context.Context) (*Tx, error) {
 	}, nil
 }
 
-// BeginTx returns a transactional client with options.
+// BeginTx returns a transactional client with specified options.
 func (c *Client) BeginTx(ctx context.Context, opts *sql.TxOptions) (*Tx, error) {
 	if _, ok := c.driver.(*txDriver); ok {
-		return nil, fmt.Errorf("ent: cannot start a transaction within a transaction")
+		return nil, errors.New("ent: cannot start a transaction within a transaction")
 	}
-	tx, err := c.driver.(*sql.Driver).BeginTx(ctx, opts)
+	tx, err := c.driver.(interface {
+		BeginTx(context.Context, *sql.TxOptions) (dialect.Tx, error)
+	}).BeginTx(ctx, opts)
 	if err != nil {
-		return nil, fmt.Errorf("ent: starting a transaction: %v", err)
+		return nil, fmt.Errorf("ent: starting a transaction: %w", err)
 	}
-	cfg := config{driver: &txDriver{tx: tx, drv: c.driver}, log: c.log, debug: c.debug, hooks: c.hooks}
+	cfg := c.config
+	cfg.driver = &txDriver{tx: tx, drv: c.driver}
 	return &Tx{
+		ctx:                ctx,
 		config:             cfg,
 		AllocationStrategy: NewAllocationStrategyClient(cfg),
 		PoolProperties:     NewPoolPropertiesClient(cfg),
@@ -139,12 +145,12 @@ func (c *Client) BeginTx(ctx context.Context, opts *sql.TxOptions) (*Tx, error) 
 //		AllocationStrategy.
 //		Query().
 //		Count(ctx)
-//
 func (c *Client) Debug() *Client {
 	if c.debug {
 		return c
 	}
-	cfg := config{driver: dialect.Debug(c.driver, c.log), log: c.log, debug: true, hooks: c.hooks}
+	cfg := c.config
+	cfg.driver = dialect.Debug(c.driver, c.log)
 	client := &Client{config: cfg}
 	client.init()
 	return client
@@ -184,13 +190,13 @@ func (c *AllocationStrategyClient) Use(hooks ...Hook) {
 	c.hooks.AllocationStrategy = append(c.hooks.AllocationStrategy, hooks...)
 }
 
-// Create returns a create builder for AllocationStrategy.
+// Create returns a builder for creating a AllocationStrategy entity.
 func (c *AllocationStrategyClient) Create() *AllocationStrategyCreate {
 	mutation := newAllocationStrategyMutation(c.config, OpCreate)
 	return &AllocationStrategyCreate{config: c.config, hooks: c.Hooks(), mutation: mutation}
 }
 
-// BulkCreate returns a builder for creating a bulk of AllocationStrategy entities.
+// CreateBulk returns a builder for creating a bulk of AllocationStrategy entities.
 func (c *AllocationStrategyClient) CreateBulk(builders ...*AllocationStrategyCreate) *AllocationStrategyCreateBulk {
 	return &AllocationStrategyCreateBulk{config: c.config, builders: builders}
 }
@@ -219,12 +225,12 @@ func (c *AllocationStrategyClient) Delete() *AllocationStrategyDelete {
 	return &AllocationStrategyDelete{config: c.config, hooks: c.Hooks(), mutation: mutation}
 }
 
-// DeleteOne returns a delete builder for the given entity.
+// DeleteOne returns a builder for deleting the given entity.
 func (c *AllocationStrategyClient) DeleteOne(as *AllocationStrategy) *AllocationStrategyDeleteOne {
 	return c.DeleteOneID(as.ID)
 }
 
-// DeleteOneID returns a delete builder for the given id.
+// DeleteOne returns a builder for deleting the given entity by its id.
 func (c *AllocationStrategyClient) DeleteOneID(id int) *AllocationStrategyDeleteOne {
 	builder := c.Delete().Where(allocationstrategy.ID(id))
 	builder.mutation.id = &id
@@ -234,7 +240,9 @@ func (c *AllocationStrategyClient) DeleteOneID(id int) *AllocationStrategyDelete
 
 // Query returns a query builder for AllocationStrategy.
 func (c *AllocationStrategyClient) Query() *AllocationStrategyQuery {
-	return &AllocationStrategyQuery{config: c.config}
+	return &AllocationStrategyQuery{
+		config: c.config,
+	}
 }
 
 // Get returns a AllocationStrategy entity by its id.
@@ -267,6 +275,22 @@ func (c *AllocationStrategyClient) QueryPools(as *AllocationStrategy) *ResourceP
 	return query
 }
 
+// QueryPoolPropertyTypes queries the pool_property_types edge of a AllocationStrategy.
+func (c *AllocationStrategyClient) QueryPoolPropertyTypes(as *AllocationStrategy) *PropertyTypeQuery {
+	query := &PropertyTypeQuery{config: c.config}
+	query.path = func(ctx context.Context) (fromV *sql.Selector, _ error) {
+		id := as.ID
+		step := sqlgraph.NewStep(
+			sqlgraph.From(allocationstrategy.Table, allocationstrategy.FieldID, id),
+			sqlgraph.To(propertytype.Table, propertytype.FieldID),
+			sqlgraph.Edge(sqlgraph.O2M, false, allocationstrategy.PoolPropertyTypesTable, allocationstrategy.PoolPropertyTypesColumn),
+		)
+		fromV = sqlgraph.Neighbors(as.driver.Dialect(), step)
+		return fromV, nil
+	}
+	return query
+}
+
 // Hooks returns the client hooks.
 func (c *AllocationStrategyClient) Hooks() []Hook {
 	hooks := c.hooks.AllocationStrategy
@@ -289,13 +313,13 @@ func (c *PoolPropertiesClient) Use(hooks ...Hook) {
 	c.hooks.PoolProperties = append(c.hooks.PoolProperties, hooks...)
 }
 
-// Create returns a create builder for PoolProperties.
+// Create returns a builder for creating a PoolProperties entity.
 func (c *PoolPropertiesClient) Create() *PoolPropertiesCreate {
 	mutation := newPoolPropertiesMutation(c.config, OpCreate)
 	return &PoolPropertiesCreate{config: c.config, hooks: c.Hooks(), mutation: mutation}
 }
 
-// BulkCreate returns a builder for creating a bulk of PoolProperties entities.
+// CreateBulk returns a builder for creating a bulk of PoolProperties entities.
 func (c *PoolPropertiesClient) CreateBulk(builders ...*PoolPropertiesCreate) *PoolPropertiesCreateBulk {
 	return &PoolPropertiesCreateBulk{config: c.config, builders: builders}
 }
@@ -324,12 +348,12 @@ func (c *PoolPropertiesClient) Delete() *PoolPropertiesDelete {
 	return &PoolPropertiesDelete{config: c.config, hooks: c.Hooks(), mutation: mutation}
 }
 
-// DeleteOne returns a delete builder for the given entity.
+// DeleteOne returns a builder for deleting the given entity.
 func (c *PoolPropertiesClient) DeleteOne(pp *PoolProperties) *PoolPropertiesDeleteOne {
 	return c.DeleteOneID(pp.ID)
 }
 
-// DeleteOneID returns a delete builder for the given id.
+// DeleteOne returns a builder for deleting the given entity by its id.
 func (c *PoolPropertiesClient) DeleteOneID(id int) *PoolPropertiesDeleteOne {
 	builder := c.Delete().Where(poolproperties.ID(id))
 	builder.mutation.id = &id
@@ -339,7 +363,9 @@ func (c *PoolPropertiesClient) DeleteOneID(id int) *PoolPropertiesDeleteOne {
 
 // Query returns a query builder for PoolProperties.
 func (c *PoolPropertiesClient) Query() *PoolPropertiesQuery {
-	return &PoolPropertiesQuery{config: c.config}
+	return &PoolPropertiesQuery{
+		config: c.config,
+	}
 }
 
 // Get returns a PoolProperties entity by its id.
@@ -426,13 +452,13 @@ func (c *PropertyClient) Use(hooks ...Hook) {
 	c.hooks.Property = append(c.hooks.Property, hooks...)
 }
 
-// Create returns a create builder for Property.
+// Create returns a builder for creating a Property entity.
 func (c *PropertyClient) Create() *PropertyCreate {
 	mutation := newPropertyMutation(c.config, OpCreate)
 	return &PropertyCreate{config: c.config, hooks: c.Hooks(), mutation: mutation}
 }
 
-// BulkCreate returns a builder for creating a bulk of Property entities.
+// CreateBulk returns a builder for creating a bulk of Property entities.
 func (c *PropertyClient) CreateBulk(builders ...*PropertyCreate) *PropertyCreateBulk {
 	return &PropertyCreateBulk{config: c.config, builders: builders}
 }
@@ -461,12 +487,12 @@ func (c *PropertyClient) Delete() *PropertyDelete {
 	return &PropertyDelete{config: c.config, hooks: c.Hooks(), mutation: mutation}
 }
 
-// DeleteOne returns a delete builder for the given entity.
+// DeleteOne returns a builder for deleting the given entity.
 func (c *PropertyClient) DeleteOne(pr *Property) *PropertyDeleteOne {
 	return c.DeleteOneID(pr.ID)
 }
 
-// DeleteOneID returns a delete builder for the given id.
+// DeleteOne returns a builder for deleting the given entity by its id.
 func (c *PropertyClient) DeleteOneID(id int) *PropertyDeleteOne {
 	builder := c.Delete().Where(property.ID(id))
 	builder.mutation.id = &id
@@ -476,7 +502,9 @@ func (c *PropertyClient) DeleteOneID(id int) *PropertyDeleteOne {
 
 // Query returns a query builder for Property.
 func (c *PropertyClient) Query() *PropertyQuery {
-	return &PropertyQuery{config: c.config}
+	return &PropertyQuery{
+		config: c.config,
+	}
 }
 
 // Get returns a Property entity by its id.
@@ -547,13 +575,13 @@ func (c *PropertyTypeClient) Use(hooks ...Hook) {
 	c.hooks.PropertyType = append(c.hooks.PropertyType, hooks...)
 }
 
-// Create returns a create builder for PropertyType.
+// Create returns a builder for creating a PropertyType entity.
 func (c *PropertyTypeClient) Create() *PropertyTypeCreate {
 	mutation := newPropertyTypeMutation(c.config, OpCreate)
 	return &PropertyTypeCreate{config: c.config, hooks: c.Hooks(), mutation: mutation}
 }
 
-// BulkCreate returns a builder for creating a bulk of PropertyType entities.
+// CreateBulk returns a builder for creating a bulk of PropertyType entities.
 func (c *PropertyTypeClient) CreateBulk(builders ...*PropertyTypeCreate) *PropertyTypeCreateBulk {
 	return &PropertyTypeCreateBulk{config: c.config, builders: builders}
 }
@@ -582,12 +610,12 @@ func (c *PropertyTypeClient) Delete() *PropertyTypeDelete {
 	return &PropertyTypeDelete{config: c.config, hooks: c.Hooks(), mutation: mutation}
 }
 
-// DeleteOne returns a delete builder for the given entity.
+// DeleteOne returns a builder for deleting the given entity.
 func (c *PropertyTypeClient) DeleteOne(pt *PropertyType) *PropertyTypeDeleteOne {
 	return c.DeleteOneID(pt.ID)
 }
 
-// DeleteOneID returns a delete builder for the given id.
+// DeleteOne returns a builder for deleting the given entity by its id.
 func (c *PropertyTypeClient) DeleteOneID(id int) *PropertyTypeDeleteOne {
 	builder := c.Delete().Where(propertytype.ID(id))
 	builder.mutation.id = &id
@@ -597,7 +625,9 @@ func (c *PropertyTypeClient) DeleteOneID(id int) *PropertyTypeDeleteOne {
 
 // Query returns a query builder for PropertyType.
 func (c *PropertyTypeClient) Query() *PropertyTypeQuery {
-	return &PropertyTypeQuery{config: c.config}
+	return &PropertyTypeQuery{
+		config: c.config,
+	}
 }
 
 // Get returns a PropertyType entity by its id.
@@ -668,13 +698,13 @@ func (c *ResourceClient) Use(hooks ...Hook) {
 	c.hooks.Resource = append(c.hooks.Resource, hooks...)
 }
 
-// Create returns a create builder for Resource.
+// Create returns a builder for creating a Resource entity.
 func (c *ResourceClient) Create() *ResourceCreate {
 	mutation := newResourceMutation(c.config, OpCreate)
 	return &ResourceCreate{config: c.config, hooks: c.Hooks(), mutation: mutation}
 }
 
-// BulkCreate returns a builder for creating a bulk of Resource entities.
+// CreateBulk returns a builder for creating a bulk of Resource entities.
 func (c *ResourceClient) CreateBulk(builders ...*ResourceCreate) *ResourceCreateBulk {
 	return &ResourceCreateBulk{config: c.config, builders: builders}
 }
@@ -703,12 +733,12 @@ func (c *ResourceClient) Delete() *ResourceDelete {
 	return &ResourceDelete{config: c.config, hooks: c.Hooks(), mutation: mutation}
 }
 
-// DeleteOne returns a delete builder for the given entity.
+// DeleteOne returns a builder for deleting the given entity.
 func (c *ResourceClient) DeleteOne(r *Resource) *ResourceDeleteOne {
 	return c.DeleteOneID(r.ID)
 }
 
-// DeleteOneID returns a delete builder for the given id.
+// DeleteOne returns a builder for deleting the given entity by its id.
 func (c *ResourceClient) DeleteOneID(id int) *ResourceDeleteOne {
 	builder := c.Delete().Where(resource.ID(id))
 	builder.mutation.id = &id
@@ -718,7 +748,9 @@ func (c *ResourceClient) DeleteOneID(id int) *ResourceDeleteOne {
 
 // Query returns a query builder for Resource.
 func (c *ResourceClient) Query() *ResourceQuery {
-	return &ResourceQuery{config: c.config}
+	return &ResourceQuery{
+		config: c.config,
+	}
 }
 
 // Get returns a Resource entity by its id.
@@ -805,13 +837,13 @@ func (c *ResourcePoolClient) Use(hooks ...Hook) {
 	c.hooks.ResourcePool = append(c.hooks.ResourcePool, hooks...)
 }
 
-// Create returns a create builder for ResourcePool.
+// Create returns a builder for creating a ResourcePool entity.
 func (c *ResourcePoolClient) Create() *ResourcePoolCreate {
 	mutation := newResourcePoolMutation(c.config, OpCreate)
 	return &ResourcePoolCreate{config: c.config, hooks: c.Hooks(), mutation: mutation}
 }
 
-// BulkCreate returns a builder for creating a bulk of ResourcePool entities.
+// CreateBulk returns a builder for creating a bulk of ResourcePool entities.
 func (c *ResourcePoolClient) CreateBulk(builders ...*ResourcePoolCreate) *ResourcePoolCreateBulk {
 	return &ResourcePoolCreateBulk{config: c.config, builders: builders}
 }
@@ -840,12 +872,12 @@ func (c *ResourcePoolClient) Delete() *ResourcePoolDelete {
 	return &ResourcePoolDelete{config: c.config, hooks: c.Hooks(), mutation: mutation}
 }
 
-// DeleteOne returns a delete builder for the given entity.
+// DeleteOne returns a builder for deleting the given entity.
 func (c *ResourcePoolClient) DeleteOne(rp *ResourcePool) *ResourcePoolDeleteOne {
 	return c.DeleteOneID(rp.ID)
 }
 
-// DeleteOneID returns a delete builder for the given id.
+// DeleteOne returns a builder for deleting the given entity by its id.
 func (c *ResourcePoolClient) DeleteOneID(id int) *ResourcePoolDeleteOne {
 	builder := c.Delete().Where(resourcepool.ID(id))
 	builder.mutation.id = &id
@@ -855,7 +887,9 @@ func (c *ResourcePoolClient) DeleteOneID(id int) *ResourcePoolDeleteOne {
 
 // Query returns a query builder for ResourcePool.
 func (c *ResourcePoolClient) Query() *ResourcePoolQuery {
-	return &ResourcePoolQuery{config: c.config}
+	return &ResourcePoolQuery{
+		config: c.config,
+	}
 }
 
 // Get returns a ResourcePool entity by its id.
@@ -990,13 +1024,13 @@ func (c *ResourceTypeClient) Use(hooks ...Hook) {
 	c.hooks.ResourceType = append(c.hooks.ResourceType, hooks...)
 }
 
-// Create returns a create builder for ResourceType.
+// Create returns a builder for creating a ResourceType entity.
 func (c *ResourceTypeClient) Create() *ResourceTypeCreate {
 	mutation := newResourceTypeMutation(c.config, OpCreate)
 	return &ResourceTypeCreate{config: c.config, hooks: c.Hooks(), mutation: mutation}
 }
 
-// BulkCreate returns a builder for creating a bulk of ResourceType entities.
+// CreateBulk returns a builder for creating a bulk of ResourceType entities.
 func (c *ResourceTypeClient) CreateBulk(builders ...*ResourceTypeCreate) *ResourceTypeCreateBulk {
 	return &ResourceTypeCreateBulk{config: c.config, builders: builders}
 }
@@ -1025,12 +1059,12 @@ func (c *ResourceTypeClient) Delete() *ResourceTypeDelete {
 	return &ResourceTypeDelete{config: c.config, hooks: c.Hooks(), mutation: mutation}
 }
 
-// DeleteOne returns a delete builder for the given entity.
+// DeleteOne returns a builder for deleting the given entity.
 func (c *ResourceTypeClient) DeleteOne(rt *ResourceType) *ResourceTypeDeleteOne {
 	return c.DeleteOneID(rt.ID)
 }
 
-// DeleteOneID returns a delete builder for the given id.
+// DeleteOne returns a builder for deleting the given entity by its id.
 func (c *ResourceTypeClient) DeleteOneID(id int) *ResourceTypeDeleteOne {
 	builder := c.Delete().Where(resourcetype.ID(id))
 	builder.mutation.id = &id
@@ -1040,7 +1074,9 @@ func (c *ResourceTypeClient) DeleteOneID(id int) *ResourceTypeDeleteOne {
 
 // Query returns a query builder for ResourceType.
 func (c *ResourceTypeClient) Query() *ResourceTypeQuery {
-	return &ResourceTypeQuery{config: c.config}
+	return &ResourceTypeQuery{
+		config: c.config,
+	}
 }
 
 // Get returns a ResourceType entity by its id.
@@ -1127,13 +1163,13 @@ func (c *TagClient) Use(hooks ...Hook) {
 	c.hooks.Tag = append(c.hooks.Tag, hooks...)
 }
 
-// Create returns a create builder for Tag.
+// Create returns a builder for creating a Tag entity.
 func (c *TagClient) Create() *TagCreate {
 	mutation := newTagMutation(c.config, OpCreate)
 	return &TagCreate{config: c.config, hooks: c.Hooks(), mutation: mutation}
 }
 
-// BulkCreate returns a builder for creating a bulk of Tag entities.
+// CreateBulk returns a builder for creating a bulk of Tag entities.
 func (c *TagClient) CreateBulk(builders ...*TagCreate) *TagCreateBulk {
 	return &TagCreateBulk{config: c.config, builders: builders}
 }
@@ -1162,12 +1198,12 @@ func (c *TagClient) Delete() *TagDelete {
 	return &TagDelete{config: c.config, hooks: c.Hooks(), mutation: mutation}
 }
 
-// DeleteOne returns a delete builder for the given entity.
+// DeleteOne returns a builder for deleting the given entity.
 func (c *TagClient) DeleteOne(t *Tag) *TagDeleteOne {
 	return c.DeleteOneID(t.ID)
 }
 
-// DeleteOneID returns a delete builder for the given id.
+// DeleteOne returns a builder for deleting the given entity by its id.
 func (c *TagClient) DeleteOneID(id int) *TagDeleteOne {
 	builder := c.Delete().Where(tag.ID(id))
 	builder.mutation.id = &id
@@ -1177,7 +1213,9 @@ func (c *TagClient) DeleteOneID(id int) *TagDeleteOne {
 
 // Query returns a query builder for Tag.
 func (c *TagClient) Query() *TagQuery {
-	return &TagQuery{config: c.config}
+	return &TagQuery{
+		config: c.config,
+	}
 }
 
 // Get returns a Tag entity by its id.

@@ -8,7 +8,7 @@ import (
 	"strconv"
 	"time"
 
-	"github.com/facebook/ent"
+	"entgo.io/ent"
 )
 
 const (
@@ -24,31 +24,29 @@ const (
 	FieldAlternateID = "alternate_id"
 	// FieldUpdatedAt holds the string denoting the updated_at field in the database.
 	FieldUpdatedAt = "updated_at"
-
 	// EdgePool holds the string denoting the pool edge name in mutations.
 	EdgePool = "pool"
 	// EdgeProperties holds the string denoting the properties edge name in mutations.
 	EdgeProperties = "properties"
 	// EdgeNestedPool holds the string denoting the nested_pool edge name in mutations.
 	EdgeNestedPool = "nested_pool"
-
 	// Table holds the table name of the resource in the database.
 	Table = "resources"
-	// PoolTable is the table the holds the pool relation/edge.
+	// PoolTable is the table that holds the pool relation/edge.
 	PoolTable = "resources"
 	// PoolInverseTable is the table name for the ResourcePool entity.
 	// It exists in this package in order to avoid circular dependency with the "resourcepool" package.
 	PoolInverseTable = "resource_pools"
 	// PoolColumn is the table column denoting the pool relation/edge.
 	PoolColumn = "resource_pool_claims"
-	// PropertiesTable is the table the holds the properties relation/edge.
+	// PropertiesTable is the table that holds the properties relation/edge.
 	PropertiesTable = "properties"
 	// PropertiesInverseTable is the table name for the Property entity.
 	// It exists in this package in order to avoid circular dependency with the "property" package.
 	PropertiesInverseTable = "properties"
 	// PropertiesColumn is the table column denoting the properties relation/edge.
 	PropertiesColumn = "resource_properties"
-	// NestedPoolTable is the table the holds the nested_pool relation/edge.
+	// NestedPoolTable is the table that holds the nested_pool relation/edge.
 	NestedPoolTable = "resource_pools"
 	// NestedPoolInverseTable is the table name for the ResourcePool entity.
 	// It exists in this package in order to avoid circular dependency with the "resourcepool" package.
@@ -66,7 +64,8 @@ var Columns = []string{
 	FieldUpdatedAt,
 }
 
-// ForeignKeys holds the SQL foreign-keys that are owned by the Resource type.
+// ForeignKeys holds the SQL foreign-keys that are owned by the "resources"
+// table and are not defined as standalone fields in the schema.
 var ForeignKeys = []string{
 	"resource_pool_claims",
 }
@@ -91,17 +90,16 @@ func ValidColumn(column string) bool {
 // it should be imported in the main as follows:
 //
 //	import _ "github.com/net-auto/resourceManager/ent/runtime"
-//
 var (
 	Hooks  [1]ent.Hook
 	Policy ent.Policy
-	// DefaultUpdatedAt holds the default value on creation for the updated_at field.
+	// DefaultUpdatedAt holds the default value on creation for the "updated_at" field.
 	DefaultUpdatedAt func() time.Time
-	// UpdateDefaultUpdatedAt holds the default value on update for the updated_at field.
+	// UpdateDefaultUpdatedAt holds the default value on update for the "updated_at" field.
 	UpdateDefaultUpdatedAt func() time.Time
 )
 
-// Status defines the type for the status enum field.
+// Status defines the type for the "status" enum field.
 type Status string
 
 // Status values.
@@ -127,18 +125,18 @@ func StatusValidator(s Status) error {
 }
 
 // MarshalGQL implements graphql.Marshaler interface.
-func (s Status) MarshalGQL(w io.Writer) {
-	io.WriteString(w, strconv.Quote(s.String()))
+func (e Status) MarshalGQL(w io.Writer) {
+	io.WriteString(w, strconv.Quote(e.String()))
 }
 
 // UnmarshalGQL implements graphql.Unmarshaler interface.
-func (s *Status) UnmarshalGQL(val interface{}) error {
+func (e *Status) UnmarshalGQL(val interface{}) error {
 	str, ok := val.(string)
 	if !ok {
 		return fmt.Errorf("enum %T must be a string", val)
 	}
-	*s = Status(str)
-	if err := StatusValidator(*s); err != nil {
+	*e = Status(str)
+	if err := StatusValidator(*e); err != nil {
 		return fmt.Errorf("%s is not a valid Status", str)
 	}
 	return nil

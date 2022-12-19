@@ -2,8 +2,8 @@ package resolver
 
 import (
 	"context"
-	"github.com/facebookincubator/symphony/pkg/log"
 	"github.com/net-auto/resourceManager/ent"
+	"github.com/net-auto/resourceManager/logging/log"
 )
 
 type (

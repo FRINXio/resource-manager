@@ -5,8 +5,8 @@
   "description": "",
   "type": "module",
   "scripts": {
-    "test": "tap --no-esm  --no-timeout src/tests",
-    "bench": "tap --no-esm --no-timeout src/bench"
+    "test": "tap --no-timeout src/tests",
+    "bench": "tap --no-timeout src/bench"
   },
   "dependencies": {
     "@apollo/client": "^3.2.1",
@@ -17,7 +17,7 @@
     "hdr-histogram-js": "^2.0.1",
     "microtime": "^3.0.0",
     "react": "^16.13.1",
-    "tap": "^14.11.0",
+    "tap": "^15.1.5",
     "underscore": "^1.11.0",
     "winston": "^3.2.1"
   }

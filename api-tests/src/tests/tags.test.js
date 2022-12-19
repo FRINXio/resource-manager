@@ -3,7 +3,8 @@ import {
     getTag,
     createVlanRangeRootPool,
     getUniqueName,
-    createVlanRootPool
+    createVlanRootPool,
+    cleanup
 } from '../test-helpers.js';
 import tap from 'tap';
 const test = tap.test;
@@ -30,6 +31,8 @@ test('tagging and untagging pool', async (t) => {
     await untagPool(tagId, poolId);
     tag = await getTag(tagName);
     t.equal(tag.Pools.length, 0);
+
+    await cleanup()
     t.end();
 });
 
@@ -62,5 +65,7 @@ test('searching pools via tags', async (t) => {
     matchedPools = await searchPoolsByTags({matchesAny: [{matchesAll: [tag1, tag2]}]});
     t.equal(matchedPools.length, 1);
     t.equal(matchedPools[0].id, taggedPoolId);
+
+    await cleanup()
     t.end();
 });

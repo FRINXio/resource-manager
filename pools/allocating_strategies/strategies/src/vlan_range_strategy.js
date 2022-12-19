@@ -136,7 +136,10 @@ function capacity() {
     for (resource of currentResources) {
         allocatedCapacity += rangeCapacity(resource.Properties);
     }
-    return { freeCapacity: freeCapacity(resourcePoolProperties, allocatedCapacity), utilizedCapacity: allocatedCapacity };
+    return {
+        freeCapacity: String(freeCapacity(resourcePoolProperties, allocatedCapacity)),
+        utilizedCapacity: String(allocatedCapacity)
+    };
 }
 
 // STRATEGY_END

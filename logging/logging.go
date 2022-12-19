@@ -13,15 +13,15 @@ import (
 )
 
 var (
-	log *logrus.Logger
-    logFile *os.File = nil
+	log     *logrus.Logger
+	logFile *os.File = nil
 )
 
 func Close() {
 	if logFile != nil {
 		err := logFile.Close()
 		if err != nil {
-			Error(nil,err,"%v", "Unable to properly close the logfile")
+			Error(nil, err, "%v", "Unable to properly close the logfile")
 		}
 	}
 }
@@ -31,7 +31,7 @@ func GetLogger() *logrus.Logger {
 }
 
 func Init(path string, logLevel string, withColors bool) {
-	f, err := os.OpenFile(path, os.O_WRONLY | os.O_CREATE | os.O_APPEND, 0755)
+	f, err := os.OpenFile(path, os.O_WRONLY|os.O_CREATE|os.O_APPEND, 0644)
 
 	if err != nil {
 		logging.Fatalf("error opening file: %v", err)
@@ -39,16 +39,16 @@ func Init(path string, logLevel string, withColors bool) {
 
 	log = logrus.New()
 	log.SetFormatter(&logrus.TextFormatter{
-		ForceColors: withColors,
+		ForceColors:   withColors,
 		FullTimestamp: true,
-		PadLevelText: true,
+		PadLevelText:  true,
 	})
 	mw := io.MultiWriter(os.Stdout, f)
 	level, err := logrus.ParseLevel(logLevel)
 
 	if err != nil {
 		level = logrus.InfoLevel
-		Error(nil,err,"%v", "Unable to parse log level (none of fatal, error, warning, info, debug or trace), defaulting to info level")
+		Error(nil, err, "%v", "Unable to parse log level (none of fatal, error, warning, info, debug or trace), defaulting to info level")
 	}
 
 	log.SetLevel(level)
@@ -59,7 +59,7 @@ func init() {
 	log = logrus.New()
 	log.SetFormatter(&logrus.TextFormatter{
 		FullTimestamp: true,
-		PadLevelText: true,
+		PadLevelText:  true,
 	})
 	log.SetLevel(logrus.InfoLevel)
 }

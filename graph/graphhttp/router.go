@@ -6,9 +6,9 @@ package graphhttp
 
 import (
 	"fmt"
+	"github.com/net-auto/resourceManager/logging/log"
 	"net/http"
 
-	"github.com/facebookincubator/symphony/pkg/log"
 	"github.com/net-auto/resourceManager/graph/graphql"
 	"github.com/net-auto/resourceManager/viewer"
 
@@ -19,7 +19,7 @@ type routerConfig struct {
 	viewer struct {
 		tenancy viewer.Tenancy
 	}
-	logger  log.Logger
+	logger log.Logger
 }
 
 func newRouter(cfg routerConfig) (*mux.Router, error) {

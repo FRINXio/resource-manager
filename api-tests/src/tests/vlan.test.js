@@ -1,10 +1,18 @@
 import { claimResource} from '../graphql-queries.js';
-import {createVlanRangeRootPool, createVlanNestedPool, get2ChildrenIds} from '../test-helpers.js';
+import {
+    createVlanRangeRootPool,
+    createVlanNestedPool,
+    get2ChildrenIds,
+    cleanup,
+    createVlanRootPool
+} from '../test-helpers.js';
 import tap from 'tap';
 const test = tap.test;
 
 test('create vlan root pool', async (t) => {
     t.ok(await createVlanRangeRootPool());
+
+    await cleanup()
     t.end();
 });
 
@@ -22,12 +30,40 @@ test('create vlan hierarchy', async (t) => {
     let nestedPool2Id = await createVlanNestedPool(secondParentResourceId);
 
     const children = await get2ChildrenIds(rootPoolId);
-    t.deepEqual(children, [nestedPool1Id, nestedPool2Id]);
+    t.same(children, [nestedPool1Id, nestedPool2Id]);
 
     let resource1 = await claimResource(nestedPool1Id, {});
     let resource2 = await claimResource(nestedPool2Id, {});
 
     t.equal(resource1.Properties.vlan, 0);
     t.equal(resource2.Properties.vlan, 2001);
+
+    await cleanup()
+    t.end();
+});
+
+test('allocate specific vlan from vlan resource pool', async (t) => {
+    const rootPoolId = await createVlanRootPool();
+
+    const allocatedResource = await claimResource(rootPoolId, {
+        desiredValue: "1000"
+    });
+
+    t.equal(allocatedResource.Properties.vlan, 1000);
+
+    await cleanup();
+    t.end();
+});
+
+test('allocate specific vlan from vlan resource pool with bad format', async (t) => {
+    const rootPoolId = await createVlanRootPool();
+
+    const allocatedResource = await claimResource(rootPoolId, {
+        desiredValue: 1000
+    });
+
+    t.notOk(allocatedResource);
+
+    await cleanup();
     t.end();
 });

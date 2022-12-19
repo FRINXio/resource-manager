@@ -1,10 +1,18 @@
 // Contains helper functions used in tests (so that test functions are more readable)
 
 import {
-    getAllTags, findResourceTypeId, createNestedSingletonPool,
-    findAllocationStrategyId, createAllocationPool,
-    createNestedAllocationPool, getResourcesForPool,
-    claimResource, getResourcePool
+    claimResource,
+    createAllocationPool,
+    createNestedAllocationPool,
+    createNestedSingletonPool,
+    deleteResourcePool,
+    findAllocationStrategyId,
+    findResourceTypeId,
+    freeResource, getAllPoolsByTypeOrTag,
+    getAllTags,
+    getLeafPools,
+    getResourcePool,
+    getResourcesForPool
 } from "./graphql-queries.js";
 import _ from "underscore";
 
@@ -21,7 +29,7 @@ export async function createRandomIntRootPool() {
         poolName,
         resourceTypeId,
         strategyId,
-        { from: "int", to: "int"},
+        {from: "int", to: "int"},
         {from: '1', to: 999},)
 
     return pool.id;
@@ -35,13 +43,13 @@ export async function createIpv4RootPool(address, prefix) {
         poolName,
         resourceTypeId,
         strategyId,
-        { address: "string", prefix: "int"},
-        {address: address, prefix: prefix},)
+        {address: "string", prefix: "int", subnet: "bool"},
+        {address: address, prefix: prefix, subnet: false})
 
     return pool.id
 }
 
-export async function createRdRootPool(){
+export async function createRdRootPool() {
     let resourceTypeId = await findResourceTypeId('route_distinguisher');
     let strategyId = await findAllocationStrategyId('route_distinguisher');
     let poolName = getUniqueName('root-rd');
@@ -49,14 +57,14 @@ export async function createRdRootPool(){
         poolName,
         resourceTypeId,
         strategyId,
-        { rd: "int"},
+        {rd: "int"},
         {rd: 0},)
 
     return pool.id;
 }
 
 
-export async function createIpv6RootPool(){
+export async function createIpv6RootPool() {
     let resourceTypeId = await findResourceTypeId('ipv6');
     let strategyId = await findAllocationStrategyId('ipv6');
     let poolName = getUniqueName('root-ipv6-range');
@@ -64,13 +72,13 @@ export async function createIpv6RootPool(){
         poolName,
         resourceTypeId,
         strategyId,
-        { address: "string", prefix: "int"},
-        {address: "dead::", prefix: 16},)
+        {address: "string", prefix: "int", subnet: "bool"},
+        {address: "dead::", prefix: 16, subnet: false})
 
     return pool.id;
 }
 
-export async function createIpv6PrefixRootPool(){
+export async function createIpv6PrefixRootPool() {
     let resourceTypeId = await findResourceTypeId('ipv6_prefix');
     let strategyId = await findAllocationStrategyId('ipv6_prefix');
     let poolName = getUniqueName('root-ipv6-range');
@@ -78,14 +86,14 @@ export async function createIpv6PrefixRootPool(){
         poolName,
         resourceTypeId,
         strategyId,
-        { address: "string", prefix: "int"},
-        {address: "dead::", prefix: 120},)
+        {address: "string", prefix: "int", subnet: "bool"},
+        {address: "dead::", prefix: 120, subnet: false})
 
     return pool.id;
 }
 
 
-export async function createIpv6NestedPool(parentResourceId){
+export async function createIpv6NestedPool(parentResourceId) {
     let resourceTypeId = await findResourceTypeId('ipv6');
     let strategyId = await findAllocationStrategyId('ipv6');
     return await createNestedAllocationPool(
@@ -102,8 +110,19 @@ export async function createIpv4PrefixRootPool() {
         getUniqueName('ipv4-root'),
         resourceTypeId,
         strategyId,
-        {prefix: "int", address: "string"},
-        {prefix: 8, address: "10.0.0.0"},);
+        {prefix: "int", address: "string", subnet: "bool"},
+        {prefix: 8, address: "10.0.0.0", subnet: false});
+}
+
+export async function createUniqueIdPool() {
+    let resourceTypeId = await findResourceTypeId('unique_id');
+    let strategyId = await findAllocationStrategyId('unique_id');
+    return await createAllocationPool(
+        getUniqueName('unique_id'),
+        resourceTypeId,
+        strategyId,
+        {from: "int", to: "int", idFormat: "string"},
+        {from: 1, to: 15, idFormat: "{counter}"});
 }
 
 export async function createIpv4NestedPool(parentResourceId) {
@@ -116,7 +135,7 @@ export async function createIpv4NestedPool(parentResourceId) {
         parentResourceId);
 }
 
-export async function createIpv4PrefixNestedPool(parentResourceId){
+export async function createIpv4PrefixNestedPool(parentResourceId) {
     let resourceTypeId = await findResourceTypeId('ipv4_prefix');
     let strategyId = await findAllocationStrategyId('ipv4_prefix');
     return await createNestedAllocationPool(
@@ -128,46 +147,46 @@ export async function createIpv4PrefixNestedPool(parentResourceId){
 
 export async function get2ChildrenIds(poolId) {
     let resourceForPool = await getResourcesForPool(poolId);
-    return [resourceForPool[0].NestedPool.id, resourceForPool[1].NestedPool.id]
+    return [resourceForPool.edges[0].node.NestedPool.id, resourceForPool.edges[1].node.NestedPool.id]
 }
 
-export async function createSingletonIpv4PrefixNestedPool(parentResourceId){
+export async function createSingletonIpv4PrefixNestedPool(parentResourceId) {
     let resourceTypeId = await findResourceTypeId('ipv4_prefix');
     return await createNestedSingletonPool(
         getUniqueName('singleton-ipv4prefix-nested'),
         resourceTypeId,
-        [{address: "10.10.0.0", prefix: 11},],
+        [{address: "10.10.0.0", prefix: 11, subnet:false}],
         parentResourceId);
 }
 
-export async function createVlanRangeRootPool(){
+export async function createVlanRangeRootPool() {
     let resourceTypeId = await findResourceTypeId('vlan_range');
     let strategyId = await findAllocationStrategyId('vlan_range');
     const pool = await createAllocationPool(
         getUniqueName('root-vlan-range'),
         resourceTypeId,
         strategyId,
-        { from: "int", to: "int"},
+        {from: "int", to: "int"},
         {from: 0, to: 4095},)
 
     return pool.id;
 }
 
-export async function createVlanRootPool(tags = null){
+export async function createVlanRootPool(tags = null) {
     let resourceTypeId = await findResourceTypeId('vlan');
     let strategyId = await findAllocationStrategyId('vlan');
     const pool = await createAllocationPool(
         getUniqueName('root-vlan'),
         resourceTypeId,
         strategyId,
-        { from: "int", to: "int"},
+        {from: "int", to: "int"},
         {from: 0, to: 4095},
         tags)
 
     return pool.id;
 }
 
-export async function createVlanNestedPool(parentResourceId, tags = null){
+export async function createVlanNestedPool(parentResourceId, tags = null) {
     let resourceTypeId = await findResourceTypeId('vlan');
     let strategyId = await findAllocationStrategyId('vlan');
     return await createNestedAllocationPool(
@@ -178,13 +197,24 @@ export async function createVlanNestedPool(parentResourceId, tags = null){
         tags)
 }
 
-export function getUniqueName(prefix){
+export async function createRandomSignedInt32Pool({from, to}) {
+    let resourceTypeId = await findResourceTypeId('random_signed_int32');
+    let strategyId = await findAllocationStrategyId('random_signed_int32');
+    return await createAllocationPool(
+        getUniqueName('random-signed-int32'),
+        resourceTypeId,
+        strategyId,
+        {from: "int", to: "int"},
+        {from, to});
+}
+
+export function getUniqueName(prefix) {
     return prefix + Math.random().toString(36).substring(5);
 }
 
 export async function prepareIpv4Pool() {
     let rootPoolId = (await createIpv4PrefixRootPool()).id;
-    let resource12Id = (await claimResource(rootPoolId, { desiredSize: 4194304 })).id;
+    let resource12Id = (await claimResource(rootPoolId, {desiredSize: 4194304})).id;
     return await createIpv4NestedPool(resource12Id);
 }
 
@@ -196,7 +226,7 @@ export async function allocateFromIPv4PoolSerially(poolId, count, claimResourceP
     const ips = result.filter(it => it != null).map(it => it.Properties.address);
     const uniqIPs = [...new Set(ips)];
     if (uniqIPs.length != count) {
-        console.error({ result, ips, uniqIPs });
+        console.error({result, ips, uniqIPs});
         throw new Error("Unexpected number of IPs:" + uniqIPs.length);
     }
     return uniqIPs;
@@ -217,7 +247,7 @@ export async function allocateFromIPv4PoolParallelly(poolId, count, retries, cla
             const moreIPs = await allocateFromIPv4PoolParallelly(poolId, count - ips.length, retries, claimResourceParams);
             ips.push(...moreIPs);
         } else {
-            console.error({ result, ips });
+            console.error({result, ips});
             throw new Error("Unexpected number of IPs:" + ips.length);
         }
     }
@@ -238,4 +268,39 @@ export async function queryIPs(poolId, count) {
         throw new Error("Query returned duplicates");
     }
     return uniqIPs;
+}
+
+export async function cleanup() {
+    const resourceIds = new Set()
+    resourceIds.add(await findResourceTypeId('ipv4'));
+    resourceIds.add(await findResourceTypeId('ipv4_prefix'));
+    resourceIds.add(await findResourceTypeId('ipv6'));
+    resourceIds.add(await findResourceTypeId('ipv6_prefix'));
+    resourceIds.add(await findResourceTypeId('vlan'));
+    resourceIds.add(await findResourceTypeId('vlan_range'));
+    resourceIds.add(await findResourceTypeId('route_distinguisher'));
+    resourceIds.add(await findResourceTypeId('random_signed_int32'));
+    resourceIds.add(await findResourceTypeId('unique_id'));
+
+    for (let i = 0; i < resourceIds.size; i++) {
+        let pools = await getAllPoolsByTypeOrTag(resourceIds[i]);
+        let leafPools = await getLeafPools(resourceIds[i]);
+        while (leafPools.length > 0) {
+            for (let j = 0; j < leafPools.length; j++) {
+                pools = pools.filter(function (e) {return e.id !== leafPools[j].id});
+                await cleanPool(leafPools[j])
+            }
+            leafPools = await getLeafPools(resourceIds[i]);
+        }
+        for (let j = 0; j < pools.length; j++) {
+            await cleanPool(pools[j]);
+        }
+    }
+}
+
+export async function cleanPool(pool) {
+    for (let j = 0; j < pool.Resources.length; j++) {
+        await freeResource(pool.id, pool.Resources[j].Properties);
+    }
+    await deleteResourcePool(pool.id);
 }

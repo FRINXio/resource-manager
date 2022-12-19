@@ -3,12 +3,12 @@
 package allocationstrategy
 
 import (
-	"github.com/facebook/ent/dialect/sql"
-	"github.com/facebook/ent/dialect/sql/sqlgraph"
+	"entgo.io/ent/dialect/sql"
+	"entgo.io/ent/dialect/sql/sqlgraph"
 	"github.com/net-auto/resourceManager/ent/predicate"
 )
 
-// ID filters vertices based on their identifier.
+// ID filters vertices based on their ID field.
 func ID(id int) predicate.AllocationStrategy {
 	return predicate.AllocationStrategy(func(s *sql.Selector) {
 		s.Where(sql.EQ(s.C(FieldID), id))
@@ -32,13 +32,7 @@ func IDNEQ(id int) predicate.AllocationStrategy {
 // IDIn applies the In predicate on the ID field.
 func IDIn(ids ...int) predicate.AllocationStrategy {
 	return predicate.AllocationStrategy(func(s *sql.Selector) {
-		// if not arguments were provided, append the FALSE constants,
-		// since we can't apply "IN ()". This will make this predicate falsy.
-		if len(ids) == 0 {
-			s.Where(sql.False())
-			return
-		}
-		v := make([]interface{}, len(ids))
+		v := make([]any, len(ids))
 		for i := range v {
 			v[i] = ids[i]
 		}
@@ -49,13 +43,7 @@ func IDIn(ids ...int) predicate.AllocationStrategy {
 // IDNotIn applies the NotIn predicate on the ID field.
 func IDNotIn(ids ...int) predicate.AllocationStrategy {
 	return predicate.AllocationStrategy(func(s *sql.Selector) {
-		// if not arguments were provided, append the FALSE constants,
-		// since we can't apply "IN ()". This will make this predicate falsy.
-		if len(ids) == 0 {
-			s.Where(sql.False())
-			return
-		}
-		v := make([]interface{}, len(ids))
+		v := make([]any, len(ids))
 		for i := range v {
 			v[i] = ids[i]
 		}
@@ -128,34 +116,22 @@ func NameNEQ(v string) predicate.AllocationStrategy {
 
 // NameIn applies the In predicate on the "name" field.
 func NameIn(vs ...string) predicate.AllocationStrategy {
-	v := make([]interface{}, len(vs))
+	v := make([]any, len(vs))
 	for i := range v {
 		v[i] = vs[i]
 	}
 	return predicate.AllocationStrategy(func(s *sql.Selector) {
-		// if not arguments were provided, append the FALSE constants,
-		// since we can't apply "IN ()". This will make this predicate falsy.
-		if len(v) == 0 {
-			s.Where(sql.False())
-			return
-		}
 		s.Where(sql.In(s.C(FieldName), v...))
 	})
 }
 
 // NameNotIn applies the NotIn predicate on the "name" field.
 func NameNotIn(vs ...string) predicate.AllocationStrategy {
-	v := make([]interface{}, len(vs))
+	v := make([]any, len(vs))
 	for i := range v {
 		v[i] = vs[i]
 	}
 	return predicate.AllocationStrategy(func(s *sql.Selector) {
-		// if not arguments were provided, append the FALSE constants,
-		// since we can't apply "IN ()". This will make this predicate falsy.
-		if len(v) == 0 {
-			s.Where(sql.False())
-			return
-		}
 		s.Where(sql.NotIn(s.C(FieldName), v...))
 	})
 }
@@ -239,34 +215,22 @@ func DescriptionNEQ(v string) predicate.AllocationStrategy {
 
 // DescriptionIn applies the In predicate on the "description" field.
 func DescriptionIn(vs ...string) predicate.AllocationStrategy {
-	v := make([]interface{}, len(vs))
+	v := make([]any, len(vs))
 	for i := range v {
 		v[i] = vs[i]
 	}
 	return predicate.AllocationStrategy(func(s *sql.Selector) {
-		// if not arguments were provided, append the FALSE constants,
-		// since we can't apply "IN ()". This will make this predicate falsy.
-		if len(v) == 0 {
-			s.Where(sql.False())
-			return
-		}
 		s.Where(sql.In(s.C(FieldDescription), v...))
 	})
 }
 
 // DescriptionNotIn applies the NotIn predicate on the "description" field.
 func DescriptionNotIn(vs ...string) predicate.AllocationStrategy {
-	v := make([]interface{}, len(vs))
+	v := make([]any, len(vs))
 	for i := range v {
 		v[i] = vs[i]
 	}
 	return predicate.AllocationStrategy(func(s *sql.Selector) {
-		// if not arguments were provided, append the FALSE constants,
-		// since we can't apply "IN ()". This will make this predicate falsy.
-		if len(v) == 0 {
-			s.Where(sql.False())
-			return
-		}
 		s.Where(sql.NotIn(s.C(FieldDescription), v...))
 	})
 }
@@ -364,34 +328,22 @@ func LangNEQ(v Lang) predicate.AllocationStrategy {
 
 // LangIn applies the In predicate on the "lang" field.
 func LangIn(vs ...Lang) predicate.AllocationStrategy {
-	v := make([]interface{}, len(vs))
+	v := make([]any, len(vs))
 	for i := range v {
 		v[i] = vs[i]
 	}
 	return predicate.AllocationStrategy(func(s *sql.Selector) {
-		// if not arguments were provided, append the FALSE constants,
-		// since we can't apply "IN ()". This will make this predicate falsy.
-		if len(v) == 0 {
-			s.Where(sql.False())
-			return
-		}
 		s.Where(sql.In(s.C(FieldLang), v...))
 	})
 }
 
 // LangNotIn applies the NotIn predicate on the "lang" field.
 func LangNotIn(vs ...Lang) predicate.AllocationStrategy {
-	v := make([]interface{}, len(vs))
+	v := make([]any, len(vs))
 	for i := range v {
 		v[i] = vs[i]
 	}
 	return predicate.AllocationStrategy(func(s *sql.Selector) {
-		// if not arguments were provided, append the FALSE constants,
-		// since we can't apply "IN ()". This will make this predicate falsy.
-		if len(v) == 0 {
-			s.Where(sql.False())
-			return
-		}
 		s.Where(sql.NotIn(s.C(FieldLang), v...))
 	})
 }
@@ -412,34 +364,22 @@ func ScriptNEQ(v string) predicate.AllocationStrategy {
 
 // ScriptIn applies the In predicate on the "script" field.
 func ScriptIn(vs ...string) predicate.AllocationStrategy {
-	v := make([]interface{}, len(vs))
+	v := make([]any, len(vs))
 	for i := range v {
 		v[i] = vs[i]
 	}
 	return predicate.AllocationStrategy(func(s *sql.Selector) {
-		// if not arguments were provided, append the FALSE constants,
-		// since we can't apply "IN ()". This will make this predicate falsy.
-		if len(v) == 0 {
-			s.Where(sql.False())
-			return
-		}
 		s.Where(sql.In(s.C(FieldScript), v...))
 	})
 }
 
 // ScriptNotIn applies the NotIn predicate on the "script" field.
 func ScriptNotIn(vs ...string) predicate.AllocationStrategy {
-	v := make([]interface{}, len(vs))
+	v := make([]any, len(vs))
 	for i := range v {
 		v[i] = vs[i]
 	}
 	return predicate.AllocationStrategy(func(s *sql.Selector) {
-		// if not arguments were provided, append the FALSE constants,
-		// since we can't apply "IN ()". This will make this predicate falsy.
-		if len(v) == 0 {
-			s.Where(sql.False())
-			return
-		}
 		s.Where(sql.NotIn(s.C(FieldScript), v...))
 	})
 }
@@ -535,7 +475,35 @@ func HasPoolsWith(preds ...predicate.ResourcePool) predicate.AllocationStrategy 
 	})
 }
 
-// And groups list of predicates with the AND operator between them.
+// HasPoolPropertyTypes applies the HasEdge predicate on the "pool_property_types" edge.
+func HasPoolPropertyTypes() predicate.AllocationStrategy {
+	return predicate.AllocationStrategy(func(s *sql.Selector) {
+		step := sqlgraph.NewStep(
+			sqlgraph.From(Table, FieldID),
+			sqlgraph.To(PoolPropertyTypesTable, FieldID),
+			sqlgraph.Edge(sqlgraph.O2M, false, PoolPropertyTypesTable, PoolPropertyTypesColumn),
+		)
+		sqlgraph.HasNeighbors(s, step)
+	})
+}
+
+// HasPoolPropertyTypesWith applies the HasEdge predicate on the "pool_property_types" edge with a given conditions (other predicates).
+func HasPoolPropertyTypesWith(preds ...predicate.PropertyType) predicate.AllocationStrategy {
+	return predicate.AllocationStrategy(func(s *sql.Selector) {
+		step := sqlgraph.NewStep(
+			sqlgraph.From(Table, FieldID),
+			sqlgraph.To(PoolPropertyTypesInverseTable, FieldID),
+			sqlgraph.Edge(sqlgraph.O2M, false, PoolPropertyTypesTable, PoolPropertyTypesColumn),
+		)
+		sqlgraph.HasNeighborsWith(s, step, func(s *sql.Selector) {
+			for _, p := range preds {
+				p(s)
+			}
+		})
+	})
+}
+
+// And groups predicates with the AND operator between them.
 func And(predicates ...predicate.AllocationStrategy) predicate.AllocationStrategy {
 	return predicate.AllocationStrategy(func(s *sql.Selector) {
 		s1 := s.Clone().SetP(nil)
@@ -546,7 +514,7 @@ func And(predicates ...predicate.AllocationStrategy) predicate.AllocationStrateg
 	})
 }
 
-// Or groups list of predicates with the OR operator between them.
+// Or groups predicates with the OR operator between them.
 func Or(predicates ...predicate.AllocationStrategy) predicate.AllocationStrategy {
 	return predicate.AllocationStrategy(func(s *sql.Selector) {
 		s1 := s.Clone().SetP(nil)

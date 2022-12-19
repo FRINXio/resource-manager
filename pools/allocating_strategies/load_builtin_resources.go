@@ -36,10 +36,43 @@ func loadIpv4Prefix(ctx context.Context, client *ent.Tx) error {
 	if err != nil {
 		return err
 	}
+	propSubnet, err := client.PropertyType.Create().
+		SetName("subnet").
+		SetType(propertytype.TypeBool).
+		Save(ctx)
+	if err != nil {
+		return err
+	}
+
+	expectedPoolPropAddr, err := client.PropertyType.Create().
+		SetName("address").
+		SetStringVal("192.168.10.0").
+		SetType(propertytype.TypeString).
+		Save(ctx)
+	if err != nil {
+		return err
+	}
+	expectedPoolPropPrefix, err := client.PropertyType.Create().
+		SetName("prefix").
+		SetIntVal(24).
+		SetType(propertytype.TypeInt).
+		Save(ctx)
+	if err != nil {
+		return err
+	}
+
+	expectedPoolPropSubnet, err := client.PropertyType.Create().
+		SetName("subnet").
+		SetBoolVal(false).
+		SetType(propertytype.TypeBool).
+		Save(ctx)
+	if err != nil {
+		return err
+	}
 
 	_, err = client.ResourceType.Create().
 		SetName("ipv4_prefix").
-		AddPropertyTypes(propAddr, propPrefix).
+		AddPropertyTypes(propAddr, propPrefix, propSubnet).
 		Save(ctx)
 	if err != nil {
 		return err
@@ -49,6 +82,7 @@ func loadIpv4Prefix(ctx context.Context, client *ent.Tx) error {
 		SetName("ipv4_prefix").
 		SetLang(allocationstrategy.LangGo).
 		SetScript(IPV4_PREFIX).
+		AddPoolPropertyTypes(expectedPoolPropAddr, expectedPoolPropPrefix, expectedPoolPropSubnet).
 		Save(ctx)
 	if err != nil {
 		return err
@@ -76,6 +110,7 @@ func loadIpv6Prefix(ctx context.Context, client *ent.Tx) error {
 	if err != nil {
 		return err
 	}
+
 	propPrefix, err := client.PropertyType.Create().
 		SetName("prefix").
 		SetType(propertytype.TypeInt).
@@ -84,9 +119,44 @@ func loadIpv6Prefix(ctx context.Context, client *ent.Tx) error {
 		return err
 	}
 
+	propSubnet, err := client.PropertyType.Create().
+		SetName("subnet").
+		SetType(propertytype.TypeBool).
+		Save(ctx)
+	if err != nil {
+		return err
+	}
+
+	expectedPoolPropAddr, err := client.PropertyType.Create().
+		SetName("address").
+		SetStringVal("2001:db8::").
+		SetType(propertytype.TypeString).
+		Save(ctx)
+	if err != nil {
+		return err
+	}
+
+	expectedPoolPropPrefix, err := client.PropertyType.Create().
+		SetName("prefix").
+		SetIntVal(64).
+		SetType(propertytype.TypeInt).
+		Save(ctx)
+	if err != nil {
+		return err
+	}
+
+	expectedPoolPropSubnet, err := client.PropertyType.Create().
+		SetName("subnet").
+		SetBoolVal(false).
+		SetType(propertytype.TypeBool).
+		Save(ctx)
+	if err != nil {
+		return err
+	}
+
 	_, err = client.ResourceType.Create().
 		SetName("ipv6_prefix").
-		AddPropertyTypes(propAddr, propPrefix).
+		AddPropertyTypes(propAddr, propPrefix, propSubnet).
 		Save(ctx)
 	if err != nil {
 		return err
@@ -94,8 +164,9 @@ func loadIpv6Prefix(ctx context.Context, client *ent.Tx) error {
 
 	_, err = client.AllocationStrategy.Create().
 		SetName("ipv6_prefix").
-		SetLang(allocationstrategy.LangJs).
+		SetLang(allocationstrategy.LangGo).
 		SetScript(IPV6_PREFIX).
+		AddPoolPropertyTypes(expectedPoolPropAddr, expectedPoolPropPrefix, expectedPoolPropSubnet).
 		Save(ctx)
 	if err != nil {
 		return err
@@ -121,6 +192,33 @@ func loadIpv4(ctx context.Context, client *ent.Tx) error {
 		return err
 	}
 
+	expectedPoolPropAddr, err := client.PropertyType.Create().
+		SetName("address").
+		SetStringVal("192.168.10.0").
+		SetType(propertytype.TypeString).
+		Save(ctx)
+	if err != nil {
+		return err
+	}
+
+	expectedPoolPropPrefix, err := client.PropertyType.Create().
+		SetName("prefix").
+		SetIntVal(24).
+		SetType(propertytype.TypeInt).
+		Save(ctx)
+	if err != nil {
+		return err
+	}
+
+	expectedPoolPropSubnet, err := client.PropertyType.Create().
+		SetName("subnet").
+		SetBoolVal(false).
+		SetType(propertytype.TypeBool).
+		Save(ctx)
+	if err != nil {
+		return err
+	}
+
 	_, err = client.ResourceType.Create().
 		SetName("ipv4").
 		AddPropertyTypes(propAddr).
@@ -133,6 +231,7 @@ func loadIpv4(ctx context.Context, client *ent.Tx) error {
 		SetName("ipv4").
 		SetLang(allocationstrategy.LangGo).
 		SetScript(IPV4).
+		AddPoolPropertyTypes(expectedPoolPropAddr, expectedPoolPropPrefix, expectedPoolPropSubnet).
 		Save(ctx)
 	if err != nil {
 		return err
@@ -158,6 +257,33 @@ func loadIpv6(ctx context.Context, client *ent.Tx) error {
 		return err
 	}
 
+	expectedPoolPropAddr, err := client.PropertyType.Create().
+		SetName("address").
+		SetStringVal("2001:db8::").
+		SetType(propertytype.TypeString).
+		Save(ctx)
+	if err != nil {
+		return err
+	}
+
+	expectedPoolPropPrefix, err := client.PropertyType.Create().
+		SetName("prefix").
+		SetIntVal(64).
+		SetType(propertytype.TypeInt).
+		Save(ctx)
+	if err != nil {
+		return err
+	}
+
+	expectedPoolPropSubnet, err := client.PropertyType.Create().
+		SetName("subnet").
+		SetBoolVal(false).
+		SetType(propertytype.TypeBool).
+		Save(ctx)
+	if err != nil {
+		return err
+	}
+
 	_, err = client.ResourceType.Create().
 		SetName("ipv6").
 		AddPropertyTypes(propAddr).
@@ -168,8 +294,9 @@ func loadIpv6(ctx context.Context, client *ent.Tx) error {
 
 	_, err = client.AllocationStrategy.Create().
 		SetName("ipv6").
-		SetLang(allocationstrategy.LangJs).
+		SetLang(allocationstrategy.LangGo).
 		SetScript(IPV6).
+		AddPoolPropertyTypes(expectedPoolPropAddr, expectedPoolPropPrefix, expectedPoolPropSubnet).
 		Save(ctx)
 	if err != nil {
 		return err
@@ -206,6 +333,24 @@ func loadVlanRange(ctx context.Context, client *ent.Tx) error {
 		return err
 	}
 
+	expectedPoolPropFrom, err := client.PropertyType.Create().
+		SetName("from").
+		SetIntVal(0).
+		SetType(propertytype.TypeInt).
+		Save(ctx)
+	if err != nil {
+		return err
+	}
+
+	expectedPoolPropTo, err := client.PropertyType.Create().
+		SetName("to").
+		SetIntVal(4095).
+		SetType(propertytype.TypeInt).
+		Save(ctx)
+	if err != nil {
+		return err
+	}
+
 	_, err = client.ResourceType.Create().
 		SetName("vlan_range").
 		AddPropertyTypes(propFrom, propTo).
@@ -218,6 +363,7 @@ func loadVlanRange(ctx context.Context, client *ent.Tx) error {
 		SetName("vlan_range").
 		SetLang(allocationstrategy.LangJs).
 		SetScript(VLAN_RANGE).
+		AddPoolPropertyTypes(expectedPoolPropFrom, expectedPoolPropTo).
 		Save(ctx)
 	if err != nil {
 		return err
@@ -244,6 +390,24 @@ func loadVlan(ctx context.Context, client *ent.Tx) error {
 		return err
 	}
 
+	expectedPoolPropFrom, err := client.PropertyType.Create().
+		SetName("from").
+		SetIntVal(0).
+		SetType(propertytype.TypeInt).
+		Save(ctx)
+	if err != nil {
+		return err
+	}
+
+	expectedPoolPropTo, err := client.PropertyType.Create().
+		SetName("to").
+		SetIntVal(4095).
+		SetType(propertytype.TypeInt).
+		Save(ctx)
+	if err != nil {
+		return err
+	}
+
 	_, err = client.ResourceType.Create().
 		SetName("vlan").
 		AddPropertyTypes(propAddr).
@@ -256,6 +420,7 @@ func loadVlan(ctx context.Context, client *ent.Tx) error {
 		SetName("vlan").
 		SetLang(allocationstrategy.LangGo).
 		SetScript(VLAN).
+		AddPoolPropertyTypes(expectedPoolPropFrom, expectedPoolPropTo).
 		Save(ctx)
 	if err != nil {
 		return err
@@ -320,6 +485,24 @@ func loadRandomSignedInt32(ctx context.Context, client *ent.Tx) error {
 		return err
 	}
 
+	expectedPoolPropFrom, err := client.PropertyType.Create().
+		SetName("from").
+		SetIntVal(-2147483648).
+		SetType(propertytype.TypeInt).
+		Save(ctx)
+	if err != nil {
+		return err
+	}
+
+	expectedPoolPropTo, err := client.PropertyType.Create().
+		SetName("to").
+		SetIntVal(2147483648).
+		SetType(propertytype.TypeInt).
+		Save(ctx)
+	if err != nil {
+		return err
+	}
+
 	_, err = client.ResourceType.Create().
 		SetName("random_signed_int32").
 		AddPropertyTypes(propAddr).
@@ -332,6 +515,7 @@ func loadRandomSignedInt32(ctx context.Context, client *ent.Tx) error {
 		SetName("random_signed_int32").
 		SetLang(allocationstrategy.LangJs).
 		SetScript(RANDOM_S_INT32).
+		AddPoolPropertyTypes(expectedPoolPropFrom, expectedPoolPropTo).
 		Save(ctx)
 	if err != nil {
 		return err
@@ -366,6 +550,24 @@ func loadUniqueIdStrategy(ctx context.Context, client *ent.Tx) error {
 		return err
 	}
 
+	expectedPoolPropFrom, err := client.PropertyType.Create().
+		SetName("from").
+		SetIntVal(1).
+		SetType(propertytype.TypeInt).
+		Save(ctx)
+	if err != nil {
+		return err
+	}
+
+	expectedPoolPropTo, err := client.PropertyType.Create().
+		SetName("to").
+		SetIntVal(4094).
+		SetType(propertytype.TypeInt).
+		Save(ctx)
+	if err != nil {
+		return err
+	}
+
 	_, err = client.ResourceType.Create().
 		SetName("unique_id").
 		AddPropertyTypes(propCounter, propText).
@@ -378,6 +580,7 @@ func loadUniqueIdStrategy(ctx context.Context, client *ent.Tx) error {
 		SetName("unique_id").
 		SetLang(allocationstrategy.LangGo).
 		SetScript(UNIQUE_ID).
+		AddPoolPropertyTypes(expectedPoolPropFrom, expectedPoolPropTo).
 		Save(ctx)
 	if err != nil {
 		return err
@@ -385,7 +588,6 @@ func loadUniqueIdStrategy(ctx context.Context, client *ent.Tx) error {
 
 	return nil
 }
-
 
 func loadInner(ctx context.Context, client *ent.Tx) error {
 	err := loadIpv4Prefix(ctx, client)
@@ -433,7 +635,8 @@ func loadInner(ctx context.Context, client *ent.Tx) error {
 }
 
 // LoadBuiltinTypes loads IP, VLAN etc. resource types and allocation strategies into DB
-//  does not overwrite existing resources and strategies
+//
+//	does not overwrite existing resources and strategies
 func LoadBuiltinTypes(ctx context.Context, client *ent.Client) error {
 	ctx = schema.WithFullAccessIdentity(ctx)
 
@@ -458,4 +661,3 @@ func LoadBuiltinTypes(ctx context.Context, client *ent.Client) error {
 	}
 	return nil
 }
-

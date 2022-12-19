@@ -9,13 +9,11 @@ const (
 	FieldID = "id"
 	// FieldTag holds the string denoting the tag field in the database.
 	FieldTag = "tag"
-
 	// EdgePools holds the string denoting the pools edge name in mutations.
 	EdgePools = "pools"
-
 	// Table holds the table name of the tag in the database.
 	Table = "tags"
-	// PoolsTable is the table the holds the pools relation/edge. The primary key declared below.
+	// PoolsTable is the table that holds the pools relation/edge. The primary key declared below.
 	PoolsTable = "tag_pools"
 	// PoolsInverseTable is the table name for the ResourcePool entity.
 	// It exists in this package in order to avoid circular dependency with the "resourcepool" package.

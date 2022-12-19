@@ -9,21 +9,22 @@ import (
 	"database/sql"
 	"database/sql/driver"
 	"errors"
+	"github.com/net-auto/resourceManager/graph/graphql/generated"
+	"github.com/net-auto/resourceManager/logging/log"
+	"github.com/net-auto/resourceManager/telemetry/ocgql"
+	"github.com/net-auto/resourceManager/viewer"
+	"math/bits"
 	"net/http"
 	"time"
 
+	"entgo.io/contrib/entgql"
 	"github.com/99designs/gqlgen/graphql/handler/extension"
-	"github.com/facebookincubator/ent-contrib/entgql"
-	"github.com/facebookincubator/symphony/graph/graphql/complexity"
-	"github.com/facebookincubator/symphony/pkg/gqlutil"
 
-	// "github.com/net-auto/resourceManager/graph/graphql/directive"
-	"github.com/facebookincubator/symphony/pkg/log"
-	"github.com/facebookincubator/symphony/pkg/telemetry/ocgql"
-	"github.com/facebookincubator/symphony/pkg/viewer"
+	"github.com/net-auto/resourceManager/pkg/gqlutil"
+
 	"github.com/net-auto/resourceManager/ent"
 	"github.com/net-auto/resourceManager/ent/privacy"
-	"github.com/net-auto/resourceManager/graph/graphql/generated"
+	//"github.com/net-auto/resourceManager/graph/graphql/generated"
 	"github.com/net-auto/resourceManager/graph/graphql/resolver"
 
 	"github.com/99designs/gqlgen/graphql"
@@ -42,6 +43,8 @@ type HandlerConfig struct {
 	Client *ent.Client
 	Logger log.Logger
 }
+
+const Infinite = 1<<(bits.UintSize-1) - 1
 
 func init() {
 	// TODO directive
@@ -90,6 +93,15 @@ func OpenTxFromContext(ctx context.Context) (context.Context, driver.Tx, error) 
 	return ctx, tx, nil
 }
 
+func openAndExposeTx(ctx context.Context) (context.Context, driver.Tx, error) {
+	fromContext, tx, err := OpenTxFromContext(ctx)
+	if tx != nil {
+		// Expose TX under "tx" key
+		return context.WithValue(fromContext, ent.TxCtxKey{}, tx), tx, err
+	}
+	return fromContext, tx, err
+}
+
 // NewHandler creates a graphql http handler.
 func NewHandler(cfg HandlerConfig) (http.Handler, error) {
 	rsv := resolver.New(
@@ -122,12 +134,12 @@ func NewHandler(cfg HandlerConfig) (http.Handler, error) {
 	)
 
 	srv.Use(entgql.Transactioner{
-		TxOpener: entgql.TxOpenerFunc(OpenTxFromContext),
+		TxOpener: entgql.TxOpenerFunc(openAndExposeTx),
 	})
 
 	srv.SetErrorPresenter(errorPresenter(cfg.Logger))
 	srv.SetRecoverFunc(gqlutil.RecoverFunc(cfg.Logger))
-	srv.Use(extension.FixedComplexityLimit(complexity.Infinite))
+	srv.Use(extension.FixedComplexityLimit(Infinite))
 
 	router.Path("/graphiql").
 		Handler(

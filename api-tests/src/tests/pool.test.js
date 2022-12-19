@@ -1,11 +1,26 @@
 import {
     claimResource,
-    createSingletonPool, createTag, deleteResourcePool,
-    findResourceTypeId, createSetPool, createResourceType,
-    freeResource, claimResourceWithAltId, queryResourceByAltId,
-    getResourcesForPool, searchPoolsByTags, tagPool, getCapacityForPool, getResourcePool
+    createSingletonPool,
+    createTag,
+    deleteResourcePool,
+    findResourceTypeId,
+    createSetPool,
+    createResourceType,
+    freeResource,
+    claimResourceWithAltId,
+    queryResourcesByAltId,
+    getResourcesForPool,
+    searchPoolsByTags,
+    tagPool,
+    getCapacityForPool,
+    getResourcePool,
+    getResourcesByDatetimeRange,
+    updateResourceAltId,
+    getEmptyPools,
+    getPaginatedResourcesForPool, getRequiredPoolProperties, findAllocationStrategyId, createAllocationPool
 } from "../graphql-queries.js";
 import {
+    cleanup,
     createIpv4PrefixRootPool,
     createIpv4RootPool,
     createIpv6PrefixRootPool,
@@ -20,19 +35,21 @@ const test = tap.test;
 test('singleton claim and free resource', async (t) => {
     let rtId = await findResourceTypeId('ipv4');
     const ipAddress = '192.168.1.1';
-    let poolId = await createSingletonPool(
-        getUniqueName('singleton'),
-        rtId,
-        [{address: ipAddress}]
-    );
+    const poolName = getUniqueName('singleton');
+    let poolId = await createSingletonPool(poolName, rtId, [{address: ipAddress}]);
+    let resourceTypeOfPoolName = await findResourceTypeId(poolName + "-ResourceType");
+    t.equal(resourceTypeOfPoolName, undefined);
+
     let resource = await claimResource(poolId, {});
     let rs = await getResourcesForPool(poolId);
-    t.equal(rs.length, 1);
-    t.equal(rs[0].Properties.address, ipAddress)
+    t.equal(rs.edges.length, 1);
+    t.equal(rs.edges[0].node.Properties.address, ipAddress)
     await freeResource(poolId, resource.Properties);
 
     rs = await getResourcesForPool(poolId);
-    t.equal(rs.length, 0);
+    t.equal(rs.edges.length, 0);
+
+    await cleanup()
     t.end();
 });
 
@@ -54,13 +71,46 @@ test('create and delete singleton pool', async (t) => {
     let resource1 = await claimResource(poolId, {});
     let resource2 = await claimResource(poolId, {});
 
-    t.deepEqual(resource1, resource2); //the same resource
+    t.same(resource1, resource2); //the same resource
 
     await freeResource(poolId, resource2.Properties);
 
     await deleteResourcePool(poolId);
     foundPool = await searchPoolsByTags({matchesAny: [{matchesAll: [tagText]}]});
     t.equal(foundPool.length, 0);
+
+    await cleanup()
+    t.end();
+});
+
+test('get pools by range of datetime', async (t) => {
+    const poolId = await createIpv4RootPool('192.168.3.0', 16);
+
+    await claimResource(poolId, {});
+    await claimResource(poolId, {});
+
+    let today = new Date().toISOString().slice(0, 13);
+    today = today.replace("T", "-");
+    let pools = await getResourcesByDatetimeRange(today, "");
+    //from today 00:00 to current moment expected 2 resources
+    t.equal(pools.edges.length, 2);
+
+    let tomorrow = new Date()
+    tomorrow.setDate(new Date().getDate() + 1)
+    tomorrow = tomorrow.toISOString().slice(0,13)
+    tomorrow = tomorrow.replace("T", "-");
+    pools = await getResourcesByDatetimeRange(today, tomorrow);
+    //from today 00:00 to tomorrow expected 2 resources
+    t.equal(pools.edges.length, 2);
+
+    let yesterday = new Date()
+    yesterday.setDate(new Date().getDate() - 1)
+    yesterday = yesterday.toISOString().slice(0,13)
+    yesterday = yesterday.replace("T", "-");
+    pools = await getResourcesByDatetimeRange(yesterday, today);
+    t.equal(pools.edges.length, 0);
+
+    await cleanup()
     t.end();
 });
 
@@ -73,10 +123,12 @@ test('create and delete resources in set pool', async (t) => {
     );
     let resource = await claimResource(poolId, {});
     let rs = await getResourcesForPool(poolId);
-    t.equal(rs.length, 1);
+    t.equal(rs.edges.length, 1);
     await freeResource(poolId, resource.Properties)
     rs = await getResourcesForPool(poolId);
-    t.equal(rs.length, 0);
+    t.equal(rs.edges.length, 0);
+
+    await cleanup()
     t.end();
 });
 
@@ -101,6 +153,38 @@ test('create and delete set pool', async (t) => {
     t.end();
 });
 
+test('allocating pool with incorrect properties', async (t) => {
+    let resourceTypeId = await findResourceTypeId('ipv4');
+    let strategyId = await findAllocationStrategyId('ipv4');
+    let poolName = getUniqueName('root-ipv4');
+    let pool = await createAllocationPool(
+        poolName,
+        resourceTypeId,
+        strategyId,
+        {prefix: "int"},
+        {prefix: 24},)
+    t.notOk(pool)
+
+    pool = await createAllocationPool(
+        poolName,
+        resourceTypeId,
+        strategyId,
+        {address: "string"},
+        {address: "192.168.3.0"},)
+    t.notOk(pool)
+
+    pool = await createAllocationPool(
+        poolName,
+        resourceTypeId,
+        strategyId,
+        {address: "string", prefix: "int", subnet: "bool"},
+        {address: "192.168.3.0", prefix: 24, subnet: true})
+    t.ok(pool)
+
+    await cleanup()
+    t.end();
+});
+
 test('capacity for allocating vlan-range pool', async (t) => {
     const poolId = await createVlanRangeRootPool();
 
@@ -109,8 +193,10 @@ test('capacity for allocating vlan-range pool', async (t) => {
     await claimResource(poolId, {desiredSize: 3});
 
     const capacity = await getCapacityForPool(poolId);
-    t.equal(capacity.utilizedCapacity, 5);
-    t.equal(capacity.freeCapacity, 4091);
+    t.equal(capacity.utilizedCapacity, "5");
+    t.equal(capacity.freeCapacity, "4091");
+
+    await cleanup()
     t.end();
 });
 
@@ -122,8 +208,10 @@ test('capacity for allocating vlan pool', async (t) => {
     await claimResource(poolId, {});
 
     const capacity = await getCapacityForPool(poolId);
-    t.equal(capacity.utilizedCapacity, 3);
-    t.equal(capacity.freeCapacity, 4093);
+    t.equal(capacity.utilizedCapacity, "3");
+    t.equal(capacity.freeCapacity, "4093");
+
+    await cleanup()
     t.end();
 });
 
@@ -136,8 +224,10 @@ test('capacity for allocating ipv6-prefix pool', async (t) => {
     await claimResource(poolId, {desiredSize: 4});
 
     const capacity = await getCapacityForPool(poolId);
-    t.equal(capacity.utilizedCapacity, 16);
-    t.equal(capacity.freeCapacity, 240);
+    t.equal(capacity.utilizedCapacity, "16");
+    t.equal(capacity.freeCapacity, "240");
+
+    await cleanup()
     t.end();
 });
 
@@ -150,8 +240,10 @@ test('capacity for allocating ipv6 pool', async (t) => {
     await claimResource(poolId, {});
 
     const capacity = await getCapacityForPool(poolId);
-    t.equal(capacity.utilizedCapacity, 4);
-    t.equal(capacity.freeCapacity, 5.192296858534828e+33);
+    t.equal(capacity.utilizedCapacity, "4");
+    t.equal(capacity.freeCapacity, "5192296858534827628530496329220092");
+
+    await cleanup()
     t.end();
 });
 
@@ -162,8 +254,10 @@ test('capacity for allocating ipv4 pool', async (t) => {
     await claimResource(poolId, {});
 
     const capacity = await getCapacityForPool(poolId);
-    t.equal(capacity.utilizedCapacity, 2);
-    t.equal(capacity.freeCapacity, 65532);
+    t.equal(capacity.utilizedCapacity, "2");
+    t.equal(capacity.freeCapacity, "65534");
+
+    await cleanup()
     t.end();
 });
 
@@ -174,8 +268,10 @@ test('capacity for random pool', async (t) => {
     await claimResource(poolId, {});
 
     const capacity = await getCapacityForPool(poolId);
-    t.equal(capacity.utilizedCapacity, 2);
-    t.equal(capacity.freeCapacity, 997);
+    t.equal(capacity.utilizedCapacity, "2");
+    t.equal(capacity.freeCapacity, "997");
+
+    await cleanup()
     t.end();
 });
 
@@ -186,8 +282,10 @@ test('capacity for allocating ipv4-prefix pool', async (t) => {
     await claimResource(poolId, {desiredSize: 2});
 
     const capacity = await getCapacityForPool(poolId);
-    t.equal(capacity.utilizedCapacity, 4);
-    t.equal(capacity.freeCapacity, 16777210);
+    t.equal(capacity.utilizedCapacity, "4");
+    t.equal(capacity.freeCapacity, "16777212");
+
+    await cleanup()
     t.end();
 });
 
@@ -199,8 +297,10 @@ test('capacity for allocating RD pool', async (t) => {
     await claimResource(rdPoolId, {asNumber: 47, assignedNumber: 47});
 
     const capacity = await getCapacityForPool(rdPoolId);
-    t.equal(capacity.utilizedCapacity, 3);
-    t.equal(capacity.freeCapacity, 281474976710656);
+    t.equal(capacity.utilizedCapacity, "3");
+    t.equal(capacity.freeCapacity, "281474976710656");
+
+    await cleanup()
     t.end();
 });
 
@@ -217,8 +317,10 @@ test('capacity for set pool', async (t) => {
     await claimResource(poolId, {});
 
     const capacity = await getCapacityForPool(poolId);
-    t.equal(capacity.utilizedCapacity, 3);
-    t.equal(capacity.freeCapacity, 1);
+    t.equal(capacity.utilizedCapacity, "3");
+    t.equal(capacity.freeCapacity, "1");
+
+    await cleanup()
     t.end();
 });
 
@@ -233,8 +335,10 @@ test('capacity for singleton pool', async (t) => {
     await claimResource(poolId, {});
 
     const capacity = await getCapacityForPool(poolId);
-    t.equal(capacity.utilizedCapacity, 1);
-    t.equal(capacity.freeCapacity, 0);
+    t.equal(capacity.utilizedCapacity, "1");
+    t.equal(capacity.freeCapacity, "0");
+
+    await cleanup()
     t.end();
 });
 
@@ -276,6 +380,8 @@ test('pagination of allocated resources in vlan-pool', async (t) => {
     t.equal(pool.allocatedResources.edges.length, 1);
     t.equal(resourceIds[0], pool.allocatedResources.edges[0].node.id);
     t.notOk(pool.allocatedResources.pageInfo.hasPreviousPage);
+
+    await cleanup()
     t.end();
 });
 
@@ -289,17 +395,53 @@ test('allocation pool test alternative ID', async (t) => {
     let altId2 = {vlanAltId: Math.floor(Math.random() * 100000), order: getUniqueName('third')};
     await claimResourceWithAltId(poolId, {}, altId2);
 
+    let altId3 = {vlanAltId: Math.floor(Math.random() * 100000), order: getUniqueName('third')};
+    let resource = await claimResourceWithAltId(poolId, {}, altId2);
+
+    await updateResourceAltId(poolId, resource.Properties, altId3)
+
+    let res3 = await queryResourcesByAltId(poolId, altId3);
+
+    t.equal(res3.edges[0].node.Properties.vlan, 3);
+    t.equal(res3.edges[0].node.AlternativeId.vlanAltId, altId3.vlanAltId)
+    t.equal(res3.edges[0].node.AlternativeId.order, altId3.order)
+
     //test nothing found
-    let res = await queryResourceByAltId(poolId, {someKey: 'this does not exist :('});
-    t.notOk(res);
+    let res = await queryResourcesByAltId(poolId, {someKey: 'this does not exist :('});
+    t.notOk(res[0]);
 
     //test string-only comparison
-    res = await queryResourceByAltId(poolId, altId);
-    t.equal(res.Properties.vlan, 1);
+    res = await queryResourcesByAltId(poolId, altId);
+    t.equal(res.edges[0].node.Properties.vlan, 1);
 
     //test string-and-number comparison
-    res = await queryResourceByAltId(poolId, altId2);
-    t.equal(res.Properties.vlan, 2);
+    res = await queryResourcesByAltId(poolId, altId2);
+    t.equal(res.edges[0].node.Properties.vlan, 2);
+
+    await cleanup()
+    t.end();
+});
+
+test('test pagination resources', async (t) => {
+    const poolId = await createVlanRootPool();
+    await claimResourceWithAltId(poolId, {}, {vlanAltId: getUniqueName('first allocation vlan'), order: getUniqueName('first')});
+
+    let altId = {vlanAltId: getUniqueName('second allocation vlan'), order: getUniqueName('second')};
+    await claimResourceWithAltId(poolId, {}, altId);
+
+    let altId2 = {vlanAltId: Math.floor(Math.random() * 100000), order: getUniqueName('third')};
+    await claimResourceWithAltId(poolId, {}, altId2);
+
+    let altId3 = {vlanAltId: Math.floor(Math.random() * 100000), order: getUniqueName('third')};
+    await claimResourceWithAltId(poolId, {}, altId3);
+
+    let resources = await getPaginatedResourcesForPool(poolId, 1, null, null, null);
+    t.equal(resources.edges[0].node.Properties.vlan, 0);
+
+    resources = await getPaginatedResourcesForPool(poolId, null, 1, null, null);
+    t.equal(resources.edges[0].node.Properties.vlan, 3);
+
+    await cleanup()
     t.end();
 });
 
@@ -313,12 +455,110 @@ test('set pool test alternative ID', async (t) => {
     let altId = {id: getUniqueName('avalue1')};
 
     await claimResourceWithAltId(poolId, {}, altId);
-    let res = await queryResourceByAltId(poolId, altId);
-    t.equal(res.Properties.avalue, 1)
+    let res = await queryResourcesByAltId(poolId, altId);
+    t.equal(res.edges[0].node.Properties.avalue, 1)
 
-    //don't allow duplicate alternative IDs
     let duplicate = await claimResourceWithAltId(poolId, {}, altId, null, true);
-    t.notOk(duplicate);
+    t.ok(duplicate);
 
+    await cleanup()
     t.end();
 });
+
+test('empty pools test', async (t) => {
+    const poolId = await createIpv4RootPool('192.168.3.0', 16);
+    await createIpv4RootPool('192.168.24.0', 16);
+
+    let emptyPools = await getEmptyPools(null);
+    t.equal(emptyPools.length, 2)
+
+    await claimResource(poolId, {});
+    await claimResource(poolId, {});
+
+    emptyPools = await getEmptyPools(null);
+    t.equal(emptyPools.length, 1)
+
+    await cleanup()
+    t.end();
+});
+
+test('test filtering of allocated ipv6 resources by pool id', async (t) => {
+    const poolId = await createIpv6PrefixRootPool();
+    const poolId2 = await createIpv6PrefixRootPool();
+
+    await claimResourceWithAltId(poolId, { desiredSize: 4 }, {});
+    await claimResourceWithAltId(poolId2, { desiredSize: 4 }, {});
+
+    const allocResourcesForPoolId = await queryResourcesByAltId(poolId, {});
+    const allocResourcesForPoolId2 = await queryResourcesByAltId(poolId2, {});
+
+    t.equal(allocResourcesForPoolId.edges.length, 1);
+    t.equal(allocResourcesForPoolId2.edges.length, 1);
+
+    await cleanup();
+    t.end();
+});
+
+test('test filtering of allocated ipv4 resources by pool id', async (t) => {
+    const poolId = await createIpv4PrefixRootPool();
+    const poolId2 = await createIpv4PrefixRootPool();
+
+    await claimResourceWithAltId(poolId.id, { desiredSize: 4 }, {});
+    await claimResourceWithAltId(poolId2.id, { desiredSize: 4 }, {});
+
+    const allocResourcesForPoolId = await queryResourcesByAltId(poolId.id, {});
+    const allocResourcesForPoolId2 = await queryResourcesByAltId(poolId2.id, {});
+
+    t.equal(allocResourcesForPoolId.edges.length, 1);
+    t.equal(allocResourcesForPoolId2.edges.length, 1);
+
+    await cleanup();
+    t.end();
+});
+
+test('test filtering of allocated resources when pool id is null', async (t) => {
+    const poolId = await createIpv6PrefixRootPool()
+
+    await claimResourceWithAltId(poolId, {
+        desiredSize: 4
+    }, {});
+
+    const allocResourcesForPoolId = await queryResourcesByAltId(null, {});
+
+    t.equal(allocResourcesForPoolId, null);
+
+    await cleanup();
+    t.end();
+});
+
+test('query resources that do not have an alternative id', async (t) => {
+    const poolId = await createIpv4RootPool('10.0.0.0', 16);
+    await claimResource(poolId, {});
+    await claimResourceWithAltId(poolId, {}, {vlanAltId: getUniqueName('vlan')});
+
+    const res = await queryResourcesByAltId(poolId, {});
+    const res2 = await getResourcesForPool(poolId);
+
+    t.equal(res.edges.every((node) => node.AlternativeId != null || node.AlternativeId == null), true);
+    t.equal(res2.edges.every((node) => node.AlternativeId != null || node.AlternativeId == null), true);
+});
+
+test('claim resource with integer value sent as string', async (t) => {
+    const pool = await createIpv4PrefixRootPool();
+    const claimedResource = await claimResource(pool.id, { desiredSize: '4' });
+    const poolWithResources = await getResourcesForPool(pool.id);
+
+    t.ok(claimedResource);
+    t.equal(poolWithResources.edges.length, 1);
+});
+
+test('claim resource with altId and integer value sent as string', async (t) => {
+    const pool = await createIpv4PrefixRootPool();
+    const claimedResource = await claimResourceWithAltId(pool.id, { desiredSize: '4' }, { vlanAltId: '123' });
+    const poolWithResources = await getResourcesForPool(pool.id);
+
+    t.ok(claimedResource);
+    t.equal(poolWithResources.edges.length, 1);
+});
+
+

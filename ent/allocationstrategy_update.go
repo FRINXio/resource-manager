@@ -4,13 +4,15 @@ package ent
 
 import (
 	"context"
+	"errors"
 	"fmt"
 
-	"github.com/facebook/ent/dialect/sql"
-	"github.com/facebook/ent/dialect/sql/sqlgraph"
-	"github.com/facebook/ent/schema/field"
+	"entgo.io/ent/dialect/sql"
+	"entgo.io/ent/dialect/sql/sqlgraph"
+	"entgo.io/ent/schema/field"
 	"github.com/net-auto/resourceManager/ent/allocationstrategy"
 	"github.com/net-auto/resourceManager/ent/predicate"
+	"github.com/net-auto/resourceManager/ent/propertytype"
 	"github.com/net-auto/resourceManager/ent/resourcepool"
 )
 
@@ -21,25 +23,25 @@ type AllocationStrategyUpdate struct {
 	mutation *AllocationStrategyMutation
 }
 
-// Where adds a new predicate for the builder.
+// Where appends a list predicates to the AllocationStrategyUpdate builder.
 func (asu *AllocationStrategyUpdate) Where(ps ...predicate.AllocationStrategy) *AllocationStrategyUpdate {
-	asu.mutation.predicates = append(asu.mutation.predicates, ps...)
+	asu.mutation.Where(ps...)
 	return asu
 }
 
-// SetName sets the name field.
+// SetName sets the "name" field.
 func (asu *AllocationStrategyUpdate) SetName(s string) *AllocationStrategyUpdate {
 	asu.mutation.SetName(s)
 	return asu
 }
 
-// SetDescription sets the description field.
+// SetDescription sets the "description" field.
 func (asu *AllocationStrategyUpdate) SetDescription(s string) *AllocationStrategyUpdate {
 	asu.mutation.SetDescription(s)
 	return asu
 }
 
-// SetNillableDescription sets the description field if the given value is not nil.
+// SetNillableDescription sets the "description" field if the given value is not nil.
 func (asu *AllocationStrategyUpdate) SetNillableDescription(s *string) *AllocationStrategyUpdate {
 	if s != nil {
 		asu.SetDescription(*s)
@@ -47,19 +49,19 @@ func (asu *AllocationStrategyUpdate) SetNillableDescription(s *string) *Allocati
 	return asu
 }
 
-// ClearDescription clears the value of description.
+// ClearDescription clears the value of the "description" field.
 func (asu *AllocationStrategyUpdate) ClearDescription() *AllocationStrategyUpdate {
 	asu.mutation.ClearDescription()
 	return asu
 }
 
-// SetLang sets the lang field.
+// SetLang sets the "lang" field.
 func (asu *AllocationStrategyUpdate) SetLang(a allocationstrategy.Lang) *AllocationStrategyUpdate {
 	asu.mutation.SetLang(a)
 	return asu
 }
 
-// SetNillableLang sets the lang field if the given value is not nil.
+// SetNillableLang sets the "lang" field if the given value is not nil.
 func (asu *AllocationStrategyUpdate) SetNillableLang(a *allocationstrategy.Lang) *AllocationStrategyUpdate {
 	if a != nil {
 		asu.SetLang(*a)
@@ -67,19 +69,19 @@ func (asu *AllocationStrategyUpdate) SetNillableLang(a *allocationstrategy.Lang)
 	return asu
 }
 
-// SetScript sets the script field.
+// SetScript sets the "script" field.
 func (asu *AllocationStrategyUpdate) SetScript(s string) *AllocationStrategyUpdate {
 	asu.mutation.SetScript(s)
 	return asu
 }
 
-// AddPoolIDs adds the pools edge to ResourcePool by ids.
+// AddPoolIDs adds the "pools" edge to the ResourcePool entity by IDs.
 func (asu *AllocationStrategyUpdate) AddPoolIDs(ids ...int) *AllocationStrategyUpdate {
 	asu.mutation.AddPoolIDs(ids...)
 	return asu
 }
 
-// AddPools adds the pools edges to ResourcePool.
+// AddPools adds the "pools" edges to the ResourcePool entity.
 func (asu *AllocationStrategyUpdate) AddPools(r ...*ResourcePool) *AllocationStrategyUpdate {
 	ids := make([]int, len(r))
 	for i := range r {
@@ -88,24 +90,39 @@ func (asu *AllocationStrategyUpdate) AddPools(r ...*ResourcePool) *AllocationStr
 	return asu.AddPoolIDs(ids...)
 }
 
+// AddPoolPropertyTypeIDs adds the "pool_property_types" edge to the PropertyType entity by IDs.
+func (asu *AllocationStrategyUpdate) AddPoolPropertyTypeIDs(ids ...int) *AllocationStrategyUpdate {
+	asu.mutation.AddPoolPropertyTypeIDs(ids...)
+	return asu
+}
+
+// AddPoolPropertyTypes adds the "pool_property_types" edges to the PropertyType entity.
+func (asu *AllocationStrategyUpdate) AddPoolPropertyTypes(p ...*PropertyType) *AllocationStrategyUpdate {
+	ids := make([]int, len(p))
+	for i := range p {
+		ids[i] = p[i].ID
+	}
+	return asu.AddPoolPropertyTypeIDs(ids...)
+}
+
 // Mutation returns the AllocationStrategyMutation object of the builder.
 func (asu *AllocationStrategyUpdate) Mutation() *AllocationStrategyMutation {
 	return asu.mutation
 }
 
-// ClearPools clears all "pools" edges to type ResourcePool.
+// ClearPools clears all "pools" edges to the ResourcePool entity.
 func (asu *AllocationStrategyUpdate) ClearPools() *AllocationStrategyUpdate {
 	asu.mutation.ClearPools()
 	return asu
 }
 
-// RemovePoolIDs removes the pools edge to ResourcePool by ids.
+// RemovePoolIDs removes the "pools" edge to ResourcePool entities by IDs.
 func (asu *AllocationStrategyUpdate) RemovePoolIDs(ids ...int) *AllocationStrategyUpdate {
 	asu.mutation.RemovePoolIDs(ids...)
 	return asu
 }
 
-// RemovePools removes pools edges to ResourcePool.
+// RemovePools removes "pools" edges to ResourcePool entities.
 func (asu *AllocationStrategyUpdate) RemovePools(r ...*ResourcePool) *AllocationStrategyUpdate {
 	ids := make([]int, len(r))
 	for i := range r {
@@ -114,7 +131,28 @@ func (asu *AllocationStrategyUpdate) RemovePools(r ...*ResourcePool) *Allocation
 	return asu.RemovePoolIDs(ids...)
 }
 
-// Save executes the query and returns the number of rows/vertices matched by this operation.
+// ClearPoolPropertyTypes clears all "pool_property_types" edges to the PropertyType entity.
+func (asu *AllocationStrategyUpdate) ClearPoolPropertyTypes() *AllocationStrategyUpdate {
+	asu.mutation.ClearPoolPropertyTypes()
+	return asu
+}
+
+// RemovePoolPropertyTypeIDs removes the "pool_property_types" edge to PropertyType entities by IDs.
+func (asu *AllocationStrategyUpdate) RemovePoolPropertyTypeIDs(ids ...int) *AllocationStrategyUpdate {
+	asu.mutation.RemovePoolPropertyTypeIDs(ids...)
+	return asu
+}
+
+// RemovePoolPropertyTypes removes "pool_property_types" edges to PropertyType entities.
+func (asu *AllocationStrategyUpdate) RemovePoolPropertyTypes(p ...*PropertyType) *AllocationStrategyUpdate {
+	ids := make([]int, len(p))
+	for i := range p {
+		ids[i] = p[i].ID
+	}
+	return asu.RemovePoolPropertyTypeIDs(ids...)
+}
+
+// Save executes the query and returns the number of nodes affected by the update operation.
 func (asu *AllocationStrategyUpdate) Save(ctx context.Context) (int, error) {
 	var (
 		err      error
@@ -140,6 +178,9 @@ func (asu *AllocationStrategyUpdate) Save(ctx context.Context) (int, error) {
 			return affected, err
 		})
 		for i := len(asu.hooks) - 1; i >= 0; i-- {
+			if asu.hooks[i] == nil {
+				return 0, fmt.Errorf("ent: uninitialized hook (forgotten import ent/runtime?)")
+			}
 			mut = asu.hooks[i](mut)
 		}
 		if _, err := mut.Mutate(ctx, asu.mutation); err != nil {
@@ -175,17 +216,17 @@ func (asu *AllocationStrategyUpdate) ExecX(ctx context.Context) {
 func (asu *AllocationStrategyUpdate) check() error {
 	if v, ok := asu.mutation.Name(); ok {
 		if err := allocationstrategy.NameValidator(v); err != nil {
-			return &ValidationError{Name: "name", err: fmt.Errorf("ent: validator failed for field \"name\": %w", err)}
+			return &ValidationError{Name: "name", err: fmt.Errorf(`ent: validator failed for field "AllocationStrategy.name": %w`, err)}
 		}
 	}
 	if v, ok := asu.mutation.Lang(); ok {
 		if err := allocationstrategy.LangValidator(v); err != nil {
-			return &ValidationError{Name: "lang", err: fmt.Errorf("ent: validator failed for field \"lang\": %w", err)}
+			return &ValidationError{Name: "lang", err: fmt.Errorf(`ent: validator failed for field "AllocationStrategy.lang": %w`, err)}
 		}
 	}
 	if v, ok := asu.mutation.Script(); ok {
 		if err := allocationstrategy.ScriptValidator(v); err != nil {
-			return &ValidationError{Name: "script", err: fmt.Errorf("ent: validator failed for field \"script\": %w", err)}
+			return &ValidationError{Name: "script", err: fmt.Errorf(`ent: validator failed for field "AllocationStrategy.script": %w`, err)}
 		}
 	}
 	return nil
@@ -297,11 +338,65 @@ func (asu *AllocationStrategyUpdate) sqlSave(ctx context.Context) (n int, err er
 		}
 		_spec.Edges.Add = append(_spec.Edges.Add, edge)
 	}
+	if asu.mutation.PoolPropertyTypesCleared() {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: false,
+			Table:   allocationstrategy.PoolPropertyTypesTable,
+			Columns: []string{allocationstrategy.PoolPropertyTypesColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: &sqlgraph.FieldSpec{
+					Type:   field.TypeInt,
+					Column: propertytype.FieldID,
+				},
+			},
+		}
+		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
+	}
+	if nodes := asu.mutation.RemovedPoolPropertyTypesIDs(); len(nodes) > 0 && !asu.mutation.PoolPropertyTypesCleared() {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: false,
+			Table:   allocationstrategy.PoolPropertyTypesTable,
+			Columns: []string{allocationstrategy.PoolPropertyTypesColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: &sqlgraph.FieldSpec{
+					Type:   field.TypeInt,
+					Column: propertytype.FieldID,
+				},
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
+	}
+	if nodes := asu.mutation.PoolPropertyTypesIDs(); len(nodes) > 0 {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: false,
+			Table:   allocationstrategy.PoolPropertyTypesTable,
+			Columns: []string{allocationstrategy.PoolPropertyTypesColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: &sqlgraph.FieldSpec{
+					Type:   field.TypeInt,
+					Column: propertytype.FieldID,
+				},
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges.Add = append(_spec.Edges.Add, edge)
+	}
 	if n, err = sqlgraph.UpdateNodes(ctx, asu.driver, _spec); err != nil {
 		if _, ok := err.(*sqlgraph.NotFoundError); ok {
 			err = &NotFoundError{allocationstrategy.Label}
-		} else if cerr, ok := isSQLConstraintError(err); ok {
-			err = cerr
+		} else if sqlgraph.IsConstraintError(err) {
+			err = &ConstraintError{msg: err.Error(), wrap: err}
 		}
 		return 0, err
 	}
@@ -311,23 +406,24 @@ func (asu *AllocationStrategyUpdate) sqlSave(ctx context.Context) (n int, err er
 // AllocationStrategyUpdateOne is the builder for updating a single AllocationStrategy entity.
 type AllocationStrategyUpdateOne struct {
 	config
+	fields   []string
 	hooks    []Hook
 	mutation *AllocationStrategyMutation
 }
 
-// SetName sets the name field.
+// SetName sets the "name" field.
 func (asuo *AllocationStrategyUpdateOne) SetName(s string) *AllocationStrategyUpdateOne {
 	asuo.mutation.SetName(s)
 	return asuo
 }
 
-// SetDescription sets the description field.
+// SetDescription sets the "description" field.
 func (asuo *AllocationStrategyUpdateOne) SetDescription(s string) *AllocationStrategyUpdateOne {
 	asuo.mutation.SetDescription(s)
 	return asuo
 }
 
-// SetNillableDescription sets the description field if the given value is not nil.
+// SetNillableDescription sets the "description" field if the given value is not nil.
 func (asuo *AllocationStrategyUpdateOne) SetNillableDescription(s *string) *AllocationStrategyUpdateOne {
 	if s != nil {
 		asuo.SetDescription(*s)
@@ -335,19 +431,19 @@ func (asuo *AllocationStrategyUpdateOne) SetNillableDescription(s *string) *Allo
 	return asuo
 }
 
-// ClearDescription clears the value of description.
+// ClearDescription clears the value of the "description" field.
 func (asuo *AllocationStrategyUpdateOne) ClearDescription() *AllocationStrategyUpdateOne {
 	asuo.mutation.ClearDescription()
 	return asuo
 }
 
-// SetLang sets the lang field.
+// SetLang sets the "lang" field.
 func (asuo *AllocationStrategyUpdateOne) SetLang(a allocationstrategy.Lang) *AllocationStrategyUpdateOne {
 	asuo.mutation.SetLang(a)
 	return asuo
 }
 
-// SetNillableLang sets the lang field if the given value is not nil.
+// SetNillableLang sets the "lang" field if the given value is not nil.
 func (asuo *AllocationStrategyUpdateOne) SetNillableLang(a *allocationstrategy.Lang) *AllocationStrategyUpdateOne {
 	if a != nil {
 		asuo.SetLang(*a)
@@ -355,19 +451,19 @@ func (asuo *AllocationStrategyUpdateOne) SetNillableLang(a *allocationstrategy.L
 	return asuo
 }
 
-// SetScript sets the script field.
+// SetScript sets the "script" field.
 func (asuo *AllocationStrategyUpdateOne) SetScript(s string) *AllocationStrategyUpdateOne {
 	asuo.mutation.SetScript(s)
 	return asuo
 }
 
-// AddPoolIDs adds the pools edge to ResourcePool by ids.
+// AddPoolIDs adds the "pools" edge to the ResourcePool entity by IDs.
 func (asuo *AllocationStrategyUpdateOne) AddPoolIDs(ids ...int) *AllocationStrategyUpdateOne {
 	asuo.mutation.AddPoolIDs(ids...)
 	return asuo
 }
 
-// AddPools adds the pools edges to ResourcePool.
+// AddPools adds the "pools" edges to the ResourcePool entity.
 func (asuo *AllocationStrategyUpdateOne) AddPools(r ...*ResourcePool) *AllocationStrategyUpdateOne {
 	ids := make([]int, len(r))
 	for i := range r {
@@ -376,24 +472,39 @@ func (asuo *AllocationStrategyUpdateOne) AddPools(r ...*ResourcePool) *Allocatio
 	return asuo.AddPoolIDs(ids...)
 }
 
+// AddPoolPropertyTypeIDs adds the "pool_property_types" edge to the PropertyType entity by IDs.
+func (asuo *AllocationStrategyUpdateOne) AddPoolPropertyTypeIDs(ids ...int) *AllocationStrategyUpdateOne {
+	asuo.mutation.AddPoolPropertyTypeIDs(ids...)
+	return asuo
+}
+
+// AddPoolPropertyTypes adds the "pool_property_types" edges to the PropertyType entity.
+func (asuo *AllocationStrategyUpdateOne) AddPoolPropertyTypes(p ...*PropertyType) *AllocationStrategyUpdateOne {
+	ids := make([]int, len(p))
+	for i := range p {
+		ids[i] = p[i].ID
+	}
+	return asuo.AddPoolPropertyTypeIDs(ids...)
+}
+
 // Mutation returns the AllocationStrategyMutation object of the builder.
 func (asuo *AllocationStrategyUpdateOne) Mutation() *AllocationStrategyMutation {
 	return asuo.mutation
 }
 
-// ClearPools clears all "pools" edges to type ResourcePool.
+// ClearPools clears all "pools" edges to the ResourcePool entity.
 func (asuo *AllocationStrategyUpdateOne) ClearPools() *AllocationStrategyUpdateOne {
 	asuo.mutation.ClearPools()
 	return asuo
 }
 
-// RemovePoolIDs removes the pools edge to ResourcePool by ids.
+// RemovePoolIDs removes the "pools" edge to ResourcePool entities by IDs.
 func (asuo *AllocationStrategyUpdateOne) RemovePoolIDs(ids ...int) *AllocationStrategyUpdateOne {
 	asuo.mutation.RemovePoolIDs(ids...)
 	return asuo
 }
 
-// RemovePools removes pools edges to ResourcePool.
+// RemovePools removes "pools" edges to ResourcePool entities.
 func (asuo *AllocationStrategyUpdateOne) RemovePools(r ...*ResourcePool) *AllocationStrategyUpdateOne {
 	ids := make([]int, len(r))
 	for i := range r {
@@ -402,7 +513,35 @@ func (asuo *AllocationStrategyUpdateOne) RemovePools(r ...*ResourcePool) *Alloca
 	return asuo.RemovePoolIDs(ids...)
 }
 
-// Save executes the query and returns the updated entity.
+// ClearPoolPropertyTypes clears all "pool_property_types" edges to the PropertyType entity.
+func (asuo *AllocationStrategyUpdateOne) ClearPoolPropertyTypes() *AllocationStrategyUpdateOne {
+	asuo.mutation.ClearPoolPropertyTypes()
+	return asuo
+}
+
+// RemovePoolPropertyTypeIDs removes the "pool_property_types" edge to PropertyType entities by IDs.
+func (asuo *AllocationStrategyUpdateOne) RemovePoolPropertyTypeIDs(ids ...int) *AllocationStrategyUpdateOne {
+	asuo.mutation.RemovePoolPropertyTypeIDs(ids...)
+	return asuo
+}
+
+// RemovePoolPropertyTypes removes "pool_property_types" edges to PropertyType entities.
+func (asuo *AllocationStrategyUpdateOne) RemovePoolPropertyTypes(p ...*PropertyType) *AllocationStrategyUpdateOne {
+	ids := make([]int, len(p))
+	for i := range p {
+		ids[i] = p[i].ID
+	}
+	return asuo.RemovePoolPropertyTypeIDs(ids...)
+}
+
+// Select allows selecting one or more fields (columns) of the returned entity.
+// The default is selecting all fields defined in the entity schema.
+func (asuo *AllocationStrategyUpdateOne) Select(field string, fields ...string) *AllocationStrategyUpdateOne {
+	asuo.fields = append([]string{field}, fields...)
+	return asuo
+}
+
+// Save executes the query and returns the updated AllocationStrategy entity.
 func (asuo *AllocationStrategyUpdateOne) Save(ctx context.Context) (*AllocationStrategy, error) {
 	var (
 		err  error
@@ -428,11 +567,20 @@ func (asuo *AllocationStrategyUpdateOne) Save(ctx context.Context) (*AllocationS
 			return node, err
 		})
 		for i := len(asuo.hooks) - 1; i >= 0; i-- {
+			if asuo.hooks[i] == nil {
+				return nil, fmt.Errorf("ent: uninitialized hook (forgotten import ent/runtime?)")
+			}
 			mut = asuo.hooks[i](mut)
 		}
-		if _, err := mut.Mutate(ctx, asuo.mutation); err != nil {
+		v, err := mut.Mutate(ctx, asuo.mutation)
+		if err != nil {
 			return nil, err
 		}
+		nv, ok := v.(*AllocationStrategy)
+		if !ok {
+			return nil, fmt.Errorf("unexpected node type %T returned from AllocationStrategyMutation", v)
+		}
+		node = nv
 	}
 	return node, err
 }
@@ -463,17 +611,17 @@ func (asuo *AllocationStrategyUpdateOne) ExecX(ctx context.Context) {
 func (asuo *AllocationStrategyUpdateOne) check() error {
 	if v, ok := asuo.mutation.Name(); ok {
 		if err := allocationstrategy.NameValidator(v); err != nil {
-			return &ValidationError{Name: "name", err: fmt.Errorf("ent: validator failed for field \"name\": %w", err)}
+			return &ValidationError{Name: "name", err: fmt.Errorf(`ent: validator failed for field "AllocationStrategy.name": %w`, err)}
 		}
 	}
 	if v, ok := asuo.mutation.Lang(); ok {
 		if err := allocationstrategy.LangValidator(v); err != nil {
-			return &ValidationError{Name: "lang", err: fmt.Errorf("ent: validator failed for field \"lang\": %w", err)}
+			return &ValidationError{Name: "lang", err: fmt.Errorf(`ent: validator failed for field "AllocationStrategy.lang": %w`, err)}
 		}
 	}
 	if v, ok := asuo.mutation.Script(); ok {
 		if err := allocationstrategy.ScriptValidator(v); err != nil {
-			return &ValidationError{Name: "script", err: fmt.Errorf("ent: validator failed for field \"script\": %w", err)}
+			return &ValidationError{Name: "script", err: fmt.Errorf(`ent: validator failed for field "AllocationStrategy.script": %w`, err)}
 		}
 	}
 	return nil
@@ -492,9 +640,28 @@ func (asuo *AllocationStrategyUpdateOne) sqlSave(ctx context.Context) (_node *Al
 	}
 	id, ok := asuo.mutation.ID()
 	if !ok {
-		return nil, &ValidationError{Name: "ID", err: fmt.Errorf("missing AllocationStrategy.ID for update")}
+		return nil, &ValidationError{Name: "id", err: errors.New(`ent: missing "AllocationStrategy.id" for update`)}
 	}
 	_spec.Node.ID.Value = id
+	if fields := asuo.fields; len(fields) > 0 {
+		_spec.Node.Columns = make([]string, 0, len(fields))
+		_spec.Node.Columns = append(_spec.Node.Columns, allocationstrategy.FieldID)
+		for _, f := range fields {
+			if !allocationstrategy.ValidColumn(f) {
+				return nil, &ValidationError{Name: f, err: fmt.Errorf("ent: invalid field %q for query", f)}
+			}
+			if f != allocationstrategy.FieldID {
+				_spec.Node.Columns = append(_spec.Node.Columns, f)
+			}
+		}
+	}
+	if ps := asuo.mutation.predicates; len(ps) > 0 {
+		_spec.Predicate = func(selector *sql.Selector) {
+			for i := range ps {
+				ps[i](selector)
+			}
+		}
+	}
 	if value, ok := asuo.mutation.Name(); ok {
 		_spec.Fields.Set = append(_spec.Fields.Set, &sqlgraph.FieldSpec{
 			Type:   field.TypeString,
@@ -583,14 +750,68 @@ func (asuo *AllocationStrategyUpdateOne) sqlSave(ctx context.Context) (_node *Al
 		}
 		_spec.Edges.Add = append(_spec.Edges.Add, edge)
 	}
+	if asuo.mutation.PoolPropertyTypesCleared() {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: false,
+			Table:   allocationstrategy.PoolPropertyTypesTable,
+			Columns: []string{allocationstrategy.PoolPropertyTypesColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: &sqlgraph.FieldSpec{
+					Type:   field.TypeInt,
+					Column: propertytype.FieldID,
+				},
+			},
+		}
+		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
+	}
+	if nodes := asuo.mutation.RemovedPoolPropertyTypesIDs(); len(nodes) > 0 && !asuo.mutation.PoolPropertyTypesCleared() {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: false,
+			Table:   allocationstrategy.PoolPropertyTypesTable,
+			Columns: []string{allocationstrategy.PoolPropertyTypesColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: &sqlgraph.FieldSpec{
+					Type:   field.TypeInt,
+					Column: propertytype.FieldID,
+				},
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
+	}
+	if nodes := asuo.mutation.PoolPropertyTypesIDs(); len(nodes) > 0 {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: false,
+			Table:   allocationstrategy.PoolPropertyTypesTable,
+			Columns: []string{allocationstrategy.PoolPropertyTypesColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: &sqlgraph.FieldSpec{
+					Type:   field.TypeInt,
+					Column: propertytype.FieldID,
+				},
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges.Add = append(_spec.Edges.Add, edge)
+	}
 	_node = &AllocationStrategy{config: asuo.config}
 	_spec.Assign = _node.assignValues
-	_spec.ScanValues = _node.scanValues()
+	_spec.ScanValues = _node.scanValues
 	if err = sqlgraph.UpdateNode(ctx, asuo.driver, _spec); err != nil {
 		if _, ok := err.(*sqlgraph.NotFoundError); ok {
 			err = &NotFoundError{allocationstrategy.Label}
-		} else if cerr, ok := isSQLConstraintError(err); ok {
-			err = cerr
+		} else if sqlgraph.IsConstraintError(err) {
+			err = &ConstraintError{msg: err.Error(), wrap: err}
 		}
 		return nil, err
 	}

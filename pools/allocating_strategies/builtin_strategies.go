@@ -106,16 +106,18 @@ function freeCapacity(parentPrefix, utilisedCapacity) {
 }
 
 function capacity() {
-    let totalCapacity = hostsInMask(resourcePoolProperties.address, resourcePoolProperties.prefix);
+    let totalCapacity = (hostsInMask(resourcePoolProperties.address, resourcePoolProperties.prefix) + 2);
     let allocatedCapacity = 0;
     let resource;
-    let subnetItself = userInput.subnet ? 1 : 0;
-
+    let subnetItself = Boolean(resourcePoolProperties.subnet) ? 2 : 0;
     for (resource of currentResources) {
-        allocatedCapacity += hostsInMask(resource.Properties.address, resource.Properties.prefix);
+        allocatedCapacity += (hostsInMask(resource.Properties.address, resource.Properties.prefix) + subnetItself);
     }
 
-    return { freeCapacity: totalCapacity - allocatedCapacity + subnetItself, utilizedCapacity: allocatedCapacity };
+    return {
+        freeCapacity: String(totalCapacity - allocatedCapacity),
+        utilizedCapacity: String(allocatedCapacity)
+    };
 }
 
 // log utilisation stats
@@ -178,53 +180,55 @@ function findNextFreeSubnetAddress(allocatedSubnet, newSubnetMask) {
 
 // main
 function invoke() {
-    let rootPrefixParsed = resourcePoolProperties;
+    let rootPrefixParsed = resourcePoolProperties
     if (rootPrefixParsed == null) {
-        console.error("Unable to extract root prefix from pool name: " + rootPrefix);
+        console.error("Unable to extract root prefix from pool name: " + rootPrefix)
         return null
     }
-    let rootAddressStr = rootPrefixParsed.address;
-    let rootMask = rootPrefixParsed.prefix;
-    let rootPrefixStr = prefixToStr(rootPrefixParsed);
-    let rootCapacity = subnetAddresses(rootMask);
-    let rootAddressNum = inet_aton(rootAddressStr);
+    let rootAddressStr = rootPrefixParsed.address
+    let rootMask = rootPrefixParsed.prefix
+    let isSubnet = Boolean(rootPrefixParsed.subnet)
+    let rootPrefixStr = prefixToStr(rootPrefixParsed)
+    let rootCapacity = subnetAddresses(rootMask)
+    let rootAddressNum = inet_aton(rootAddressStr)
 
     if (!userInput.desiredSize) {
         console.error("Unable to allocate subnet from root prefix: " + rootPrefixStr +
-            ". Desired size of a new subnet size not provided as userInput.desiredSize");
+            ". Desired size of a new subnet size not provided as userInput.desiredSize")
         return null
     }
 
     if (userInput.desiredSize < 2) {
         console.error("Unable to allocate subnet from root prefix: " + rootPrefixStr +
-            ". Desired size is invalid: " + userInput.desiredSize + ". Use values >= 2");
+            ". Desired size is invalid: " + userInput.desiredSize + ". Use values >= 2")
         return null
     }
 
-    if (userInput.subnet === true) {
+    if (isSubnet === true) {
         // reserve subnet address and broadcast
-        userInput.desiredSize += 2;
+        userInput.desiredSize += 2
     }
 
     // Calculate smallest possible subnet mask to fit desiredSize
     let {newSubnetMask, newSubnetCapacity} = calculateDesiredSubnetMask();
 
     // unwrap and sort currentResources
-    let currentResourcesUnwrapped = currentResources.map(cR => cR.Properties);
-    currentResourcesUnwrapped.sort(comparePrefix);
+    let currentResourcesUnwrapped = currentResources.map(cR => cR.Properties)
+    currentResourcesUnwrapped.sort(comparePrefix)
 
-    let possibleSubnetNum = rootAddressNum;
+    let possibleSubnetNum = rootAddressNum
     // iterate over allocated subnets and see if a desired new subnet can be squeezed in
     for (let allocatedSubnet of currentResourcesUnwrapped) {
 
-        let allocatedSubnetNum = inet_aton(allocatedSubnet.address);
-        let chunkCapacity = allocatedSubnetNum - possibleSubnetNum;
+        let allocatedSubnetNum = inet_aton(allocatedSubnet.address)
+        let chunkCapacity = allocatedSubnetNum - possibleSubnetNum
         if (chunkCapacity >= userInput.desiredSize) {
             // there is chunk with sufficient capacity between possibleSubnetNum and allocatedSubnet.address
             let newlyAllocatedPrefix = {
                 "address": inet_ntoa(possibleSubnetNum),
-                "prefix": newSubnetMask
-            };
+                "prefix": newSubnetMask,
+                "subnet": isSubnet
+            }
             // FIXME How to pass these stats ?
             // logStats(newlyAllocatedPrefix, rootPrefixParsed, currentResourcesUnwrapped)
             return newlyAllocatedPrefix
@@ -239,8 +243,9 @@ function invoke() {
         // there sure is some space, use it !
         let newlyAllocatedPrefix = {
             "address": inet_ntoa(possibleSubnetNum),
-            "prefix": newSubnetMask
-        };
+            "prefix": newSubnetMask,
+            "subnet": isSubnet
+        }
         // FIXME How to pass these stats ?
         // logStats(newlyAllocatedPrefix, rootPrefixParsed, currentResourcesUnwrapped)
         return newlyAllocatedPrefix
@@ -248,9 +253,9 @@ function invoke() {
 
     // no suitable range found
     console.error("Unable to allocate Ipv4 prefix from: " + rootPrefixStr +
-        ". Insufficient capacity to allocate a new prefix of size: " + userInput.desiredSize);
-    console.error("Currently allocated prefixes: " + prefixesToString(currentResourcesUnwrapped));
-    logStats(null, rootPrefixParsed, currentResourcesUnwrapped, "error");
+        ". Insufficient capacity to allocate a new prefix of size: " + userInput.desiredSize)
+    console.error("Currently allocated prefixes: " + prefixesToString(currentResourcesUnwrapped))
+    logStats(null, rootPrefixParsed, currentResourcesUnwrapped, "error")
     return null
 }
 
@@ -353,7 +358,11 @@ function freeCapacity(address, mask, utilisedCapacity) {
 }
 
 function capacity() {
-    return { freeCapacity: freeCapacity(resourcePoolProperties.address, resourcePoolProperties.prefix, currentResources.length), utilizedCapacity: currentResources.length };
+    return {
+        freeCapacity: String(
+            freeCapacity(resourcePoolProperties.address, resourcePoolProperties.prefix, currentResources.length)),
+        utilizedCapacity: String(currentResources.length)
+    };
 }
 
 // log utilisation stats
@@ -612,7 +621,10 @@ function capacity() {
         allocatedCapacity += hostsInMask(resource.Properties.address, resource.Properties.prefix);
     }
 
-    return { freeCapacity: Number(totalCapacity - allocatedCapacity + subnetItself), utilizedCapacity: Number(allocatedCapacity) };
+    return {
+        freeCapacity: String(totalCapacity - allocatedCapacity + subnetItself),
+        utilizedCapacity: String(allocatedCapacity)
+    };
 }
 
 // log utilisation stats
@@ -926,7 +938,10 @@ function freeCapacity(parentPrefix, utilisedCapacity) {
 function capacity() {
     let subnetItself = userInput.subnet ? BigInt(1) : BigInt(0);
     let freeInTotal = hostsInMask(resourcePoolProperties.address, resourcePoolProperties.prefix) + subnetItself;
-    return { freeCapacity: Number(freeInTotal - BigInt(currentResources.length)), utilizedCapacity: currentResources.length };
+    return {
+        freeCapacity: String(freeInTotal - BigInt(currentResources.length)),
+        utilizedCapacity: String(currentResources.length)
+    };
 }
 
 // log utilisation stats
@@ -1089,7 +1104,10 @@ function rangeToStr(range) {
 }
 
 function capacity() {
-    return { freeCapacity: freeCapacity(resourcePoolProperties, currentResources.length), utilizedCapacity: currentResources.length };
+    return {
+        freeCapacity: String(freeCapacity(resourcePoolProperties, currentResources.length)),
+        utilizedCapacity: String(currentResources.length)
+    };
 }
 
 
@@ -1268,7 +1286,7 @@ function invoke() {
 }
 
 function capacity() {
-    return { freeCapacity: Number(rangeCapacity()), utilizedCapacity: currentResources.length };
+    return { freeCapacity: String(rangeCapacity()), utilizedCapacity: String(currentResources.length)};
 }
 
 
@@ -1335,7 +1353,7 @@ function invoke() {
 function capacity() {
     let allocatedCapacity = getNextFreeCounter(resourcePoolProperties) - 1;
     let freeCapacity = Number.MAX_SAFE_INTEGER - allocatedCapacity;
-    return { freeCapacity: freeCapacity, utilizedCapacity: allocatedCapacity };
+    return { freeCapacity: String(freeCapacity), utilizedCapacity: String(allocatedCapacity) };
 }
 
 
@@ -1492,7 +1510,10 @@ function capacity() {
     for (resource of currentResources) {
         allocatedCapacity += rangeCapacity(resource.Properties);
     }
-    return { freeCapacity: freeCapacity(resourcePoolProperties, allocatedCapacity), utilizedCapacity: allocatedCapacity };
+    return {
+        freeCapacity: String(freeCapacity(resourcePoolProperties, allocatedCapacity)),
+        utilizedCapacity: String(allocatedCapacity)
+    };
 }
 
 
@@ -1579,9 +1600,11 @@ function invoke() {
 }
 
 function capacity() {
-    return { freeCapacity: freeCapacity(resourcePoolProperties, currentResources.length), utilizedCapacity: currentResources.length };
+    return {
+        freeCapacity: String(freeCapacity(resourcePoolProperties, currentResources.length)),
+        utilizedCapacity: String(currentResources.length)
+    };
 }
 
 
 `
-

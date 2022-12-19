@@ -7,7 +7,7 @@ import (
 	"io"
 	"strconv"
 
-	"github.com/facebook/ent"
+	"entgo.io/ent"
 )
 
 const (
@@ -51,22 +51,20 @@ const (
 	FieldDeleted = "deleted"
 	// FieldNodeType holds the string denoting the nodetype field in the database.
 	FieldNodeType = "node_type"
-
 	// EdgeProperties holds the string denoting the properties edge name in mutations.
 	EdgeProperties = "properties"
 	// EdgeResourceType holds the string denoting the resource_type edge name in mutations.
 	EdgeResourceType = "resource_type"
-
 	// Table holds the table name of the propertytype in the database.
 	Table = "property_types"
-	// PropertiesTable is the table the holds the properties relation/edge.
+	// PropertiesTable is the table that holds the properties relation/edge.
 	PropertiesTable = "properties"
 	// PropertiesInverseTable is the table name for the Property entity.
 	// It exists in this package in order to avoid circular dependency with the "property" package.
 	PropertiesInverseTable = "properties"
 	// PropertiesColumn is the table column denoting the properties relation/edge.
 	PropertiesColumn = "property_type"
-	// ResourceTypeTable is the table the holds the resource_type relation/edge.
+	// ResourceTypeTable is the table that holds the resource_type relation/edge.
 	ResourceTypeTable = "property_types"
 	// ResourceTypeInverseTable is the table name for the ResourceType entity.
 	// It exists in this package in order to avoid circular dependency with the "resourcetype" package.
@@ -98,8 +96,10 @@ var Columns = []string{
 	FieldNodeType,
 }
 
-// ForeignKeys holds the SQL foreign-keys that are owned by the PropertyType type.
+// ForeignKeys holds the SQL foreign-keys that are owned by the "property_types"
+// table and are not defined as standalone fields in the schema.
 var ForeignKeys = []string{
+	"allocation_strategy_pool_property_types",
 	"resource_type_property_types",
 }
 
@@ -123,21 +123,20 @@ func ValidColumn(column string) bool {
 // it should be imported in the main as follows:
 //
 //	import _ "github.com/net-auto/resourceManager/ent/runtime"
-//
 var (
 	Hooks  [1]ent.Hook
 	Policy ent.Policy
-	// DefaultIsInstanceProperty holds the default value on creation for the is_instance_property field.
+	// DefaultIsInstanceProperty holds the default value on creation for the "is_instance_property" field.
 	DefaultIsInstanceProperty bool
-	// DefaultEditable holds the default value on creation for the editable field.
+	// DefaultEditable holds the default value on creation for the "editable" field.
 	DefaultEditable bool
-	// DefaultMandatory holds the default value on creation for the mandatory field.
+	// DefaultMandatory holds the default value on creation for the "mandatory" field.
 	DefaultMandatory bool
-	// DefaultDeleted holds the default value on creation for the deleted field.
+	// DefaultDeleted holds the default value on creation for the "deleted" field.
 	DefaultDeleted bool
 )
 
-// Type defines the type for the type enum field.
+// Type defines the type for the "type" enum field.
 type Type string
 
 // Type values.
@@ -170,18 +169,18 @@ func TypeValidator(_type Type) error {
 }
 
 // MarshalGQL implements graphql.Marshaler interface.
-func (_type Type) MarshalGQL(w io.Writer) {
-	io.WriteString(w, strconv.Quote(_type.String()))
+func (e Type) MarshalGQL(w io.Writer) {
+	io.WriteString(w, strconv.Quote(e.String()))
 }
 
 // UnmarshalGQL implements graphql.Unmarshaler interface.
-func (_type *Type) UnmarshalGQL(val interface{}) error {
+func (e *Type) UnmarshalGQL(val interface{}) error {
 	str, ok := val.(string)
 	if !ok {
 		return fmt.Errorf("enum %T must be a string", val)
 	}
-	*_type = Type(str)
-	if err := TypeValidator(*_type); err != nil {
+	*e = Type(str)
+	if err := TypeValidator(*e); err != nil {
 		return fmt.Errorf("%s is not a valid Type", str)
 	}
 	return nil

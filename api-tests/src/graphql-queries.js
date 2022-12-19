@@ -123,6 +123,15 @@ export async function getResourcePool(poolId, before, after, first, last) {
                            id
                        }
                    }
+                    Resources{
+                        id
+                        Properties
+                        NestedPool {
+                            id
+                            Name
+                            PoolType
+                        }
+                    }
                 }
             }
         `,
@@ -138,23 +147,90 @@ export async function getResourcePool(poolId, before, after, first, last) {
     .catch(error => console.log(error));
 }
 
+export async function getResourcesByDatetimeRange(fromDatetime, toDatetime) {
+    return client.query({
+        query: gql`
+            query QueryRecentlyActiveResources($fromDatetime: String!, $toDatetime: String) {
+                QueryRecentlyActiveResources(fromDatetime:$fromDatetime, toDatetime:$toDatetime) {
+                    edges {
+                        node {
+                            id
+                            Properties
+                            NestedPool {
+                                id
+                                Name
+                                PoolType
+                            }
+                        }
+                    }
+                }
+            }
+        `,
+        variables: {
+            fromDatetime: fromDatetime,
+            toDatetime: toDatetime,
+        }
+    })
+    .then(result => result.data.QueryRecentlyActiveResources)
+    .catch(error => console.log(error));
+}
+
 export async function getResourcesForPool(poolId){
     return client.query({
         query: gql`
             query getResources($poolId: ID!) {
                  QueryResources(poolId: $poolId) {
-                     id
-                     Properties
-                     NestedPool {
-                         id
-                         Name
-                         PoolType
+                     edges {
+                         node {
+                             id
+                             Properties
+                             NestedPool {
+                                 id
+                                 Name
+                                 PoolType
+                             }
+                             AlternativeId
+                         }
                      }
                  }
             }
         `,
         variables: {
             poolId: poolId,
+        }
+    })
+    .then(result => result.data.QueryResources)
+    .catch(error => console.log(error));
+}
+
+export async function getPaginatedResourcesForPool(poolId, first, last, before, after){
+    return client.query({
+        query: gql`
+            query getResources($poolId: ID!, $first: Int, $last: Int, $before: String, $after: String) {
+                QueryResources(poolId: $poolId,  first: $first, last: $last, before: $before, after: $after) {
+                    edges {
+                        node {
+                            id
+                            Properties
+                            NestedPool {
+                                id
+                                Name
+                                PoolType
+                            }
+                        }
+                        cursor{
+                            ID
+                        }
+                    }
+                }
+            }
+        `,
+        variables: {
+            poolId: poolId,
+            first: first,
+            last: last,
+            before: before,
+            after: after
         }
     })
     .then(result => result.data.QueryResources)
@@ -230,18 +306,20 @@ export async function createNestedAllocationPool(poolName, resourceTypeId, strat
     .catch(error => console.log(error));
 }
 
-export async function testStrategy(allocationStrategyId, poolProperties, poolName, currentResources, userInput, suppressErrors = false) {
+export async function testStrategy(allocationStrategyId, poolProperties, poolName, poolId, currentResources, userInput, suppressErrors = false) {
     return client.mutate({
         mutation: gql`
             mutation testStrategy(
                 $allocationStrategyId: ID!,
                 $poolProperties: Map!,
                 $poolName: String!,
+                $poolId: ID!,
                 $currentResources: [ResourceInput!]!,
                 $userInput: Map!) {
                 TestAllocationStrategy(
                     allocationStrategyId: $allocationStrategyId
                     resourcePool: {
+                        ResourcePoolID: $poolId
                         poolProperties: $poolProperties
                         ResourcePoolName: $poolName
                     }
@@ -256,6 +334,7 @@ export async function testStrategy(allocationStrategyId, poolProperties, poolNam
             poolName: poolName,
             currentResources: currentResources,
             userInput: userInput,
+            poolId: poolId
         }
     })
     .then(result => result.data.TestAllocationStrategy)
@@ -369,15 +448,17 @@ export async function deleteAllocationStrategy(strategyId) {
     .catch(error => console.log(error));
 }
 
-export async function createAllocationStrategy(strategyName, scriptBody, strategyType) {
+export async function createAllocationStrategy(strategyName, scriptBody, strategyType, expectedPropertyTypes) {
     return client.mutate({
         mutation: gql`
-            mutation createStrategy($strategyName: String!, $scriptBody: String!, $strategyType: AllocationStrategyLang!) {
+            mutation createStrategy($strategyName: String!, $scriptBody: String!, $strategyType: AllocationStrategyLang!,
+                $expectedPropertyTypes: Map) {
                 CreateAllocationStrategy( input:  {
                     name: $strategyName
                     description: "testing strategy"
                     script: $scriptBody
                     lang: $strategyType
+                    expectedPoolPropertyTypes: $expectedPropertyTypes
                 }){
                     strategy {
                         id
@@ -389,6 +470,7 @@ export async function createAllocationStrategy(strategyName, scriptBody, strateg
             strategyName: strategyName,
             scriptBody: scriptBody,
             strategyType: strategyType,
+            expectedPropertyTypes: expectedPropertyTypes
         }
     })
     .then(result => result.data.CreateAllocationStrategy.strategy.id)
@@ -568,7 +650,6 @@ export async function createAllocationPool(poolName, resourceTypeId, strategyId,
             poolProperties: poolProperties,
             poolPropertyTypes: poolPropertyTypes,
             tags: tags,
-
         }
     })
     .then(result => result.data.CreateAllocatingPool.pool)
@@ -646,14 +727,23 @@ export async function queryResource(poolId, params){
     .catch(error => console.log(error));
 }
 
-export async function queryResourceByAltId(poolId, params){
+export async function queryResourcesByAltId(poolId, params){
     return client.query({
         query: gql`
-            query QueryResourceByAltId($poolId: ID!, $input: Map!) {
-                QueryResourceByAltId(input: $input, poolId: $poolId) {
-                    id
-                    Properties
-                    Description
+            query QueryResourcesByAltId($poolId: ID, $input: Map!) {
+                QueryResourcesByAltId(input: $input, poolId: $poolId) {
+                    edges {
+                        node {
+                            id
+                            Properties
+                            NestedPool {
+                                id
+                                Name
+                                PoolType
+                            }
+                            AlternativeId
+                        }
+                    }
                 }
             }
         `,
@@ -664,12 +754,15 @@ export async function queryResourceByAltId(poolId, params){
     })
     .then(result => {
         if (result.data) {
-            return result.data.QueryResourceByAltId;
+            return result.data.QueryResourcesByAltId;
         }
 
         return null;
     })
-    .catch(error => console.log(error));
+    .catch(error => {
+        console.log(error);
+        return null;
+    });
 }
 
 export async function freeResource(poolId, propInput){
@@ -685,5 +778,155 @@ export async function freeResource(poolId, propInput){
         }
     })
     .then(result => result.data.FreeResource)
+    .catch(error => console.log(error));
+}
+
+export async function getLeafPools(resourceTypeId, tags) {
+    return client.query({
+        query: gql`
+            query QueryLeafResourcePools($resourceTypeId: ID, $tags: TagOr) {
+                QueryLeafResourcePools(resourceTypeId: $resourceTypeId, tags: $tags) {
+                    id
+                    Name
+                    AllocationStrategy {
+                        id
+                        Name
+                        Description
+                    }
+                    ResourceType {
+                        id
+                        Name
+                    }
+                    Resources{
+                        id
+                        Properties
+                        NestedPool {
+                            id
+                            Name
+                            PoolType
+                        }
+                    }
+                }
+            }
+        `,
+        variables: {
+            resourceTypeId: resourceTypeId,
+            tags: tags
+        }
+    })
+    .then(result => result.data.QueryLeafResourcePools)
+    .catch(error => console.log(error));
+}
+
+export async function getAllPoolsByTypeOrTag(resourceTypeId, tags) {
+    return client.query({
+        query: gql`
+            query QueryResourcePools($resourceTypeId: ID, $tags: TagOr) {
+                QueryResourcePools(resourceTypeId: $resourceTypeId, tags: $tags) {
+                    id
+                    Name
+                    AllocationStrategy {
+                        id
+                        Name
+                        Description
+                    }
+                    ResourceType {
+                        id
+                        Name
+                    }
+                    Resources{
+                        id
+                        Properties
+                        NestedPool {
+                            id
+                            Name
+                            PoolType
+                        }
+                    }
+                }
+            }
+        `,
+        variables: {
+            resourceTypeId: resourceTypeId,
+            tags: tags
+        }
+    })
+    .then(result => result.data.QueryResourcePools)
+    .catch(error => console.log(error));
+}
+
+export async function updateResourceAltId(poolId, input, alternativeId){
+    return client.mutate({
+        mutation: gql`
+            mutation UpdateResourceAltId($input: Map!, $poolId: ID!, $alternativeId: Map!) {
+                UpdateResourceAltId(input: $input, poolId: $poolId, alternativeId:$alternativeId) {
+                    AlternativeId
+                }
+            }
+        `,
+        variables: {
+            poolId: poolId,
+            input: input,
+            alternativeId: alternativeId
+        }
+    })
+    .then(result => result.data.UpdateResourceAltId)
+    .catch(error => console.log(error));
+}
+
+export async function getEmptyPools(resourceTypeId){
+    return client.query({
+        query: gql`
+            query QueryEmptyResourcePools($resourceTypeId: ID) {
+                QueryEmptyResourcePools(resourceTypeId: $resourceTypeId) {
+                    id
+                    Name
+                    AllocationStrategy {
+                        id
+                        Name
+                        Description
+                    }
+                    ResourceType {
+                        id
+                        Name
+                    }
+                    Resources{
+                        id
+                        Properties
+                        NestedPool {
+                            id
+                            Name
+                            PoolType
+                        }
+                    }
+                }
+            }
+        `,
+        variables: {
+            resourceTypeId: resourceTypeId
+        }
+    })
+    .then(result => result.data.QueryEmptyResourcePools)
+    .catch(error => console.log(error));
+}
+
+export async function getRequiredPoolProperties(allocationStrategyName) {
+    return client.query({
+        query: gql`
+            query QueryRequiredPoolProperties($allocationStrategyName: String!) {
+                QueryRequiredPoolProperties(allocationStrategyName: $allocationStrategyName) {
+                    Name
+                    Type
+                    FloatVal
+                    IntVal
+                    StringVal
+                }
+            }
+        `,
+        variables: {
+            allocationStrategyName: allocationStrategyName
+        }
+    })
+    .then(result => result.data.QueryRequiredPoolProperties)
     .catch(error => console.log(error));
 }

@@ -6,8 +6,10 @@ import (
 	"context"
 	"sync"
 
-	"github.com/facebook/ent/dialect"
+	"entgo.io/ent/dialect"
 )
+
+type TxCtxKey struct{}
 
 // Tx is a transactional client that is created by calling Client.Tx().
 type Tx struct {
@@ -226,6 +228,11 @@ func (tx *txDriver) Exec(ctx context.Context, query string, args, v interface{})
 // Query calls tx.Query.
 func (tx *txDriver) Query(ctx context.Context, query string, args, v interface{}) error {
 	return tx.tx.Query(ctx, query, args, v)
+}
+
+// FRINX extension, get to the raw underlying transaction for executing raw queries
+func (tx *Tx) UnderlyingTx() dialect.ExecQuerier {
+	return tx.config.driver
 }
 
 var _ dialect.Driver = (*txDriver)(nil)

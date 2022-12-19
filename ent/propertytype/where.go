@@ -3,12 +3,12 @@
 package propertytype
 
 import (
-	"github.com/facebook/ent/dialect/sql"
-	"github.com/facebook/ent/dialect/sql/sqlgraph"
+	"entgo.io/ent/dialect/sql"
+	"entgo.io/ent/dialect/sql/sqlgraph"
 	"github.com/net-auto/resourceManager/ent/predicate"
 )
 
-// ID filters vertices based on their identifier.
+// ID filters vertices based on their ID field.
 func ID(id int) predicate.PropertyType {
 	return predicate.PropertyType(func(s *sql.Selector) {
 		s.Where(sql.EQ(s.C(FieldID), id))
@@ -32,13 +32,7 @@ func IDNEQ(id int) predicate.PropertyType {
 // IDIn applies the In predicate on the ID field.
 func IDIn(ids ...int) predicate.PropertyType {
 	return predicate.PropertyType(func(s *sql.Selector) {
-		// if not arguments were provided, append the FALSE constants,
-		// since we can't apply "IN ()". This will make this predicate falsy.
-		if len(ids) == 0 {
-			s.Where(sql.False())
-			return
-		}
-		v := make([]interface{}, len(ids))
+		v := make([]any, len(ids))
 		for i := range v {
 			v[i] = ids[i]
 		}
@@ -49,13 +43,7 @@ func IDIn(ids ...int) predicate.PropertyType {
 // IDNotIn applies the NotIn predicate on the ID field.
 func IDNotIn(ids ...int) predicate.PropertyType {
 	return predicate.PropertyType(func(s *sql.Selector) {
-		// if not arguments were provided, append the FALSE constants,
-		// since we can't apply "IN ()". This will make this predicate falsy.
-		if len(ids) == 0 {
-			s.Where(sql.False())
-			return
-		}
-		v := make([]interface{}, len(ids))
+		v := make([]any, len(ids))
 		for i := range v {
 			v[i] = ids[i]
 		}
@@ -226,34 +214,22 @@ func TypeNEQ(v Type) predicate.PropertyType {
 
 // TypeIn applies the In predicate on the "type" field.
 func TypeIn(vs ...Type) predicate.PropertyType {
-	v := make([]interface{}, len(vs))
+	v := make([]any, len(vs))
 	for i := range v {
 		v[i] = vs[i]
 	}
 	return predicate.PropertyType(func(s *sql.Selector) {
-		// if not arguments were provided, append the FALSE constants,
-		// since we can't apply "IN ()". This will make this predicate falsy.
-		if len(v) == 0 {
-			s.Where(sql.False())
-			return
-		}
 		s.Where(sql.In(s.C(FieldType), v...))
 	})
 }
 
 // TypeNotIn applies the NotIn predicate on the "type" field.
 func TypeNotIn(vs ...Type) predicate.PropertyType {
-	v := make([]interface{}, len(vs))
+	v := make([]any, len(vs))
 	for i := range v {
 		v[i] = vs[i]
 	}
 	return predicate.PropertyType(func(s *sql.Selector) {
-		// if not arguments were provided, append the FALSE constants,
-		// since we can't apply "IN ()". This will make this predicate falsy.
-		if len(v) == 0 {
-			s.Where(sql.False())
-			return
-		}
 		s.Where(sql.NotIn(s.C(FieldType), v...))
 	})
 }
@@ -274,34 +250,22 @@ func NameNEQ(v string) predicate.PropertyType {
 
 // NameIn applies the In predicate on the "name" field.
 func NameIn(vs ...string) predicate.PropertyType {
-	v := make([]interface{}, len(vs))
+	v := make([]any, len(vs))
 	for i := range v {
 		v[i] = vs[i]
 	}
 	return predicate.PropertyType(func(s *sql.Selector) {
-		// if not arguments were provided, append the FALSE constants,
-		// since we can't apply "IN ()". This will make this predicate falsy.
-		if len(v) == 0 {
-			s.Where(sql.False())
-			return
-		}
 		s.Where(sql.In(s.C(FieldName), v...))
 	})
 }
 
 // NameNotIn applies the NotIn predicate on the "name" field.
 func NameNotIn(vs ...string) predicate.PropertyType {
-	v := make([]interface{}, len(vs))
+	v := make([]any, len(vs))
 	for i := range v {
 		v[i] = vs[i]
 	}
 	return predicate.PropertyType(func(s *sql.Selector) {
-		// if not arguments were provided, append the FALSE constants,
-		// since we can't apply "IN ()". This will make this predicate falsy.
-		if len(v) == 0 {
-			s.Where(sql.False())
-			return
-		}
 		s.Where(sql.NotIn(s.C(FieldName), v...))
 	})
 }
@@ -385,34 +349,22 @@ func ExternalIDNEQ(v string) predicate.PropertyType {
 
 // ExternalIDIn applies the In predicate on the "external_id" field.
 func ExternalIDIn(vs ...string) predicate.PropertyType {
-	v := make([]interface{}, len(vs))
+	v := make([]any, len(vs))
 	for i := range v {
 		v[i] = vs[i]
 	}
 	return predicate.PropertyType(func(s *sql.Selector) {
-		// if not arguments were provided, append the FALSE constants,
-		// since we can't apply "IN ()". This will make this predicate falsy.
-		if len(v) == 0 {
-			s.Where(sql.False())
-			return
-		}
 		s.Where(sql.In(s.C(FieldExternalID), v...))
 	})
 }
 
 // ExternalIDNotIn applies the NotIn predicate on the "external_id" field.
 func ExternalIDNotIn(vs ...string) predicate.PropertyType {
-	v := make([]interface{}, len(vs))
+	v := make([]any, len(vs))
 	for i := range v {
 		v[i] = vs[i]
 	}
 	return predicate.PropertyType(func(s *sql.Selector) {
-		// if not arguments were provided, append the FALSE constants,
-		// since we can't apply "IN ()". This will make this predicate falsy.
-		if len(v) == 0 {
-			s.Where(sql.False())
-			return
-		}
 		s.Where(sql.NotIn(s.C(FieldExternalID), v...))
 	})
 }
@@ -510,34 +462,22 @@ func IndexNEQ(v int) predicate.PropertyType {
 
 // IndexIn applies the In predicate on the "index" field.
 func IndexIn(vs ...int) predicate.PropertyType {
-	v := make([]interface{}, len(vs))
+	v := make([]any, len(vs))
 	for i := range v {
 		v[i] = vs[i]
 	}
 	return predicate.PropertyType(func(s *sql.Selector) {
-		// if not arguments were provided, append the FALSE constants,
-		// since we can't apply "IN ()". This will make this predicate falsy.
-		if len(v) == 0 {
-			s.Where(sql.False())
-			return
-		}
 		s.Where(sql.In(s.C(FieldIndex), v...))
 	})
 }
 
 // IndexNotIn applies the NotIn predicate on the "index" field.
 func IndexNotIn(vs ...int) predicate.PropertyType {
-	v := make([]interface{}, len(vs))
+	v := make([]any, len(vs))
 	for i := range v {
 		v[i] = vs[i]
 	}
 	return predicate.PropertyType(func(s *sql.Selector) {
-		// if not arguments were provided, append the FALSE constants,
-		// since we can't apply "IN ()". This will make this predicate falsy.
-		if len(v) == 0 {
-			s.Where(sql.False())
-			return
-		}
 		s.Where(sql.NotIn(s.C(FieldIndex), v...))
 	})
 }
@@ -600,34 +540,22 @@ func CategoryNEQ(v string) predicate.PropertyType {
 
 // CategoryIn applies the In predicate on the "category" field.
 func CategoryIn(vs ...string) predicate.PropertyType {
-	v := make([]interface{}, len(vs))
+	v := make([]any, len(vs))
 	for i := range v {
 		v[i] = vs[i]
 	}
 	return predicate.PropertyType(func(s *sql.Selector) {
-		// if not arguments were provided, append the FALSE constants,
-		// since we can't apply "IN ()". This will make this predicate falsy.
-		if len(v) == 0 {
-			s.Where(sql.False())
-			return
-		}
 		s.Where(sql.In(s.C(FieldCategory), v...))
 	})
 }
 
 // CategoryNotIn applies the NotIn predicate on the "category" field.
 func CategoryNotIn(vs ...string) predicate.PropertyType {
-	v := make([]interface{}, len(vs))
+	v := make([]any, len(vs))
 	for i := range v {
 		v[i] = vs[i]
 	}
 	return predicate.PropertyType(func(s *sql.Selector) {
-		// if not arguments were provided, append the FALSE constants,
-		// since we can't apply "IN ()". This will make this predicate falsy.
-		if len(v) == 0 {
-			s.Where(sql.False())
-			return
-		}
 		s.Where(sql.NotIn(s.C(FieldCategory), v...))
 	})
 }
@@ -725,34 +653,22 @@ func IntValNEQ(v int) predicate.PropertyType {
 
 // IntValIn applies the In predicate on the "int_val" field.
 func IntValIn(vs ...int) predicate.PropertyType {
-	v := make([]interface{}, len(vs))
+	v := make([]any, len(vs))
 	for i := range v {
 		v[i] = vs[i]
 	}
 	return predicate.PropertyType(func(s *sql.Selector) {
-		// if not arguments were provided, append the FALSE constants,
-		// since we can't apply "IN ()". This will make this predicate falsy.
-		if len(v) == 0 {
-			s.Where(sql.False())
-			return
-		}
 		s.Where(sql.In(s.C(FieldIntVal), v...))
 	})
 }
 
 // IntValNotIn applies the NotIn predicate on the "int_val" field.
 func IntValNotIn(vs ...int) predicate.PropertyType {
-	v := make([]interface{}, len(vs))
+	v := make([]any, len(vs))
 	for i := range v {
 		v[i] = vs[i]
 	}
 	return predicate.PropertyType(func(s *sql.Selector) {
-		// if not arguments were provided, append the FALSE constants,
-		// since we can't apply "IN ()". This will make this predicate falsy.
-		if len(v) == 0 {
-			s.Where(sql.False())
-			return
-		}
 		s.Where(sql.NotIn(s.C(FieldIntVal), v...))
 	})
 }
@@ -843,34 +759,22 @@ func FloatValNEQ(v float64) predicate.PropertyType {
 
 // FloatValIn applies the In predicate on the "float_val" field.
 func FloatValIn(vs ...float64) predicate.PropertyType {
-	v := make([]interface{}, len(vs))
+	v := make([]any, len(vs))
 	for i := range v {
 		v[i] = vs[i]
 	}
 	return predicate.PropertyType(func(s *sql.Selector) {
-		// if not arguments were provided, append the FALSE constants,
-		// since we can't apply "IN ()". This will make this predicate falsy.
-		if len(v) == 0 {
-			s.Where(sql.False())
-			return
-		}
 		s.Where(sql.In(s.C(FieldFloatVal), v...))
 	})
 }
 
 // FloatValNotIn applies the NotIn predicate on the "float_val" field.
 func FloatValNotIn(vs ...float64) predicate.PropertyType {
-	v := make([]interface{}, len(vs))
+	v := make([]any, len(vs))
 	for i := range v {
 		v[i] = vs[i]
 	}
 	return predicate.PropertyType(func(s *sql.Selector) {
-		// if not arguments were provided, append the FALSE constants,
-		// since we can't apply "IN ()". This will make this predicate falsy.
-		if len(v) == 0 {
-			s.Where(sql.False())
-			return
-		}
 		s.Where(sql.NotIn(s.C(FieldFloatVal), v...))
 	})
 }
@@ -933,34 +837,22 @@ func LatitudeValNEQ(v float64) predicate.PropertyType {
 
 // LatitudeValIn applies the In predicate on the "latitude_val" field.
 func LatitudeValIn(vs ...float64) predicate.PropertyType {
-	v := make([]interface{}, len(vs))
+	v := make([]any, len(vs))
 	for i := range v {
 		v[i] = vs[i]
 	}
 	return predicate.PropertyType(func(s *sql.Selector) {
-		// if not arguments were provided, append the FALSE constants,
-		// since we can't apply "IN ()". This will make this predicate falsy.
-		if len(v) == 0 {
-			s.Where(sql.False())
-			return
-		}
 		s.Where(sql.In(s.C(FieldLatitudeVal), v...))
 	})
 }
 
 // LatitudeValNotIn applies the NotIn predicate on the "latitude_val" field.
 func LatitudeValNotIn(vs ...float64) predicate.PropertyType {
-	v := make([]interface{}, len(vs))
+	v := make([]any, len(vs))
 	for i := range v {
 		v[i] = vs[i]
 	}
 	return predicate.PropertyType(func(s *sql.Selector) {
-		// if not arguments were provided, append the FALSE constants,
-		// since we can't apply "IN ()". This will make this predicate falsy.
-		if len(v) == 0 {
-			s.Where(sql.False())
-			return
-		}
 		s.Where(sql.NotIn(s.C(FieldLatitudeVal), v...))
 	})
 }
@@ -1023,34 +915,22 @@ func LongitudeValNEQ(v float64) predicate.PropertyType {
 
 // LongitudeValIn applies the In predicate on the "longitude_val" field.
 func LongitudeValIn(vs ...float64) predicate.PropertyType {
-	v := make([]interface{}, len(vs))
+	v := make([]any, len(vs))
 	for i := range v {
 		v[i] = vs[i]
 	}
 	return predicate.PropertyType(func(s *sql.Selector) {
-		// if not arguments were provided, append the FALSE constants,
-		// since we can't apply "IN ()". This will make this predicate falsy.
-		if len(v) == 0 {
-			s.Where(sql.False())
-			return
-		}
 		s.Where(sql.In(s.C(FieldLongitudeVal), v...))
 	})
 }
 
 // LongitudeValNotIn applies the NotIn predicate on the "longitude_val" field.
 func LongitudeValNotIn(vs ...float64) predicate.PropertyType {
-	v := make([]interface{}, len(vs))
+	v := make([]any, len(vs))
 	for i := range v {
 		v[i] = vs[i]
 	}
 	return predicate.PropertyType(func(s *sql.Selector) {
-		// if not arguments were provided, append the FALSE constants,
-		// since we can't apply "IN ()". This will make this predicate falsy.
-		if len(v) == 0 {
-			s.Where(sql.False())
-			return
-		}
 		s.Where(sql.NotIn(s.C(FieldLongitudeVal), v...))
 	})
 }
@@ -1113,34 +993,22 @@ func StringValNEQ(v string) predicate.PropertyType {
 
 // StringValIn applies the In predicate on the "string_val" field.
 func StringValIn(vs ...string) predicate.PropertyType {
-	v := make([]interface{}, len(vs))
+	v := make([]any, len(vs))
 	for i := range v {
 		v[i] = vs[i]
 	}
 	return predicate.PropertyType(func(s *sql.Selector) {
-		// if not arguments were provided, append the FALSE constants,
-		// since we can't apply "IN ()". This will make this predicate falsy.
-		if len(v) == 0 {
-			s.Where(sql.False())
-			return
-		}
 		s.Where(sql.In(s.C(FieldStringVal), v...))
 	})
 }
 
 // StringValNotIn applies the NotIn predicate on the "string_val" field.
 func StringValNotIn(vs ...string) predicate.PropertyType {
-	v := make([]interface{}, len(vs))
+	v := make([]any, len(vs))
 	for i := range v {
 		v[i] = vs[i]
 	}
 	return predicate.PropertyType(func(s *sql.Selector) {
-		// if not arguments were provided, append the FALSE constants,
-		// since we can't apply "IN ()". This will make this predicate falsy.
-		if len(v) == 0 {
-			s.Where(sql.False())
-			return
-		}
 		s.Where(sql.NotIn(s.C(FieldStringVal), v...))
 	})
 }
@@ -1238,34 +1106,22 @@ func RangeFromValNEQ(v float64) predicate.PropertyType {
 
 // RangeFromValIn applies the In predicate on the "range_from_val" field.
 func RangeFromValIn(vs ...float64) predicate.PropertyType {
-	v := make([]interface{}, len(vs))
+	v := make([]any, len(vs))
 	for i := range v {
 		v[i] = vs[i]
 	}
 	return predicate.PropertyType(func(s *sql.Selector) {
-		// if not arguments were provided, append the FALSE constants,
-		// since we can't apply "IN ()". This will make this predicate falsy.
-		if len(v) == 0 {
-			s.Where(sql.False())
-			return
-		}
 		s.Where(sql.In(s.C(FieldRangeFromVal), v...))
 	})
 }
 
 // RangeFromValNotIn applies the NotIn predicate on the "range_from_val" field.
 func RangeFromValNotIn(vs ...float64) predicate.PropertyType {
-	v := make([]interface{}, len(vs))
+	v := make([]any, len(vs))
 	for i := range v {
 		v[i] = vs[i]
 	}
 	return predicate.PropertyType(func(s *sql.Selector) {
-		// if not arguments were provided, append the FALSE constants,
-		// since we can't apply "IN ()". This will make this predicate falsy.
-		if len(v) == 0 {
-			s.Where(sql.False())
-			return
-		}
 		s.Where(sql.NotIn(s.C(FieldRangeFromVal), v...))
 	})
 }
@@ -1328,34 +1184,22 @@ func RangeToValNEQ(v float64) predicate.PropertyType {
 
 // RangeToValIn applies the In predicate on the "range_to_val" field.
 func RangeToValIn(vs ...float64) predicate.PropertyType {
-	v := make([]interface{}, len(vs))
+	v := make([]any, len(vs))
 	for i := range v {
 		v[i] = vs[i]
 	}
 	return predicate.PropertyType(func(s *sql.Selector) {
-		// if not arguments were provided, append the FALSE constants,
-		// since we can't apply "IN ()". This will make this predicate falsy.
-		if len(v) == 0 {
-			s.Where(sql.False())
-			return
-		}
 		s.Where(sql.In(s.C(FieldRangeToVal), v...))
 	})
 }
 
 // RangeToValNotIn applies the NotIn predicate on the "range_to_val" field.
 func RangeToValNotIn(vs ...float64) predicate.PropertyType {
-	v := make([]interface{}, len(vs))
+	v := make([]any, len(vs))
 	for i := range v {
 		v[i] = vs[i]
 	}
 	return predicate.PropertyType(func(s *sql.Selector) {
-		// if not arguments were provided, append the FALSE constants,
-		// since we can't apply "IN ()". This will make this predicate falsy.
-		if len(v) == 0 {
-			s.Where(sql.False())
-			return
-		}
 		s.Where(sql.NotIn(s.C(FieldRangeToVal), v...))
 	})
 }
@@ -1474,34 +1318,22 @@ func NodeTypeNEQ(v string) predicate.PropertyType {
 
 // NodeTypeIn applies the In predicate on the "nodeType" field.
 func NodeTypeIn(vs ...string) predicate.PropertyType {
-	v := make([]interface{}, len(vs))
+	v := make([]any, len(vs))
 	for i := range v {
 		v[i] = vs[i]
 	}
 	return predicate.PropertyType(func(s *sql.Selector) {
-		// if not arguments were provided, append the FALSE constants,
-		// since we can't apply "IN ()". This will make this predicate falsy.
-		if len(v) == 0 {
-			s.Where(sql.False())
-			return
-		}
 		s.Where(sql.In(s.C(FieldNodeType), v...))
 	})
 }
 
 // NodeTypeNotIn applies the NotIn predicate on the "nodeType" field.
 func NodeTypeNotIn(vs ...string) predicate.PropertyType {
-	v := make([]interface{}, len(vs))
+	v := make([]any, len(vs))
 	for i := range v {
 		v[i] = vs[i]
 	}
 	return predicate.PropertyType(func(s *sql.Selector) {
-		// if not arguments were provided, append the FALSE constants,
-		// since we can't apply "IN ()". This will make this predicate falsy.
-		if len(v) == 0 {
-			s.Where(sql.False())
-			return
-		}
 		s.Where(sql.NotIn(s.C(FieldNodeType), v...))
 	})
 }
@@ -1639,7 +1471,7 @@ func HasResourceTypeWith(preds ...predicate.ResourceType) predicate.PropertyType
 	})
 }
 
-// And groups list of predicates with the AND operator between them.
+// And groups predicates with the AND operator between them.
 func And(predicates ...predicate.PropertyType) predicate.PropertyType {
 	return predicate.PropertyType(func(s *sql.Selector) {
 		s1 := s.Clone().SetP(nil)
@@ -1650,7 +1482,7 @@ func And(predicates ...predicate.PropertyType) predicate.PropertyType {
 	})
 }
 
-// Or groups list of predicates with the OR operator between them.
+// Or groups predicates with the OR operator between them.
 func Or(predicates ...predicate.PropertyType) predicate.PropertyType {
 	return predicate.PropertyType(func(s *sql.Selector) {
 		s1 := s.Clone().SetP(nil)

@@ -2,17 +2,18 @@
 // Use of this source code is governed by a BSD-style
 // license that can be found in the LICENSE file.
 
+//go:build wireinject
 // +build wireinject
 
 package graphhttp
 
 import (
+	"github.com/net-auto/resourceManager/logging/log"
+	"github.com/net-auto/resourceManager/server"
+	"github.com/net-auto/resourceManager/server/xserver"
+	"github.com/net-auto/resourceManager/telemetry"
 	"net/http"
 
-	"github.com/facebookincubator/symphony/pkg/log"
-	"github.com/facebookincubator/symphony/pkg/server"
-	"github.com/facebookincubator/symphony/pkg/server/xserver"
-	"github.com/facebookincubator/symphony/pkg/telemetry"
 	"github.com/google/wire"
 	"github.com/gorilla/mux"
 	"github.com/net-auto/resourceManager/viewer"

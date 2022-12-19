@@ -15,11 +15,11 @@ type Pool interface {
 	ClaimResource(userInput map[string]interface{}, description *string, alternativeId map[string]interface{}) (*ent.Resource, error)
 	FreeResource(RawResourceProps) error
 	QueryResource(RawResourceProps) (*ent.Resource, error)
-	QueryResourceByAltId(map[string]interface{}) (*ent.Resource, error)
 	QueryResources() (ent.Resources, error)
+	QueryPaginatedResources(*int, *int, *ent.Cursor, *ent.Cursor) (*ent.ResourceConnection, error)
 	Destroy() error
 	ResourceType() (*ent.ResourceType, error)
-	Capacity() (float64, float64, error)
+	Capacity() (string, string, error)
 }
 
 type poolBase struct {
@@ -124,4 +124,17 @@ func existingPool(
 		log.Error(ctx, err, "cannot create pool")
 		return nil, err
 	}
+}
+
+func PoolName(ctx context.Context, client *ent.Client, poolId int) (string, error) {
+	thisPool, err := client.ResourcePool.Query().
+		Where(resourcePool.ID(poolId)).
+		Only(ctx)
+
+	if err != nil {
+		log.Error(ctx, err, "Unable to find pool ID %d", poolId)
+		return "", errors.Wrapf(err, "Cannot get pool by id %d", poolId)
+	}
+
+	return thisPool.Name, nil
 }

@@ -2,10 +2,11 @@ package pools
 
 import (
 	"context"
-	"fmt"
-	"strconv"
 	"encoding/json"
+	"fmt"
 	log "github.com/net-auto/resourceManager/logging"
+	"reflect"
+	"strconv"
 
 	"github.com/net-auto/resourceManager/ent"
 	"github.com/net-auto/resourceManager/ent/predicate"
@@ -125,7 +126,8 @@ func CompareProps(
 }
 
 // ParseProps turns a map such as ["a": 3, "b": "value"] into a list of properties and stores them in DB
-//  uses resource type to find out what are the predefined types for each value
+//
+//	uses resource type to find out what are the predefined types for each value
 func ParseProps(
 	ctx context.Context,
 	tx *ent.Client,
@@ -161,8 +163,15 @@ func ParseProps(
 		// TODO add additional types
 		switch pt.Type {
 		case "int":
-			// Parse the int from string to be sure
-			atoi, err := strconv.Atoi(fmt.Sprintf("%v", pv))
+			var atoi int
+			var err error
+
+			if pvType := reflect.TypeOf(pv); pvType.Kind() == reflect.Float64 {
+				atoi, err = strconv.Atoi(fmt.Sprintf("%v", int(pv.(float64))))
+			} else {
+				atoi, err = strconv.Atoi(fmt.Sprintf("%v", pv))
+			}
+
 			if err != nil {
 				err := errors.Wrapf(err, "Unable to parse int value from \"%s\"", pv)
 				log.Error(ctx, err, "Unable to parse int value")
@@ -207,7 +216,8 @@ func ParseProps(
 }
 
 // ToRawTypes converts between []map[string]interface{} and []RawResourceProps
-//  which is the same thing ... but not to the compiler
+//
+//	which is the same thing ... but not to the compiler
 func ToRawTypes(poolValues []map[string]interface{}) []RawResourceProps {
 	var rawProps []RawResourceProps
 	for _, v := range poolValues {

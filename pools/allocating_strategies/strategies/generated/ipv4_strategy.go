@@ -2,12 +2,13 @@ package src
 
 import (
 	"github.com/pkg/errors"
+	"strconv"
 )
 
 type Ipv4 struct {
-	currentResources []map[string]interface{}
+	currentResources       []map[string]interface{}
 	resourcePoolProperties map[string]interface{}
-	userInput map[string]interface{}
+	userInput              map[string]interface{}
 }
 
 func NewIpv4(currentResources []map[string]interface{},
@@ -21,17 +22,11 @@ func (ipv4 *Ipv4) UtilizedCapacity(allocatedRanges []map[string]interface{}, new
 }
 
 // FreeCapacity calculate free capacity based on previously allocated prefixes
-func (ipv4 *Ipv4) FreeCapacity(address string, mask int, utilisedCapacity float64) float64 {
-	var subnetItself int
-	if value, ok := ipv4.userInput["subnet"]; ok && value.(bool) {
-		subnetItself = 1
-	} else {
-		subnetItself = 0
-	}
+func (ipv4 *Ipv4) FreeCapacity(address string, mask int, utilisedCapacity float64, subnetItself int) float64 {
 	return float64(hostsInMask(address, mask)) - utilisedCapacity + float64(subnetItself)
 }
 
-func (ipv4 *Ipv4) Capacity() (map[string]interface{}, error){
+func (ipv4 *Ipv4) Capacity() (map[string]interface{}, error) {
 	var result = make(map[string]interface{})
 	rootAddressStr, ok := ipv4.resourcePoolProperties["address"]
 	if !ok {
@@ -41,8 +36,17 @@ func (ipv4 *Ipv4) Capacity() (map[string]interface{}, error){
 	if !ok {
 		return nil, errors.New("Unable to extract prefix resources")
 	}
-	result["freeCapacity"] = ipv4.FreeCapacity(rootAddressStr.(string), rootMask.(int), float64(len(ipv4.currentResources)))
-	result["utilizedCapacity"] = float64(len(ipv4.currentResources))
+	subnet, ok := ipv4.resourcePoolProperties["subnet"]
+	if !ok {
+		return nil, errors.New("Unable to extract subnet property")
+	}
+	subnetItself := 2
+	if subnet.(bool) == true {
+		subnetItself = 0
+	}
+	freeCapacity := ipv4.FreeCapacity(rootAddressStr.(string), rootMask.(int), float64(len(ipv4.currentResources)), subnetItself)
+	result["freeCapacity"] = strconv.FormatFloat(freeCapacity, 'g', 30, 64)
+	result["utilizedCapacity"] = strconv.Itoa(len(ipv4.currentResources))
 	return result, nil
 }
 
@@ -57,6 +61,10 @@ func (ipv4 *Ipv4) Invoke() (map[string]interface{}, error) {
 	rootMask, ok := ipv4.resourcePoolProperties["prefix"]
 	if !ok {
 		return nil, errors.New("Unable to extract prefix resources")
+	}
+	isSubnet, ok := ipv4.resourcePoolProperties["subnet"]
+	if !ok {
+		return nil, errors.New("Unable to extract subnet property")
 	}
 	rootMask, err := NumberToInt(rootMask)
 	if err != nil {
@@ -84,7 +92,7 @@ func (ipv4 *Ipv4) Invoke() (map[string]interface{}, error) {
 	var firstPossibleAddr = 0
 	var lastPossibleAddr = 0
 
-	if value, ok := ipv4.userInput["subnet"]; ok && value == true {
+	if isSubnet.(bool) == true {
 		firstPossibleAddr = rootAddressNum + 1
 		lastPossibleAddr = rootAddressNum + rootCapacity - 1
 	} else {
@@ -102,12 +110,12 @@ func (ipv4 *Ipv4) Invoke() (map[string]interface{}, error) {
 		if desiredValueNum >= firstPossibleAddr && desiredValueNum < lastPossibleAddr {
 			desiredIpv4Address := inetNtoa(desiredValueNum)
 			if currentResourcesSet[desiredIpv4Address] {
-				return nil, errors.New("Ipv4 address " + value.(string) + " was already claimed." )
+				return nil, errors.New("Ipv4 address " + value.(string) + " was already claimed.")
 			}
 			result["address"] = value.(string)
 			return result, nil
 		} else {
-			return nil, errors.New("Ipv4 address " + value.(string) + " is out of " + rootPrefixStr )
+			return nil, errors.New("Ipv4 address " + value.(string) + " is out of " + rootPrefixStr)
 		}
 	}
 

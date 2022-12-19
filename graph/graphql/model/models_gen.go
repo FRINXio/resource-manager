@@ -26,10 +26,11 @@ type CreateAllocatingPoolPayload struct {
 
 // Input parameters for creating a new allocation strategy
 type CreateAllocationStrategyInput struct {
-	Name        string                  `json:"name"`
-	Description *string                 `json:"description"`
-	Script      string                  `json:"script"`
-	Lang        allocationstrategy.Lang `json:"lang"`
+	Name                      string                  `json:"name"`
+	Description               *string                 `json:"description"`
+	Script                    string                  `json:"script"`
+	Lang                      allocationstrategy.Lang `json:"lang"`
+	ExpectedPoolPropertyTypes map[string]interface{}  `json:"expectedPoolPropertyTypes"`
 }
 
 // Output of creating a new allocation strategy
@@ -179,8 +180,8 @@ type DeleteTagPayload struct {
 
 // Entity representing capacity of a pool
 type PoolCapacityPayload struct {
-	FreeCapacity     float64 `json:"freeCapacity"`
-	UtilizedCapacity float64 `json:"utilizedCapacity"`
+	FreeCapacity     string `json:"freeCapacity"`
+	UtilizedCapacity string `json:"utilizedCapacity"`
 }
 
 // Alternative representation of identity of a resource (i.e. alternative to resource ID)
@@ -192,6 +193,7 @@ type ResourceInput struct {
 
 // Convenience entity representing the identity of a pool in some calls
 type ResourcePoolInput struct {
+	ResourcePoolID   int                    `json:"ResourcePoolID"`
 	ResourcePoolName string                 `json:"ResourcePoolName"`
 	PoolProperties   map[string]interface{} `json:"poolProperties"`
 }

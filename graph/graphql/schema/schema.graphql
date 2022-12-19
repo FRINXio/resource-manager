@@ -32,12 +32,12 @@ Defines the type of the property
 """
 type PropertyType implements Node
 @goModel(model: "github.com/net-auto/resourceManager/ent.PropertyType"){
-    FloatVal: Float!,
-    IntVal: Int!,
-    Mandatory: Boolean!
+    FloatVal: Float
+    IntVal: Int
+    Mandatory: Boolean
+    StringVal: String
     Name: String!
-    StringVal: String!,
-    Type: String!,
+    Type: String!
     id: ID!
 }
 
@@ -126,6 +126,7 @@ type Resource implements Node
     NestedPool: ResourcePool
     ParentPool: ResourcePool!
     Properties: Map!
+    AlternativeId: Map
     id: ID!
 }
 
@@ -181,6 +182,7 @@ input TagOr {
 Convenience entity representing the identity of a pool in some calls
 """
 input ResourcePoolInput {
+    ResourcePoolID: ID!
     ResourcePoolName: String!
     poolProperties: Map!
 }
@@ -330,8 +332,8 @@ type CreateNestedAllocatingPoolPayload {
 Entity representing capacity of a pool
 """
 type PoolCapacityPayload {
-    freeCapacity: Float!
-    utilizedCapacity: Float!
+    freeCapacity: String!
+    utilizedCapacity: String!
 }
 
 type Query {
@@ -339,15 +341,20 @@ type Query {
     QueryPoolCapacity(poolId: ID!): PoolCapacityPayload!
     QueryPoolTypes: [PoolType!]!
     QueryResource(input: Map!, poolId: ID!): Resource!
-    QueryResources(poolId: ID!): [Resource!]!
-    QueryResourceByAltId(input: Map!, poolId: ID!): Resource!
+    QueryResources(poolId: ID!, first: Int, last: Int, before: String, after: String): ResourceConnection!
+    QueryResourcesByAltId(input: Map!, poolId: ID,
+        first: Int, last: Int, before: String, after: String): ResourceConnection!
     QueryAllocationStrategy(allocationStrategyId: ID!): AllocationStrategy!
     QueryAllocationStrategies(byName: String): [AllocationStrategy!]!
     QueryResourceTypes(byName: String): [ResourceType!]!
+    QueryRequiredPoolProperties(allocationStrategyName: String!): [PropertyType!]!
 
     QueryResourcePool(poolId: ID!): ResourcePool!
 
+    QueryEmptyResourcePools(resourceTypeId: ID): [ResourcePool!]!
     QueryResourcePools(resourceTypeId: ID, tags: TagOr): [ResourcePool!]!
+    QueryRecentlyActiveResources(fromDatetime: String!, toDatetime: String,
+        first: Int, last: Int, before: String, after: String): ResourceConnection!
     QueryResourcePoolHierarchyPath(poolId: ID!): [ResourcePool!]!
     QueryRootResourcePools(resourceTypeId: ID, tags: TagOr): [ResourcePool!]!
     QueryLeafResourcePools(resourceTypeId: ID, tags: TagOr): [ResourcePool!]!
@@ -438,6 +445,7 @@ input CreateAllocationStrategyInput {
     description: String,
     script: String!,
     lang: AllocationStrategyLang!
+    expectedPoolPropertyTypes: Map
 }
 
 """
@@ -545,4 +553,7 @@ type Mutation {
     DeleteResourceType(input: DeleteResourceTypeInput!): DeleteResourceTypePayload!
     ## it only changes the name of the resource type
     UpdateResourceTypeName(input: UpdateResourceTypeNameInput!): UpdateResourceTypeNamePayload!
+
+    # update resource alternative id
+    UpdateResourceAltId(input: Map!, poolId: ID!, alternativeId: Map!): Resource!
 }

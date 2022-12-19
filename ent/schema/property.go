@@ -7,11 +7,11 @@
 package schema
 
 import (
-	"github.com/facebook/ent"
-	"github.com/facebook/ent/schema/edge"
-	"github.com/facebook/ent/schema/field"
-	"github.com/facebook/ent/schema/index"
-	"github.com/facebookincubator/ent-contrib/entgql"
+	"entgo.io/contrib/entgql"
+	"entgo.io/ent"
+	"entgo.io/ent/schema/edge"
+	"entgo.io/ent/schema/field"
+	"entgo.io/ent/schema/index"
 )
 
 // PropertyType defines the property type schema.
@@ -103,9 +103,8 @@ func (PropertyType) Edges() []ent.Edge {
 }
 
 func (PropertyType) Policy() ent.Policy {
-	return RBAC;
+	return RBAC
 }
-
 
 // Property defines the property schema.
 type Property struct {
@@ -168,9 +167,11 @@ func (Property) Indexes() []ent.Index {
 			Edges("resources"),
 		index.
 			Edges("type"),
+		index.
+			Fields("int_val"),
 	}
 }
 
 func (Property) Policy() ent.Policy {
-	return ALWAYS_ALLOWED;
+	return ALWAYS_ALLOWED
 }

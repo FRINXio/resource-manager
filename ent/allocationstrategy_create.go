@@ -7,9 +7,10 @@ import (
 	"errors"
 	"fmt"
 
-	"github.com/facebook/ent/dialect/sql/sqlgraph"
-	"github.com/facebook/ent/schema/field"
+	"entgo.io/ent/dialect/sql/sqlgraph"
+	"entgo.io/ent/schema/field"
 	"github.com/net-auto/resourceManager/ent/allocationstrategy"
+	"github.com/net-auto/resourceManager/ent/propertytype"
 	"github.com/net-auto/resourceManager/ent/resourcepool"
 )
 
@@ -20,19 +21,19 @@ type AllocationStrategyCreate struct {
 	hooks    []Hook
 }
 
-// SetName sets the name field.
+// SetName sets the "name" field.
 func (asc *AllocationStrategyCreate) SetName(s string) *AllocationStrategyCreate {
 	asc.mutation.SetName(s)
 	return asc
 }
 
-// SetDescription sets the description field.
+// SetDescription sets the "description" field.
 func (asc *AllocationStrategyCreate) SetDescription(s string) *AllocationStrategyCreate {
 	asc.mutation.SetDescription(s)
 	return asc
 }
 
-// SetNillableDescription sets the description field if the given value is not nil.
+// SetNillableDescription sets the "description" field if the given value is not nil.
 func (asc *AllocationStrategyCreate) SetNillableDescription(s *string) *AllocationStrategyCreate {
 	if s != nil {
 		asc.SetDescription(*s)
@@ -40,13 +41,13 @@ func (asc *AllocationStrategyCreate) SetNillableDescription(s *string) *Allocati
 	return asc
 }
 
-// SetLang sets the lang field.
+// SetLang sets the "lang" field.
 func (asc *AllocationStrategyCreate) SetLang(a allocationstrategy.Lang) *AllocationStrategyCreate {
 	asc.mutation.SetLang(a)
 	return asc
 }
 
-// SetNillableLang sets the lang field if the given value is not nil.
+// SetNillableLang sets the "lang" field if the given value is not nil.
 func (asc *AllocationStrategyCreate) SetNillableLang(a *allocationstrategy.Lang) *AllocationStrategyCreate {
 	if a != nil {
 		asc.SetLang(*a)
@@ -54,25 +55,40 @@ func (asc *AllocationStrategyCreate) SetNillableLang(a *allocationstrategy.Lang)
 	return asc
 }
 
-// SetScript sets the script field.
+// SetScript sets the "script" field.
 func (asc *AllocationStrategyCreate) SetScript(s string) *AllocationStrategyCreate {
 	asc.mutation.SetScript(s)
 	return asc
 }
 
-// AddPoolIDs adds the pools edge to ResourcePool by ids.
+// AddPoolIDs adds the "pools" edge to the ResourcePool entity by IDs.
 func (asc *AllocationStrategyCreate) AddPoolIDs(ids ...int) *AllocationStrategyCreate {
 	asc.mutation.AddPoolIDs(ids...)
 	return asc
 }
 
-// AddPools adds the pools edges to ResourcePool.
+// AddPools adds the "pools" edges to the ResourcePool entity.
 func (asc *AllocationStrategyCreate) AddPools(r ...*ResourcePool) *AllocationStrategyCreate {
 	ids := make([]int, len(r))
 	for i := range r {
 		ids[i] = r[i].ID
 	}
 	return asc.AddPoolIDs(ids...)
+}
+
+// AddPoolPropertyTypeIDs adds the "pool_property_types" edge to the PropertyType entity by IDs.
+func (asc *AllocationStrategyCreate) AddPoolPropertyTypeIDs(ids ...int) *AllocationStrategyCreate {
+	asc.mutation.AddPoolPropertyTypeIDs(ids...)
+	return asc
+}
+
+// AddPoolPropertyTypes adds the "pool_property_types" edges to the PropertyType entity.
+func (asc *AllocationStrategyCreate) AddPoolPropertyTypes(p ...*PropertyType) *AllocationStrategyCreate {
+	ids := make([]int, len(p))
+	for i := range p {
+		ids[i] = p[i].ID
+	}
+	return asc.AddPoolPropertyTypeIDs(ids...)
 }
 
 // Mutation returns the AllocationStrategyMutation object of the builder.
@@ -86,7 +102,9 @@ func (asc *AllocationStrategyCreate) Save(ctx context.Context) (*AllocationStrat
 		err  error
 		node *AllocationStrategy
 	)
-	asc.defaults()
+	if err := asc.defaults(); err != nil {
+		return nil, err
+	}
 	if len(asc.hooks) == 0 {
 		if err = asc.check(); err != nil {
 			return nil, err
@@ -102,16 +120,28 @@ func (asc *AllocationStrategyCreate) Save(ctx context.Context) (*AllocationStrat
 				return nil, err
 			}
 			asc.mutation = mutation
-			node, err = asc.sqlSave(ctx)
+			if node, err = asc.sqlSave(ctx); err != nil {
+				return nil, err
+			}
+			mutation.id = &node.ID
 			mutation.done = true
 			return node, err
 		})
 		for i := len(asc.hooks) - 1; i >= 0; i-- {
+			if asc.hooks[i] == nil {
+				return nil, fmt.Errorf("ent: uninitialized hook (forgotten import ent/runtime?)")
+			}
 			mut = asc.hooks[i](mut)
 		}
-		if _, err := mut.Mutate(ctx, asc.mutation); err != nil {
+		v, err := mut.Mutate(ctx, asc.mutation)
+		if err != nil {
 			return nil, err
 		}
+		nv, ok := v.(*AllocationStrategy)
+		if !ok {
+			return nil, fmt.Errorf("unexpected node type %T returned from AllocationStrategyMutation", v)
+		}
+		node = nv
 	}
 	return node, err
 }
@@ -125,38 +155,52 @@ func (asc *AllocationStrategyCreate) SaveX(ctx context.Context) *AllocationStrat
 	return v
 }
 
+// Exec executes the query.
+func (asc *AllocationStrategyCreate) Exec(ctx context.Context) error {
+	_, err := asc.Save(ctx)
+	return err
+}
+
+// ExecX is like Exec, but panics if an error occurs.
+func (asc *AllocationStrategyCreate) ExecX(ctx context.Context) {
+	if err := asc.Exec(ctx); err != nil {
+		panic(err)
+	}
+}
+
 // defaults sets the default values of the builder before save.
-func (asc *AllocationStrategyCreate) defaults() {
+func (asc *AllocationStrategyCreate) defaults() error {
 	if _, ok := asc.mutation.Lang(); !ok {
 		v := allocationstrategy.DefaultLang
 		asc.mutation.SetLang(v)
 	}
+	return nil
 }
 
 // check runs all checks and user-defined validators on the builder.
 func (asc *AllocationStrategyCreate) check() error {
 	if _, ok := asc.mutation.Name(); !ok {
-		return &ValidationError{Name: "name", err: errors.New("ent: missing required field \"name\"")}
+		return &ValidationError{Name: "name", err: errors.New(`ent: missing required field "AllocationStrategy.name"`)}
 	}
 	if v, ok := asc.mutation.Name(); ok {
 		if err := allocationstrategy.NameValidator(v); err != nil {
-			return &ValidationError{Name: "name", err: fmt.Errorf("ent: validator failed for field \"name\": %w", err)}
+			return &ValidationError{Name: "name", err: fmt.Errorf(`ent: validator failed for field "AllocationStrategy.name": %w`, err)}
 		}
 	}
 	if _, ok := asc.mutation.Lang(); !ok {
-		return &ValidationError{Name: "lang", err: errors.New("ent: missing required field \"lang\"")}
+		return &ValidationError{Name: "lang", err: errors.New(`ent: missing required field "AllocationStrategy.lang"`)}
 	}
 	if v, ok := asc.mutation.Lang(); ok {
 		if err := allocationstrategy.LangValidator(v); err != nil {
-			return &ValidationError{Name: "lang", err: fmt.Errorf("ent: validator failed for field \"lang\": %w", err)}
+			return &ValidationError{Name: "lang", err: fmt.Errorf(`ent: validator failed for field "AllocationStrategy.lang": %w`, err)}
 		}
 	}
 	if _, ok := asc.mutation.Script(); !ok {
-		return &ValidationError{Name: "script", err: errors.New("ent: missing required field \"script\"")}
+		return &ValidationError{Name: "script", err: errors.New(`ent: missing required field "AllocationStrategy.script"`)}
 	}
 	if v, ok := asc.mutation.Script(); ok {
 		if err := allocationstrategy.ScriptValidator(v); err != nil {
-			return &ValidationError{Name: "script", err: fmt.Errorf("ent: validator failed for field \"script\": %w", err)}
+			return &ValidationError{Name: "script", err: fmt.Errorf(`ent: validator failed for field "AllocationStrategy.script": %w`, err)}
 		}
 	}
 	return nil
@@ -165,8 +209,8 @@ func (asc *AllocationStrategyCreate) check() error {
 func (asc *AllocationStrategyCreate) sqlSave(ctx context.Context) (*AllocationStrategy, error) {
 	_node, _spec := asc.createSpec()
 	if err := sqlgraph.CreateNode(ctx, asc.driver, _spec); err != nil {
-		if cerr, ok := isSQLConstraintError(err); ok {
-			err = cerr
+		if sqlgraph.IsConstraintError(err) {
+			err = &ConstraintError{msg: err.Error(), wrap: err}
 		}
 		return nil, err
 	}
@@ -237,10 +281,29 @@ func (asc *AllocationStrategyCreate) createSpec() (*AllocationStrategy, *sqlgrap
 		}
 		_spec.Edges = append(_spec.Edges, edge)
 	}
+	if nodes := asc.mutation.PoolPropertyTypesIDs(); len(nodes) > 0 {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: false,
+			Table:   allocationstrategy.PoolPropertyTypesTable,
+			Columns: []string{allocationstrategy.PoolPropertyTypesColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: &sqlgraph.FieldSpec{
+					Type:   field.TypeInt,
+					Column: propertytype.FieldID,
+				},
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges = append(_spec.Edges, edge)
+	}
 	return _node, _spec
 }
 
-// AllocationStrategyCreateBulk is the builder for creating a bulk of AllocationStrategy entities.
+// AllocationStrategyCreateBulk is the builder for creating many AllocationStrategy entities in bulk.
 type AllocationStrategyCreateBulk struct {
 	config
 	builders []*AllocationStrategyCreate
@@ -269,19 +332,23 @@ func (ascb *AllocationStrategyCreateBulk) Save(ctx context.Context) ([]*Allocati
 				if i < len(mutators)-1 {
 					_, err = mutators[i+1].Mutate(root, ascb.builders[i+1].mutation)
 				} else {
+					spec := &sqlgraph.BatchCreateSpec{Nodes: specs}
 					// Invoke the actual operation on the latest mutation in the chain.
-					if err = sqlgraph.BatchCreate(ctx, ascb.driver, &sqlgraph.BatchCreateSpec{Nodes: specs}); err != nil {
-						if cerr, ok := isSQLConstraintError(err); ok {
-							err = cerr
+					if err = sqlgraph.BatchCreate(ctx, ascb.driver, spec); err != nil {
+						if sqlgraph.IsConstraintError(err) {
+							err = &ConstraintError{msg: err.Error(), wrap: err}
 						}
 					}
 				}
-				mutation.done = true
 				if err != nil {
 					return nil, err
 				}
-				id := specs[i].ID.Value.(int64)
-				nodes[i].ID = int(id)
+				mutation.id = &nodes[i].ID
+				if specs[i].ID.Value != nil {
+					id := specs[i].ID.Value.(int64)
+					nodes[i].ID = int(id)
+				}
+				mutation.done = true
 				return nodes[i], nil
 			})
 			for i := len(builder.hooks) - 1; i >= 0; i-- {
@@ -298,11 +365,24 @@ func (ascb *AllocationStrategyCreateBulk) Save(ctx context.Context) ([]*Allocati
 	return nodes, nil
 }
 
-// SaveX calls Save and panics if Save returns an error.
+// SaveX is like Save, but panics if an error occurs.
 func (ascb *AllocationStrategyCreateBulk) SaveX(ctx context.Context) []*AllocationStrategy {
 	v, err := ascb.Save(ctx)
 	if err != nil {
 		panic(err)
 	}
 	return v
+}
+
+// Exec executes the query.
+func (ascb *AllocationStrategyCreateBulk) Exec(ctx context.Context) error {
+	_, err := ascb.Save(ctx)
+	return err
+}
+
+// ExecX is like Exec, but panics if an error occurs.
+func (ascb *AllocationStrategyCreateBulk) ExecX(ctx context.Context) {
+	if err := ascb.Exec(ctx); err != nil {
+		panic(err)
+	}
 }

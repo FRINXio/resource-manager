@@ -2,8 +2,6 @@ package pools
 
 import (
 	"context"
-	"github.com/facebook/ent/dialect/sql"
-	"github.com/facebook/ent/dialect/sql/sqljson"
 	"github.com/net-auto/resourceManager/ent"
 	"github.com/net-auto/resourceManager/ent/predicate"
 	resource "github.com/net-auto/resourceManager/ent/resource"
@@ -11,6 +9,7 @@ import (
 	"github.com/net-auto/resourceManager/ent/schema"
 	log "github.com/net-auto/resourceManager/logging"
 	"github.com/pkg/errors"
+	"strconv"
 	"time"
 )
 
@@ -103,14 +102,6 @@ func (pool SetPool) Destroy() error {
 // ClaimResource allocates the next available resource
 func (pool SetPool) ClaimResource(userInput map[string]interface{}, description *string, alternativeId map[string]interface{}) (*ent.Resource, error) {
 
-	if alternativeId != nil {
-		res, err := pool.QueryResourceByAltId(alternativeId)
-		if res != nil {
-			return nil, errors.Wrapf(err,
-				"Unable to claim resource from set pool #%d, because resource with alternative ID %v already exists", pool.ID, alternativeId)
-		}
-	}
-
 	// Allocate new resource for this tag
 	unclaimedRes, err := pool.queryUnclaimedResourceEager()
 	if err != nil {
@@ -133,22 +124,22 @@ func (pool SetPool) ClaimResource(userInput map[string]interface{}, description 
 	return unclaimedRes, err
 }
 
-func (pool SetPool) Capacity() (float64, float64, error) {
+func (pool SetPool) Capacity() (string, string, error) {
 	claimedResources, err := pool.QueryResources()
 
 	if err != nil {
 		log.Error(pool.ctx, err, "Unable to retrieve resources for pool ID %d", pool.ID)
-		return 0, 0, err
+		return "0", "0", err
 	}
 
 	resources, err := pool.client.Resource.Query().Where(resource.HasPoolWith(resourcePool.ID(pool.ID))).All(pool.ctx)
 
 	if err != nil {
 		log.Error(pool.ctx, err, "Unable to retrieve resources for pool ID %d", pool.ID)
-		return 0, 0, err
+		return "0", "0", err
 	}
 
-	return float64(len(resources) - len(claimedResources)), float64(len(claimedResources)), nil
+	return strconv.Itoa(len(resources) - len(claimedResources)), strconv.Itoa(len(claimedResources)), nil
 }
 
 // FreeResource deallocates the resource identified by its properties
@@ -185,7 +176,7 @@ func (pool SetPool) freeResourceInner(raw RawResourceProps,
 	// Make sure there are no nested pools attached
 	if nestedPool, err := res.QueryNestedPool().First(pool.ctx); err != nil && !ent.IsNotFound(err) {
 		log.Error(pool.ctx, err, "Unable to free a resource in pool ID %d", pool.ID)
-		return errors.Wrapf(err, "Unable to free a resource in pool \"%s\". " +
+		return errors.Wrapf(err, "Unable to free a resource in pool \"%s\". "+
 			"Unable to check nested pools", pool.Name)
 	} else if nestedPool != nil {
 		err := errors.Errorf("Unable to free a resource in pool \"%s\". "+
@@ -253,7 +244,7 @@ func (pool SetPool) QueryResource(raw RawResourceProps) (*ent.Resource, error) {
 		Only(pool.ctx)
 
 	if err2 != nil {
-		log.Error(pool.ctx, err,  "Unable retrieve resources for pool ID %d", pool.ID)
+		log.Error(pool.ctx, err, "Unable retrieve resources for pool ID %d", pool.ID)
 	}
 
 	return only, err2
@@ -296,31 +287,20 @@ func (pool SetPool) QueryResources() (ent.Resources, error) {
 		All(pool.ctx)
 
 	if err != nil {
-		log.Error(pool.ctx, err,  "Unable retrieve resources for pool ID %d", pool.ID)
+		log.Error(pool.ctx, err, "Unable retrieve resources for pool ID %d", pool.ID)
 	}
 
 	return res, err
 }
 
-// QueryResourceByAltId returns resource if alt Id matches
-func (pool SetPool) QueryResourceByAltId(alternativeId map[string]interface{}) (*ent.Resource, error) {
-	res, err := pool.client.Resource.Query().
-		Where(func(selector *sql.Selector) {
-			for k, v := range alternativeId {
-				selector.Where(sqljson.ValueEQ("alternate_id", v, sqljson.Path(k)))
-			}
-		}).First(pool.ctx)
+// QueryPaginatedResources returns pagination allocated resources
+func (pool SetPool) QueryPaginatedResources(first *int, last *int, after *ent.Cursor, before *ent.Cursor) (*ent.ResourceConnection, error) {
+	res, err := pool.findResources().Where(resource.StatusEQ(resource.StatusClaimed)).
+		Paginate(pool.ctx, after, first, before, last)
 
 	if err != nil {
-		log.Error(pool.ctx, err, "Unable to retrieve resources in pool ID %d", pool.ID)
-		return nil, err
+		log.Error(pool.ctx, err, "Unable retrieve resources for pool ID %d", pool.ID)
 	}
 
-	if res != nil {
-		return res, nil
-	}
-
-	log.Warn(pool.ctx, "There is not such resource with alternative ID %v for pool ID %d", alternativeId, pool.ID)
-
-	return nil, errors.New("No such resource with given alternative ID")
+	return res, err
 }
