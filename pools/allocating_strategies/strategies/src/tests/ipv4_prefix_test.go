@@ -122,6 +122,7 @@ func TestIpv4PrefixAllocationSubnetVsPool(t *testing.T) {
 	}
 
 	userInput = map[string]interface{}{"desiredSize": 256}
+	ipv4PrefixStruct = src.NewIpv4Prefix(allocated, resourcePool, userInput)
 	output, err = ipv4PrefixStruct.Invoke()
 	expectedOutputError := errors.New("Unable to allocate Ipv4 prefix from: 192.168.1.0/24. Insufficient capacity to allocate a new prefix of size: 257\nCurrently allocated addresses: ")
 	if eq := reflect.DeepEqual(output, (map[string]interface{})(nil)); !eq {
