@@ -91,7 +91,7 @@ func TestIpv4PrefixAllocationSubnetVsPool(t *testing.T) {
 	var userInput = map[string]interface{}{"desiredSize": 2, "subnet": true}
 	ipv4PrefixStruct := src.NewIpv4Prefix(allocated, resourcePool, userInput)
 	output, err := ipv4PrefixStruct.Invoke()
-	expectedOutput := map[string]interface{}{"address": "192.168.1.0", "prefix": 30, "subnet": true}
+	expectedOutput := map[string]interface{}{"address": "192.168.1.0", "prefix": 31, "subnet": true}
 	if eq := reflect.DeepEqual(output, expectedOutput); !eq {
 		t.Fatalf("different output of %s expected, got: %s", expectedOutput, output)
 	}
