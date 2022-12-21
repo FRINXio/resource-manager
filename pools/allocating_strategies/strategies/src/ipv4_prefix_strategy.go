@@ -172,6 +172,12 @@ func (ipv4prefix *Ipv4Prefix) Invoke() (map[string]interface{}, error) {
 		desiredSize = desiredSize.(int) + 2
 	}
 
+	if desiredSize.(int) > rootCapacity {
+		return nil, errors.New("Unable to allocate Ipv4 prefix from: " + rootPrefixStr + ". " +
+			"Insufficient capacity to allocate a new prefix of size: " + strconv.Itoa(desiredSize.(int)) + "\n" +
+			"Currently allocated addresses: " + addressesToStr(ipv4prefix.currentResources))
+	}
+
 	newSubnetMask, newSubnetCapacity := ipv4prefix.calculateDesiredSubnetMask()
 
 	var currentResourcesStruct []Ipv4Struct
