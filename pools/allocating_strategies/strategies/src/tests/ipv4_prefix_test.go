@@ -75,7 +75,7 @@ func TestIpv4prefixCapacity24Mask(t *testing.T) {
 	var userInput map[string]interface{}
 	ipv4PrefixStruct := src.NewIpv4Prefix(allocated, resourcePool, userInput)
 	output, err := ipv4PrefixStruct.Capacity()
-	expectedOutput := map[string]interface{}{"freeCapacity": strconv.Itoa(240), "utilizedCapacity": strconv.Itoa(14)}
+	expectedOutput := map[string]interface{}{"freeCapacity": strconv.Itoa(242), "utilizedCapacity": strconv.Itoa(14)}
 	if eq := reflect.DeepEqual(output, expectedOutput); !eq {
 		t.Fatalf("different output of %s expected, got: %s", expectedOutput, output)
 	}
