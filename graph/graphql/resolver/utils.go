@@ -178,7 +178,6 @@ func QueryResourcesByAltId(ctx context.Context, client *ent.Client, alternativeI
 	}
 
 	if poolId != nil {
-		fmt.Println(poolId)
 		res, err := client.Resource.Query().
 			Where(resource.HasPoolWith(resourcePool.ID(*poolId))).
 			Where(func(selector *sql.Selector) {

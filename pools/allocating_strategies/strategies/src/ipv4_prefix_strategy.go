@@ -70,11 +70,11 @@ func (ipv4prefix *Ipv4Prefix) Capacity() (map[string]interface{}, error) {
 	if !ok {
 		return nil, errors.New("Unable to extract prefix resources")
 	}
-	totalCapacity := hostsInMask(rootAddressStr.(string), rootMask.(int))
+	totalCapacity := hostsInMask(rootAddressStr.(string), rootMask.(int)) + 2
 	allocatedCapacity := 0
 	var subnetItself = 0
-	if subnet, ok := ipv4prefix.userInput["subnet"]; ok && subnet.(bool) {
-		subnetItself = 1
+	if subnet, ok := ipv4prefix.resourcePoolProperties["subnet"].(bool); ok && subnet == true {
+		subnetItself = 2
 	}
 
 	for _, resource := range ipv4prefix.currentResources {
@@ -82,10 +82,10 @@ func (ipv4prefix *Ipv4Prefix) Capacity() (map[string]interface{}, error) {
 		if err != nil {
 			return nil, err
 		}
-		allocatedCapacity += hostsInMask(address, prefix)
+		allocatedCapacity += hostsInMask(address, prefix) + subnetItself
 	}
 	var result = make(map[string]interface{})
-	result["freeCapacity"] = strconv.FormatFloat(float64(totalCapacity-allocatedCapacity+subnetItself), 'g', 30, 64)
+	result["freeCapacity"] = strconv.FormatFloat(float64(totalCapacity-allocatedCapacity), 'g', 30, 64)
 	result["utilizedCapacity"] = strconv.Itoa(allocatedCapacity)
 
 	return result, nil
