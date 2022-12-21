@@ -138,6 +138,10 @@ func (ipv4prefix *Ipv4Prefix) Invoke() (map[string]interface{}, error) {
 	if !ok {
 		return nil, errors.New("Unable to extract prefix resources")
 	}
+	isSubnet, ok := ipv4prefix.resourcePoolProperties["subnet"]
+	if !ok {
+		return nil, errors.New("Unable to extract subnet resources")
+	}
 	rootMask, err := NumberToInt(rootMask)
 	if err != nil {
 		return nil, err
@@ -149,23 +153,23 @@ func (ipv4prefix *Ipv4Prefix) Invoke() (map[string]interface{}, error) {
 		return nil, err
 	}
 
-	desiredSize, ok := ipv4prefix.userInput["desiredSize"]
+	value, ok := ipv4prefix.userInput["desiredSize"]
 	if !ok {
 		return nil, errors.New("Unable to allocate subnet from root prefix: " + rootPrefixStr +
 			". Desired size of a new subnet size not provided as userInput.desiredSize")
 	}
-	desiredSize, err = NumberToInt(desiredSize)
+	desiredSize, err := NumberToInt(value)
 	if err != nil {
 		return nil, err
 	}
-
-	if desiredSize.(int) < 2 {
+	if desiredSize.(int) < 0 {
 		return nil, errors.New("Unable to allocate subnet from root prefix: " + rootPrefixStr +
 			". Desired size is invalid: " + strconv.Itoa(desiredSize.(int)) + ". Use values >= 2")
 	}
 
-	if value, ok := ipv4prefix.userInput["subnet"]; ok && value == true {
-		ipv4prefix.userInput["desiredSize"] = desiredSize.(int) + 2
+	if isSubnet.(bool) == true {
+		// reserve subnet address and broadcast
+		desiredSize = desiredSize.(int) + 2
 	}
 
 	newSubnetMask, newSubnetCapacity := ipv4prefix.calculateDesiredSubnetMask()
@@ -199,6 +203,8 @@ func (ipv4prefix *Ipv4Prefix) Invoke() (map[string]interface{}, error) {
 			// there is chunk with sufficient capacity between possibleSubnetNum and allocatedSubnet.address
 			result["address"] = inetNtoa(possibleSubnetNum)
 			result["prefix"] = newSubnetMask
+			result["subnet"] = isSubnet
+
 			return result, nil
 		}
 		// move possible subnet start to a valid address outside of allocatedSubnet's addresses and continue the search
@@ -210,6 +216,7 @@ func (ipv4prefix *Ipv4Prefix) Invoke() (map[string]interface{}, error) {
 		// there sure is some space, use it !
 		result["address"] = inetNtoa(possibleSubnetNum)
 		result["prefix"] = newSubnetMask
+		result["subnet"] = isSubnet
 		return result, nil
 	}
 
