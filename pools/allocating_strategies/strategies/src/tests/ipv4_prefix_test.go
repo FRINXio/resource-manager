@@ -45,7 +45,7 @@ func TestSingleAllocationSubnet(t *testing.T) {
 		var userInput = map[string]interface{}{"desiredSize": desiredSize, "subnet": true}
 		ipv4PrefixStruct := src.NewIpv4Prefix(allocated, resourcePool, userInput)
 		output, err := ipv4PrefixStruct.Invoke()
-		expectedOutput := map[string]interface{}{"address": "192.168.1.0", "prefix": 32 - i - 1, "subnet": true}
+		expectedOutput := map[string]interface{}{"address": "192.168.1.0", "prefix": 32 - i, "subnet": true}
 		if eq := reflect.DeepEqual(output, expectedOutput); !eq {
 			t.Fatalf("different output of %s expected, got: %s", expectedOutput, output)
 		}
@@ -99,10 +99,10 @@ func TestIpv4PrefixAllocationSubnetVsPool(t *testing.T) {
 		t.Fatalf("different output of nil expected, got: %s", err)
 	}
 
-	userInput = map[string]interface{}{"desiredSize": 2, "subnet": false}
+	userInput = map[string]interface{}{"desiredSize": 2, "subnet": true}
 	ipv4PrefixStruct = src.NewIpv4Prefix(allocated, resourcePool, userInput)
 	output, err = ipv4PrefixStruct.Invoke()
-	expectedOutput = map[string]interface{}{"address": "192.168.1.0", "prefix": 31, "subnet": false}
+	expectedOutput = map[string]interface{}{"address": "192.168.1.0", "prefix": 31, "subnet": true}
 	if eq := reflect.DeepEqual(output, expectedOutput); !eq {
 		t.Fatalf("different output of %s expected, got: %s", expectedOutput, output)
 	}
@@ -110,10 +110,10 @@ func TestIpv4PrefixAllocationSubnetVsPool(t *testing.T) {
 		t.Fatalf("different output of nil expected, got: %s", err)
 	}
 
-	userInput = map[string]interface{}{"desiredSize": 256, "subnet": false}
+	userInput = map[string]interface{}{"desiredSize": 256, "subnet": true}
 	ipv4PrefixStruct = src.NewIpv4Prefix(allocated, resourcePool, userInput)
 	output, err = ipv4PrefixStruct.Invoke()
-	expectedOutput = map[string]interface{}{"address": "192.168.1.0", "prefix": 24, "subnet": false}
+	expectedOutput = map[string]interface{}{"address": "192.168.1.0", "prefix": 24, "subnet": true}
 	if eq := reflect.DeepEqual(output, expectedOutput); !eq {
 		t.Fatalf("different output of %s expected, got: %s", expectedOutput, output)
 	}
