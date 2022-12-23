@@ -110,7 +110,7 @@ func TestIpv4PrefixAllocationSubnetVsPool(t *testing.T) {
 		t.Fatalf("different output of nil expected, got: %s", err)
 	}
 
-	userInput = map[string]interface{}{"desiredSize": 254}
+	userInput = map[string]interface{}{"desiredSize": 256}
 	ipv4PrefixStruct = src.NewIpv4Prefix(allocated, resourcePool, userInput)
 	output, err = ipv4PrefixStruct.Invoke()
 	expectedOutput = map[string]interface{}{"address": "192.168.1.0", "prefix": 24, "subnet": true}
@@ -121,15 +121,12 @@ func TestIpv4PrefixAllocationSubnetVsPool(t *testing.T) {
 		t.Fatalf("different output of nil expected, got: %s", err)
 	}
 
+	allocated = []map[string]interface{}{ipv4Prefix("192.168.1.0", 24, false)}
 	userInput = map[string]interface{}{"desiredSize": 256}
 	ipv4PrefixStruct = src.NewIpv4Prefix(allocated, resourcePool, userInput)
 	output, err = ipv4PrefixStruct.Invoke()
-	expectedOutputError := errors.New("Unable to allocate Ipv4 prefix from: 192.168.1.0/24. Insufficient capacity to allocate a new prefix of size: 258\nCurrently allocated addresses: ")
 	if eq := reflect.DeepEqual(output, (map[string]interface{})(nil)); !eq {
 		t.Fatalf("different output of nil expected, got: %s", output)
-	}
-	if eq := reflect.DeepEqual(err.Error(), expectedOutputError.Error()); !eq {
-		t.Fatalf("different output of %s expected, got: %s", expectedOutputError, err)
 	}
 }
 

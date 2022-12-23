@@ -166,12 +166,6 @@ func (ipv4prefix *Ipv4Prefix) Invoke() (map[string]interface{}, error) {
 		return nil, errors.New("Unable to allocate subnet from root prefix: " + rootPrefixStr +
 			". Desired size is invalid: " + strconv.Itoa(desiredSize.(int)) + ". Use values >= 2")
 	}
-
-	if isSubnet.(bool) == true {
-		// reserve subnet address and broadcast
-		desiredSize = desiredSize.(int) + 2
-	}
-
 	if desiredSize.(int) > rootCapacity {
 		return nil, errors.New("Unable to allocate Ipv4 prefix from: " + rootPrefixStr + ". " +
 			"Insufficient capacity to allocate a new prefix of size: " + strconv.Itoa(desiredSize.(int)) + "\n" +
