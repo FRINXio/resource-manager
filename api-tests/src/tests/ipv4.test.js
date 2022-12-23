@@ -162,3 +162,48 @@ test('ipv4_pool parallelly', async (t) => {
     await cleanup()
     t.end();
 });
+
+test('allocate resource from ipv4 prefix pool with desired value', async (t) => {
+    const pool = await createIpv4PrefixRootPool();
+    const allocatedResource = await claimResource(pool.id, {desiredSize: 6, desiredValue: "10.0.0.16"});
+
+    t.same(allocatedResource.Properties, {address: "10.0.0.16", prefix: 29, subnet: false});
+
+    console.log(allocatedResource.Properties);
+
+    await cleanup();
+    t.end();
+});
+
+test('insufficient capacity to claim resource in ipv4 prefix pool', async (t) => {
+    const pool = await createIpv4PrefixRootPool();
+    await claimResource(pool.id, {desiredSize: 64, desiredValue: "10.0.0.128"});
+    const allocatedResource = await claimResource(pool.id, {desiredSize: 128, desiredValue: "10.0.0.128"});
+
+    t.notOk(allocatedResource);
+
+    await cleanup();
+    t.end();
+});
+
+test('invalid desired value when claiming resource from ipv4 prefix pool', async (t) => {
+    const pool = await createIpv4PrefixRootPool();
+    const allocatedResource = await claimResource(pool.id, {desiredSize: 128, desiredValue: "10.0.0.53"});
+
+    t.notOk(allocatedResource);
+
+    await cleanup();
+    t.end();
+});
+
+test('overlapping subnet with provided desired value', async (t) => {
+    const pool = await createIpv4PrefixRootPool();
+    await claimResource(pool.id, {desiredSize: 30, desiredValue: "10.0.0.0"});
+    await claimResource(pool.id, {desiredSize: 6, desiredValue: "10.0.0.24"});
+    const allocatedResource = await claimResource(pool.id, {desiredSize: 14, desiredValue: "10.0.0.16"});
+
+    t.notOk(allocatedResource);
+
+    await cleanup();
+    t.end();
+});
