@@ -332,3 +332,54 @@ func TestFreeIpv4PrefixUtilisation(t *testing.T) {
 		t.Fatalf("different output of %d expected, got: %d", expectedOutput, output)
 	}
 }
+
+func TestClaimResourceWithDesiredValue(t *testing.T) {
+	var allocated []map[string]interface{}
+	var resourcePool = map[string]interface{}{"prefix": 24, "address": "192.168.1.0", "subnet": false}
+	var userInput = map[string]interface{}{"desiredSize": 8, "desiredValue": "192.168.1.32"}
+	ipv4PrefixStruct := src.NewIpv4Prefix(allocated, resourcePool, userInput)
+	output, _ := ipv4PrefixStruct.Invoke()
+
+	expectedOutput := map[string]interface{}{"address": "192.168.1.32", "prefix": 29, "subnet": false}
+	if eq := reflect.DeepEqual(output, expectedOutput); !eq {
+		t.Fatalf("different output of %s expected, got: %s", expectedOutput, output)
+	}
+}
+
+func TestClaimResourceWithoutDesiredValue(t *testing.T) {
+	var allocated = []map[string]interface{}{ipv4Prefix("192.168.1.0", 29, false)}
+	var resourcePool = map[string]interface{}{"prefix": 24, "address": "192.168.1.0", "subnet": false}
+	var userInput = map[string]interface{}{"desiredSize": 8}
+	ipv4PrefixStruct := src.NewIpv4Prefix(allocated, resourcePool, userInput)
+	output, _ := ipv4PrefixStruct.Invoke()
+
+	expectedOutput := map[string]interface{}{"address": "192.168.1.8", "prefix": 29, "subnet": false}
+	if eq := reflect.DeepEqual(output, expectedOutput); !eq {
+		t.Fatalf("different output of %s expected, got: %s", expectedOutput, output)
+	}
+}
+
+func TestClaimResourceInPoolWithAllocatedResources(t *testing.T) {
+	var allocated = []map[string]interface{}{ipv4Prefix("192.168.1.40", 29, false), ipv4Prefix("192.168.1.0", 29, false)}
+	var resourcePool = map[string]interface{}{"prefix": 24, "address": "192.168.1.0", "subnet": false}
+	var userInput = map[string]interface{}{"desiredSize": 8, "desiredValue": "192.168.1.16"}
+	ipv4PrefixStruct := src.NewIpv4Prefix(allocated, resourcePool, userInput)
+	output, _ := ipv4PrefixStruct.Invoke()
+
+	expectedOutput := map[string]interface{}{"address": "192.168.1.16", "prefix": 29, "subnet": false}
+	if eq := reflect.DeepEqual(output, expectedOutput); !eq {
+		t.Fatalf("different output of %s expected, got: %s", expectedOutput, output)
+	}
+}
+
+func TestOverlappingResourcesWithDesiredValue(t *testing.T) {
+	var allocated = []map[string]interface{}{ipv4Prefix("192.168.1.128", 25, false)}
+	var resourcePool = map[string]interface{}{"prefix": 24, "address": "192.168.1.0", "subnet": false}
+	var userInput = map[string]interface{}{"desiredSize": 256, "desiredValue": "192.168.1.0"}
+	ipv4PrefixStruct := src.NewIpv4Prefix(allocated, resourcePool, userInput)
+	output, _ := ipv4PrefixStruct.Invoke()
+
+	if eq := reflect.DeepEqual(output, (map[string]interface{})(nil)); !eq {
+		t.Fatalf("different output of nil expected, got: %s", output)
+	}
+}
