@@ -2,6 +2,7 @@ package pools
 
 import (
 	"context"
+
 	"github.com/net-auto/resourceManager/ent"
 	"github.com/net-auto/resourceManager/ent/allocationstrategy"
 	"github.com/net-auto/resourceManager/ent/propertytype"
@@ -80,7 +81,7 @@ func loadIpv4Prefix(ctx context.Context, client *ent.Tx) error {
 
 	_, err = client.AllocationStrategy.Create().
 		SetName("ipv4_prefix").
-		SetLang(allocationstrategy.LangJs).
+		SetLang(allocationstrategy.LangGo).
 		SetScript(IPV4_PREFIX).
 		AddPoolPropertyTypes(expectedPoolPropAddr, expectedPoolPropPrefix, expectedPoolPropSubnet).
 		Save(ctx)

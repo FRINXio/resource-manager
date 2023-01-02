@@ -1,10 +1,11 @@
 package src
 
 import (
-	"github.com/pkg/errors"
 	"math/big"
 	"sort"
 	"strconv"
+
+	"github.com/pkg/errors"
 )
 
 type Ipv6Prefix struct {
@@ -122,7 +123,7 @@ func (ipv6Prefix *Ipv6Prefix) Invoke() (map[string]interface{}, error) {
 
 	var currentResourcesStruct []Ipv6PrefixStruct
 	for _, resource := range ipv6Prefix.currentResources {
-		address, prefix, err := getAddressAndPrefixFromCurrentResource(resource)
+		address, prefix, err := getIPv6AddressAndPrefixFromCurrentResource(resource)
 		if err != nil {
 			return nil, err
 		}
@@ -161,7 +162,7 @@ func (ipv6Prefix *Ipv6Prefix) Invoke() (map[string]interface{}, error) {
 		}
 
 		// move possible subnet start to a valid address outside of allocatedSubnet's addresses and continue the search
-		possibleSubnetNum, err = findNextFreeSubnetAddress(currentResource, newSubnetMask)
+		possibleSubnetNum, err = findNextFreeSubnetIPv6Address(currentResource, newSubnetMask)
 		if err != nil {
 			return nil, err
 		}
@@ -203,7 +204,7 @@ func calculateDesiredSubnetMask(desiredSize *big.Int) (int, *big.Int) {
 // calculate the nearest possible address for a subnet where mask === newSubnetMask
 //
 //	that is outside allocatedSubnet
-func findNextFreeSubnetAddress(allocatedSubnet Ipv6PrefixStruct, newSubnetMask int) (*big.Int, error) {
+func findNextFreeSubnetIPv6Address(allocatedSubnet Ipv6PrefixStruct, newSubnetMask int) (*big.Int, error) {
 	address, err := Ipv6InetAton(allocatedSubnet.address)
 	if err != nil {
 		return nil, err
@@ -223,7 +224,7 @@ func findNextFreeSubnetAddress(allocatedSubnet Ipv6PrefixStruct, newSubnetMask i
 	return possibleSubnetNum, nil
 }
 
-func getAddressAndPrefixFromCurrentResource(currentResource map[string]interface{}) (string, int, error) {
+func getIPv6AddressAndPrefixFromCurrentResource(currentResource map[string]interface{}) (string, int, error) {
 	value, ok := currentResource["Properties"]
 	if !ok {
 		return "", 0, errors.New("Unable to extract properties from resource")

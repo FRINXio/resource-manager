@@ -194,7 +194,7 @@ func (r *mutationResolver) TestAllocationStrategy(ctx context.Context, allocatio
 func (r *mutationResolver) ClaimResource(ctx context.Context, poolID int, description *string, userInput map[string]interface{}) (*ent.Resource, error) {
 	pool, err := p.ExistingPoolFromId(ctx, r.ClientFrom(ctx), poolID)
 	if err != nil {
-		return nil, gqlerror.Errorf("Unable to claim resource: %v", err)
+		return nil, gqlerror.Errorf("Resource pool is not existing, for you to be able to claim resource: %v", err)
 	}
 
 	return ClaimResource(pool, userInput, description, nil)
@@ -204,7 +204,7 @@ func (r *mutationResolver) ClaimResource(ctx context.Context, poolID int, descri
 func (r *mutationResolver) ClaimResourceWithAltID(ctx context.Context, poolID int, description *string, userInput map[string]interface{}, alternativeID map[string]interface{}) (*ent.Resource, error) {
 	pool, err := p.ExistingPoolFromId(ctx, r.ClientFrom(ctx), poolID)
 	if err != nil {
-		return nil, gqlerror.Errorf("Unable to claim resource: %v", err)
+		return nil, gqlerror.Errorf("Resource pool is not existing, for you to be able to claim resource: %v", err)
 	}
 
 	return ClaimResource(pool, userInput, description, alternativeID)
