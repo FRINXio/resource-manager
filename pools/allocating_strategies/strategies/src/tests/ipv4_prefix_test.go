@@ -1,7 +1,6 @@
 package tests
 
 import (
-	"fmt"
 	"math"
 	"reflect"
 	"strconv"
@@ -339,9 +338,7 @@ func TestClaimResourceWithDesiredValue(t *testing.T) {
 	var resourcePool = map[string]interface{}{"prefix": 24, "address": "192.168.1.0", "subnet": false}
 	var userInput = map[string]interface{}{"desiredSize": 8, "desiredValue": "192.168.1.32"}
 	ipv4PrefixStruct := src.NewIpv4Prefix(allocated, resourcePool, userInput)
-	output, err := ipv4PrefixStruct.Invoke()
-
-	fmt.Printf("error when claiming resource with desired value: %s\n", err)
+	output, _ := ipv4PrefixStruct.Invoke()
 
 	expectedOutput := map[string]interface{}{"address": "192.168.1.32", "prefix": 29, "subnet": false}
 	if eq := reflect.DeepEqual(output, expectedOutput); !eq {

@@ -1,7 +1,6 @@
 package src
 
 import (
-	"fmt"
 	"math"
 	"sort"
 	"strconv"
@@ -174,7 +173,6 @@ func (ipv4prefix *Ipv4Prefix) Invoke() (map[string]interface{}, error) {
 		return nil, errors.New("Unable to allocate subnet from root prefix: " + rootPrefixStr +
 			". Desired size is invalid: " + strconv.Itoa(desiredSize.(int)) + ". Use values >= 2")
 	}
-
 	newSubnetMask, newSubnetCapacity := ipv4prefix.calculateDesiredSubnetMask()
 
 	var currentResourcesStruct []Ipv4Struct
@@ -197,8 +195,6 @@ func (ipv4prefix *Ipv4Prefix) Invoke() (map[string]interface{}, error) {
 
 	possibleSubnetNum := rootAddressNum
 	var result = make(map[string]interface{})
-
-	fmt.Printf("desiredSize: %d and desiredValue: %s\n", desiredSize, desiredValue)
 
 	// iterate over allocated subnets and see if a desired new subnet can be squeezed in
 	for _, allocatedSubnet := range currentResourcesStruct {
