@@ -216,7 +216,7 @@ function invoke() {
     let currentResourcesUnwrapped = currentResources.map(cR => cR.Properties)
     currentResourcesUnwrapped.sort(comparePrefix)
 
-    let possibleSubnetNum = rootAddressNum;
+    let possibleSubnetNum = rootAddressNum
     // iterate over allocated subnets and see if a desired new subnet can be squeezed in
     for (let allocatedSubnet of currentResourcesUnwrapped) {
 
@@ -1605,6 +1605,5 @@ function capacity() {
         utilizedCapacity: String(currentResources.length)
     };
 }
-
 
 `
