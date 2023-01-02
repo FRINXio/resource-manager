@@ -126,8 +126,7 @@ func CompareProps(
 }
 
 // ParseProps turns a map such as ["a": 3, "b": "value"] into a list of properties and stores them in DB
-//
-//	uses resource type to find out what are the predefined types for each value
+//  uses resource type to find out what are the predefined types for each value
 func ParseProps(
 	ctx context.Context,
 	tx *ent.Client,
@@ -216,8 +215,7 @@ func ParseProps(
 }
 
 // ToRawTypes converts between []map[string]interface{} and []RawResourceProps
-//
-//	which is the same thing ... but not to the compiler
+//  which is the same thing ... but not to the compiler
 func ToRawTypes(poolValues []map[string]interface{}) []RawResourceProps {
 	var rawProps []RawResourceProps
 	for _, v := range poolValues {

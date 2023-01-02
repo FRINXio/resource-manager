@@ -81,7 +81,7 @@ func indexOf(data []string, element string) int {
 	return -1
 }
 
-// number of addresses in a subnet based on its mask
+//number of addresses in a subnet based on its mask
 func ipv6SubnetAddresses(mask int) *big.Int {
 	return new(big.Int).Lsh(big.NewInt(1), uint(128-mask))
 }
@@ -160,7 +160,7 @@ func prefixesToStr(currentResourcesAddresses []Ipv6PrefixStruct) string {
 
 func prefixToRangeStr(prefix map[string]interface{}) string {
 	addressAton, _ := Ipv6InetAton(prefix["address"].(string))
-	addressAton.Add(addressAton, ipv6SubnetAddresses(prefix["prefix"].(int)-1))
+	addressAton.Add(addressAton, ipv6SubnetAddresses(prefix["prefix"].(int) - 1))
 	addressNtoa := Ipv6InetNtoa(addressAton)
 	return "[" + prefix["address"].(string) + "-" + addressNtoa + "]"
 }

@@ -16,7 +16,7 @@ func TestIpv6IAddressToAmountAddresses(t *testing.T) {
 
 func TestIpv6AmountAddressesToStringAddress(t *testing.T) {
 	input, _ := new(big.Int).SetString("295986882420777848964380943247191621359", 10)
-	b := src.Ipv6InetNtoa(input)
+	b:= src.Ipv6InetNtoa(input)
 	if eq := reflect.DeepEqual(b, "dead::beef"); !eq {
 		t.Fatalf("different output of nil expected, got: %s", b)
 	}
