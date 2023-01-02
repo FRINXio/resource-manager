@@ -9,7 +9,7 @@ import (
 func inetNtoa(addrint int) string {
 	return strconv.Itoa((addrint >> 24) & 0xff) + "." +
 		strconv.Itoa((addrint >> 16) & 0xff) + "." +
-		strconv.Itoa((addrint >> 8) & 0xff)+ "." +
+		strconv.Itoa((addrint >> 8) & 0xff) + "." +
 		strconv.Itoa(addrint & 0xff)
 }
 
