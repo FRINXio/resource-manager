@@ -304,4 +304,3 @@ func (pool SetPool) QueryPaginatedResources(first *int, last *int, after *ent.Cu
 
 	return res, err
 }
-
