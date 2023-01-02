@@ -4,18 +4,19 @@ import (
 	"bytes"
 	"context"
 	"encoding/json"
-	"github.com/net-auto/resourceManager/graph/graphql/model"
-	strategies "github.com/net-auto/resourceManager/pools/allocating_strategies/strategies/generated"
 	"os"
 	"os/exec"
 	"strconv"
 	"strings"
 	"time"
 
+	strategies "github.com/net-auto/resourceManager/pools/allocating_strategies/strategies/generated"
+
 	log "github.com/net-auto/resourceManager/logging"
 
 	"github.com/net-auto/resourceManager/ent"
 	"github.com/net-auto/resourceManager/ent/allocationstrategy"
+	"github.com/net-auto/resourceManager/graph/graphql/model"
 	"github.com/pkg/errors"
 )
 
@@ -199,6 +200,10 @@ func invokeGo(
 	case "ipv6_prefix":
 		// TODO: Pass currentResourcesArray as pointer
 		id := strategies.NewIpv6Prefix(currentResourcesArray, poolPropertiesMaps, userInput)
+		goStrategy = &id
+	case "ipv4_prefix":
+		// TODO: Pass currentResourcesArray as pointer
+		id := strategies.NewIpv4Prefix(currentResourcesArray, poolPropertiesMaps, userInput)
 		goStrategy = &id
 	default:
 		return nil, "", errors.New("Not known go strategy")
