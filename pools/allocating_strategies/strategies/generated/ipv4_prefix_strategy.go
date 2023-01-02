@@ -1,6 +1,7 @@
 package src
 
 import (
+	"fmt"
 	"math"
 	"sort"
 	"strconv"
@@ -160,17 +161,18 @@ func (ipv4prefix *Ipv4Prefix) Invoke() (map[string]interface{}, error) {
 			". Desired size of a new subnet size not provided as userInput.desiredSize")
 	}
 	desiredSize, err := NumberToInt(value)
+	desiredValue, isDesiredValueOk := ipv4prefix.userInput["desiredValue"]
+
+	if !isDesiredValueOk {
+		desiredValue = nil
+	}
+
 	if err != nil {
 		return nil, err
 	}
 	if desiredSize.(int) < 0 {
 		return nil, errors.New("Unable to allocate subnet from root prefix: " + rootPrefixStr +
 			". Desired size is invalid: " + strconv.Itoa(desiredSize.(int)) + ". Use values >= 2")
-	}
-	if desiredSize.(int) > rootCapacity {
-		return nil, errors.New("Unable to allocate Ipv4 prefix from: " + rootPrefixStr + ". " +
-			"Insufficient capacity to allocate a new prefix of size: " + strconv.Itoa(desiredSize.(int)) + "\n" +
-			"Currently allocated addresses: " + addressesToStr(ipv4prefix.currentResources))
 	}
 
 	newSubnetMask, newSubnetCapacity := ipv4prefix.calculateDesiredSubnetMask()
@@ -196,29 +198,66 @@ func (ipv4prefix *Ipv4Prefix) Invoke() (map[string]interface{}, error) {
 	possibleSubnetNum := rootAddressNum
 	var result = make(map[string]interface{})
 
+	fmt.Printf("desiredSize: %d and desiredValue: %s\n", desiredSize, desiredValue)
+
 	// iterate over allocated subnets and see if a desired new subnet can be squeezed in
 	for _, allocatedSubnet := range currentResourcesStruct {
 		allocatedSubnetNum, _ := inetAton(allocatedSubnet.address)
 		chunkCapacity := allocatedSubnetNum - possibleSubnetNum
-		if chunkCapacity >= desiredSize.(int) {
-			// there is chunk with sufficient capacity between possibleSubnetNum and allocatedSubnet.address
-			result["address"] = inetNtoa(possibleSubnetNum)
-			result["prefix"] = newSubnetMask
-			result["subnet"] = isSubnet
 
-			return result, nil
+		if desiredValue != nil {
+			desiredValueNum, _ := inetAton(desiredValue.(string))
+			for possibleSubnetNum <= desiredValueNum {
+				if chunkCapacity >= desiredSize.(int) && desiredValueNum == possibleSubnetNum {
+					// there is chunk with sufficient capacity between possibleSubnetNum and allocatedSubnet.address
+					result["address"] = inetNtoa(possibleSubnetNum)
+					result["prefix"] = newSubnetMask
+					result["subnet"] = isSubnet
+
+					return result, nil
+				}
+
+				chunkCapacity -= newSubnetCapacity
+				possibleSubnetNum += newSubnetCapacity
+			}
+		} else {
+			if chunkCapacity >= desiredSize.(int) {
+				// there is chunk with sufficient capacity between possibleSubnetNum and allocatedSubnet.address
+				result["address"] = inetNtoa(possibleSubnetNum)
+				result["prefix"] = newSubnetMask
+				result["subnet"] = isSubnet
+
+				return result, nil
+			}
 		}
-		// move possible subnet start to a valid address outside of allocatedSubnet's addresses and continue the search
+
+		// move possible subnet start to a valid address outside allocatedSubnet's addresses and continue the search
 		possibleSubnetNum = findNextFreeSubnetAddress(allocatedSubnet, newSubnetMask)
 	}
 
-	// check if there is any space left at the end of parent range
-	if possibleSubnetNum+newSubnetCapacity <= rootAddressNum+rootCapacity {
-		// there sure is some space, use it !
-		result["address"] = inetNtoa(possibleSubnetNum)
-		result["prefix"] = newSubnetMask
-		result["subnet"] = isSubnet
-		return result, nil
+	if desiredValue != nil {
+		desiredValueNum, _ := inetAton(desiredValue.(string))
+		for possibleSubnetNum+newSubnetCapacity <= rootAddressNum+rootCapacity {
+			var hasFreeSpaceInRange = possibleSubnetNum+newSubnetCapacity <= rootAddressNum+rootCapacity
+
+			if hasFreeSpaceInRange && possibleSubnetNum == desiredValueNum {
+				result["address"] = inetNtoa(possibleSubnetNum)
+				result["prefix"] = newSubnetMask
+				result["subnet"] = isSubnet
+				return result, nil
+			}
+
+			possibleSubnetNum += newSubnetCapacity
+		}
+	} else {
+		// check if there is any space left at the end of parent range
+		if possibleSubnetNum+newSubnetCapacity <= rootAddressNum+rootCapacity {
+			// there sure is some space, use it !
+			result["address"] = inetNtoa(possibleSubnetNum)
+			result["prefix"] = newSubnetMask
+			result["subnet"] = isSubnet
+			return result, nil
+		}
 	}
 
 	return nil, errors.New("Unable to allocate Ipv4 prefix from: " + rootPrefixStr + ". " +
