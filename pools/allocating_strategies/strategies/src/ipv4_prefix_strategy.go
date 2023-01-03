@@ -4,6 +4,7 @@ import (
 	"math"
 	"sort"
 	"strconv"
+	"strings"
 
 	"github.com/pkg/errors"
 )
@@ -174,6 +175,16 @@ func (ipv4prefix *Ipv4Prefix) Invoke() (map[string]interface{}, error) {
 			". Desired size is invalid: " + strconv.Itoa(desiredSize.(int)) + ". Use values >= 2")
 	}
 	newSubnetMask, newSubnetCapacity := ipv4prefix.calculateDesiredSubnetMask()
+
+	networkAddresses, err := networkAddressesInSubnet(rootAddressStr.(string), rootMask.(int), newSubnetCapacity, newSubnetMask)
+
+	if err != nil && desiredValue != nil {
+		return nil, errors.New("We weren't able to handle formatting of provided inputs, that were in incorrect shape")
+	}
+
+	if isHostAddressValid(networkAddresses, desiredValue.(string)) == false {
+		return nil, errors.New("You provided invalid host address. Try again with different value such as: [" + strings.Join(networkAddresses, " , ") + "]")
+	}
 
 	var currentResourcesStruct []Ipv4Struct
 	for _, resource := range ipv4prefix.currentResources {

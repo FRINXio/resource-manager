@@ -7,10 +7,10 @@ import (
 )
 
 func inetNtoa(addrint int) string {
-	return strconv.Itoa((addrint >> 24) & 0xff) + "." +
-		strconv.Itoa((addrint >> 16) & 0xff) + "." +
-		strconv.Itoa((addrint >> 8) & 0xff)+ "." +
-		strconv.Itoa(addrint & 0xff)
+	return strconv.Itoa((addrint>>24)&0xff) + "." +
+		strconv.Itoa((addrint>>16)&0xff) + "." +
+		strconv.Itoa((addrint>>8)&0xff) + "." +
+		strconv.Itoa(addrint&0xff)
 }
 
 func inetAton(addrstr string) (int, error) {
@@ -24,7 +24,7 @@ func inetAton(addrstr string) (int, error) {
 		if n, err := strconv.Atoi(res[i]); err != nil && (n < 0 || n > 255) {
 			return 0, errors.New("Address: " + addrstr + " is invalid, outside of ipv4 range: " + addrstr)
 		} else {
-			numbers[i - 1] = n
+			numbers[i-1] = n
 		}
 	}
 	return (numbers[0] << 24) | (numbers[1] << 16) | (numbers[2] << 8) | numbers[3], nil
@@ -68,4 +68,41 @@ func prefixToStr(prefix map[string]interface{}) string {
 	prefixStr, _ := prefix["prefix"]
 	prefixStr, _ = NumberToInt(prefixStr)
 	return addressStr.(string) + "/" + strconv.Itoa(prefixStr.(int))
+}
+
+func networkAddressesInSubnet(rootAddress string, rootSubnetMask int, subnetCapacity int, newSubnetMask int) ([]string, error) {
+	possibleSubnetsInRootPool := subnetAddresses(rootSubnetMask) / subnetAddresses(newSubnetMask)
+	rootAddressNum, err := inetAton(rootAddress)
+
+	if err != nil {
+		return nil, err
+	}
+
+	currentAddressNum := rootAddressNum
+	networkAddresses := make([]string, possibleSubnetsInRootPool)
+
+	for i := 0; i <= possibleSubnetsInRootPool; i += subnetCapacity {
+		networkAddresses = append(networkAddresses, inetNtoa(currentAddressNum))
+
+		currentAddressNum += subnetCapacity
+	}
+
+	return networkAddresses, nil
+}
+
+func isHostAddressValid(networkAddresses []string, desiredAddress string) bool {
+	desiredAddressNum, err := inetAton(desiredAddress)
+
+	if err != nil {
+		return false
+	}
+
+	for i := 0; i < len(networkAddresses); i++ {
+		// check
+		if addrNum, _ := inetAton(networkAddresses[i]); addrNum == desiredAddressNum {
+			// return true
+			return true
+		}
+	}
+	return false
 }
