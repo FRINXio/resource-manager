@@ -69,3 +69,40 @@ func prefixToStr(prefix map[string]interface{}) string {
 	prefixStr, _ = NumberToInt(prefixStr)
 	return addressStr.(string) + "/" + strconv.Itoa(prefixStr.(int))
 }
+
+func networkAddressesInSubnet(rootAddress string, rootSubnetMask int, subnetCapacity int, newSubnetMask int) ([]string, error) {
+	possibleSubnetsInRootPool := subnetAddresses(rootSubnetMask) / subnetAddresses(newSubnetMask)
+	rootAddressNum, err := inetAton(rootAddress)
+
+	if err != nil {
+		return nil, err
+	}
+
+	currentAddressNum := rootAddressNum
+	networkAddresses := make([]string, possibleSubnetsInRootPool)
+
+	for i := 0; i <= possibleSubnetsInRootPool; i += subnetCapacity {
+		networkAddresses = append(networkAddresses, inetNtoa(currentAddressNum))
+
+		currentAddressNum += subnetCapacity
+	}
+
+	return networkAddresses, nil
+}
+
+func isHostAddressValid(networkAddresses []string, desiredAddress string) bool {
+	desiredAddressNum, err := inetAton(desiredAddress)
+
+	if err != nil {
+		return false
+	}
+
+	for i := 0; i < len(networkAddresses); i++ {
+		// check
+		if addrNum, _ := inetAton(networkAddresses[i]); addrNum == desiredAddressNum {
+			// return true
+			return true
+		}
+	}
+	return false
+}
