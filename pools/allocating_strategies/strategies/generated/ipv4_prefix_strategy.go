@@ -182,8 +182,10 @@ func (ipv4prefix *Ipv4Prefix) Invoke() (map[string]interface{}, error) {
 		return nil, errors.New("We weren't able to handle formatting of provided inputs, that were in incorrect shape")
 	}
 
-	if isHostAddressValid(networkAddresses, desiredValue.(string)) == false {
-		return nil, errors.New("You provided invalid host address. Try again with different value such as: [" + strings.Join(networkAddresses, " , ") + "]")
+	if desiredValue != nil {
+		if isHostAddressValid(networkAddresses, desiredValue.(string)) == false {
+			return nil, errors.New("You provided invalid host address. Try again with different value such as: [" + strings.Join(networkAddresses, " , ") + "]")
+		}
 	}
 
 	var currentResourcesStruct []Ipv4Struct
