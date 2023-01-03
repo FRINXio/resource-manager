@@ -7,10 +7,10 @@ import (
 )
 
 func inetNtoa(addrint int) string {
-	return strconv.Itoa((addrint>>24)&0xff) + "." +
-		strconv.Itoa((addrint>>16)&0xff) + "." +
-		strconv.Itoa((addrint>>8)&0xff) + "." +
-		strconv.Itoa(addrint&0xff)
+	return strconv.Itoa((addrint >> 24) & 0xff) + "." +
+		strconv.Itoa((addrint >> 16) & 0xff) + "." +
+		strconv.Itoa((addrint >> 8) & 0xff)+ "." +
+		strconv.Itoa(addrint & 0xff)
 }
 
 func inetAton(addrstr string) (int, error) {
@@ -24,7 +24,7 @@ func inetAton(addrstr string) (int, error) {
 		if n, err := strconv.Atoi(res[i]); err != nil && (n < 0 || n > 255) {
 			return 0, errors.New("Address: " + addrstr + " is invalid, outside of ipv4 range: " + addrstr)
 		} else {
-			numbers[i-1] = n
+			numbers[i - 1] = n
 		}
 	}
 	return (numbers[0] << 24) | (numbers[1] << 16) | (numbers[2] << 8) | numbers[3], nil

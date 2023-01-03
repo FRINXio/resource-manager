@@ -1,12 +1,10 @@
 package src
 
 import (
+	"github.com/pkg/errors"
 	"math"
 	"sort"
 	"strconv"
-	"strings"
-
-	"github.com/pkg/errors"
 )
 
 type Ipv4Struct struct {
@@ -184,7 +182,7 @@ func (ipv4prefix *Ipv4Prefix) Invoke() (map[string]interface{}, error) {
 
 	if desiredValue != nil {
 		if isHostAddressValid(networkAddresses, desiredValue.(string)) == false {
-			return nil, errors.New("You provided invalid host address. Try again with different value such as: [" + strings.Join(networkAddresses, " , ") + "]")
+			return nil, errors.New("You provided invalid host address.")
 		}
 	}
 
