@@ -1,7 +1,6 @@
 package src
 
 import (
-	"fmt"
 	"github.com/pkg/errors"
 	"math"
 	"sort"
@@ -87,6 +86,7 @@ func (ipv4prefix *Ipv4Prefix) Capacity() (map[string]interface{}, error) {
 
 	if isSubnetOk && isSubnet == false && rootMask.(int) != 31 && rootMask.(int) != 32 {
 		// we are adding 2 because total capacity is not only host addresses but also network and broadcast addresses
+		// 31 and 32 prefixes return constant value, so there is not needed this calculation
 		totalCapacity += 2
 	}
 
@@ -95,19 +95,19 @@ func (ipv4prefix *Ipv4Prefix) Capacity() (map[string]interface{}, error) {
 		if err != nil {
 			return nil, err
 		}
+		// we are calculating 2 separate allocated capacity values because when subnet is true there is needed different calculation to show correct capacity
 		allocatedCapacity += hostsInMask(address, prefix) + 2
 		allocatedCapacityResult += hostsInMask(address, prefix)
 	}
 
 	var freeCapacity float64
+	// we are handling the edge case when allocated capacity is same as total capacity,
+	// then we need to add network and broadcast address (+2) of the main subnet
 	if totalCapacity+2 == allocatedCapacity {
-		fmt.Println(totalCapacity+2 == allocatedCapacity)
 		freeCapacity = 0
 	} else {
 		freeCapacity = float64(totalCapacity - allocatedCapacity)
 	}
-
-	fmt.Println(freeCapacity, totalCapacity, allocatedCapacity)
 
 	var result = make(map[string]interface{})
 	result["freeCapacity"] = strconv.FormatFloat(freeCapacity, 'g', 30, 64)

@@ -35,7 +35,7 @@ export async function createRandomIntRootPool() {
     return pool.id;
 }
 
-export async function createIpv4RootPool(address, prefix) {
+export async function createIpv4RootPool(address, prefix, subnet = false) {
     let resourceTypeId = await findResourceTypeId('ipv4');
     let strategyId = await findAllocationStrategyId('ipv4');
     let poolName = getUniqueName('root-ipv4');
@@ -44,7 +44,7 @@ export async function createIpv4RootPool(address, prefix) {
         resourceTypeId,
         strategyId,
         {address: "string", prefix: "int", subnet: "bool"},
-        {address: address, prefix: prefix, subnet: false})
+        {address: address, prefix: prefix, subnet: subnet})
 
     return pool.id
 }
@@ -78,7 +78,7 @@ export async function createIpv6RootPool() {
     return pool.id;
 }
 
-export async function createIpv6PrefixRootPool() {
+export async function createIpv6PrefixRootPool(address = "dead::", prefix = 120, subnet = false) {
     let resourceTypeId = await findResourceTypeId('ipv6_prefix');
     let strategyId = await findAllocationStrategyId('ipv6_prefix');
     let poolName = getUniqueName('root-ipv6-range');
@@ -87,7 +87,7 @@ export async function createIpv6PrefixRootPool() {
         resourceTypeId,
         strategyId,
         {address: "string", prefix: "int", subnet: "bool"},
-        {address: "dead::", prefix: 120, subnet: false})
+        {address, prefix, subnet})
 
     return pool.id;
 }

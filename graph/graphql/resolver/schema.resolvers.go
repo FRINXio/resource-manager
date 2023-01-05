@@ -5,7 +5,6 @@ package resolver
 
 import (
 	"context"
-	src "github.com/net-auto/resourceManager/pools/allocating_strategies/strategies/generated"
 	"time"
 
 	"entgo.io/ent/dialect/sql"
@@ -20,6 +19,7 @@ import (
 	"github.com/net-auto/resourceManager/graph/graphql/model"
 	log "github.com/net-auto/resourceManager/logging"
 	p "github.com/net-auto/resourceManager/pools"
+	src "github.com/net-auto/resourceManager/pools/allocating_strategies/strategies/generated"
 	"github.com/vektah/gqlparser/v2/gqlerror"
 )
 
