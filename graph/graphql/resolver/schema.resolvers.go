@@ -372,6 +372,15 @@ func (r *mutationResolver) CreateAllocatingPool(ctx context.Context, input *mode
 		}
 	}
 
+	if input.PoolProperties != nil && (allocationStrat.Name == "ipv6_prefix" || allocationStrat.Name == "ipv6") {
+		prefix, isPrefixOk := src.NumberToInt(input.PoolProperties["prefix"])
+		isSubnet, isSubnetOk := input.PoolProperties["subnet"].(bool)
+
+		if isPrefixOk == nil && isSubnetOk && isSubnet && (prefix.(int) == 127 || prefix.(int) == 128) {
+			return &emptyRetVal, gqlerror.Errorf("Unable to create pool, because you cannot create resource pool of prefix /%d together with subnet true", prefix)
+		}
+	}
+
 	var resPropertyType *ent.ResourceType = nil
 	//create additional resource type IFF we are not a nested type
 	//only root pool
