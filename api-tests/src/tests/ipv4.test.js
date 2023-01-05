@@ -212,8 +212,8 @@ test('cannot create pool with subnet true and 31 or 32 prefix', async (t) => {
     const pool31 = await createIpv4RootPool("10.0.0.0", 31, true);
     const pool32 = await createIpv4RootPool("10.0.0.0", 32, true);
 
-    t.notOk(pool31);
-    t.notOk(pool32);
+    t.equal(pool31, null);
+    t.equal(pool32, null);
 
     await cleanup();
     t.end();

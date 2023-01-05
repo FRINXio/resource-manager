@@ -46,6 +46,10 @@ export async function createIpv4RootPool(address, prefix, subnet = false) {
         {address: "string", prefix: "int", subnet: "bool"},
         {address: address, prefix: prefix, subnet: subnet})
 
+    if (pool == null) {
+        return null;
+    }
+
     return pool.id
 }
 
@@ -75,6 +79,10 @@ export async function createIpv6RootPool() {
         {address: "string", prefix: "int", subnet: "bool"},
         {address: "dead::", prefix: 16, subnet: false})
 
+    if (pool == null) {
+        return null;
+    }
+
     return pool.id;
 }
 
@@ -88,6 +96,10 @@ export async function createIpv6PrefixRootPool(address = "dead::", prefix = 120,
         strategyId,
         {address: "string", prefix: "int", subnet: "bool"},
         {address, prefix, subnet})
+
+    if (pool == null) {
+        return null;
+    }
 
     return pool.id;
 }
