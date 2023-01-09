@@ -19,6 +19,7 @@ import (
 	"github.com/net-auto/resourceManager/graph/graphql/model"
 	log "github.com/net-auto/resourceManager/logging"
 	p "github.com/net-auto/resourceManager/pools"
+	src "github.com/net-auto/resourceManager/pools/allocating_strategies/strategies/generated"
 	"github.com/vektah/gqlparser/v2/gqlerror"
 )
 
@@ -359,6 +360,24 @@ func (r *mutationResolver) CreateAllocatingPool(ctx context.Context, input *mode
 					return &emptyRetVal, gqlerror.Errorf("In pool properties input missed property: %s - %s", requiredPoolProperty.Name, requiredPoolProperty.Type)
 				}
 			}
+		}
+	}
+
+	if input.PoolProperties != nil && (allocationStrat.Name == "ipv4_prefix" || allocationStrat.Name == "ipv4") {
+		prefix, isPrefixOk := src.NumberToInt(input.PoolProperties["prefix"])
+		isSubnet, isSubnetOk := input.PoolProperties["subnet"].(bool)
+
+		if isPrefixOk == nil && isSubnetOk && isSubnet && (prefix.(int) == 32 || prefix.(int) == 31) {
+			return &emptyRetVal, gqlerror.Errorf("Unable to create pool, because you cannot create resource pool of prefix /%d together with subnet true", prefix)
+		}
+	}
+
+	if input.PoolProperties != nil && (allocationStrat.Name == "ipv6_prefix" || allocationStrat.Name == "ipv6") {
+		prefix, isPrefixOk := src.NumberToInt(input.PoolProperties["prefix"])
+		isSubnet, isSubnetOk := input.PoolProperties["subnet"].(bool)
+
+		if isPrefixOk == nil && isSubnetOk && isSubnet && (prefix.(int) == 127 || prefix.(int) == 128) {
+			return &emptyRetVal, gqlerror.Errorf("Unable to create pool, because you cannot create resource pool of prefix /%d together with subnet true", prefix)
 		}
 	}
 

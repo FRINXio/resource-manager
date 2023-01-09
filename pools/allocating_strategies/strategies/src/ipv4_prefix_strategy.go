@@ -70,11 +70,24 @@ func (ipv4prefix *Ipv4Prefix) Capacity() (map[string]interface{}, error) {
 	if !ok {
 		return nil, errors.New("Unable to extract prefix resources")
 	}
-	totalCapacity := hostsInMask(rootAddressStr.(string), rootMask.(int)) + 2
+
+	isSubnet, isSubnetOk := ipv4prefix.resourcePoolProperties["subnet"].(bool)
+	totalCapacity := hostsInMask(rootAddressStr.(string), rootMask.(int))
 	allocatedCapacity := 0
-	var subnetItself = 0
-	if subnet, ok := ipv4prefix.resourcePoolProperties["subnet"].(bool); ok && subnet == true {
-		subnetItself = 2
+	allocatedCapacityResult := 0
+
+	if isSubnetOk && isSubnet && (rootMask.(int) == 31 || rootMask.(int) == 32) {
+		var result = make(map[string]interface{})
+		result["freeCapacity"] = strconv.Itoa(0)
+		result["utilizedCapacity"] = strconv.Itoa(0)
+
+		return result, nil
+	}
+
+	if isSubnetOk && isSubnet == false && rootMask.(int) != 31 && rootMask.(int) != 32 {
+		// we are adding 2 because total capacity is not only host addresses but also network and broadcast addresses
+		// 31 and 32 prefixes return constant value, so there is not needed this calculation
+		totalCapacity += 2
 	}
 
 	for _, resource := range ipv4prefix.currentResources {
@@ -82,11 +95,23 @@ func (ipv4prefix *Ipv4Prefix) Capacity() (map[string]interface{}, error) {
 		if err != nil {
 			return nil, err
 		}
-		allocatedCapacity += hostsInMask(address, prefix) + subnetItself
+		// we are calculating 2 separate allocated capacity values because when subnet is true there is needed different calculation to show correct capacity
+		allocatedCapacity += hostsInMask(address, prefix) + 2
+		allocatedCapacityResult += hostsInMask(address, prefix)
 	}
+
+	var freeCapacity float64
+	// we are handling the edge case when allocated capacity is same as total capacity,
+	// then we need to add network and broadcast address (+2) of the main subnet
+	if totalCapacity+2 == allocatedCapacity {
+		freeCapacity = 0
+	} else {
+		freeCapacity = float64(totalCapacity - allocatedCapacity)
+	}
+
 	var result = make(map[string]interface{})
-	result["freeCapacity"] = strconv.FormatFloat(float64(totalCapacity-allocatedCapacity), 'g', 30, 64)
-	result["utilizedCapacity"] = strconv.Itoa(allocatedCapacity)
+	result["freeCapacity"] = strconv.FormatFloat(freeCapacity, 'g', 30, 64)
+	result["utilizedCapacity"] = strconv.Itoa(allocatedCapacityResult)
 
 	return result, nil
 }
@@ -173,6 +198,12 @@ func (ipv4prefix *Ipv4Prefix) Invoke() (map[string]interface{}, error) {
 			". Desired size is invalid: " + strconv.Itoa(desiredSize.(int)) + ". Use values >= 2")
 	}
 	newSubnetMask, newSubnetCapacity := ipv4prefix.calculateDesiredSubnetMask()
+
+	if isSubnet.(bool) && rootCapacity-2 < desiredSize.(int) {
+		return nil, errors.New("Unable to allocate Ipv4 prefix from: " + rootPrefixStr + ". " +
+			"Insufficient capacity to allocate a new prefix of size: " + strconv.Itoa(desiredSize.(int)) + "\n" +
+			"Currently allocated addresses: " + addressesToStr(ipv4prefix.currentResources))
+	}
 
 	networkAddresses, err := networkAddressesInSubnet(rootAddressStr.(string), rootMask.(int), newSubnetCapacity, newSubnetMask)
 

@@ -3,7 +3,7 @@ import {
     createIpv4PrefixRootPool, createIpv4PrefixNestedPool,
     createSingletonIpv4PrefixNestedPool,
     createIpv4NestedPool, get2ChildrenIds,
-    prepareIpv4Pool, allocateFromIPv4PoolSerially, allocateFromIPv4PoolParallelly, queryIPs, cleanup
+    prepareIpv4Pool, allocateFromIPv4PoolSerially, allocateFromIPv4PoolParallelly, queryIPs, cleanup, createIpv4RootPool
 } from '../test-helpers.js';
 
 import tap from 'tap';
@@ -203,6 +203,17 @@ test('overlapping subnet with provided desired value', async (t) => {
     const allocatedResource = await claimResource(pool.id, {desiredSize: 14, desiredValue: "10.0.0.16"});
 
     t.notOk(allocatedResource);
+
+    await cleanup();
+    t.end();
+});
+
+test('cannot create pool with subnet true and 31 or 32 prefix', async (t) => {
+    const pool31 = await createIpv4RootPool("10.0.0.0", 31, true);
+    const pool32 = await createIpv4RootPool("10.0.0.0", 32, true);
+
+    t.equal(pool31, null);
+    t.equal(pool32, null);
 
     await cleanup();
     t.end();

@@ -1,5 +1,11 @@
 import { claimResource, queryResource } from '../graphql-queries.js';
-import { cleanup, createIpv6NestedPool, createIpv6PrefixRootPool, get2ChildrenIds} from '../test-helpers.js';
+import {
+    cleanup,
+    createIpv4RootPool,
+    createIpv6NestedPool,
+    createIpv6PrefixRootPool, createIpv6RootPool,
+    get2ChildrenIds
+} from '../test-helpers.js';
 import tap from 'tap';
 const test = tap.test;
 
@@ -31,5 +37,16 @@ test('create ipv6 hierarchy', async (t) => {
     t.equal((await queryResource(rootPoolId, secondResource.Properties)).Description, null);
 
     await cleanup()
+    t.end();
+});
+
+test('cannot create pool with subnet true and 127 or 128 prefix', async (t) => {
+    const pool127 = await createIpv6PrefixRootPool("2001:db8:1::", 127, true);
+    const pool128 = await createIpv6PrefixRootPool("2001:db8:1::", 128, true);
+
+    t.notOk(pool127);
+    t.notOk(pool128);
+
+    await cleanup();
     t.end();
 });
