@@ -1,7 +1,6 @@
 package tests
 
 import (
-	"fmt"
 	"math"
 	"reflect"
 	"strconv"
@@ -39,15 +38,34 @@ func TestSingleAllocationPool(t *testing.T) {
 	}
 }
 
-func TestSingleAllocationSubnet(t *testing.T) {
+func TestSingleAllocationSubnetFalse(t *testing.T) {
+	var allocated []map[string]interface{}
+	var resourcePool = map[string]interface{}{"prefix": 24, "address": "192.168.1.0", "subnet": false}
+	for i := 1; i <= 7; i++ {
+		desiredSize := int(math.Pow(2, float64(i)))
+		var userInput = map[string]interface{}{"desiredSize": desiredSize, "subnet": false}
+		ipv4PrefixStruct := src.NewIpv4Prefix(allocated, resourcePool, userInput)
+		output, err := ipv4PrefixStruct.Invoke()
+		expectedOutput := map[string]interface{}{"address": "192.168.1.0", "prefix": 32 - i, "subnet": false}
+		if eq := reflect.DeepEqual(output, expectedOutput); !eq {
+			t.Fatalf("different output of %s expected, got: %s", expectedOutput, output)
+		}
+		if eq := reflect.DeepEqual(err, nil); !eq {
+			t.Fatalf("different output of nil expected, got: %s", err)
+		}
+	}
+}
+
+func TestSingleAllocationSubnetTrue(t *testing.T) {
 	var allocated []map[string]interface{}
 	var resourcePool = map[string]interface{}{"prefix": 24, "address": "192.168.1.0", "subnet": true}
 	for i := 1; i <= 7; i++ {
-		desiredSize := math.Pow(2, float64(i))
+		desiredSize := int(math.Pow(2, float64(i)))
 		var userInput = map[string]interface{}{"desiredSize": desiredSize, "subnet": true}
 		ipv4PrefixStruct := src.NewIpv4Prefix(allocated, resourcePool, userInput)
 		output, err := ipv4PrefixStruct.Invoke()
-		expectedOutput := map[string]interface{}{"address": "192.168.1.0", "prefix": 32 - i, "subnet": true}
+		expectedOutput := map[string]interface{}{"address": "192.168.1.0", "prefix": 31 - i, "subnet": true}
+
 		if eq := reflect.DeepEqual(output, expectedOutput); !eq {
 			t.Fatalf("different output of %s expected, got: %s", expectedOutput, output)
 		}
@@ -78,7 +96,7 @@ func TestIpv4prefixCapacity24Mask(t *testing.T) {
 	var userInput = map[string]interface{}{"desiredSize": 192}
 	ipv4PrefixStruct := src.NewIpv4Prefix(allocated, resourcePool, userInput)
 	output, err := ipv4PrefixStruct.Capacity()
-	expectedOutput := map[string]interface{}{"freeCapacity": strconv.Itoa(222), "utilizedCapacity": strconv.Itoa(28)}
+	expectedOutput := map[string]interface{}{"freeCapacity": strconv.Itoa(222), "utilizedCapacity": strconv.Itoa(32)}
 	if eq := reflect.DeepEqual(output, expectedOutput); !eq {
 		t.Fatalf("different output of %s expected, got: %s", expectedOutput, output)
 	}
@@ -93,7 +111,7 @@ func TestIpv4PrefixAllocationSubnetVsPool(t *testing.T) {
 	var userInput = map[string]interface{}{"desiredSize": 2, "subnet": true}
 	ipv4PrefixStruct := src.NewIpv4Prefix(allocated, resourcePool, userInput)
 	output, err := ipv4PrefixStruct.Invoke()
-	expectedOutput := map[string]interface{}{"address": "192.168.1.0", "prefix": 31, "subnet": true}
+	expectedOutput := map[string]interface{}{"address": "192.168.1.0", "prefix": 30, "subnet": true}
 	if eq := reflect.DeepEqual(output, expectedOutput); !eq {
 		t.Fatalf("different output of %s expected, got: %s", expectedOutput, output)
 	}
@@ -104,7 +122,7 @@ func TestIpv4PrefixAllocationSubnetVsPool(t *testing.T) {
 	userInput = map[string]interface{}{"desiredSize": 2, "subnet": true}
 	ipv4PrefixStruct = src.NewIpv4Prefix(allocated, resourcePool, userInput)
 	output, err = ipv4PrefixStruct.Invoke()
-	expectedOutput = map[string]interface{}{"address": "192.168.1.0", "prefix": 31, "subnet": true}
+	expectedOutput = map[string]interface{}{"address": "192.168.1.0", "prefix": 30, "subnet": true}
 	if eq := reflect.DeepEqual(output, expectedOutput); !eq {
 		t.Fatalf("different output of %s expected, got: %s", expectedOutput, output)
 	}
@@ -115,7 +133,6 @@ func TestIpv4PrefixAllocationSubnetVsPool(t *testing.T) {
 	userInput = map[string]interface{}{"desiredSize": 254}
 	ipv4PrefixStruct = src.NewIpv4Prefix(allocated, resourcePool, userInput)
 	output, err = ipv4PrefixStruct.Invoke()
-	fmt.Println(output, err)
 	expectedOutput = map[string]interface{}{"address": "192.168.1.0", "prefix": 24, "subnet": true}
 	if eq := reflect.DeepEqual(output, expectedOutput); !eq {
 		t.Fatalf("different output of %s expected, got: %s", expectedOutput, output)
@@ -501,5 +518,23 @@ func TestCapacityOf32MaskSubnetFalse(t *testing.T) {
 	}
 	if eq := reflect.DeepEqual(err, nil); !eq {
 		t.Fatalf("different output of nil expected, got: %s", err)
+	}
+}
+
+func TestCapacityWhenSubnetTrue(t *testing.T) {
+	var allocated = []map[string]interface{}{ipv4Prefix("10.0.0.0", 30, true)}
+	var resourcePool = map[string]interface{}{"prefix": 29, "address": "10.0.0.0", "subnet": true}
+	var userInput = map[string]interface{}{"desiredSize": 2}
+
+	ipv4PrefixStruct := src.NewIpv4Prefix(allocated, resourcePool, userInput)
+	output, err := ipv4PrefixStruct.Invoke()
+	expectedOutput := map[string]interface{}{"prefix": 30, "address": "10.0.0.4", "subnet": true}
+
+	if eq := reflect.DeepEqual(output, expectedOutput); !eq {
+		t.Fatalf("different output of %s expected, got: %s", expectedOutput, output)
+	}
+
+	if eq := reflect.DeepEqual(err, nil); !eq {
+		t.Fatalf("expected error to be nil, instead got: %s", err)
 	}
 }
