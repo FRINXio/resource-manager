@@ -5,6 +5,7 @@ package resolver
 
 import (
 	"context"
+	"strconv"
 	"time"
 
 	"entgo.io/ent/dialect/sql"
@@ -363,21 +364,23 @@ func (r *mutationResolver) CreateAllocatingPool(ctx context.Context, input *mode
 		}
 	}
 
-	if input.PoolProperties != nil && (allocationStrat.Name == "ipv4_prefix" || allocationStrat.Name == "ipv4") {
-		prefix, isPrefixOk := src.NumberToInt(input.PoolProperties["prefix"])
-		isSubnet, isSubnetOk := input.PoolProperties["subnet"].(bool)
-
-		if isPrefixOk == nil && isSubnetOk && isSubnet && (prefix.(int) == 32 || prefix.(int) == 31) {
-			return &emptyRetVal, gqlerror.Errorf("Unable to create pool, because you cannot create resource pool of prefix /%d together with subnet true", prefix)
+	if input.PoolProperties != nil && (allocationStrat.Name == "ipv4_prefix" || allocationStrat.Name == "ipv4" || allocationStrat.Name == "ipv6_prefix" || allocationStrat.Name == "ipv6") {
+		prefix, ok := input.PoolProperties["prefix"]
+		if !ok {
+			log.Error(ctx, nil, "In pool properties input missed property: prefix of type int")
+			return &emptyRetVal, gqlerror.Errorf("In pool properties input missed property: prefix of type int")
 		}
-	}
+		subnet, ok := input.PoolProperties["subnet"]
+		if !ok {
+			log.Error(ctx, nil, "In pool properties input missed property: subnet of type bool")
+			return &emptyRetVal, gqlerror.Errorf("In pool properties input missed property: subnet of type bool")
+		}
 
-	if input.PoolProperties != nil && (allocationStrat.Name == "ipv6_prefix" || allocationStrat.Name == "ipv6") {
-		prefix, isPrefixOk := src.NumberToInt(input.PoolProperties["prefix"])
-		isSubnet, isSubnetOk := input.PoolProperties["subnet"].(bool)
+		prefixValue, isPrefixOk := src.NumberToInt(prefix)
+		isSubnet, isSubnetOk := subnet.(bool)
 
-		if isPrefixOk == nil && isSubnetOk && isSubnet && (prefix.(int) == 127 || prefix.(int) == 128) {
-			return &emptyRetVal, gqlerror.Errorf("Unable to create pool, because you cannot create resource pool of prefix /%d together with subnet true", prefix)
+		if isPrefixOk == nil && isSubnetOk && isSubnet && (prefixValue.(int) == 32 || prefixValue.(int) == 31 || prefixValue.(int) == 127 || prefixValue.(int) == 128) {
+			return &emptyRetVal, gqlerror.Errorf("Unable to create pool, because you cannot create resource pool of prefix /%s together with subnet true", strconv.Itoa(prefixValue.(int)))
 		}
 	}
 
