@@ -1,7 +1,6 @@
 package tests
 
 import (
-	"fmt"
 	"math"
 	"reflect"
 	"strconv"
@@ -115,7 +114,6 @@ func TestIpv4PrefixAllocationSubnetVsPool(t *testing.T) {
 	userInput = map[string]interface{}{"desiredSize": 254}
 	ipv4PrefixStruct = src.NewIpv4Prefix(allocated, resourcePool, userInput)
 	output, err = ipv4PrefixStruct.Invoke()
-	fmt.Println(output, err)
 	expectedOutput = map[string]interface{}{"address": "192.168.1.0", "prefix": 24, "subnet": true}
 	if eq := reflect.DeepEqual(output, expectedOutput); !eq {
 		t.Fatalf("different output of %s expected, got: %s", expectedOutput, output)
@@ -351,7 +349,7 @@ func TestClaimResourceWithDesiredValue(t *testing.T) {
 func TestClaimResourceWithInvalidDesiredValue(t *testing.T) {
 	var allocated []map[string]interface{}
 	var resourcePool = map[string]interface{}{"prefix": 24, "address": "192.168.1.0", "subnet": false}
-	var userInput = map[string]interface{}{"desiredSize": 8, "desiredValue": "192.168.1.30"}
+	var userInput = map[string]interface{}{"desiredSize": 8, "desiredValue": "192.168.1.31"}
 	ipv4PrefixStruct := src.NewIpv4Prefix(allocated, resourcePool, userInput)
 	output, _ := ipv4PrefixStruct.Invoke()
 
@@ -375,7 +373,7 @@ func TestClaimResourceWithoutDesiredValue(t *testing.T) {
 }
 
 func TestClaimResourceInPoolWithAllocatedResources(t *testing.T) {
-	var allocated = []map[string]interface{}{ipv4Prefix("192.168.1.40", 29, false), ipv4Prefix("192.168.1.0", 29, false)}
+	var allocated = []map[string]interface{}{ipv4Prefix("192.168.1.128", 29, false), ipv4Prefix("192.168.1.78", 29, false), ipv4Prefix("192.168.1.40", 29, false), ipv4Prefix("192.168.1.0", 29, false)}
 	var resourcePool = map[string]interface{}{"prefix": 24, "address": "192.168.1.0", "subnet": false}
 	var userInput = map[string]interface{}{"desiredSize": 8, "desiredValue": "192.168.1.16"}
 	ipv4PrefixStruct := src.NewIpv4Prefix(allocated, resourcePool, userInput)
