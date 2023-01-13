@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"github.com/pkg/errors"
+	"math/big"
 	"regexp"
 	"strconv"
 )
@@ -49,6 +50,14 @@ func NumberToInt(number interface{}) (interface{}, error) {
 		return int(number.(float64)), nil
 	case int:
 		return number.(int), nil
+	case int64:
+		return int(number.(int64)), nil
+	case int32:
+		return int(number.(int32)), nil
+	case big.Int:
+		b := number.(big.Int)
+		val := int(b.Int64())
+		return val, nil
 	}
 	return nil, errors.New("Unable to convert number: " + number.(string) + " to a known type")
 }
