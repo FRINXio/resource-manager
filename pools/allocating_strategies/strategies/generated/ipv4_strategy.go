@@ -72,7 +72,7 @@ func (ipv4 *Ipv4) Invoke() (map[string]interface{}, error) {
 	}
 	rootPrefixStr := prefixToStr(ipv4.resourcePoolProperties)
 	rootCapacity := subnetAddresses(rootMask.(int))
-	rootAddressNum, err := inetAton(rootAddressStr.(string))
+	rootAddressNum, err := InetAton(rootAddressStr.(string))
 	if err != nil {
 		return nil, err
 	}
@@ -103,7 +103,7 @@ func (ipv4 *Ipv4) Invoke() (map[string]interface{}, error) {
 	var result = make(map[string]interface{})
 
 	if value, ok := ipv4.userInput["desiredValue"]; ok {
-		desiredValueNum, err := inetAton(value.(string))
+		desiredValueNum, err := InetAton(value.(string))
 		if err != nil {
 			return nil, err
 		}

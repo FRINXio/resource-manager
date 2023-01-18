@@ -5,6 +5,7 @@ package resolver
 
 import (
 	"context"
+	"regexp"
 	"strconv"
 	"time"
 
@@ -21,6 +22,7 @@ import (
 	log "github.com/net-auto/resourceManager/logging"
 	p "github.com/net-auto/resourceManager/pools"
 	src "github.com/net-auto/resourceManager/pools/allocating_strategies/strategies/generated"
+	src2 "github.com/net-auto/resourceManager/pools/allocating_strategies/strategies/src"
 	"github.com/vektah/gqlparser/v2/gqlerror"
 )
 
@@ -370,10 +372,35 @@ func (r *mutationResolver) CreateAllocatingPool(ctx context.Context, input *mode
 			log.Error(ctx, nil, "In pool properties input missed property: prefix of type int")
 			return &emptyRetVal, gqlerror.Errorf("In pool properties input missed property: prefix of type int")
 		}
+
 		subnet, ok := input.PoolProperties["subnet"]
 		if !ok {
 			log.Error(ctx, nil, "In pool properties input missed property: subnet of type bool")
 			return &emptyRetVal, gqlerror.Errorf("In pool properties input missed property: subnet of type bool")
+		}
+
+		address, ok := input.PoolProperties["address"]
+		if !ok {
+			log.Error(ctx, nil, "In pool properties input missed property: address of type string")
+			return &emptyRetVal, gqlerror.Errorf("In pool properties input missed property: address of type string")
+		}
+
+		isIpv4Ok, _ := regexp.Match(`^((25[0-5]|(2[0-4]|1\d|[1-9]|)\d)\.?\b){4}$`, []byte(address.(string)))
+		if allocationStrat.Name == "ipv4_prefix" || allocationStrat.Name == "ipv4" {
+			if !isIpv4Ok {
+				log.Error(ctx, nil, "When creating allocating pool the invalid ipv4 address was provided")
+				return &emptyRetVal, gqlerror.Errorf("When creating allocating pool the invalid ipv4 address was provided")
+			}
+
+			if networkAddress, err := src2.InetAton(address.(string)); err != nil || networkAddress%2 != 0 {
+				log.Error(ctx, nil, "When creating allocating pool user needs to provide network address (the last bit needs to be even-numbered)")
+				return &emptyRetVal, gqlerror.Errorf("When creating allocating pool user needs to provide network address (the last bit needs to be even-numbered)")
+			}
+		}
+
+		if _, isIpv6Ok := src.Ipv6InetAton(address.(string)); (allocationStrat.Name == "ipv6_prefix" || allocationStrat.Name == "ipv6") && isIpv6Ok != nil {
+			log.Error(ctx, nil, "When creating allocating pool the invalid ipv6 address was provided")
+			return &emptyRetVal, gqlerror.Errorf("When creating allocating pool the invalid ipv6 address was provided")
 		}
 
 		prefixValue, isPrefixOk := src.NumberToInt(prefix)

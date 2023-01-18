@@ -13,7 +13,7 @@ func inetNtoa(addrint int) string {
 		strconv.Itoa(addrint&0xff)
 }
 
-func inetAton(addrstr string) (int, error) {
+func InetAton(addrstr string) (int, error) {
 	re, _ := regexp.Compile("^([0-9]{1,3})\\.([0-9]{1,3})\\.([0-9]{1,3})\\.([0-9]{1,3})$")
 	res := re.FindStringSubmatch(addrstr)
 	if len(res) < 5 {
@@ -43,7 +43,7 @@ func hostsInMask(addressStr string, mask int) int {
 	if mask == 31 {
 		return 2
 	}
-	address, _ := inetAton(addressStr)
+	address, _ := InetAton(addressStr)
 
 	return subnetLastAddress(address, mask) - (address + 1)
 }
