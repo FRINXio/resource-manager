@@ -561,4 +561,26 @@ test('claim resource with altId and integer value sent as string', async (t) => 
     t.equal(poolWithResources.edges.length, 1);
 });
 
+test('validate format of provided ipv4 address when creating pool', async (t) => {
+    const pool1 = await createIpv4RootPool("10.0.0.0", 24, false);
+    const pool2 = await createIpv4RootPool("10.0.0.1", 24, false);
+    const pool3 = await createIpv4RootPool("oidjqwodij", 24, false);
 
+    t.ok(pool1);
+    t.notOk(pool2);
+    t.notOk(pool3);
+
+    await cleanup();
+    t.end();
+});
+
+test('validate format of provided ipv6 address when creating pool', async (t) => {
+    const pool1 = await createIpv6PrefixRootPool();
+    const pool3 = await createIpv6PrefixRootPool("something::1", 64, false);
+
+    t.ok(pool1);
+    t.equal(pool3, null);
+
+    await cleanup();
+    t.end();
+});
