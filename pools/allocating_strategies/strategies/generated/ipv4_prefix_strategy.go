@@ -133,7 +133,7 @@ func prefixesCapacity(currentResources []map[string]interface{}) int {
 //	that is outside of allocatedSubnet
 func findNextFreeSubnetAddress(allocatedSubnet Ipv4Struct, newSubnetMask int) int {
 	// find the first address after currently iterated allocated subnet
-	addressNumber, _ := inetAton(allocatedSubnet.address)
+	addressNumber, _ := InetAton(allocatedSubnet.address)
 	nextAvailableAddressNum := addressNumber + subnetAddresses(allocatedSubnet.prefix)
 	// remove any bites from the address above after newSubnetMask
 	newSubnetMaskNegative := 32 - newSubnetMask
@@ -174,7 +174,7 @@ func (ipv4prefix *Ipv4Prefix) Invoke() (map[string]interface{}, error) {
 	}
 	rootPrefixStr := prefixToStr(ipv4prefix.resourcePoolProperties)
 	rootCapacity := subnetAddresses(rootMask.(int))
-	rootAddressNum, err := inetAton(rootAddressStr.(string))
+	rootAddressNum, err := InetAton(rootAddressStr.(string))
 	if err != nil {
 		return nil, err
 	}
@@ -224,7 +224,7 @@ func (ipv4prefix *Ipv4Prefix) Invoke() (map[string]interface{}, error) {
 	}
 
 	if desiredValue != nil {
-		if num, e := inetAton(desiredValue.(string)); num%2 != 0 || e != nil {
+		if num, e := InetAton(desiredValue.(string)); num%2 != 0 || e != nil {
 			return nil, errors.New("You provided invalid host address.")
 		}
 	}
@@ -240,8 +240,8 @@ func (ipv4prefix *Ipv4Prefix) Invoke() (map[string]interface{}, error) {
 
 	// compare prefixes based on their broadcast address
 	sort.Slice(currentResourcesStruct, func(i, j int) bool {
-		address1Num, _ := inetAton(currentResourcesStruct[i].address)
-		address2Num, _ := inetAton(currentResourcesStruct[j].address)
+		address1Num, _ := InetAton(currentResourcesStruct[i].address)
+		address2Num, _ := InetAton(currentResourcesStruct[j].address)
 		endOfP1 := address1Num + subnetAddresses(currentResourcesStruct[i].prefix)
 		endOfP2 := address2Num + subnetAddresses(currentResourcesStruct[j].prefix)
 		return endOfP1 < endOfP2
@@ -252,9 +252,9 @@ func (ipv4prefix *Ipv4Prefix) Invoke() (map[string]interface{}, error) {
 
 	if desiredValue != nil {
 		if len(currentResourcesStruct) > 0 {
-			desiredValueNum, er := inetAton(desiredValue.(string))
+			desiredValueNum, er := InetAton(desiredValue.(string))
 			lastResource := currentResourcesStruct[len(currentResourcesStruct)-1]
-			lastResourceSubnetNum, e := inetAton(lastResource.address)
+			lastResourceSubnetNum, e := InetAton(lastResource.address)
 
 			if er != nil || e != nil {
 				return nil, errors.New("We weren't able to handle formatting of provided inputs, that were of incorrect format")
@@ -271,7 +271,7 @@ func (ipv4prefix *Ipv4Prefix) Invoke() (map[string]interface{}, error) {
 				}
 			}
 		} else {
-			desiredValueNum, e := inetAton(desiredValue.(string))
+			desiredValueNum, e := InetAton(desiredValue.(string))
 
 			if e != nil {
 				return nil, errors.New("We weren't able to handle formatting of provided inputs, that were of incorrect format")
@@ -295,12 +295,12 @@ func (ipv4prefix *Ipv4Prefix) Invoke() (map[string]interface{}, error) {
 
 	// iterate over allocated subnets and see if a desired new subnet can be squeezed in
 	for _, allocatedSubnet := range currentResourcesStruct {
-		allocatedSubnetNum, _ := inetAton(allocatedSubnet.address)
+		allocatedSubnetNum, _ := InetAton(allocatedSubnet.address)
 		chunkCapacity := allocatedSubnetNum - possibleSubnetNum
 
 		if desiredValue != nil {
-			desiredValueNum, _ := inetAton(desiredValue.(string))
-			desiredBroadcastNum, _ := inetAton(inetNtoa(subnetLastAddress(desiredValueNum, newSubnetMask)))
+			desiredValueNum, _ := InetAton(desiredValue.(string))
+			desiredBroadcastNum, _ := InetAton(inetNtoa(subnetLastAddress(desiredValueNum, newSubnetMask)))
 
 			if chunkCapacity >= newSubnetCapacity && desiredBroadcastNum < allocatedSubnetNum {
 				// there is chunk with sufficient capacity between possibleSubnetNum and allocatedSubnet.address
