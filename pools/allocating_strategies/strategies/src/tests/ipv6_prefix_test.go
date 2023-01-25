@@ -265,3 +265,97 @@ func TestAllocateAllAddresses104Ipv6Range(t *testing.T) {
 		t.Fatalf("different output of %s expected, got: %s", expected, output)
 	}
 }
+
+func TestAllocationOfResourceWithDesiredValueInBetweenResources(t *testing.T) {
+	resourcePool := map[string]interface{}{"prefix": 120, "address": "dead::be00", "subnet": false}
+	userInput := map[string]interface{}{"desiredSize": 2, "desiredValue": "dead::be04"}
+	var allocated []map[string]interface{}
+	allocated = append(allocated, ipv6Prefix("dead::be02", 127))
+	allocated = append(allocated, ipv6Prefix("dead::be08", 127))
+	ipv6PrefixStruct := src.NewIpv6Prefix(allocated, resourcePool, userInput)
+	output, err := ipv6PrefixStruct.Invoke()
+	if eq := reflect.DeepEqual(err, nil); !eq {
+		t.Fatalf("different output of nil expected, got: %s", err)
+	}
+	if eq := reflect.DeepEqual(output, ipv6PrefixWithSubnet("dead::be04", 127, false)["Properties"]); !eq {
+		t.Fatalf("different output of %s expected, got: %s",
+			ipv6PrefixWithSubnet("dead::be00", 127, false)["Properties"], output)
+	}
+}
+
+func TestAllocationOfResourceWithDesiredValueAfterResources(t *testing.T) {
+	resourcePool := map[string]interface{}{"prefix": 120, "address": "dead::be00", "subnet": false}
+	userInput := map[string]interface{}{"desiredSize": 2, "desiredValue": "dead::be10"}
+	var allocated []map[string]interface{}
+	allocated = append(allocated, ipv6Prefix("dead::be02", 127))
+	ipv6PrefixStruct := src.NewIpv6Prefix(allocated, resourcePool, userInput)
+	output, err := ipv6PrefixStruct.Invoke()
+	if eq := reflect.DeepEqual(err, nil); !eq {
+		t.Fatalf("different output of nil expected, got: %s", err)
+	}
+	if eq := reflect.DeepEqual(output, ipv6PrefixWithSubnet("dead::be10", 127, false)["Properties"]); !eq {
+		t.Fatalf("different output of %s expected, got: %s",
+			ipv6PrefixWithSubnet("dead::be00", 127, false)["Properties"], output)
+	}
+}
+
+func TestAllocationOfResourceWithDesiredValueWithoutResources(t *testing.T) {
+	resourcePool := map[string]interface{}{"prefix": 120, "address": "dead::be00", "subnet": false}
+	userInput := map[string]interface{}{"desiredSize": 2, "desiredValue": "dead::be30"}
+	var allocated []map[string]interface{}
+	ipv6PrefixStruct := src.NewIpv6Prefix(allocated, resourcePool, userInput)
+	output, err := ipv6PrefixStruct.Invoke()
+	if eq := reflect.DeepEqual(err, nil); !eq {
+		t.Fatalf("different output of nil expected, got: %s", err)
+	}
+	if eq := reflect.DeepEqual(output, ipv6PrefixWithSubnet("dead::be30", 127, false)["Properties"]); !eq {
+		t.Fatalf("different output of %s expected, got: %s",
+			ipv6PrefixWithSubnet("dead::be00", 127, false)["Properties"], output)
+	}
+}
+
+func TestAllocationOfResourceWithInvalidDesiredValue(t *testing.T) {
+	resourcePool := map[string]interface{}{"prefix": 120, "address": "dead::be00", "subnet": false}
+	userInput := map[string]interface{}{"desiredSize": 2, "desiredValue": "halabala"}
+	var allocated []map[string]interface{}
+	ipv6PrefixStruct := src.NewIpv6Prefix(allocated, resourcePool, userInput)
+	output, _ := ipv6PrefixStruct.Invoke()
+	if eq := reflect.DeepEqual(output, map[string]interface{}(nil)); !eq {
+		t.Fatalf("different output of nil expected, got: %s", output)
+	}
+
+	userInput = map[string]interface{}{"desiredSize": 2, "desiredValue": "dead::be03"}
+	ipv6PrefixStruct = src.NewIpv6Prefix(allocated, resourcePool, userInput)
+	output, _ = ipv6PrefixStruct.Invoke()
+	if eq := reflect.DeepEqual(output, map[string]interface{}(nil)); !eq {
+		t.Fatalf("different output of nil expected, got: %s", output)
+	}
+
+	userInput = map[string]interface{}{"desiredSize": 2, "desiredValue": "dead::be02"}
+	allocated = append(allocated, ipv6Prefix("dead::be02", 127))
+	ipv6PrefixStruct = src.NewIpv6Prefix(allocated, resourcePool, userInput)
+	output, _ = ipv6PrefixStruct.Invoke()
+	if eq := reflect.DeepEqual(output, map[string]interface{}(nil)); !eq {
+		t.Fatalf("different output of nil expected, got: %s", output)
+	}
+
+	userInput = map[string]interface{}{"desiredSize": 2, "desiredValue": "dead::be02"}
+	var newAllocated []map[string]interface{}
+	newAllocated = append(allocated, ipv6Prefix("dead::be02", 124))
+	ipv6PrefixStruct = src.NewIpv6Prefix(newAllocated, resourcePool, userInput)
+	output, _ = ipv6PrefixStruct.Invoke()
+	if eq := reflect.DeepEqual(output, map[string]interface{}(nil)); !eq {
+		t.Fatalf("different output of nil expected, got: %s", output)
+	}
+}
+
+func TestAllocationOfResourceWithOverflowingCapacity(t *testing.T) {
+	resourcePool := map[string]interface{}{"prefix": 126, "address": "dead::be00", "subnet": false}
+	userInput := map[string]interface{}{"desiredSize": 3, "desiredValue": "dead::be02"}
+	var allocated []map[string]interface{}
+	ipv6PrefixStruct := src.NewIpv6Prefix(allocated, resourcePool, userInput)
+	output, _ := ipv6PrefixStruct.Invoke()
+	if eq := reflect.DeepEqual(output, map[string]interface{}(nil)); !eq {
+		t.Fatalf("different output of nil expected, got: %s", output)
+	}
+}
