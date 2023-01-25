@@ -1,6 +1,7 @@
 package src
 
 import (
+	"fmt"
 	"math/big"
 	"sort"
 	"strconv"
@@ -113,6 +114,17 @@ func (ipv6Prefix *Ipv6Prefix) Invoke() (map[string]interface{}, error) {
 			". Desired size is invalid: " + desiredSize.String() + ". Use values >= 2")
 	}
 
+	desValue, ok := ipv6Prefix.userInput["desiredValue"]
+	var desiredValue string
+	var desiredValueNum *big.Int
+	if ok {
+		desiredValue, _ = desValue.(string)
+		desiredValueNum, err = Ipv6InetAton(desiredValue)
+	}
+	if ok && err != nil {
+		return nil, errors.New("Provided invalid IPv6 address. Try again with different desiredValue")
+	}
+
 	if isSubnet.(bool) == true {
 		// reserve subnet address and broadcast
 		desiredSize.Add(desiredSize, big.NewInt(2))
@@ -142,6 +154,45 @@ func (ipv6Prefix *Ipv6Prefix) Invoke() (map[string]interface{}, error) {
 		return true
 	})
 
+	fmt.Println("pici", desValue, desiredValue, desiredValueNum)
+
+	if desiredValueNum != nil {
+		var remainder big.Int
+		if remainder.Mod(desiredValueNum, big.NewInt(2)).Cmp(big.NewInt(0)) != 0 {
+			return nil, errors.New("Provided IPv6 address was not a network address. Please provide network IPv6 address, so that resources can be correctly allocated")
+		}
+
+		if len(currentResourcesStruct) > 0 {
+			lastAddressNum, _ := Ipv6InetAton(currentResourcesStruct[len(currentResourcesStruct)-1].address)
+			broadcast := ipv6SubnetLastAddress(lastAddressNum, currentResourcesStruct[len(currentResourcesStruct)-1].prefix)
+
+			if broadcast.Cmp(desiredValueNum) < 0 {
+				var result = make(map[string]interface{})
+				result["address"] = Ipv6InetNtoa(desiredValueNum)
+				result["prefix"] = newSubnetMask
+				result["subnet"] = isSubnet
+
+				return result, nil
+			}
+		} else {
+			currentAmount := new(big.Int).Add(desiredValueNum, newSubnetCapacity)
+			rootAmount := new(big.Int).Add(rootAddressNum, rootCapacity)
+
+			if currentAmount.Cmp(rootAmount) < 1 {
+				var result = make(map[string]interface{})
+				result["address"] = Ipv6InetNtoa(desiredValueNum)
+				result["prefix"] = newSubnetMask
+				result["subnet"] = isSubnet
+
+				return result, nil
+			}
+
+			return nil, errors.New("matkypiciUnable to allocate Ipv6 prefix from: " + rootPrefixStr +
+				". Insufficient capacity to allocate a new prefix of size: " + desiredSize.String() +
+				". Currently allocated prefixes: " + prefixesToStr(currentResourcesStruct))
+		}
+	}
+
 	possibleSubnetNum := rootAddressNum
 	// iterate over allocated subnets and see if a desired new subnet can be squeezed in
 	for _, currentResource := range currentResourcesStruct {
@@ -150,15 +201,29 @@ func (ipv6Prefix *Ipv6Prefix) Invoke() (map[string]interface{}, error) {
 		if err != nil {
 			return nil, errors.New("Wrong property address: " + currentResource.address + " in current resources")
 		}
-		chunkCapacity := new(big.Int).Sub(allocatedSubnetNum, possibleSubnetNum)
-		if chunkCapacity.Cmp(desiredSize) >= 0 {
-			// there is chunk with sufficient capacity between possibleSubnetNum and allocatedSubnet.address
-			var newlyAllocatedPrefix = make(map[string]interface{})
-			newlyAllocatedPrefix["address"] = Ipv6InetNtoa(possibleSubnetNum)
-			newlyAllocatedPrefix["prefix"] = newSubnetMask
-			newlyAllocatedPrefix["subnet"] = isSubnet
 
-			return newlyAllocatedPrefix, nil
+		if desiredValueNum != nil {
+			chunkCapacity := new(big.Int).Sub(allocatedSubnetNum, desiredValueNum)
+			if chunkCapacity.Cmp(desiredSize) >= 0 {
+				// there is chunk with sufficient capacity between possibleSubnetNum and allocatedSubnet.address
+				var newlyAllocatedPrefix = make(map[string]interface{})
+				newlyAllocatedPrefix["address"] = Ipv6InetNtoa(desiredValueNum)
+				newlyAllocatedPrefix["prefix"] = newSubnetMask
+				newlyAllocatedPrefix["subnet"] = isSubnet
+
+				return newlyAllocatedPrefix, nil
+			}
+		} else {
+			chunkCapacity := new(big.Int).Sub(allocatedSubnetNum, possibleSubnetNum)
+			if chunkCapacity.Cmp(desiredSize) >= 0 {
+				// there is chunk with sufficient capacity between possibleSubnetNum and allocatedSubnet.address
+				var newlyAllocatedPrefix = make(map[string]interface{})
+				newlyAllocatedPrefix["address"] = Ipv6InetNtoa(possibleSubnetNum)
+				newlyAllocatedPrefix["prefix"] = newSubnetMask
+				newlyAllocatedPrefix["subnet"] = isSubnet
+
+				return newlyAllocatedPrefix, nil
+			}
 		}
 
 		// move possible subnet start to a valid address outside of allocatedSubnet's addresses and continue the search
@@ -171,7 +236,7 @@ func (ipv6Prefix *Ipv6Prefix) Invoke() (map[string]interface{}, error) {
 	// check if there is any space left at the end of parent range
 	currentAmount := new(big.Int).Add(possibleSubnetNum, newSubnetCapacity)
 	rootAmount := new(big.Int).Add(rootAddressNum, rootCapacity)
-	if currentAmount.Cmp(rootAmount) < 1 {
+	if desiredValueNum == nil && currentAmount.Cmp(rootAmount) < 1 {
 		// there sure is some space, use it !
 		var newlyAllocatedPrefix = make(map[string]interface{})
 		newlyAllocatedPrefix["address"] = Ipv6InetNtoa(possibleSubnetNum)
