@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"github.com/pkg/errors"
 	"math"
+	"net"
 	"sort"
 	"strconv"
 )
@@ -152,6 +153,20 @@ func calculateDesiredSubnetIpv4Mask(desiredSize int) (int, int) {
 	return int(newSubnetMask), newSubnetCapacity
 }
 
+func isIPv4AddrNetwork(addr string, prefix int) (bool, string, error) {
+	_, ipNet, ipErr := net.ParseCIDR(fmt.Sprintf("%s/%d", addr, prefix))
+
+	if ipErr != nil {
+		return false, ipNet.IP.String(), ipErr
+	}
+
+	if addr == ipNet.IP.String() {
+		return true, ipNet.IP.String(), nil
+	}
+
+	return false, ipNet.IP.String(), nil
+}
+
 func (ipv4prefix *Ipv4Prefix) Invoke() (map[string]interface{}, error) {
 	if ipv4prefix.resourcePoolProperties == nil {
 		return nil, errors.New("Unable to extract resources")
@@ -207,8 +222,6 @@ func (ipv4prefix *Ipv4Prefix) Invoke() (map[string]interface{}, error) {
 	}
 	newSubnetMask, newSubnetCapacity := calculateDesiredSubnetIpv4Mask(desiredSize.(int))
 
-	fmt.Println(newSubnetMask, newSubnetCapacity)
-
 	if isSubnet.(bool) && (newSubnetMask == 31 || newSubnetMask == 32) {
 		return nil, errors.Errorf("It is not possible to allocate resource with prefix %d, together with subnet set as true", newSubnetMask)
 	}
@@ -224,8 +237,14 @@ func (ipv4prefix *Ipv4Prefix) Invoke() (map[string]interface{}, error) {
 	}
 
 	if desiredValue != nil {
-		if num, e := InetAton(desiredValue.(string)); num%2 != 0 || e != nil {
-			return nil, errors.New("You provided invalid host address.")
+		isNetwork, networkAddr, ipErr := isIPv4AddrNetwork(desiredValue.(string), newSubnetMask)
+
+		if ipErr != nil {
+			return nil, ipErr
+		}
+
+		if !isNetwork {
+			return nil, errors.Errorf("You provided invalid network address. Network address should be %s", networkAddr)
 		}
 	}
 

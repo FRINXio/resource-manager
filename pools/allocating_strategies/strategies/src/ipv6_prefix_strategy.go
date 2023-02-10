@@ -3,6 +3,7 @@ package src
 import (
 	"fmt"
 	"math/big"
+	"net"
 	"sort"
 	"strconv"
 
@@ -73,6 +74,20 @@ func (ipv6Prefix *Ipv6Prefix) Capacity() (map[string]interface{}, error) {
 	return result, nil
 }
 
+func isIPv6AddrNetwork(addr string, prefix int) (bool, string, error) {
+	_, ipNet, ipErr := net.ParseCIDR(fmt.Sprintf("%s/%d", addr, prefix))
+
+	if ipErr != nil {
+		return false, "", ipErr
+	}
+
+	if addr == ipNet.IP.String() {
+		return true, ipNet.IP.String(), nil
+	}
+
+	return false, ipNet.IP.String(), nil
+}
+
 func (ipv6Prefix *Ipv6Prefix) Invoke() (map[string]interface{}, error) {
 	if ipv6Prefix.resourcePoolProperties == nil {
 		return nil, errors.New("Unable to extract resources")
@@ -114,6 +129,14 @@ func (ipv6Prefix *Ipv6Prefix) Invoke() (map[string]interface{}, error) {
 			". Desired size is invalid: " + desiredSize.String() + ". Use values >= 2")
 	}
 
+	if isSubnet.(bool) == true {
+		// reserve subnet address and broadcast
+		desiredSize.Add(desiredSize, big.NewInt(2))
+	}
+
+	// Calculate smallest possible subnet mask to fit desiredSize
+	newSubnetMask, newSubnetCapacity := calculateDesiredSubnetMask(desiredSize)
+
 	desValue, ok := ipv6Prefix.userInput["desiredValue"]
 	var desiredValue string
 	var desiredValueNum *big.Int
@@ -125,13 +148,17 @@ func (ipv6Prefix *Ipv6Prefix) Invoke() (map[string]interface{}, error) {
 		return nil, errors.New("Provided invalid IPv6 address. Try again with different desiredValue")
 	}
 
-	if isSubnet.(bool) == true {
-		// reserve subnet address and broadcast
-		desiredSize.Add(desiredSize, big.NewInt(2))
-	}
+	if ok {
+		isNetwork, networkAddr, ipErr := isIPv6AddrNetwork(desiredValue, newSubnetMask)
 
-	// Calculate smallest possible subnet mask to fit desiredSize
-	newSubnetMask, newSubnetCapacity := calculateDesiredSubnetMask(desiredSize)
+		if ipErr != nil {
+			return nil, ipErr
+		}
+
+		if !isNetwork {
+			return nil, errors.Errorf("You provided invalid network address. Network address should be %s", networkAddr)
+		}
+	}
 
 	var currentResourcesStruct []Ipv6PrefixStruct
 	for _, resource := range ipv6Prefix.currentResources {
@@ -153,8 +180,6 @@ func (ipv6Prefix *Ipv6Prefix) Invoke() (map[string]interface{}, error) {
 		}
 		return true
 	})
-
-	fmt.Println("pici", desValue, desiredValue, desiredValueNum)
 
 	if desiredValueNum != nil {
 		var remainder big.Int
@@ -187,7 +212,7 @@ func (ipv6Prefix *Ipv6Prefix) Invoke() (map[string]interface{}, error) {
 				return result, nil
 			}
 
-			return nil, errors.New("matkypiciUnable to allocate Ipv6 prefix from: " + rootPrefixStr +
+			return nil, errors.New("Unable to allocate Ipv6 prefix from: " + rootPrefixStr +
 				". Insufficient capacity to allocate a new prefix of size: " + desiredSize.String() +
 				". Currently allocated prefixes: " + prefixesToStr(currentResourcesStruct))
 		}

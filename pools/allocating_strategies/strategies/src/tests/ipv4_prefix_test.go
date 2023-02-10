@@ -372,8 +372,19 @@ func TestClaimResourceWithInvalidDesiredValue(t *testing.T) {
 	ipv4PrefixStruct := src.NewIpv4Prefix(allocated, resourcePool, userInput)
 	output, _ := ipv4PrefixStruct.Invoke()
 
-	expectedOutput := map[string]interface{}{"address": "192.168.1.30", "prefix": 29, "subnet": false}
-	if eq := reflect.DeepEqual(output, expectedOutput); eq {
+	if eq := reflect.DeepEqual(output, map[string]interface{}(nil)); !eq {
+		t.Fatalf("different output of nil expected, got: %s", output)
+	}
+}
+
+func TestClaimResourceWithDesiredValueNotNetwork(t *testing.T) {
+	var allocated []map[string]interface{}
+	var resourcePool = map[string]interface{}{"prefix": 24, "address": "192.168.1.0", "subnet": false}
+	var userInput = map[string]interface{}{"desiredSize": 8, "desiredValue": "192.168.1.34"}
+	ipv4PrefixStruct := src.NewIpv4Prefix(allocated, resourcePool, userInput)
+	output, _ := ipv4PrefixStruct.Invoke()
+
+	if eq := reflect.DeepEqual(output, map[string]interface{}(nil)); !eq {
 		t.Fatalf("different output of nil expected, got: %s", output)
 	}
 }
