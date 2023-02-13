@@ -331,8 +331,8 @@ func TestAllocationOfResourceWithInvalidDesiredValue(t *testing.T) {
 		t.Fatalf("different output of nil expected, got: %s", output)
 	}
 
-	userInput = map[string]interface{}{"desiredSize": 2, "desiredValue": "dead::be02"}
-	allocated = append(allocated, ipv6Prefix("dead::be02", 127))
+	userInput = map[string]interface{}{"desiredSize": 2, "desiredValue": "dead::be00"}
+	allocated = append(allocated, ipv6Prefix("dead::be00", 127))
 	ipv6PrefixStruct = src.NewIpv6Prefix(allocated, resourcePool, userInput)
 	output, _ = ipv6PrefixStruct.Invoke()
 	if eq := reflect.DeepEqual(output, map[string]interface{}(nil)); !eq {
@@ -351,7 +351,18 @@ func TestAllocationOfResourceWithInvalidDesiredValue(t *testing.T) {
 
 func TestAllocationOfResourceWithOverflowingCapacity(t *testing.T) {
 	resourcePool := map[string]interface{}{"prefix": 126, "address": "dead::be00", "subnet": false}
-	userInput := map[string]interface{}{"desiredSize": 3, "desiredValue": "dead::be02"}
+	userInput := map[string]interface{}{"desiredSize": 5, "desiredValue": "dead::be00"}
+	var allocated []map[string]interface{}
+	ipv6PrefixStruct := src.NewIpv6Prefix(allocated, resourcePool, userInput)
+	output, _ := ipv6PrefixStruct.Invoke()
+	if eq := reflect.DeepEqual(output, map[string]interface{}(nil)); !eq {
+		t.Fatalf("different output of nil expected, got: %s", output)
+	}
+}
+
+func TestAllocationOfResourceWithDesiredValueNotNetwork(t *testing.T) {
+	resourcePool := map[string]interface{}{"prefix": 125, "address": "dead::be00", "subnet": false}
+	userInput := map[string]interface{}{"desiredSize": 4, "desiredValue": "dead::be02"}
 	var allocated []map[string]interface{}
 	ipv6PrefixStruct := src.NewIpv6Prefix(allocated, resourcePool, userInput)
 	output, _ := ipv6PrefixStruct.Invoke()
