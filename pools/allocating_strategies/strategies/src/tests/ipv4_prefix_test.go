@@ -464,6 +464,19 @@ func TestAvailableCapacityFor32PrefixSubnetTrue(t *testing.T) {
 	}
 }
 
+func TestCorrectlyCalculatedNetworkAddressForErrorMsg(t *testing.T) {
+	var allocated = []map[string]interface{}{ipv4Prefix("10.0.0.0", 30, false), ipv4Prefix("10.0.0.8", 28, false)}
+	var resourcePool = map[string]interface{}{"prefix": 24, "address": "10.0.0.0", "subnet": false}
+	var userInput = map[string]interface{}{"desiredSize": 8, "desiredValue": "10.0.0.5"}
+	ipv4PrefixStruct := src.NewIpv4Prefix(allocated, resourcePool, userInput)
+	_, err := ipv4PrefixStruct.Invoke()
+	expectedErrorOutput := errors.New("You provided invalid network address. Network address should be 10.0.0.24")
+
+	if eq := reflect.DeepEqual(err.Error(), expectedErrorOutput.Error()); !eq {
+		t.Fatalf("different output of %s expected, got: %s", expectedErrorOutput, err)
+	}
+}
+
 func TestCapacityOf31MaskSubnetTrue(t *testing.T) {
 	var allocated []map[string]interface{}
 	var resourcePool = map[string]interface{}{"prefix": 31, "address": "10.0.0.0", "subnet": true}

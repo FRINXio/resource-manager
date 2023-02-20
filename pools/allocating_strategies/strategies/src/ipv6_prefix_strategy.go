@@ -88,6 +88,30 @@ func isIPv6AddrNetwork(addr string, prefix int) (bool, string, error) {
 	return false, ipNet.IP.String(), nil
 }
 
+func nextFreeNetworkIPv6AddressAfter(networkAddress string, prefix int, capacity *big.Int, allocatedResources []Ipv6PrefixStruct) string {
+	networkAddressNum, _ := Ipv6InetAton(networkAddress)
+	var possibleSubnetNum = networkAddressNum
+
+	for _, currentResource := range allocatedResources {
+
+		allocatedSubnetNum, _ := Ipv6InetAton(currentResource.address)
+
+		chunkCapacity := new(big.Int).Sub(allocatedSubnetNum, possibleSubnetNum)
+		if chunkCapacity.Cmp(capacity) >= 0 {
+			return Ipv6InetNtoa(possibleSubnetNum)
+		}
+
+		// move possible subnet start to a valid address outside of allocatedSubnet's addresses and continue the search
+		possibleSubnetNum, _ = findNextFreeSubnetIPv6Address(currentResource, prefix)
+	}
+
+	if new(big.Int).Sub(networkAddressNum, possibleSubnetNum).Cmp(big.NewInt(0)) > 0 {
+		return networkAddress
+	} else {
+		return Ipv6InetNtoa(possibleSubnetNum)
+	}
+}
+
 func (ipv6Prefix *Ipv6Prefix) Invoke() (map[string]interface{}, error) {
 	if ipv6Prefix.resourcePoolProperties == nil {
 		return nil, errors.New("Unable to extract resources")
@@ -148,18 +172,6 @@ func (ipv6Prefix *Ipv6Prefix) Invoke() (map[string]interface{}, error) {
 		return nil, errors.New("Provided invalid IPv6 address. Try again with different desiredValue")
 	}
 
-	if ok {
-		isNetwork, networkAddr, ipErr := isIPv6AddrNetwork(desiredValue, newSubnetMask)
-
-		if ipErr != nil {
-			return nil, ipErr
-		}
-
-		if !isNetwork {
-			return nil, errors.Errorf("You provided invalid network address. Network address should be %s", networkAddr)
-		}
-	}
-
 	var currentResourcesStruct []Ipv6PrefixStruct
 	for _, resource := range ipv6Prefix.currentResources {
 		address, prefix, err := getIPv6AddressAndPrefixFromCurrentResource(resource)
@@ -182,9 +194,15 @@ func (ipv6Prefix *Ipv6Prefix) Invoke() (map[string]interface{}, error) {
 	})
 
 	if desiredValueNum != nil {
-		var remainder big.Int
-		if remainder.Mod(desiredValueNum, big.NewInt(2)).Cmp(big.NewInt(0)) != 0 {
-			return nil, errors.New("Provided IPv6 address was not a network address. Please provide network IPv6 address, so that resources can be correctly allocated")
+		isNetwork, networkAddr, ipErr := isIPv6AddrNetwork(desiredValue, newSubnetMask)
+
+		if ipErr != nil {
+			return nil, ipErr
+		}
+
+		if !isNetwork {
+			availableNextFreeNetworkAddress := nextFreeNetworkIPv6AddressAfter(networkAddr, newSubnetMask, newSubnetCapacity, currentResourcesStruct)
+			return nil, errors.Errorf("You provided invalid network address. Network address should be %s", availableNextFreeNetworkAddress)
 		}
 
 		if len(currentResourcesStruct) > 0 {

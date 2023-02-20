@@ -167,6 +167,32 @@ func isIPv4AddrNetwork(addr string, prefix int) (bool, string, error) {
 	return false, ipNet.IP.String(), nil
 }
 
+func nextFreeNetworkAddressAfter(networkAddress string, prefix int, capacity int, allocatedResources []Ipv4Struct) string {
+	networkAddressNum, _ := InetAton(networkAddress)
+	var possibleSubnetNum = networkAddressNum
+
+	for _, allocatedSubnet := range allocatedResources {
+		allocatedSubnetNum, _ := InetAton(allocatedSubnet.address)
+		chunkCapacity := allocatedSubnetNum - possibleSubnetNum
+
+		fmt.Println(inetNtoa(possibleSubnetNum))
+
+		if chunkCapacity >= capacity && allocatedSubnetNum > networkAddressNum {
+			return inetNtoa(possibleSubnetNum)
+		}
+
+		// move possible subnet start to a valid address outside allocatedSubnet's addresses and continue the search
+		possibleSubnetNum = findNextFreeSubnetAddress(allocatedSubnet, prefix)
+	}
+
+	if networkAddressNum > possibleSubnetNum {
+		return networkAddress
+	} else {
+		_, netAddr, _ := isIPv4AddrNetwork(inetNtoa(possibleSubnetNum), prefix)
+		return netAddr
+	}
+}
+
 func (ipv4prefix *Ipv4Prefix) Invoke() (map[string]interface{}, error) {
 	if ipv4prefix.resourcePoolProperties == nil {
 		return nil, errors.New("Unable to extract resources")
@@ -236,18 +262,6 @@ func (ipv4prefix *Ipv4Prefix) Invoke() (map[string]interface{}, error) {
 		return nil, errors.New("We weren't able to handle formatting of provided inputs, that were of incorrect shape")
 	}
 
-	if desiredValue != nil {
-		isNetwork, networkAddr, ipErr := isIPv4AddrNetwork(desiredValue.(string), newSubnetMask)
-
-		if ipErr != nil {
-			return nil, ipErr
-		}
-
-		if !isNetwork {
-			return nil, errors.Errorf("You provided invalid network address. Network address should be %s", networkAddr)
-		}
-	}
-
 	var currentResourcesStruct []Ipv4Struct
 	for _, resource := range ipv4prefix.currentResources {
 		address, prefix, err := getAddressAndPrefixFromCurrentResource(resource)
@@ -270,6 +284,17 @@ func (ipv4prefix *Ipv4Prefix) Invoke() (map[string]interface{}, error) {
 	var result = make(map[string]interface{})
 
 	if desiredValue != nil {
+		isNetwork, networkAddr, ipErr := isIPv4AddrNetwork(desiredValue.(string), newSubnetMask)
+
+		if ipErr != nil {
+			return nil, ipErr
+		}
+
+		if !isNetwork {
+			nextFreeNetworkAddress := nextFreeNetworkAddressAfter(networkAddr, newSubnetMask, newSubnetCapacity, currentResourcesStruct)
+			return nil, errors.Errorf("You provided invalid network address. Network address should be %s", nextFreeNetworkAddress)
+		}
+
 		if len(currentResourcesStruct) > 0 {
 			desiredValueNum, er := InetAton(desiredValue.(string))
 			lastResource := currentResourcesStruct[len(currentResourcesStruct)-1]
