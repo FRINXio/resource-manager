@@ -178,9 +178,25 @@ func QueryResourcesByAltId(ctx context.Context, client *ent.Client, alternativeI
 	}
 
 	if poolId != nil {
-		fmt.Println(poolId)
 		res, err := client.Resource.Query().
 			Where(resource.HasPoolWith(resourcePool.ID(*poolId))).
+			Where(func(selector *sql.Selector) {
+				for k, v := range alternativeId {
+					selector.Where(sqljson.ValueContains("alternate_id", v, sqljson.Path(k)))
+				}
+			}).
+			Paginate(ctx, afterCursor, first, beforeCursor, last)
+
+		if err != nil {
+			log.Error(ctx, err, "Unable to retrieve resources with alternative ID %v", alternativeId)
+			return nil, gqlerror.Errorf("Unable to query resources: %v", err)
+		}
+
+		if res != nil {
+			return res, nil
+		}
+	} else {
+		res, err := client.Resource.Query().
 			Where(func(selector *sql.Selector) {
 				for k, v := range alternativeId {
 					selector.Where(sqljson.ValueContains("alternate_id", v, sqljson.Path(k)))

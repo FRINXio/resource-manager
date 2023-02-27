@@ -727,7 +727,7 @@ export async function queryResource(poolId, params){
     .catch(error => console.log(error));
 }
 
-export async function queryResourcesByAltId(poolId, params){
+export async function queryResourcesByAltIdAndPoolId(poolId, params){
     return client.query({
         query: gql`
             query QueryResourcesByAltId($poolId: ID, $input: Map!) {
@@ -749,6 +749,43 @@ export async function queryResourcesByAltId(poolId, params){
         `,
         variables: {
             poolId: poolId,
+            input: params,
+        }
+    })
+    .then(result => {
+        if (result.data) {
+            return result.data.QueryResourcesByAltId;
+        }
+
+        return null;
+    })
+    .catch(error => {
+        console.log(error);
+        return null;
+    });
+}
+
+export async function queryResourcesByAltId(params){
+    return client.query({
+        query: gql`
+            query QueryResourcesByAltId($poolId: ID, $input: Map!) {
+                QueryResourcesByAltId(input: $input, poolId: $poolId) {
+                    edges {
+                        node {
+                            id
+                            Properties
+                            NestedPool {
+                                id
+                                Name
+                                PoolType
+                            }
+                            AlternativeId
+                        }
+                    }
+                }
+            }
+        `,
+        variables: {
             input: params,
         }
     })

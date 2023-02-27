@@ -1,4 +1,10 @@
-import {claimResource, getResourcePool, getPoolHierarchyPath, deleteResourcePool} from '../graphql-queries.js';
+import {
+    claimResource,
+    getResourcePool,
+    getPoolHierarchyPath,
+    deleteResourcePool,
+    claimResourceWithAltId, queryResourcesByAltId, queryResourcesByAltIdAndPoolId
+} from '../graphql-queries.js';
 import {
     createIpv4PrefixRootPool, createIpv4PrefixNestedPool,
     createSingletonIpv4PrefixNestedPool,
@@ -214,6 +220,63 @@ test('cannot create pool with subnet true and 31 or 32 prefix', async (t) => {
 
     t.equal(pool31, null);
     t.equal(pool32, null);
+
+    await cleanup();
+    t.end();
+});
+
+test('search resources by Optional<poolId> and altId', async (t) => {
+    const pool1 = await createIpv4PrefixRootPool("10.0.0.0", 24, true);
+    const pool2 = await createIpv4PrefixRootPool("10.0.0.0", 24, true);
+
+    await claimResourceWithAltId(pool1.id, {
+        desiredSize: 2,
+    }, {
+        altId: "altId1",
+    })
+
+    await claimResourceWithAltId(pool1.id, {
+        desiredSize: 2,
+    }, {
+        altId: "altId1",
+    })
+
+    await claimResourceWithAltId(pool1.id, {
+        desiredSize: 2,
+    }, {
+        altId: "altId1",
+    })
+
+    await claimResourceWithAltId(pool2.id, {
+        desiredSize: 2,
+    }, {
+        altId: "altId1",
+    })
+
+    await claimResourceWithAltId(pool2.id, {
+        desiredSize: 2,
+    }, {
+        altId: "altId1",
+    })
+
+    await claimResourceWithAltId(pool2.id, {
+        desiredSize: 2,
+    }, {
+        altId: "altId1",
+    })
+
+    const resources = await queryResourcesByAltId({
+        altId: "altId1",
+    });
+
+    const resources2 = await queryResourcesByAltIdAndPoolId(pool2.id, {
+        altId: "altId1",
+    });
+
+    console.log(resources, resources2);
+
+    t.equal(resources.edges.length, 6);
+    t.equal(resources2.edges.length, 3);
 
     await cleanup();
     t.end();
