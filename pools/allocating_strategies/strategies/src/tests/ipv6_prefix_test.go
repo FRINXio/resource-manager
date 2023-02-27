@@ -370,3 +370,16 @@ func TestAllocationOfResourceWithDesiredValueNotNetwork(t *testing.T) {
 		t.Fatalf("different output of nil expected, got: %s", output)
 	}
 }
+
+func TestCorrectlyCalculatedIPv6NetworkAddressForErrorMsg(t *testing.T) {
+	resourcePool := map[string]interface{}{"prefix": 120, "address": "dead::be00", "subnet": false}
+	userInput := map[string]interface{}{"desiredSize": 4, "desiredValue": "dead::be02"}
+	var allocated = []map[string]interface{}{ipv6PrefixWithSubnet("dead::be00", 127, false), ipv6PrefixWithSubnet("dead::be10", 127, false)}
+	ipv6PrefixStruct := src.NewIpv6Prefix(allocated, resourcePool, userInput)
+	_, err := ipv6PrefixStruct.Invoke()
+	expectedErrorOutput := errors.New("You provided invalid network address. Network address should be dead::be04")
+
+	if eq := reflect.DeepEqual(err.Error(), expectedErrorOutput.Error()); !eq {
+		t.Fatalf("different output of %s expected, got: %s", expectedErrorOutput, err)
+	}
+}
