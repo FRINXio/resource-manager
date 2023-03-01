@@ -8,7 +8,6 @@ import {
     createResourceType,
     freeResource,
     claimResourceWithAltId,
-    queryResourcesByAltId,
     getResourcesForPool,
     searchPoolsByTags,
     tagPool,
@@ -17,7 +16,11 @@ import {
     getResourcesByDatetimeRange,
     updateResourceAltId,
     getEmptyPools,
-    getPaginatedResourcesForPool, getRequiredPoolProperties, findAllocationStrategyId, createAllocationPool
+    getPaginatedResourcesForPool,
+    getRequiredPoolProperties,
+    findAllocationStrategyId,
+    createAllocationPool,
+    queryResourcesByAltIdAndPoolId
 } from "../graphql-queries.js";
 import {
     cleanup,
@@ -400,22 +403,22 @@ test('allocation pool test alternative ID', async (t) => {
 
     await updateResourceAltId(poolId, resource.Properties, altId3)
 
-    let res3 = await queryResourcesByAltId(poolId, altId3);
+    let res3 = await queryResourcesByAltIdAndPoolId(poolId, altId3);
 
     t.equal(res3.edges[0].node.Properties.vlan, 3);
     t.equal(res3.edges[0].node.AlternativeId.vlanAltId, altId3.vlanAltId)
     t.equal(res3.edges[0].node.AlternativeId.order, altId3.order)
 
     //test nothing found
-    let res = await queryResourcesByAltId(poolId, {someKey: 'this does not exist :('});
+    let res = await queryResourcesByAltIdAndPoolId(poolId, {someKey: 'this does not exist :('});
     t.notOk(res[0]);
 
     //test string-only comparison
-    res = await queryResourcesByAltId(poolId, altId);
+    res = await queryResourcesByAltIdAndPoolId(poolId, altId);
     t.equal(res.edges[0].node.Properties.vlan, 1);
 
     //test string-and-number comparison
-    res = await queryResourcesByAltId(poolId, altId2);
+    res = await queryResourcesByAltIdAndPoolId(poolId, altId2);
     t.equal(res.edges[0].node.Properties.vlan, 2);
 
     await cleanup()
@@ -455,7 +458,7 @@ test('set pool test alternative ID', async (t) => {
     let altId = {id: getUniqueName('avalue1')};
 
     await claimResourceWithAltId(poolId, {}, altId);
-    let res = await queryResourcesByAltId(poolId, altId);
+    let res = await queryResourcesByAltIdAndPoolId(poolId, altId);
     t.equal(res.edges[0].node.Properties.avalue, 1)
 
     let duplicate = await claimResourceWithAltId(poolId, {}, altId, null, true);
@@ -489,8 +492,8 @@ test('test filtering of allocated ipv6 resources by pool id', async (t) => {
     await claimResourceWithAltId(poolId, { desiredSize: 4 }, {});
     await claimResourceWithAltId(poolId2, { desiredSize: 4 }, {});
 
-    const allocResourcesForPoolId = await queryResourcesByAltId(poolId, {});
-    const allocResourcesForPoolId2 = await queryResourcesByAltId(poolId2, {});
+    const allocResourcesForPoolId = await queryResourcesByAltIdAndPoolId(poolId, {});
+    const allocResourcesForPoolId2 = await queryResourcesByAltIdAndPoolId(poolId2, {});
 
     t.equal(allocResourcesForPoolId.edges.length, 1);
     t.equal(allocResourcesForPoolId2.edges.length, 1);
@@ -506,8 +509,8 @@ test('test filtering of allocated ipv4 resources by pool id', async (t) => {
     await claimResourceWithAltId(poolId.id, { desiredSize: 4 }, {});
     await claimResourceWithAltId(poolId2.id, { desiredSize: 4 }, {});
 
-    const allocResourcesForPoolId = await queryResourcesByAltId(poolId.id, {});
-    const allocResourcesForPoolId2 = await queryResourcesByAltId(poolId2.id, {});
+    const allocResourcesForPoolId = await queryResourcesByAltIdAndPoolId(poolId.id, {});
+    const allocResourcesForPoolId2 = await queryResourcesByAltIdAndPoolId(poolId2.id, {});
 
     t.equal(allocResourcesForPoolId.edges.length, 1);
     t.equal(allocResourcesForPoolId2.edges.length, 1);
@@ -523,7 +526,7 @@ test('test filtering of allocated resources when pool id is null', async (t) => 
         desiredSize: 4
     }, {});
 
-    const allocResourcesForPoolId = await queryResourcesByAltId(null, {});
+    const allocResourcesForPoolId = await queryResourcesByAltIdAndPoolId(null, null);
 
     t.equal(allocResourcesForPoolId, null);
 
@@ -536,7 +539,7 @@ test('query resources that do not have an alternative id', async (t) => {
     await claimResource(poolId, {});
     await claimResourceWithAltId(poolId, {}, {vlanAltId: getUniqueName('vlan')});
 
-    const res = await queryResourcesByAltId(poolId, {});
+    const res = await queryResourcesByAltIdAndPoolId(poolId, {});
     const res2 = await getResourcesForPool(poolId);
 
     t.equal(res.edges.every((node) => node.AlternativeId != null || node.AlternativeId == null), true);
