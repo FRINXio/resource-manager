@@ -3,8 +3,10 @@ package src
 import (
 	"fmt"
 	"github.com/pkg/errors"
+	"github.com/vektah/gqlparser/v2/gqlerror"
 	"math"
 	"net"
+	"reflect"
 	"sort"
 	"strconv"
 )
@@ -229,9 +231,24 @@ func (ipv4prefix *Ipv4Prefix) Invoke() (map[string]interface{}, error) {
 	var desiredSize interface{}
 	var desiredSizeErr error
 	if isSubnet.(bool) {
-		desiredSize, desiredSizeErr = NumberToInt(value.(int) + 2)
+		desiredSize, desiredSizeErr = NumberToInt(value)
+		if desiredSizeErr == nil {
+			desSize, ok := desiredSize.(int)
+
+			if !ok {
+				return nil, gqlerror.Errorf("Unable to claim resource: usrInput.desiredSize was sent in bad format. Required format is int or string and was: %s", reflect.TypeOf(desiredSize))
+			}
+
+			desiredSize = desSize + 2
+		} else {
+			return nil, gqlerror.Errorf("Unable to claim resource: %s", desiredSizeErr)
+		}
 	} else {
 		desiredSize, desiredSizeErr = NumberToInt(value)
+
+		if desiredSizeErr != nil {
+			return nil, gqlerror.Errorf("Unable to claim resource: %s", desiredSizeErr)
+		}
 	}
 	desiredValue, isDesiredValueOk := ipv4prefix.userInput["desiredValue"]
 
@@ -247,6 +264,8 @@ func (ipv4prefix *Ipv4Prefix) Invoke() (map[string]interface{}, error) {
 			". Desired size is invalid: " + strconv.Itoa(desiredSize.(int)) + ". Use values >= 2")
 	}
 	newSubnetMask, newSubnetCapacity := calculateDesiredSubnetIpv4Mask(desiredSize.(int))
+
+	fmt.Println("eskere", desiredSizeErr, desiredSize, isSubnet)
 
 	if isSubnet.(bool) && (newSubnetMask == 31 || newSubnetMask == 32) {
 		return nil, errors.Errorf("It is not possible to allocate resource with prefix %d, together with subnet set as true", newSubnetMask)
