@@ -1,7 +1,6 @@
 package src
 
 import (
-	"fmt"
 	"github.com/pkg/errors"
 	"github.com/vektah/gqlparser/v2/gqlerror"
 	"math"
