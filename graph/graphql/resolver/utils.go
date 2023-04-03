@@ -224,12 +224,24 @@ func ClaimResource(pool pools.Pool, userInput map[string]interface{}, descriptio
 	for key, value := range userInput {
 		switch value.(type) {
 		case string:
-			intVal, intErr := strconv.Atoi(fmt.Sprintf("%v", value))
-			if intErr == nil && key == "desiredSize" {
+			if key == "desiredSize" {
+				intVal, intErr := strconv.Atoi(fmt.Sprintf("%v", value))
+
+				if intErr != nil {
+					return nil, gqlerror.Errorf("Unable to claim resource: %v", intErr)
+				}
 				input[key] = intVal
 			} else {
 				input[key] = value
 			}
+		case int:
+			val, ok := value.(int)
+
+			if !ok {
+				return nil, gqlerror.Errorf("Unable to claim resource: Number that was sent in desiredSize was in bad format")
+			}
+
+			input[key] = val
 		default:
 			input[key] = value
 			break

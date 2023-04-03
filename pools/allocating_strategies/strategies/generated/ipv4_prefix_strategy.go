@@ -3,8 +3,10 @@ package src
 import (
 	"fmt"
 	"github.com/pkg/errors"
+	"github.com/vektah/gqlparser/v2/gqlerror"
 	"math"
 	"net"
+	"reflect"
 	"sort"
 	"strconv"
 )
@@ -175,8 +177,6 @@ func nextFreeNetworkAddressAfter(networkAddress string, prefix int, capacity int
 		allocatedSubnetNum, _ := InetAton(allocatedSubnet.address)
 		chunkCapacity := allocatedSubnetNum - possibleSubnetNum
 
-		fmt.Println(inetNtoa(possibleSubnetNum))
-
 		if chunkCapacity >= capacity && allocatedSubnetNum > networkAddressNum {
 			return inetNtoa(possibleSubnetNum)
 		}
@@ -229,9 +229,24 @@ func (ipv4prefix *Ipv4Prefix) Invoke() (map[string]interface{}, error) {
 	var desiredSize interface{}
 	var desiredSizeErr error
 	if isSubnet.(bool) {
-		desiredSize, desiredSizeErr = NumberToInt(value.(int) + 2)
+		desiredSize, desiredSizeErr = NumberToInt(value)
+		if desiredSizeErr == nil {
+			desSize, ok := desiredSize.(int)
+
+			if !ok {
+				return nil, gqlerror.Errorf("Unable to claim resource: usrInput.desiredSize was sent in bad format. Required format is int or string and was: %s", reflect.TypeOf(desiredSize))
+			}
+
+			desiredSize = desSize + 2
+		} else {
+			return nil, gqlerror.Errorf("Unable to claim resource: %s", desiredSizeErr)
+		}
 	} else {
 		desiredSize, desiredSizeErr = NumberToInt(value)
+
+		if desiredSizeErr != nil {
+			return nil, gqlerror.Errorf("Unable to claim resource: %s", desiredSizeErr)
+		}
 	}
 	desiredValue, isDesiredValueOk := ipv4prefix.userInput["desiredValue"]
 
