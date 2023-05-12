@@ -175,7 +175,7 @@ type ComplexityRoot struct {
 		QueryResource                  func(childComplexity int, input map[string]interface{}, poolID int) int
 		QueryResourcePool              func(childComplexity int, poolID int) int
 		QueryResourcePoolHierarchyPath func(childComplexity int, poolID int) int
-		QueryResourcePools             func(childComplexity int, resourceTypeID *int, tags *model.TagOr) int
+		QueryResourcePools             func(childComplexity int, resourceTypeID *int, tags *model.TagOr, first *int, last *int, before *ent.Cursor, after *ent.Cursor) int
 		QueryResourceTypes             func(childComplexity int, byName *string) int
 		QueryResources                 func(childComplexity int, poolID int, first *int, last *int, before *string, after *string) int
 		QueryResourcesByAltID          func(childComplexity int, input map[string]interface{}, poolID *int, first *int, last *int, before *string, after *string) int
@@ -216,6 +216,17 @@ type ComplexityRoot struct {
 		ResourceType       func(childComplexity int) int
 		Resources          func(childComplexity int) int
 		Tags               func(childComplexity int) int
+	}
+
+	ResourcePoolConnection struct {
+		Edges      func(childComplexity int) int
+		PageInfo   func(childComplexity int) int
+		TotalCount func(childComplexity int) int
+	}
+
+	ResourcePoolEdge struct {
+		Cursor func(childComplexity int) int
+		Node   func(childComplexity int) int
 	}
 
 	ResourceType struct {
@@ -290,7 +301,7 @@ type QueryResolver interface {
 	QueryRequiredPoolProperties(ctx context.Context, allocationStrategyName string) ([]*ent.PropertyType, error)
 	QueryResourcePool(ctx context.Context, poolID int) (*ent.ResourcePool, error)
 	QueryEmptyResourcePools(ctx context.Context, resourceTypeID *int) ([]*ent.ResourcePool, error)
-	QueryResourcePools(ctx context.Context, resourceTypeID *int, tags *model.TagOr) ([]*ent.ResourcePool, error)
+	QueryResourcePools(ctx context.Context, resourceTypeID *int, tags *model.TagOr, first *int, last *int, before *ent.Cursor, after *ent.Cursor) (*ent.ResourcePoolConnection, error)
 	QueryRecentlyActiveResources(ctx context.Context, fromDatetime string, toDatetime *string, first *int, last *int, before *string, after *string) (*ent.ResourceConnection, error)
 	QueryResourcePoolHierarchyPath(ctx context.Context, poolID int) ([]*ent.ResourcePool, error)
 	QueryRootResourcePools(ctx context.Context, resourceTypeID *int, tags *model.TagOr) ([]*ent.ResourcePool, error)
@@ -966,7 +977,7 @@ func (e *executableSchema) Complexity(typeName, field string, childComplexity in
 			return 0, false
 		}
 
-		return e.complexity.Query.QueryResourcePools(childComplexity, args["resourceTypeId"].(*int), args["tags"].(*model.TagOr)), true
+		return e.complexity.Query.QueryResourcePools(childComplexity, args["resourceTypeId"].(*int), args["tags"].(*model.TagOr), args["first"].(*int), args["last"].(*int), args["before"].(*ent.Cursor), args["after"].(*ent.Cursor)), true
 
 	case "Query.QueryResourceTypes":
 		if e.complexity.Query.QueryResourceTypes == nil {
@@ -1194,6 +1205,41 @@ func (e *executableSchema) Complexity(typeName, field string, childComplexity in
 
 		return e.complexity.ResourcePool.Tags(childComplexity), true
 
+	case "ResourcePoolConnection.edges":
+		if e.complexity.ResourcePoolConnection.Edges == nil {
+			break
+		}
+
+		return e.complexity.ResourcePoolConnection.Edges(childComplexity), true
+
+	case "ResourcePoolConnection.pageInfo":
+		if e.complexity.ResourcePoolConnection.PageInfo == nil {
+			break
+		}
+
+		return e.complexity.ResourcePoolConnection.PageInfo(childComplexity), true
+
+	case "ResourcePoolConnection.totalCount":
+		if e.complexity.ResourcePoolConnection.TotalCount == nil {
+			break
+		}
+
+		return e.complexity.ResourcePoolConnection.TotalCount(childComplexity), true
+
+	case "ResourcePoolEdge.cursor":
+		if e.complexity.ResourcePoolEdge.Cursor == nil {
+			break
+		}
+
+		return e.complexity.ResourcePoolEdge.Cursor(childComplexity), true
+
+	case "ResourcePoolEdge.node":
+		if e.complexity.ResourcePoolEdge.Node == nil {
+			break
+		}
+
+		return e.complexity.ResourcePoolEdge.Node(childComplexity), true
+
 	case "ResourceType.id":
 		if e.complexity.ResourceType.ID == nil {
 			break
@@ -1360,116 +1406,137 @@ func (ec *executionContext) introspectType(name string) (*introspection.Type, er
 }
 
 var sources = []*ast.Source{
-	{Name: "../schema/schema.graphql", Input: `directive @goModel(model: String, models: [String!]) on OBJECT
-    | INPUT_OBJECT
-    | SCALAR
-    | ENUM
-    | INTERFACE
-    | UNION
+	{Name: "../schema/schema.graphql", Input: `directive @goModel(
+  model: String
+  models: [String!]
+) on OBJECT | INPUT_OBJECT | SCALAR | ENUM | INTERFACE | UNION
 
 """
 Interface for entities needed by the relay-framework
 """
 interface Node
-@goModel(model: "github.com/net-auto/resourceManager/ent.Noder") {
-    """
-    The ID of the entity
-    """
-    id: ID!
+  @goModel(model: "github.com/net-auto/resourceManager/ent.Noder") {
+  """
+  The ID of the entity
+  """
+  id: ID!
 }
 
 """
 Describes the properties of a resource
 """
 type ResourceType implements Node
-@goModel(model: "github.com/net-auto/resourceManager/ent.ResourceType") {
-    Name: String!
-    Pools: [ResourcePool!]!
-    PropertyTypes: [PropertyType!]!
-    id: ID!
+  @goModel(model: "github.com/net-auto/resourceManager/ent.ResourceType") {
+  Name: String!
+  Pools: [ResourcePool!]!
+  PropertyTypes: [PropertyType!]!
+  id: ID!
 }
 
 """
 Defines the type of the property
 """
 type PropertyType implements Node
-@goModel(model: "github.com/net-auto/resourceManager/ent.PropertyType"){
-    FloatVal: Float
-    IntVal: Int
-    Mandatory: Boolean
-    StringVal: String
-    Name: String!
-    Type: String!
-    id: ID!
+  @goModel(model: "github.com/net-auto/resourceManager/ent.PropertyType") {
+  FloatVal: Float
+  IntVal: Int
+  Mandatory: Boolean
+  StringVal: String
+  Name: String!
+  Type: String!
+  id: ID!
 }
 
 """
 Holds the string value for pagination
 """
 type OutputCursor
-@goModel(model: "github.com/net-auto/resourceManager/ent.Cursor"){
-    ID: String!
+  @goModel(model: "github.com/net-auto/resourceManager/ent.Cursor") {
+  ID: String!
 }
+
+scalar Cursor @goModel(model: "github.com/net-auto/resourceManager/ent.Cursor")
 
 """
 Holds information about the requested pagination page
 """
 type PageInfo
-@goModel(model: "github.com/net-auto/resourceManager/ent.PageInfo"){
-    endCursor: OutputCursor!
-    hasNextPage: Boolean!
-    hasPreviousPage: Boolean!
-    startCursor: OutputCursor!
+  @goModel(model: "github.com/net-auto/resourceManager/ent.PageInfo") {
+  endCursor: OutputCursor!
+  hasNextPage: Boolean!
+  hasPreviousPage: Boolean!
+  startCursor: OutputCursor!
 }
 
 """
 A Relay-specific entity that holds information about the requested pagination page
 """
 type ResourceEdge
-@goModel(model: "github.com/net-auto/resourceManager/ent.ResourceEdge"){
-    cursor: OutputCursor!
-    node: Resource!
+  @goModel(model: "github.com/net-auto/resourceManager/ent.ResourceEdge") {
+  cursor: OutputCursor!
+  node: Resource!
 }
 
 """
 A Relay-specific entity holding information about pagination
 """
 type ResourceConnection
-@goModel(model: "github.com/net-auto/resourceManager/ent.ResourceConnection"){
-    edges: [ResourceEdge]!
-    pageInfo:   PageInfo!
-    totalCount: Int!
+  @goModel(
+    model: "github.com/net-auto/resourceManager/ent.ResourceConnection"
+  ) {
+  edges: [ResourceEdge]!
+  pageInfo: PageInfo!
+  totalCount: Int!
+}
+
+type ResourcePoolEdge
+  @goModel(model: "github.com/net-auto/resourceManager/ent.ResourcePoolEdge") {
+  cursor: OutputCursor!
+  node: ResourcePool!
+}
+
+type ResourcePoolConnection
+  @goModel(
+    model: "github.com/net-auto/resourceManager/ent.ResourcePoolConnection"
+  ) {
+  edges: [ResourcePoolEdge]!
+  pageInfo: PageInfo!
+  totalCount: Int!
 }
 
 """
 A pool is an entity that contains allocated and free resources
 """
 type ResourcePool implements Node
-@goModel(model: "github.com/net-auto/resourceManager/ent.ResourcePool"){
-    AllocationStrategy: AllocationStrategy
-    Capacity: PoolCapacityPayload
-    Name: String!
-    ParentResource: Resource
-    PoolProperties: Map!
-    PoolType: PoolType!
-    ResourceType: ResourceType!
-    Resources: [Resource!]!
-    Tags: [Tag!]!
-    allocatedResources(first: Int, last: Int, before: String, after: String): ResourceConnection
-    id: ID!
+  @goModel(model: "github.com/net-auto/resourceManager/ent.ResourcePool") {
+  AllocationStrategy: AllocationStrategy
+  Capacity: PoolCapacityPayload
+  Name: String!
+  ParentResource: Resource
+  PoolProperties: Map!
+  PoolType: PoolType!
+  ResourceType: ResourceType!
+  Resources: [Resource!]!
+  Tags: [Tag!]!
+  allocatedResources(
+    first: Int
+    last: Int
+    before: String
+    after: String
+  ): ResourceConnection
+  id: ID!
 }
 
 """
 Defines the type of pool
 """
 enum PoolType
-@goModel(
+  @goModel(
     model: "github.com/net-auto/resourceManager/ent/resourcepool.PoolType"
-)
-{
-    allocating
-    set
-    singleton
+  ) {
+  allocating
+  set
+  singleton
 }
 
 """
@@ -1477,447 +1544,502 @@ Represents data-type where variable keys and values can be used
 """
 scalar Map
 
-
 """
 Represents an allocated resource
 """
 type Resource implements Node
-@goModel(model: "github.com/net-auto/resourceManager/ent.Resource")
-{
-    Description: String
-    NestedPool: ResourcePool
-    ParentPool: ResourcePool!
-    Properties: Map!
-    AlternativeId: Map
-    id: ID!
+  @goModel(model: "github.com/net-auto/resourceManager/ent.Resource") {
+  Description: String
+  NestedPool: ResourcePool
+  ParentPool: ResourcePool!
+  Properties: Map!
+  AlternativeId: Map
+  id: ID!
 }
 
 """
 Supported languages for allocation strategy scripts
 """
 enum AllocationStrategyLang
-@goModel(
+  @goModel(
     model: "github.com/net-auto/resourceManager/ent/allocationstrategy.Lang"
-)
-{
-    js
-    py
+  ) {
+  js
+  py
 }
 
 """
 Represents an allocation strategy
 """
 type AllocationStrategy implements Node
-@goModel(model: "github.com/net-auto/resourceManager/ent.AllocationStrategy"){
-    Description: String
-    Lang: AllocationStrategyLang!
-    Name: String!
-    Script: String!
-    id: ID!
+  @goModel(
+    model: "github.com/net-auto/resourceManager/ent.AllocationStrategy"
+  ) {
+  Description: String
+  Lang: AllocationStrategyLang!
+  Name: String!
+  Script: String!
+  id: ID!
 }
 
 """
 Pools can be tagged for easier search
 """
 type Tag implements Node
-@goModel(model: "github.com/net-auto/resourceManager/ent.Tag"){
-    Pools: [ResourcePool]
-    Tag: String!
-    id: ID!
+  @goModel(model: "github.com/net-auto/resourceManager/ent.Tag") {
+  Pools: [ResourcePool]
+  Tag: String!
+  id: ID!
 }
 
 """
 Helper entities for tag search
 """
 input TagAnd {
-    matchesAll: [String!]!
+  matchesAll: [String!]!
 }
 
 """
 Helper entities for tag search
 """
 input TagOr {
-    matchesAny: [TagAnd!]!
+  matchesAny: [TagAnd!]!
 }
 
 """
 Convenience entity representing the identity of a pool in some calls
 """
 input ResourcePoolInput {
-    ResourcePoolID: ID!
-    ResourcePoolName: String!
-    poolProperties: Map!
+  ResourcePoolID: ID!
+  ResourcePoolName: String!
+  poolProperties: Map!
 }
 
 """
 Alternative representation of identity of a resource (i.e. alternative to resource ID)
 """
 input ResourceInput {
-    Properties: Map!
-    # TODO replace with enum
-    Status: String!
-    UpdatedAt: String!
+  Properties: Map!
+  # TODO replace with enum
+  Status: String!
+  UpdatedAt: String!
 }
 
 """
 Input parameters for creating a set pool
 """
 input CreateSetPoolInput {
-    description: String
-    poolDealocationSafetyPeriod: Int!
-    poolName: String!
-    poolValues: [Map!]!
-    resourceTypeId: ID!
-    tags: [String!]
+  description: String
+  poolDealocationSafetyPeriod: Int!
+  poolName: String!
+  poolValues: [Map!]!
+  resourceTypeId: ID!
+  tags: [String!]
 }
 
 """
 Output of creating set pool
 """
 type CreateSetPoolPayload {
-    pool: ResourcePool
+  pool: ResourcePool
 }
 
 """
 Input parameters for creating a nested set pool
 """
 input CreateNestedSetPoolInput {
-    description: String
-    parentResourceId: ID!
-    poolDealocationSafetyPeriod: Int!
-    poolName: String!
-    poolValues: [Map]!
-    resourceTypeId: ID!
-    tags: [String!]
+  description: String
+  parentResourceId: ID!
+  poolDealocationSafetyPeriod: Int!
+  poolName: String!
+  poolValues: [Map]!
+  resourceTypeId: ID!
+  tags: [String!]
 }
 
 """
 Output of creating a nested set pool
 """
 type CreateNestedSetPoolPayload {
-    pool: ResourcePool
+  pool: ResourcePool
 }
 
 """
 Input parameters for creating a nested singleton pool
 """
 input CreateNestedSingletonPoolInput {
-    description: String
-    parentResourceId: ID!
-    poolName: String!
-    poolValues: [Map]!
-    resourceTypeId: ID!
-    tags: [String!]
+  description: String
+  parentResourceId: ID!
+  poolName: String!
+  poolValues: [Map]!
+  resourceTypeId: ID!
+  tags: [String!]
 }
 
 """
 Output of creating a nested singleton pool
 """
 type CreateNestedSingletonPoolPayload {
-    pool: ResourcePool
+  pool: ResourcePool
 }
 
 """
 Input entity for deleting a pool
 """
 input DeleteResourcePoolInput {
-    resourcePoolId: ID!
+  resourcePoolId: ID!
 }
 
 """
 Output entity for deleting a pool
 """
 type DeleteResourcePoolPayload {
-    resourcePoolId: ID!
+  resourcePoolId: ID!
 }
 
 """
 Input parameters for creating a singleton pool
 """
 input CreateSingletonPoolInput {
-    description: String
-    poolName: String!
-    poolValues: [Map!]!
-    resourceTypeId: ID!
-    tags: [String!]
+  description: String
+  poolName: String!
+  poolValues: [Map!]!
+  resourceTypeId: ID!
+  tags: [String!]
 }
 
 """
 Output of creating a singleton pool
 """
 type CreateSingletonPoolPayload {
-    pool: ResourcePool
+  pool: ResourcePool
 }
 
 """
 Input parameters for creating an allocation pool
 """
 input CreateAllocatingPoolInput {
-    allocationStrategyId: ID!
-    description: String
-    poolDealocationSafetyPeriod: Int!
-    poolName: String!
-    poolProperties: Map!
-    poolPropertyTypes: Map!
-    resourceTypeId: ID!
-    tags: [String!]
+  allocationStrategyId: ID!
+  description: String
+  poolDealocationSafetyPeriod: Int!
+  poolName: String!
+  poolProperties: Map!
+  poolPropertyTypes: Map!
+  resourceTypeId: ID!
+  tags: [String!]
 }
 
 """
 Output of creating an allocating pool
 """
 type CreateAllocatingPoolPayload {
-    pool: ResourcePool
+  pool: ResourcePool
 }
 
 """
 Input parameters for creating a nested allocation pool
 """
 input CreateNestedAllocatingPoolInput {
-    allocationStrategyId: ID!
-    description: String
-    parentResourceId: ID!
-    poolDealocationSafetyPeriod: Int!
-    poolName: String!
-    resourceTypeId: ID!
-    tags: [String!]
+  allocationStrategyId: ID!
+  description: String
+  parentResourceId: ID!
+  poolDealocationSafetyPeriod: Int!
+  poolName: String!
+  resourceTypeId: ID!
+  tags: [String!]
 }
 
 """
 Output of creating a nested allocating pool
 """
 type CreateNestedAllocatingPoolPayload {
-    pool: ResourcePool
+  pool: ResourcePool
 }
 
 """
 Entity representing capacity of a pool
 """
 type PoolCapacityPayload {
-    freeCapacity: String!
-    utilizedCapacity: String!
+  freeCapacity: String!
+  utilizedCapacity: String!
 }
 
 type Query {
-    # Deprecated, use capacity object inside the Resource pool
-    QueryPoolCapacity(poolId: ID!): PoolCapacityPayload!
-    QueryPoolTypes: [PoolType!]!
-    QueryResource(input: Map!, poolId: ID!): Resource!
-    QueryResources(poolId: ID!, first: Int, last: Int, before: String, after: String): ResourceConnection!
-    QueryResourcesByAltId(input: Map!, poolId: ID,
-        first: Int, last: Int, before: String, after: String): ResourceConnection!
-    QueryAllocationStrategy(allocationStrategyId: ID!): AllocationStrategy!
-    QueryAllocationStrategies(byName: String): [AllocationStrategy!]!
-    QueryResourceTypes(byName: String): [ResourceType!]!
-    QueryRequiredPoolProperties(allocationStrategyName: String!): [PropertyType!]!
+  # Deprecated, use capacity object inside the Resource pool
+  QueryPoolCapacity(poolId: ID!): PoolCapacityPayload!
+  QueryPoolTypes: [PoolType!]!
+  QueryResource(input: Map!, poolId: ID!): Resource!
+  QueryResources(
+    poolId: ID!
+    first: Int
+    last: Int
+    before: String
+    after: String
+  ): ResourceConnection!
+  QueryResourcesByAltId(
+    input: Map!
+    poolId: ID
+    first: Int
+    last: Int
+    before: String
+    after: String
+  ): ResourceConnection!
+  QueryAllocationStrategy(allocationStrategyId: ID!): AllocationStrategy!
+  QueryAllocationStrategies(byName: String): [AllocationStrategy!]!
+  QueryResourceTypes(byName: String): [ResourceType!]!
+  QueryRequiredPoolProperties(allocationStrategyName: String!): [PropertyType!]!
 
-    QueryResourcePool(poolId: ID!): ResourcePool!
+  QueryResourcePool(poolId: ID!): ResourcePool!
 
-    QueryEmptyResourcePools(resourceTypeId: ID): [ResourcePool!]!
-    QueryResourcePools(resourceTypeId: ID, tags: TagOr): [ResourcePool!]!
-    QueryRecentlyActiveResources(fromDatetime: String!, toDatetime: String,
-        first: Int, last: Int, before: String, after: String): ResourceConnection!
-    QueryResourcePoolHierarchyPath(poolId: ID!): [ResourcePool!]!
-    QueryRootResourcePools(resourceTypeId: ID, tags: TagOr): [ResourcePool!]!
-    QueryLeafResourcePools(resourceTypeId: ID, tags: TagOr): [ResourcePool!]!
-    SearchPoolsByTags(tags: TagOr): [ResourcePool!]!
+  QueryEmptyResourcePools(resourceTypeId: ID): [ResourcePool!]!
+  QueryResourcePools(
+    resourceTypeId: ID
+    tags: TagOr
+    first: Int
+    last: Int
+    before: Cursor
+    after: Cursor
+  ): ResourcePoolConnection!
+  QueryRecentlyActiveResources(
+    fromDatetime: String!
+    toDatetime: String
+    first: Int
+    last: Int
+    before: String
+    after: String
+  ): ResourceConnection!
+  QueryResourcePoolHierarchyPath(poolId: ID!): [ResourcePool!]!
+  QueryRootResourcePools(resourceTypeId: ID, tags: TagOr): [ResourcePool!]!
+  QueryLeafResourcePools(resourceTypeId: ID, tags: TagOr): [ResourcePool!]!
+  SearchPoolsByTags(tags: TagOr): [ResourcePool!]!
 
-    QueryTags: [Tag!]!
-    node(id: ID!): Node
+  QueryTags: [Tag!]!
+  node(id: ID!): Node
 }
 
 """
 Input parameters for creating a new tag
 """
 input CreateTagInput {
-    tagText: String!
+  tagText: String!
 }
 
 """
 Output of creating a tag
 """
 type CreateTagPayload {
-    tag: Tag
+  tag: Tag
 }
 
 """
 Input parameters for updating an existing tag
 """
 input UpdateTagInput {
-    tagId: ID!,
-    tagText: String!
+  tagId: ID!
+  tagText: String!
 }
 
 """
 Output of updating a tag
 """
 type UpdateTagPayload {
-    tag: Tag
+  tag: Tag
 }
 
 """
 Input parameters for deleting an existing tag
 """
 input DeleteTagInput {
-    tagId: ID!
+  tagId: ID!
 }
 
 """
 Output of deleting a tag
 """
 type DeleteTagPayload {
-    tagId: ID!
+  tagId: ID!
 }
 
 """
 Input parameters for a call adding a tag to pool
 """
 input TagPoolInput {
-    tagId: ID!,
-    poolId: ID!
+  tagId: ID!
+  poolId: ID!
 }
 
 """
 Output of adding a specific tag to a pool
 """
 type TagPoolPayload {
-    tag: Tag
+  tag: Tag
 }
 
 """
 Input parameters for a call removing a tag from pool
 """
 input UntagPoolInput {
-    tagId: ID!,
-    poolId: ID!
+  tagId: ID!
+  poolId: ID!
 }
 
 """
 Output of removing a specific tag from a pool
 """
 type UntagPoolPayload {
-    tag: Tag
+  tag: Tag
 }
 
 """
 Input parameters for creating a new allocation strategy
 """
 input CreateAllocationStrategyInput {
-    name: String!,
-    description: String,
-    script: String!,
-    lang: AllocationStrategyLang!
-    expectedPoolPropertyTypes: Map
+  name: String!
+  description: String
+  script: String!
+  lang: AllocationStrategyLang!
+  expectedPoolPropertyTypes: Map
 }
 
 """
 Output of creating a new allocation strategy
 """
 type CreateAllocationStrategyPayload {
-    strategy: AllocationStrategy
+  strategy: AllocationStrategy
 }
 
 """
 Input parameters for deleting an existing allocation strategy
 """
 input DeleteAllocationStrategyInput {
-    allocationStrategyId: ID!
+  allocationStrategyId: ID!
 }
 
 """
 Output of deleting an existing allocation strategy
 """
 type DeleteAllocationStrategyPayload {
-    strategy: AllocationStrategy
+  strategy: AllocationStrategy
 }
 
 """
 Creating a new resource-type
 """
 input CreateResourceTypeInput {
-"""
-name of the resource type AND property type (should they be different?)
-"""
-    resourceName: String!,
-"""
-resourceProperties: Map! - for key "init" the value is the initial value of the property type (like 7)
-                         - for key "type" the value is the name of the type like "int"
-"""
-    resourceProperties: Map!
+  """
+  name of the resource type AND property type (should they be different?)
+  """
+  resourceName: String!
+  """
+  resourceProperties: Map! - for key "init" the value is the initial value of the property type (like 7)
+                           - for key "type" the value is the name of the type like "int"
+  """
+  resourceProperties: Map!
 }
 
 """
 Output of creating a new resource-type
 """
 type CreateResourceTypePayload {
-    resourceType: ResourceType!
+  resourceType: ResourceType!
 }
 
 """
 Input parameters for deleting an existing resource-type
 """
 input DeleteResourceTypeInput {
-    resourceTypeId: ID!
+  resourceTypeId: ID!
 }
 
 """
 Output of deleting a resource-type
 """
 type DeleteResourceTypePayload {
-    resourceTypeId: ID!
+  resourceTypeId: ID!
 }
 
 """
 Input parameters updating the name of a resource-type
 """
 input UpdateResourceTypeNameInput {
-    resourceTypeId: ID!,
-    resourceName: String!
+  resourceTypeId: ID!
+  resourceName: String!
 }
 
 """
 Output of updating the name of a resource-type
 """
 type UpdateResourceTypeNamePayload {
-    resourceTypeId: ID!
+  resourceTypeId: ID!
 }
 
 type Mutation {
-    # Tagging
-    CreateTag(input: CreateTagInput!): CreateTagPayload!
-    UpdateTag(input: UpdateTagInput!): UpdateTagPayload!
-    DeleteTag(input: DeleteTagInput!): DeleteTagPayload!
-    TagPool(input: TagPoolInput!): TagPoolPayload!
-    UntagPool(input: UntagPoolInput!): UntagPoolPayload!
+  # Tagging
+  CreateTag(input: CreateTagInput!): CreateTagPayload!
+  UpdateTag(input: UpdateTagInput!): UpdateTagPayload!
+  DeleteTag(input: DeleteTagInput!): DeleteTagPayload!
+  TagPool(input: TagPoolInput!): TagPoolPayload!
+  UntagPool(input: UntagPoolInput!): UntagPoolPayload!
 
-    # Allocation strategy
-    CreateAllocationStrategy(input: CreateAllocationStrategyInput): CreateAllocationStrategyPayload!
-    DeleteAllocationStrategy(input: DeleteAllocationStrategyInput): DeleteAllocationStrategyPayload!
-    TestAllocationStrategy(allocationStrategyId: ID!, resourcePool: ResourcePoolInput!,
-        currentResources: [ResourceInput!]!, userInput: Map!): Map!
+  # Allocation strategy
+  CreateAllocationStrategy(
+    input: CreateAllocationStrategyInput
+  ): CreateAllocationStrategyPayload!
+  DeleteAllocationStrategy(
+    input: DeleteAllocationStrategyInput
+  ): DeleteAllocationStrategyPayload!
+  TestAllocationStrategy(
+    allocationStrategyId: ID!
+    resourcePool: ResourcePoolInput!
+    currentResources: [ResourceInput!]!
+    userInput: Map!
+  ): Map!
 
-    # managing resources via pools
-    ClaimResource(poolId: ID!, description: String, userInput: Map!): Resource!
-    ClaimResourceWithAltId(poolId: ID!, description: String, userInput: Map!, alternativeId: Map!): Resource!
-    FreeResource(input: Map!, poolId: ID!): String!
+  # managing resources via pools
+  ClaimResource(poolId: ID!, description: String, userInput: Map!): Resource!
+  ClaimResourceWithAltId(
+    poolId: ID!
+    description: String
+    userInput: Map!
+    alternativeId: Map!
+  ): Resource!
+  FreeResource(input: Map!, poolId: ID!): String!
 
-    # create/update/delete resource pool
-    CreateSetPool(input: CreateSetPoolInput!): CreateSetPoolPayload!
-    CreateNestedSetPool(input: CreateNestedSetPoolInput!): CreateNestedSetPoolPayload!
-    CreateSingletonPool(input: CreateSingletonPoolInput): CreateSingletonPoolPayload!
-    CreateNestedSingletonPool(input: CreateNestedSingletonPoolInput!): CreateNestedSingletonPoolPayload!
-    CreateAllocatingPool(input: CreateAllocatingPoolInput): CreateAllocatingPoolPayload!
-    CreateNestedAllocatingPool(input: CreateNestedAllocatingPoolInput!): CreateNestedAllocatingPoolPayload!
-    DeleteResourcePool(input: DeleteResourcePoolInput!): DeleteResourcePoolPayload!
+  # create/update/delete resource pool
+  CreateSetPool(input: CreateSetPoolInput!): CreateSetPoolPayload!
+  CreateNestedSetPool(
+    input: CreateNestedSetPoolInput!
+  ): CreateNestedSetPoolPayload!
+  CreateSingletonPool(
+    input: CreateSingletonPoolInput
+  ): CreateSingletonPoolPayload!
+  CreateNestedSingletonPool(
+    input: CreateNestedSingletonPoolInput!
+  ): CreateNestedSingletonPoolPayload!
+  CreateAllocatingPool(
+    input: CreateAllocatingPoolInput
+  ): CreateAllocatingPoolPayload!
+  CreateNestedAllocatingPool(
+    input: CreateNestedAllocatingPoolInput!
+  ): CreateNestedAllocatingPoolPayload!
+  DeleteResourcePool(
+    input: DeleteResourcePoolInput!
+  ): DeleteResourcePoolPayload!
 
-    # create/update/delete resource type
-    CreateResourceType(input: CreateResourceTypeInput!): CreateResourceTypePayload!
-    DeleteResourceType(input: DeleteResourceTypeInput!): DeleteResourceTypePayload!
-    ## it only changes the name of the resource type
-    UpdateResourceTypeName(input: UpdateResourceTypeNameInput!): UpdateResourceTypeNamePayload!
+  # create/update/delete resource type
+  CreateResourceType(
+    input: CreateResourceTypeInput!
+  ): CreateResourceTypePayload!
+  DeleteResourceType(
+    input: DeleteResourceTypeInput!
+  ): DeleteResourceTypePayload!
+  ## it only changes the name of the resource type
+  UpdateResourceTypeName(
+    input: UpdateResourceTypeNameInput!
+  ): UpdateResourceTypeNamePayload!
 
-    # update resource alternative id
-    UpdateResourceAltId(input: Map!, poolId: ID!, alternativeId: Map!): Resource!
+  # update resource alternative id
+  UpdateResourceAltId(input: Map!, poolId: ID!, alternativeId: Map!): Resource!
 }
 `, BuiltIn: false},
 }
@@ -2566,6 +2688,42 @@ func (ec *executionContext) field_Query_QueryResourcePools_args(ctx context.Cont
 		}
 	}
 	args["tags"] = arg1
+	var arg2 *int
+	if tmp, ok := rawArgs["first"]; ok {
+		ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("first"))
+		arg2, err = ec.unmarshalOInt2ᚖint(ctx, tmp)
+		if err != nil {
+			return nil, err
+		}
+	}
+	args["first"] = arg2
+	var arg3 *int
+	if tmp, ok := rawArgs["last"]; ok {
+		ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("last"))
+		arg3, err = ec.unmarshalOInt2ᚖint(ctx, tmp)
+		if err != nil {
+			return nil, err
+		}
+	}
+	args["last"] = arg3
+	var arg4 *ent.Cursor
+	if tmp, ok := rawArgs["before"]; ok {
+		ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("before"))
+		arg4, err = ec.unmarshalOCursor2ᚖgithubᚗcomᚋnetᚑautoᚋresourceManagerᚋentᚐCursor(ctx, tmp)
+		if err != nil {
+			return nil, err
+		}
+	}
+	args["before"] = arg4
+	var arg5 *ent.Cursor
+	if tmp, ok := rawArgs["after"]; ok {
+		ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("after"))
+		arg5, err = ec.unmarshalOCursor2ᚖgithubᚗcomᚋnetᚑautoᚋresourceManagerᚋentᚐCursor(ctx, tmp)
+		if err != nil {
+			return nil, err
+		}
+	}
+	args["after"] = arg5
 	return args, nil
 }
 
@@ -6490,7 +6648,7 @@ func (ec *executionContext) _Query_QueryResourcePools(ctx context.Context, field
 	}()
 	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
 		ctx = rctx // use context from middleware stack in children
-		return ec.resolvers.Query().QueryResourcePools(rctx, fc.Args["resourceTypeId"].(*int), fc.Args["tags"].(*model.TagOr))
+		return ec.resolvers.Query().QueryResourcePools(rctx, fc.Args["resourceTypeId"].(*int), fc.Args["tags"].(*model.TagOr), fc.Args["first"].(*int), fc.Args["last"].(*int), fc.Args["before"].(*ent.Cursor), fc.Args["after"].(*ent.Cursor))
 	})
 	if err != nil {
 		ec.Error(ctx, err)
@@ -6502,9 +6660,9 @@ func (ec *executionContext) _Query_QueryResourcePools(ctx context.Context, field
 		}
 		return graphql.Null
 	}
-	res := resTmp.([]*ent.ResourcePool)
+	res := resTmp.(*ent.ResourcePoolConnection)
 	fc.Result = res
-	return ec.marshalNResourcePool2ᚕᚖgithubᚗcomᚋnetᚑautoᚋresourceManagerᚋentᚐResourcePoolᚄ(ctx, field.Selections, res)
+	return ec.marshalNResourcePoolConnection2ᚖgithubᚗcomᚋnetᚑautoᚋresourceManagerᚋentᚐResourcePoolConnection(ctx, field.Selections, res)
 }
 
 func (ec *executionContext) fieldContext_Query_QueryResourcePools(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
@@ -6515,30 +6673,14 @@ func (ec *executionContext) fieldContext_Query_QueryResourcePools(ctx context.Co
 		IsResolver: true,
 		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
 			switch field.Name {
-			case "AllocationStrategy":
-				return ec.fieldContext_ResourcePool_AllocationStrategy(ctx, field)
-			case "Capacity":
-				return ec.fieldContext_ResourcePool_Capacity(ctx, field)
-			case "Name":
-				return ec.fieldContext_ResourcePool_Name(ctx, field)
-			case "ParentResource":
-				return ec.fieldContext_ResourcePool_ParentResource(ctx, field)
-			case "PoolProperties":
-				return ec.fieldContext_ResourcePool_PoolProperties(ctx, field)
-			case "PoolType":
-				return ec.fieldContext_ResourcePool_PoolType(ctx, field)
-			case "ResourceType":
-				return ec.fieldContext_ResourcePool_ResourceType(ctx, field)
-			case "Resources":
-				return ec.fieldContext_ResourcePool_Resources(ctx, field)
-			case "Tags":
-				return ec.fieldContext_ResourcePool_Tags(ctx, field)
-			case "allocatedResources":
-				return ec.fieldContext_ResourcePool_allocatedResources(ctx, field)
-			case "id":
-				return ec.fieldContext_ResourcePool_id(ctx, field)
+			case "edges":
+				return ec.fieldContext_ResourcePoolConnection_edges(ctx, field)
+			case "pageInfo":
+				return ec.fieldContext_ResourcePoolConnection_pageInfo(ctx, field)
+			case "totalCount":
+				return ec.fieldContext_ResourcePoolConnection_totalCount(ctx, field)
 			}
-			return nil, fmt.Errorf("no field named %q was found under type ResourcePool", field.Name)
+			return nil, fmt.Errorf("no field named %q was found under type ResourcePoolConnection", field.Name)
 		},
 	}
 	defer func() {
@@ -8274,6 +8416,270 @@ func (ec *executionContext) fieldContext_ResourcePool_id(ctx context.Context, fi
 		IsResolver: false,
 		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
 			return nil, errors.New("field of type ID does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _ResourcePoolConnection_edges(ctx context.Context, field graphql.CollectedField, obj *ent.ResourcePoolConnection) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_ResourcePoolConnection_edges(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.Edges, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.([]*ent.ResourcePoolEdge)
+	fc.Result = res
+	return ec.marshalNResourcePoolEdge2ᚕᚖgithubᚗcomᚋnetᚑautoᚋresourceManagerᚋentᚐResourcePoolEdge(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_ResourcePoolConnection_edges(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "ResourcePoolConnection",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			switch field.Name {
+			case "cursor":
+				return ec.fieldContext_ResourcePoolEdge_cursor(ctx, field)
+			case "node":
+				return ec.fieldContext_ResourcePoolEdge_node(ctx, field)
+			}
+			return nil, fmt.Errorf("no field named %q was found under type ResourcePoolEdge", field.Name)
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _ResourcePoolConnection_pageInfo(ctx context.Context, field graphql.CollectedField, obj *ent.ResourcePoolConnection) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_ResourcePoolConnection_pageInfo(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.PageInfo, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(ent.PageInfo)
+	fc.Result = res
+	return ec.marshalNPageInfo2githubᚗcomᚋnetᚑautoᚋresourceManagerᚋentᚐPageInfo(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_ResourcePoolConnection_pageInfo(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "ResourcePoolConnection",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			switch field.Name {
+			case "endCursor":
+				return ec.fieldContext_PageInfo_endCursor(ctx, field)
+			case "hasNextPage":
+				return ec.fieldContext_PageInfo_hasNextPage(ctx, field)
+			case "hasPreviousPage":
+				return ec.fieldContext_PageInfo_hasPreviousPage(ctx, field)
+			case "startCursor":
+				return ec.fieldContext_PageInfo_startCursor(ctx, field)
+			}
+			return nil, fmt.Errorf("no field named %q was found under type PageInfo", field.Name)
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _ResourcePoolConnection_totalCount(ctx context.Context, field graphql.CollectedField, obj *ent.ResourcePoolConnection) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_ResourcePoolConnection_totalCount(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.TotalCount, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(int)
+	fc.Result = res
+	return ec.marshalNInt2int(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_ResourcePoolConnection_totalCount(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "ResourcePoolConnection",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type Int does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _ResourcePoolEdge_cursor(ctx context.Context, field graphql.CollectedField, obj *ent.ResourcePoolEdge) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_ResourcePoolEdge_cursor(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.Cursor, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(ent.Cursor)
+	fc.Result = res
+	return ec.marshalNOutputCursor2githubᚗcomᚋnetᚑautoᚋresourceManagerᚋentᚐCursor(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_ResourcePoolEdge_cursor(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "ResourcePoolEdge",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			switch field.Name {
+			case "ID":
+				return ec.fieldContext_OutputCursor_ID(ctx, field)
+			}
+			return nil, fmt.Errorf("no field named %q was found under type OutputCursor", field.Name)
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _ResourcePoolEdge_node(ctx context.Context, field graphql.CollectedField, obj *ent.ResourcePoolEdge) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_ResourcePoolEdge_node(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.Node, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(*ent.ResourcePool)
+	fc.Result = res
+	return ec.marshalNResourcePool2ᚖgithubᚗcomᚋnetᚑautoᚋresourceManagerᚋentᚐResourcePool(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_ResourcePoolEdge_node(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "ResourcePoolEdge",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			switch field.Name {
+			case "AllocationStrategy":
+				return ec.fieldContext_ResourcePool_AllocationStrategy(ctx, field)
+			case "Capacity":
+				return ec.fieldContext_ResourcePool_Capacity(ctx, field)
+			case "Name":
+				return ec.fieldContext_ResourcePool_Name(ctx, field)
+			case "ParentResource":
+				return ec.fieldContext_ResourcePool_ParentResource(ctx, field)
+			case "PoolProperties":
+				return ec.fieldContext_ResourcePool_PoolProperties(ctx, field)
+			case "PoolType":
+				return ec.fieldContext_ResourcePool_PoolType(ctx, field)
+			case "ResourceType":
+				return ec.fieldContext_ResourcePool_ResourceType(ctx, field)
+			case "Resources":
+				return ec.fieldContext_ResourcePool_Resources(ctx, field)
+			case "Tags":
+				return ec.fieldContext_ResourcePool_Tags(ctx, field)
+			case "allocatedResources":
+				return ec.fieldContext_ResourcePool_allocatedResources(ctx, field)
+			case "id":
+				return ec.fieldContext_ResourcePool_id(ctx, field)
+			}
+			return nil, fmt.Errorf("no field named %q was found under type ResourcePool", field.Name)
 		},
 	}
 	return fc, nil
@@ -13278,6 +13684,83 @@ func (ec *executionContext) _ResourcePool(ctx context.Context, sel ast.Selection
 	return out
 }
 
+var resourcePoolConnectionImplementors = []string{"ResourcePoolConnection"}
+
+func (ec *executionContext) _ResourcePoolConnection(ctx context.Context, sel ast.SelectionSet, obj *ent.ResourcePoolConnection) graphql.Marshaler {
+	fields := graphql.CollectFields(ec.OperationContext, sel, resourcePoolConnectionImplementors)
+	out := graphql.NewFieldSet(fields)
+	var invalids uint32
+	for i, field := range fields {
+		switch field.Name {
+		case "__typename":
+			out.Values[i] = graphql.MarshalString("ResourcePoolConnection")
+		case "edges":
+
+			out.Values[i] = ec._ResourcePoolConnection_edges(ctx, field, obj)
+
+			if out.Values[i] == graphql.Null {
+				invalids++
+			}
+		case "pageInfo":
+
+			out.Values[i] = ec._ResourcePoolConnection_pageInfo(ctx, field, obj)
+
+			if out.Values[i] == graphql.Null {
+				invalids++
+			}
+		case "totalCount":
+
+			out.Values[i] = ec._ResourcePoolConnection_totalCount(ctx, field, obj)
+
+			if out.Values[i] == graphql.Null {
+				invalids++
+			}
+		default:
+			panic("unknown field " + strconv.Quote(field.Name))
+		}
+	}
+	out.Dispatch()
+	if invalids > 0 {
+		return graphql.Null
+	}
+	return out
+}
+
+var resourcePoolEdgeImplementors = []string{"ResourcePoolEdge"}
+
+func (ec *executionContext) _ResourcePoolEdge(ctx context.Context, sel ast.SelectionSet, obj *ent.ResourcePoolEdge) graphql.Marshaler {
+	fields := graphql.CollectFields(ec.OperationContext, sel, resourcePoolEdgeImplementors)
+	out := graphql.NewFieldSet(fields)
+	var invalids uint32
+	for i, field := range fields {
+		switch field.Name {
+		case "__typename":
+			out.Values[i] = graphql.MarshalString("ResourcePoolEdge")
+		case "cursor":
+
+			out.Values[i] = ec._ResourcePoolEdge_cursor(ctx, field, obj)
+
+			if out.Values[i] == graphql.Null {
+				invalids++
+			}
+		case "node":
+
+			out.Values[i] = ec._ResourcePoolEdge_node(ctx, field, obj)
+
+			if out.Values[i] == graphql.Null {
+				invalids++
+			}
+		default:
+			panic("unknown field " + strconv.Quote(field.Name))
+		}
+	}
+	out.Dispatch()
+	if invalids > 0 {
+		return graphql.Null
+	}
+	return out
+}
+
 var resourceTypeImplementors = []string{"ResourceType", "Node"}
 
 func (ec *executionContext) _ResourceType(ctx context.Context, sel ast.SelectionSet, obj *ent.ResourceType) graphql.Marshaler {
@@ -14592,6 +15075,58 @@ func (ec *executionContext) marshalNResourcePool2ᚖgithubᚗcomᚋnetᚑautoᚋ
 	return ec._ResourcePool(ctx, sel, v)
 }
 
+func (ec *executionContext) marshalNResourcePoolConnection2githubᚗcomᚋnetᚑautoᚋresourceManagerᚋentᚐResourcePoolConnection(ctx context.Context, sel ast.SelectionSet, v ent.ResourcePoolConnection) graphql.Marshaler {
+	return ec._ResourcePoolConnection(ctx, sel, &v)
+}
+
+func (ec *executionContext) marshalNResourcePoolConnection2ᚖgithubᚗcomᚋnetᚑautoᚋresourceManagerᚋentᚐResourcePoolConnection(ctx context.Context, sel ast.SelectionSet, v *ent.ResourcePoolConnection) graphql.Marshaler {
+	if v == nil {
+		if !graphql.HasFieldError(ctx, graphql.GetFieldContext(ctx)) {
+			ec.Errorf(ctx, "the requested element is null which the schema does not allow")
+		}
+		return graphql.Null
+	}
+	return ec._ResourcePoolConnection(ctx, sel, v)
+}
+
+func (ec *executionContext) marshalNResourcePoolEdge2ᚕᚖgithubᚗcomᚋnetᚑautoᚋresourceManagerᚋentᚐResourcePoolEdge(ctx context.Context, sel ast.SelectionSet, v []*ent.ResourcePoolEdge) graphql.Marshaler {
+	ret := make(graphql.Array, len(v))
+	var wg sync.WaitGroup
+	isLen1 := len(v) == 1
+	if !isLen1 {
+		wg.Add(len(v))
+	}
+	for i := range v {
+		i := i
+		fc := &graphql.FieldContext{
+			Index:  &i,
+			Result: &v[i],
+		}
+		ctx := graphql.WithFieldContext(ctx, fc)
+		f := func(i int) {
+			defer func() {
+				if r := recover(); r != nil {
+					ec.Error(ctx, ec.Recover(ctx, r))
+					ret = nil
+				}
+			}()
+			if !isLen1 {
+				defer wg.Done()
+			}
+			ret[i] = ec.marshalOResourcePoolEdge2ᚖgithubᚗcomᚋnetᚑautoᚋresourceManagerᚋentᚐResourcePoolEdge(ctx, sel, v[i])
+		}
+		if isLen1 {
+			f(i)
+		} else {
+			go f(i)
+		}
+
+	}
+	wg.Wait()
+
+	return ret
+}
+
 func (ec *executionContext) unmarshalNResourcePoolInput2githubᚗcomᚋnetᚑautoᚋresourceManagerᚋgraphᚋgraphqlᚋmodelᚐResourcePoolInput(ctx context.Context, v interface{}) (model.ResourcePoolInput, error) {
 	res, err := ec.unmarshalInputResourcePoolInput(ctx, v)
 	return res, graphql.ErrorOnPath(ctx, err)
@@ -15160,6 +15695,22 @@ func (ec *executionContext) unmarshalOCreateSingletonPoolInput2ᚖgithubᚗcom�
 	return &res, graphql.ErrorOnPath(ctx, err)
 }
 
+func (ec *executionContext) unmarshalOCursor2ᚖgithubᚗcomᚋnetᚑautoᚋresourceManagerᚋentᚐCursor(ctx context.Context, v interface{}) (*ent.Cursor, error) {
+	if v == nil {
+		return nil, nil
+	}
+	var res = new(ent.Cursor)
+	err := res.UnmarshalGQL(v)
+	return res, graphql.ErrorOnPath(ctx, err)
+}
+
+func (ec *executionContext) marshalOCursor2ᚖgithubᚗcomᚋnetᚑautoᚋresourceManagerᚋentᚐCursor(ctx context.Context, sel ast.SelectionSet, v *ent.Cursor) graphql.Marshaler {
+	if v == nil {
+		return graphql.Null
+	}
+	return v
+}
+
 func (ec *executionContext) unmarshalODeleteAllocationStrategyInput2ᚖgithubᚗcomᚋnetᚑautoᚋresourceManagerᚋgraphᚋgraphqlᚋmodelᚐDeleteAllocationStrategyInput(ctx context.Context, v interface{}) (*model.DeleteAllocationStrategyInput, error) {
 	if v == nil {
 		return nil, nil
@@ -15313,6 +15864,13 @@ func (ec *executionContext) marshalOResourcePool2ᚖgithubᚗcomᚋnetᚑautoᚋ
 		return graphql.Null
 	}
 	return ec._ResourcePool(ctx, sel, v)
+}
+
+func (ec *executionContext) marshalOResourcePoolEdge2ᚖgithubᚗcomᚋnetᚑautoᚋresourceManagerᚋentᚐResourcePoolEdge(ctx context.Context, sel ast.SelectionSet, v *ent.ResourcePoolEdge) graphql.Marshaler {
+	if v == nil {
+		return graphql.Null
+	}
+	return ec._ResourcePoolEdge(ctx, sel, v)
 }
 
 func (ec *executionContext) unmarshalOString2ᚕstringᚄ(ctx context.Context, v interface{}) ([]string, error) {

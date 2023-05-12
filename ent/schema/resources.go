@@ -5,9 +5,11 @@
 package schema
 
 import (
-	"entgo.io/contrib/entgql"
-	"entgo.io/ent/schema/index"
 	"time"
+
+	"entgo.io/contrib/entgql"
+	"entgo.io/ent/schema"
+	"entgo.io/ent/schema/index"
 
 	"entgo.io/ent"
 	"entgo.io/ent/schema/edge"
@@ -149,6 +151,12 @@ func (ResourcePool) Indexes() []ent.Index {
 	return []ent.Index{
 		index.
 			Edges("allocation_strategy"),
+	}
+}
+
+func (ResourcePool) Annotations() []schema.Annotation {
+	return []schema.Annotation{
+		entgql.RelayConnection(),
 	}
 }
 
