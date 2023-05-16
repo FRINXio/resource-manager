@@ -20,7 +20,7 @@ import {
     getRequiredPoolProperties,
     findAllocationStrategyId,
     createAllocationPool,
-    queryResourcesByAltIdAndPoolId
+    queryResourcesByAltIdAndPoolId, queryResourcePools
 } from "../graphql-queries.js";
 import {
     cleanup,
@@ -30,7 +30,7 @@ import {
     createIpv6RootPool, createRandomIntRootPool, createRdRootPool,
     createVlanRangeRootPool,
     createVlanRootPool,
-    getUniqueName
+    getUniqueName, prepareDataForFiltering
 } from "../test-helpers.js";
 import tap from 'tap';
 const test = tap.test;
@@ -583,6 +583,59 @@ test('validate format of provided ipv6 address when creating pool', async (t) =>
 
     t.ok(pool1);
     t.equal(pool3, null);
+
+    await cleanup();
+    t.end();
+});
+
+test('test connection structure of resource pool query', async (t) => {
+    await prepareDataForFiltering();
+    const pools = await queryResourcePools();
+
+    t.equal(pools.edges.length, 2);
+
+    await cleanup();
+    t.end();
+});
+
+test('test pagination of resource pools', async (t) => {
+    await prepareDataForFiltering();
+    const pools = await queryResourcePools(1);
+
+    t.equal(pools.edges.length, 1);
+
+    const pools1 = await queryResourcePools();
+    const startCursor = pools1.pageInfo.startCursor;
+    const endCursor = pools1.pageInfo.endCursor;
+
+    const pools2 = await queryResourcePools(1, undefined, undefined, startCursor);
+    t.equal(pools2.edges[0].cursor, endCursor);
+    t.equal(pools2.pageInfo.hasPreviousPage, true);
+
+    await cleanup();
+    t.end();
+});
+
+test('test connection structure of resource pool query', async (t) => {
+    await prepareDataForFiltering();
+    const byIpv6Addr = await queryResourcePools(undefined, undefined, undefined, undefined, {
+        address: "dead::"
+    });
+    const byIpv6Addr2 = await queryResourcePools(undefined, undefined, undefined, undefined, {
+        address: "dead::4"
+    });
+    const byIpv4Addr = await queryResourcePools(undefined, undefined, undefined, undefined, {
+        address: "10.0.0.0"
+    });
+
+
+    t.equal(byIpv6Addr.edges[0].node.allocatedResources.edges[0].node.Properties["address"], "dead::");
+    t.equal(byIpv6Addr2.edges[0].node.allocatedResources.edges[1].node.Properties["address"], "dead::4");
+    t.equal(byIpv4Addr.edges[0].node.allocatedResources.edges[0].node.Properties["address"], "10.0.0.0");
+
+    t.equal(byIpv6Addr.edges.length, 1);
+    t.equal(byIpv6Addr2.edges.length, 1);
+    t.equal(byIpv4Addr.edges.length, 1);
 
     await cleanup();
     t.end();

@@ -983,3 +983,50 @@ export async function getRequiredPoolProperties(allocationStrategyName) {
     .then(result => result.data.QueryRequiredPoolProperties)
     .catch(error => console.log(error));
 }
+
+export async function queryResourcePools(first, last, before, after, filter){
+    return client.query({
+        query: gql`
+            query getResourcePools($first: Int, $last: Int, $before: Cursor, $after: Cursor, $filter: Map) {
+                QueryResourcePools(first: $first, last: $last, before: $before, after: $after, filterByResources: $filter) {
+                    edges {
+                        node {
+                            id
+                            allocatedResources {
+                                edges {
+                                    node {
+                                        id
+                                        Properties
+                                    }
+                                }
+                            }
+                        }
+                        cursor{
+                            ID
+                        }
+                    }
+                    pageInfo {
+                        endCursor {
+                            ID
+                        }
+                        startCursor {
+                            ID
+                        }
+                        hasPreviousPage
+                        hasNextPage
+                    }
+                    totalCount
+                }
+            }
+        `,
+        variables: {
+            first: first,
+            last: last,
+            before: before,
+            after: after,
+            filter: filter
+        }
+    })
+    .then(result => result.data.QueryResourcePools)
+    .catch(error => console.log(error));
+}

@@ -317,3 +317,27 @@ export async function cleanPool(pool) {
     }
     await deleteResourcePool(pool.node.id);
 }
+
+export async function prepareDataForFiltering() {
+    const ipv6 = await createIpv6PrefixRootPool("dead::", 64, true);
+    const ipv4 = await createIpv4RootPool("10.0.0.0", 24, false);
+
+    await claimResource(ipv6, {
+        desiredSize: 2
+    });
+    await claimResource(ipv6, {
+        desiredSize: 2
+    });
+
+    await claimResource(ipv4, {
+        desiredSize: 2
+    });
+    await claimResource(ipv4, {
+        desiredSize: 2
+    });
+
+    return {
+        ipv4,
+        ipv6
+    }
+}
