@@ -15,7 +15,6 @@ import (
 	"github.com/net-auto/resourceManager/ent/tag"
 	"github.com/net-auto/resourceManager/graph/graphql/model"
 	"github.com/net-auto/resourceManager/pools"
-	"reflect"
 	"strconv"
 
 	//"github.com/net-auto/resourceManager/graph/graphql/model"
@@ -262,114 +261,85 @@ func ClaimResource(pool pools.Pool, userInput map[string]interface{}, descriptio
 func FilterResourcePoolByAllocatedResources(ctx context.Context, query *ent.ResourcePoolQuery, filter map[string]interface{}) ([]int, error) {
 	var compliantAllocatedResourceIDs = make([]int, 0)
 	for filterKey, filterVal := range filter {
-		typeOfFilter := reflect.TypeOf(filterVal)
 		allocPropertyTypesQuery := query.QueryClaims().QueryProperties().QueryType().Where(propertytype.Name(filterKey))
 
-		switch typeOfFilter.Kind() {
-		case reflect.String:
-			if numVal, ok := filterVal.(json.Number); ok {
-				if intVal, err := numVal.Int64(); err == nil {
-					allocatedResourceProperties, err := allocPropertyTypesQuery.QueryProperties().Where(property.IntValEQ(int(intVal))).All(ctx)
+		if numVal, ok := filterVal.(json.Number); ok {
+			numValIDs, err := filterByJsonNumberVal(ctx, allocPropertyTypesQuery, numVal)
 
-					if err != nil {
-						log.Error(ctx, err, "Unable to retrieve allocated resources")
-						return nil, gqlerror.Errorf("Unable to query allocated resources: %v", err)
-					}
-
-					for _, allocatedResourceProperty := range allocatedResourceProperties {
-						compliantAllocatedResourceIDs = append(compliantAllocatedResourceIDs, allocatedResourceProperty.ID)
-					}
-				} else {
-					if floatVal, err := numVal.Float64(); err == nil {
-						compliantAllocatedResourceIDs = append(compliantAllocatedResourceIDs, findResourcesCompliantToFloatVal(ctx, allocPropertyTypesQuery, floatVal)...)
-					}
-				}
-				break
+			if err != nil {
+				return nil, err
 			}
 
-			if stringVal, ok := filterVal.(string); ok {
-				allocatedResourceProperties, err := allocPropertyTypesQuery.QueryProperties().Where(property.StringVal(stringVal)).All(ctx)
+			compliantAllocatedResourceIDs = append(compliantAllocatedResourceIDs, numValIDs...)
+		}
 
-				if err != nil {
-					log.Error(ctx, err, "Unable to retrieve allocated resources")
-					return nil, gqlerror.Errorf("Unable to query allocated resources: %v", err)
-				}
+		if stringVal, ok := filterVal.(string); ok {
+			stringValIDs, err := filterByStringVal(ctx, allocPropertyTypesQuery, stringVal)
 
-				for _, prop := range allocatedResourceProperties {
-					compliantAllocatedResourceIDs = append(compliantAllocatedResourceIDs, prop.ID)
-				}
+			if err != nil {
+				return nil, err
 			}
 
-		case reflect.Int, reflect.Int64:
-			if intVal, ok := filterVal.(int); ok {
-				allocatedResourceProperties, err := allocPropertyTypesQuery.QueryProperties().Where(property.IntValEQ(intVal)).All(ctx)
+			compliantAllocatedResourceIDs = append(compliantAllocatedResourceIDs, stringValIDs...)
+		}
 
-				if err != nil {
-					log.Error(ctx, err, "Unable to retrieve allocated resources")
-					return nil, gqlerror.Errorf("Unable to query allocated resources: %v", err)
-				}
+		if floatVal, ok := filterVal.(float64); ok {
+			floatValIDs := filterByFloatVal(ctx, allocPropertyTypesQuery, floatVal)
+			compliantAllocatedResourceIDs = append(compliantAllocatedResourceIDs, floatValIDs...)
+		}
 
-				for _, prop := range allocatedResourceProperties {
-					compliantAllocatedResourceIDs = append(compliantAllocatedResourceIDs, prop.ID)
-				}
+		if intVal, ok := filterVal.(int); ok {
+			intValIDs, err := filterByIntVal(ctx, allocPropertyTypesQuery, intVal)
+
+			if err != nil {
+				return nil, err
 			}
 
-		case reflect.Bool:
-			if boolVal, ok := filterVal.(bool); ok {
-				allocatedResourceProperties, err := allocPropertyTypesQuery.QueryProperties().Where(property.BoolValEQ(boolVal)).All(ctx)
+			compliantAllocatedResourceIDs = append(compliantAllocatedResourceIDs, intValIDs...)
+		}
 
-				if err != nil {
-					log.Error(ctx, err, "Unable to retrieve allocated resources")
-					return nil, gqlerror.Errorf("Unable to query allocated resources: %v", err)
-				}
+		if boolVal, ok := filterVal.(bool); ok {
+			boolValIDs, err := filterByBoolVal(ctx, allocPropertyTypesQuery, boolVal)
 
-				for _, prop := range allocatedResourceProperties {
-					compliantAllocatedResourceIDs = append(compliantAllocatedResourceIDs, prop.ID)
-				}
+			if err != nil {
+				return nil, err
 			}
 
-		case reflect.Float64:
-			if floatVal, ok := filterVal.(float64); ok {
-				compliantAllocatedResourceIDs = append(compliantAllocatedResourceIDs, findResourcesCompliantToFloatVal(ctx, allocPropertyTypesQuery, floatVal)...)
-			}
-
-		case reflect.Float32:
-			if floatVal, ok := filterVal.(float32); ok {
-				compliantAllocatedResourceIDs = append(compliantAllocatedResourceIDs, findResourcesCompliantToFloatVal(ctx, allocPropertyTypesQuery, float64(floatVal))...)
-			}
+			compliantAllocatedResourceIDs = append(compliantAllocatedResourceIDs, boolValIDs...)
 		}
 	}
 
 	return compliantAllocatedResourceIDs, nil
 }
 
-func findResourcesCompliantToFloatVal(ctx context.Context, allocPropertyTypesQuery *ent.PropertyTypeQuery, floatVal float64) []int {
-	var compliantAllocatedResourceIDs = make([]int, 0)
-	rangeFrom, _ := allocPropertyTypesQuery.QueryProperties().Where(property.RangeFromValEQ(floatVal)).All(ctx)
-	rangeTo, _ := allocPropertyTypesQuery.QueryProperties().Where(property.RangeToValEQ(floatVal)).All(ctx)
-	lat, _ := allocPropertyTypesQuery.QueryProperties().Where(property.LatitudeValEQ(floatVal)).All(ctx)
-	lng, _ := allocPropertyTypesQuery.QueryProperties().Where(property.LongitudeValEQ(floatVal)).All(ctx)
-	float, _ := allocPropertyTypesQuery.QueryProperties().Where(property.FloatValEQ(floatVal)).All(ctx)
+func filterByFloatVal(ctx context.Context, allocPropertyTypesQuery *ent.PropertyTypeQuery, floatVal float64) []int {
+	rangeFrom, _ := allocPropertyTypesQuery.QueryProperties().Where(property.RangeFromValEQ(floatVal)).IDs(ctx)
+	rangeTo, _ := allocPropertyTypesQuery.QueryProperties().Where(property.RangeToValEQ(floatVal)).IDs(ctx)
+	lat, _ := allocPropertyTypesQuery.QueryProperties().Where(property.LatitudeValEQ(floatVal)).IDs(ctx)
+	lng, _ := allocPropertyTypesQuery.QueryProperties().Where(property.LongitudeValEQ(floatVal)).IDs(ctx)
+	float, _ := allocPropertyTypesQuery.QueryProperties().Where(property.FloatValEQ(floatVal)).IDs(ctx)
 
-	for _, prop := range rangeFrom {
-		compliantAllocatedResourceIDs = append(compliantAllocatedResourceIDs, prop.ID)
+	return append(append(append(append(rangeFrom, rangeTo...), lat...), lng...), float...)
+}
+
+func filterByStringVal(ctx context.Context, query *ent.PropertyTypeQuery, stringVal string) ([]int, error) {
+	return query.QueryProperties().Where(property.StringValContains(stringVal)).IDs(ctx)
+}
+
+func filterByBoolVal(ctx context.Context, query *ent.PropertyTypeQuery, boolVal bool) ([]int, error) {
+	return query.QueryProperties().Where(property.BoolVal(boolVal)).IDs(ctx)
+}
+
+func filterByIntVal(ctx context.Context, query *ent.PropertyTypeQuery, intVal int) ([]int, error) {
+	return query.QueryProperties().Where(property.IntVal(intVal)).IDs(ctx)
+}
+
+func filterByJsonNumberVal(ctx context.Context, query *ent.PropertyTypeQuery, jsonNumberVal json.Number) ([]int, error) {
+	if intVal, err := jsonNumberVal.Int64(); err == nil {
+		return filterByIntVal(ctx, query, int(intVal))
+	} else if floatVal, err := jsonNumberVal.Float64(); err == nil {
+		return filterByFloatVal(ctx, query, floatVal), nil
+	} else {
+		return nil, gqlerror.Errorf("Unable to filter by json number value: %v", err)
 	}
-
-	for _, prop := range rangeTo {
-		compliantAllocatedResourceIDs = append(compliantAllocatedResourceIDs, prop.ID)
-	}
-
-	for _, prop := range lat {
-		compliantAllocatedResourceIDs = append(compliantAllocatedResourceIDs, prop.ID)
-	}
-
-	for _, prop := range lng {
-		compliantAllocatedResourceIDs = append(compliantAllocatedResourceIDs, prop.ID)
-	}
-
-	for _, prop := range float {
-		compliantAllocatedResourceIDs = append(compliantAllocatedResourceIDs, prop.ID)
-	}
-
-	return compliantAllocatedResourceIDs
 }
