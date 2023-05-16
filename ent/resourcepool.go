@@ -47,7 +47,7 @@ type ResourcePoolEdges struct {
 	PoolProperties *PoolProperties `json:"poolProperties,omitempty"`
 	// AllocationStrategy holds the value of the allocation_strategy edge.
 	AllocationStrategy *AllocationStrategy `json:"allocation_strategy,omitempty"`
-	// pool hierarchies can use this link between resoruce and pool
+	// pool hierarchies can use this link between resource and pool
 	ParentResource *Resource `json:"parent_resource,omitempty"`
 	// loadedTypes holds the information for reporting if a
 	// type was loaded (or requested) in eager-loading or not.

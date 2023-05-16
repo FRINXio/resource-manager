@@ -68,8 +68,8 @@ test('create and delete singleton pool', async (t) => {
     const tagId = await createTag(tagText);
     await tagPool(tagId, poolId);
     let foundPool = await searchPoolsByTags({matchesAny: [{matchesAll: [tagText]}]});
-    t.equal(foundPool.length, 1);
-    t.equal(foundPool[0].id, poolId);
+    t.equal(foundPool?.edges?.length, 1);
+    t.equal(foundPool?.edges?.[0].node.id, poolId);
 
     let resource1 = await claimResource(poolId, {});
     let resource2 = await claimResource(poolId, {});
@@ -80,7 +80,7 @@ test('create and delete singleton pool', async (t) => {
 
     await deleteResourcePool(poolId);
     foundPool = await searchPoolsByTags({matchesAny: [{matchesAll: [tagText]}]});
-    t.equal(foundPool.length, 0);
+    t.equal(foundPool?.edges?.length, 0);
 
     await cleanup()
     t.end();
@@ -146,13 +146,13 @@ test('create and delete set pool', async (t) => {
     const tagId = await createTag(tagText);
     await tagPool(tagId, poolId);
     let foundPool = await searchPoolsByTags({matchesAny: [{matchesAll: [tagText]}]});
-    t.equal(foundPool.length, 1);
-    t.equal(foundPool[0].id, poolId);
+    t.equal(foundPool?.edges?.length, 1);
+    t.equal(foundPool?.edges?.[0].node.id, poolId);
     let resource = await claimResource(poolId, {});
     await freeResource(poolId, resource.Properties)
     await deleteResourcePool(poolId);
     foundPool = await searchPoolsByTags({matchesAny: [{matchesAll: [tagText]}]});
-    t.equal(foundPool.length, 0);
+    t.equal(foundPool?.edges?.length, 0);
     t.end();
 });
 
@@ -473,13 +473,13 @@ test('empty pools test', async (t) => {
     await createIpv4RootPool('192.168.24.0', 16);
 
     let emptyPools = await getEmptyPools(null);
-    t.equal(emptyPools.length, 2)
+    t.equal(emptyPools?.edges?.length, 2)
 
     await claimResource(poolId, {});
     await claimResource(poolId, {});
 
     emptyPools = await getEmptyPools(null);
-    t.equal(emptyPools.length, 1)
+    t.equal(emptyPools?.edges?.length, 1)
 
     await cleanup()
     t.end();

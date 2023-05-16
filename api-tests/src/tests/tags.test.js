@@ -47,24 +47,24 @@ test('searching pools via tags', async (t) => {
     await tagPool(tag2Id, poolId);
 
     let matchedPools = await searchPoolsByTags({matchesAny: [{matchesAll: [tagName1, tagName2]}]});
-    t.equal(matchedPools[0].id, poolId);
-    t.equal(matchedPools.length, 1);
+    t.equal(matchedPools?.edges?.[0].node.id, poolId);
+    t.equal(matchedPools?.edges?.length, 1);
 
     matchedPools = await searchPoolsByTags({matchesAny: [{matchesAll: [tagName1]},{matchesAll: [tagName2]}]});
-    t.equal(matchedPools[0].id, poolId);
-    t.equal(matchedPools.length, 1);
+    t.equal(matchedPools?.edges?.[0].node.id, poolId);
+    t.equal(matchedPools?.edges?.length, 1);
 
     matchedPools = await searchPoolsByTags({matchesAny: [{matchesAll: [tagName2]}]});
-    t.equal(matchedPools[0].id, poolId);
-    t.equal(matchedPools.length, 1);
+    t.equal(matchedPools?.edges?.[0].node.id, poolId);
+    t.equal(matchedPools?.edges?.length, 1);
 
     // test createPool and tag in a single operation
     const tag1 = getUniqueName("tag1")
     const tag2 = getUniqueName("tag2")
     const taggedPoolId = await createVlanRootPool([tag1, tag2]);
     matchedPools = await searchPoolsByTags({matchesAny: [{matchesAll: [tag1, tag2]}]});
-    t.equal(matchedPools.length, 1);
-    t.equal(matchedPools[0].id, taggedPoolId);
+    t.equal(matchedPools?.edges?.length, 1);
+    t.equal(matchedPools?.edges?.[0].node.id, taggedPoolId);
 
     await cleanup()
     t.end();

@@ -2,16 +2,20 @@ package resolver
 
 import (
 	"context"
+	"encoding/json"
 	"entgo.io/ent/dialect/sql"
 	"entgo.io/ent/dialect/sql/sqljson"
 	"fmt"
 	"github.com/net-auto/resourceManager/ent"
 	"github.com/net-auto/resourceManager/ent/predicate"
+	"github.com/net-auto/resourceManager/ent/property"
+	"github.com/net-auto/resourceManager/ent/propertytype"
 	"github.com/net-auto/resourceManager/ent/resource"
 	resourcePool "github.com/net-auto/resourceManager/ent/resourcepool"
 	"github.com/net-auto/resourceManager/ent/tag"
 	"github.com/net-auto/resourceManager/graph/graphql/model"
 	"github.com/net-auto/resourceManager/pools"
+	"reflect"
 	"strconv"
 
 	//"github.com/net-auto/resourceManager/graph/graphql/model"
@@ -253,4 +257,119 @@ func ClaimResource(pool pools.Pool, userInput map[string]interface{}, descriptio
 	} else {
 		return res, nil
 	}
+}
+
+func FilterResourcePoolByAllocatedResources(ctx context.Context, query *ent.ResourcePoolQuery, filter map[string]interface{}) ([]int, error) {
+	var compliantAllocatedResourceIDs = make([]int, 0)
+	for filterKey, filterVal := range filter {
+		typeOfFilter := reflect.TypeOf(filterVal)
+		allocPropertyTypesQuery := query.QueryClaims().QueryProperties().QueryType().Where(propertytype.Name(filterKey))
+
+		switch typeOfFilter.Kind() {
+		case reflect.String:
+			if numVal, ok := filterVal.(json.Number); ok {
+				if intVal, err := numVal.Int64(); err == nil {
+					allocatedResourceProperties, err := allocPropertyTypesQuery.QueryProperties().Where(property.IntValEQ(int(intVal))).All(ctx)
+
+					if err != nil {
+						log.Error(ctx, err, "Unable to retrieve allocated resources")
+						return nil, gqlerror.Errorf("Unable to query allocated resources: %v", err)
+					}
+
+					for _, allocatedResourceProperty := range allocatedResourceProperties {
+						compliantAllocatedResourceIDs = append(compliantAllocatedResourceIDs, allocatedResourceProperty.ID)
+					}
+				} else {
+					if floatVal, err := numVal.Float64(); err == nil {
+						compliantAllocatedResourceIDs = append(compliantAllocatedResourceIDs, findResourcesCompliantToFloatVal(ctx, allocPropertyTypesQuery, floatVal)...)
+					}
+				}
+				break
+			}
+
+			if stringVal, ok := filterVal.(string); ok {
+				allocatedResourceProperties, err := allocPropertyTypesQuery.QueryProperties().Where(property.StringVal(stringVal)).All(ctx)
+
+				if err != nil {
+					log.Error(ctx, err, "Unable to retrieve allocated resources")
+					return nil, gqlerror.Errorf("Unable to query allocated resources: %v", err)
+				}
+
+				for _, prop := range allocatedResourceProperties {
+					compliantAllocatedResourceIDs = append(compliantAllocatedResourceIDs, prop.ID)
+				}
+			}
+
+		case reflect.Int, reflect.Int64:
+			if intVal, ok := filterVal.(int); ok {
+				allocatedResourceProperties, err := allocPropertyTypesQuery.QueryProperties().Where(property.IntValEQ(intVal)).All(ctx)
+
+				if err != nil {
+					log.Error(ctx, err, "Unable to retrieve allocated resources")
+					return nil, gqlerror.Errorf("Unable to query allocated resources: %v", err)
+				}
+
+				for _, prop := range allocatedResourceProperties {
+					compliantAllocatedResourceIDs = append(compliantAllocatedResourceIDs, prop.ID)
+				}
+			}
+
+		case reflect.Bool:
+			if boolVal, ok := filterVal.(bool); ok {
+				allocatedResourceProperties, err := allocPropertyTypesQuery.QueryProperties().Where(property.BoolValEQ(boolVal)).All(ctx)
+
+				if err != nil {
+					log.Error(ctx, err, "Unable to retrieve allocated resources")
+					return nil, gqlerror.Errorf("Unable to query allocated resources: %v", err)
+				}
+
+				for _, prop := range allocatedResourceProperties {
+					compliantAllocatedResourceIDs = append(compliantAllocatedResourceIDs, prop.ID)
+				}
+			}
+
+		case reflect.Float64:
+			if floatVal, ok := filterVal.(float64); ok {
+				compliantAllocatedResourceIDs = append(compliantAllocatedResourceIDs, findResourcesCompliantToFloatVal(ctx, allocPropertyTypesQuery, floatVal)...)
+			}
+
+		case reflect.Float32:
+			if floatVal, ok := filterVal.(float32); ok {
+				compliantAllocatedResourceIDs = append(compliantAllocatedResourceIDs, findResourcesCompliantToFloatVal(ctx, allocPropertyTypesQuery, float64(floatVal))...)
+			}
+		}
+	}
+
+	return compliantAllocatedResourceIDs, nil
+}
+
+func findResourcesCompliantToFloatVal(ctx context.Context, allocPropertyTypesQuery *ent.PropertyTypeQuery, floatVal float64) []int {
+	var compliantAllocatedResourceIDs = make([]int, 0)
+	rangeFrom, _ := allocPropertyTypesQuery.QueryProperties().Where(property.RangeFromValEQ(floatVal)).All(ctx)
+	rangeTo, _ := allocPropertyTypesQuery.QueryProperties().Where(property.RangeToValEQ(floatVal)).All(ctx)
+	lat, _ := allocPropertyTypesQuery.QueryProperties().Where(property.LatitudeValEQ(floatVal)).All(ctx)
+	lng, _ := allocPropertyTypesQuery.QueryProperties().Where(property.LongitudeValEQ(floatVal)).All(ctx)
+	float, _ := allocPropertyTypesQuery.QueryProperties().Where(property.FloatValEQ(floatVal)).All(ctx)
+
+	for _, prop := range rangeFrom {
+		compliantAllocatedResourceIDs = append(compliantAllocatedResourceIDs, prop.ID)
+	}
+
+	for _, prop := range rangeTo {
+		compliantAllocatedResourceIDs = append(compliantAllocatedResourceIDs, prop.ID)
+	}
+
+	for _, prop := range lat {
+		compliantAllocatedResourceIDs = append(compliantAllocatedResourceIDs, prop.ID)
+	}
+
+	for _, prop := range lng {
+		compliantAllocatedResourceIDs = append(compliantAllocatedResourceIDs, prop.ID)
+	}
+
+	for _, prop := range float {
+		compliantAllocatedResourceIDs = append(compliantAllocatedResourceIDs, prop.ID)
+	}
+
+	return compliantAllocatedResourceIDs
 }

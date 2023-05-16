@@ -13,6 +13,7 @@ import (
 	"github.com/net-auto/resourceManager/ent"
 	"github.com/net-auto/resourceManager/ent/allocationstrategy"
 	"github.com/net-auto/resourceManager/ent/predicate"
+	"github.com/net-auto/resourceManager/ent/property"
 	"github.com/net-auto/resourceManager/ent/propertytype"
 	"github.com/net-auto/resourceManager/ent/resource"
 	resourcePool "github.com/net-auto/resourceManager/ent/resourcepool"
@@ -799,7 +800,7 @@ func (r *queryResolver) QueryResourcePool(ctx context.Context, poolID int) (*ent
 }
 
 // QueryEmptyResourcePools is the resolver for the QueryEmptyResourcePools field.
-func (r *queryResolver) QueryEmptyResourcePools(ctx context.Context, resourceTypeID *int) ([]*ent.ResourcePool, error) {
+func (r *queryResolver) QueryEmptyResourcePools(ctx context.Context, resourceTypeID *int, first *int, last *int, before *ent.Cursor, after *ent.Cursor) (*ent.ResourcePoolConnection, error) {
 	client := r.ClientFrom(ctx)
 	query := client.ResourcePool.Query()
 
@@ -809,7 +810,7 @@ func (r *queryResolver) QueryEmptyResourcePools(ctx context.Context, resourceTyp
 		query.Where(resourcePool.Not(resourcePool.HasClaims()))
 	}
 
-	if resourcePools, err := query.All(ctx); err != nil {
+	if resourcePools, err := query.Paginate(ctx, after, first, before, last); err != nil {
 		log.Error(ctx, err, "Unable to retrieve resource pools")
 		return nil, gqlerror.Errorf("Unable to query resource pools: %v", err)
 	} else {
@@ -818,12 +819,23 @@ func (r *queryResolver) QueryEmptyResourcePools(ctx context.Context, resourceTyp
 }
 
 // QueryResourcePools is the resolver for the QueryResourcePools field.
-func (r *queryResolver) QueryResourcePools(ctx context.Context, resourceTypeID *int, tags *model.TagOr, first *int, last *int, before *ent.Cursor, after *ent.Cursor) (*ent.ResourcePoolConnection, error) {
+func (r *queryResolver) QueryResourcePools(ctx context.Context, resourceTypeID *int, tags *model.TagOr, first *int, last *int, before *ent.Cursor, after *ent.Cursor, filterByResources map[string]interface{}) (*ent.ResourcePoolConnection, error) {
 	client := r.ClientFrom(ctx)
 	query := client.ResourcePool.Query()
 
 	if resourceTypeID != nil {
 		query.Where(resourcePool.HasResourceTypeWith(resourcetype.ID(*resourceTypeID)))
+	}
+
+	if filterByResources != nil {
+		filteredOutResourceIDs, err := FilterResourcePoolByAllocatedResources(ctx, query, filterByResources)
+
+		if err != nil {
+			log.Error(ctx, err, "Unable to retrieve resource pools")
+			return nil, gqlerror.Errorf("Unable to query resource pools: %v", err)
+		}
+
+		query.Where(resourcePool.HasClaimsWith(resource.HasPropertiesWith(property.IDIn(filteredOutResourceIDs...))))
 	}
 
 	if tags != nil {
@@ -911,7 +923,7 @@ func (r *queryResolver) QueryResourcePoolHierarchyPath(ctx context.Context, pool
 }
 
 // QueryRootResourcePools is the resolver for the QueryRootResourcePools field.
-func (r *queryResolver) QueryRootResourcePools(ctx context.Context, resourceTypeID *int, tags *model.TagOr) ([]*ent.ResourcePool, error) {
+func (r *queryResolver) QueryRootResourcePools(ctx context.Context, resourceTypeID *int, tags *model.TagOr, first *int, last *int, before *ent.Cursor, after *ent.Cursor, filterByResources map[string]interface{}) (*ent.ResourcePoolConnection, error) {
 	client := r.ClientFrom(ctx)
 	query := client.ResourcePool.
 		Query().
@@ -921,12 +933,23 @@ func (r *queryResolver) QueryRootResourcePools(ctx context.Context, resourceType
 		query.Where(resourcePool.HasResourceTypeWith(resourcetype.ID(*resourceTypeID)))
 	}
 
+	if filterByResources != nil {
+		filteredOutResourceIDs, err := FilterResourcePoolByAllocatedResources(ctx, query, filterByResources)
+
+		if err != nil {
+			log.Error(ctx, err, "Unable to retrieve resource pools")
+			return nil, gqlerror.Errorf("Unable to query resource pools: %v", err)
+		}
+
+		query.Where(resourcePool.HasClaimsWith(resource.HasPropertiesWith(property.IDIn(filteredOutResourceIDs...))))
+	}
+
 	if tags != nil {
 		// TODO make sure all tags exist
 		query.Where(resourcePoolTagPredicate(tags))
 	}
 
-	if resourcePools, err := query.All(ctx); err != nil {
+	if resourcePools, err := query.Paginate(ctx, after, first, before, last); err != nil {
 		log.Error(ctx, err, "Unable to retrieve root resource pools")
 		return nil, gqlerror.Errorf("Unable to query resource pools: %v", err)
 	} else {
@@ -935,7 +958,7 @@ func (r *queryResolver) QueryRootResourcePools(ctx context.Context, resourceType
 }
 
 // QueryLeafResourcePools is the resolver for the QueryLeafResourcePools field.
-func (r *queryResolver) QueryLeafResourcePools(ctx context.Context, resourceTypeID *int, tags *model.TagOr) ([]*ent.ResourcePool, error) {
+func (r *queryResolver) QueryLeafResourcePools(ctx context.Context, resourceTypeID *int, tags *model.TagOr, first *int, last *int, before *ent.Cursor, after *ent.Cursor, filterByResources map[string]interface{}) (*ent.ResourcePoolConnection, error) {
 	client := r.ClientFrom(ctx)
 	query := client.ResourcePool.
 		Query().
@@ -946,12 +969,23 @@ func (r *queryResolver) QueryLeafResourcePools(ctx context.Context, resourceType
 		query.Where(resourcePool.HasResourceTypeWith(resourcetype.ID(*resourceTypeID)))
 	}
 
+	if filterByResources != nil {
+		filteredOutResourceIDs, err := FilterResourcePoolByAllocatedResources(ctx, query, filterByResources)
+
+		if err != nil {
+			log.Error(ctx, err, "Unable to retrieve resource pools")
+			return nil, gqlerror.Errorf("Unable to query resource pools: %v", err)
+		}
+
+		query.Where(resourcePool.HasClaimsWith(resource.HasPropertiesWith(property.IDIn(filteredOutResourceIDs...))))
+	}
+
 	if tags != nil {
 		// TODO make sure all tags exist
 		query.Where(resourcePoolTagPredicate(tags))
 	}
 
-	if resourcePools, err := query.All(ctx); err != nil {
+	if resourcePools, err := query.Paginate(ctx, after, first, before, last); err != nil {
 		log.Error(ctx, err, "Unable to retrieve leaf resource pools")
 		return nil, gqlerror.Errorf("Unable to query resource pools: %v", err)
 	} else {
@@ -960,7 +994,7 @@ func (r *queryResolver) QueryLeafResourcePools(ctx context.Context, resourceType
 }
 
 // SearchPoolsByTags is the resolver for the SearchPoolsByTags field.
-func (r *queryResolver) SearchPoolsByTags(ctx context.Context, tags *model.TagOr) ([]*ent.ResourcePool, error) {
+func (r *queryResolver) SearchPoolsByTags(ctx context.Context, tags *model.TagOr, first *int, last *int, before *ent.Cursor, after *ent.Cursor) (*ent.ResourcePoolConnection, error) {
 	var client = r.ClientFrom(ctx)
 
 	var condition predicate.ResourcePool
@@ -971,13 +1005,13 @@ func (r *queryResolver) SearchPoolsByTags(ctx context.Context, tags *model.TagOr
 	}
 
 	var (
-		matchedPools []*ent.ResourcePool
+		matchedPools *ent.ResourcePoolConnection
 		err          error
 	)
 	if condition == nil {
-		matchedPools, err = client.ResourcePool.Query().All(ctx)
+		matchedPools, err = client.ResourcePool.Query().Paginate(ctx, after, first, before, last)
 	} else {
-		matchedPools, err = client.ResourcePool.Query().Where(condition).All(ctx)
+		matchedPools, err = client.ResourcePool.Query().Where(condition).Paginate(ctx, after, first, before, last)
 	}
 
 	if err != nil {

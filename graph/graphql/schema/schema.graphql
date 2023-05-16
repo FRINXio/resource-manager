@@ -54,10 +54,10 @@ Holds information about the requested pagination page
 """
 type PageInfo
   @goModel(model: "github.com/net-auto/resourceManager/ent.PageInfo") {
-  endCursor: OutputCursor!
+  endCursor: OutputCursor
   hasNextPage: Boolean!
   hasPreviousPage: Boolean!
-  startCursor: OutputCursor!
+  startCursor: OutputCursor
 }
 
 """
@@ -383,7 +383,7 @@ type Query {
 
   QueryResourcePool(poolId: ID!): ResourcePool!
 
-  QueryEmptyResourcePools(resourceTypeId: ID): [ResourcePool!]!
+  QueryEmptyResourcePools(resourceTypeId: ID, first: Int, last: Int, before: Cursor, after: Cursor): ResourcePoolConnection!
   QueryResourcePools(
     resourceTypeId: ID
     tags: TagOr
@@ -391,6 +391,7 @@ type Query {
     last: Int
     before: Cursor
     after: Cursor
+    filterByResources: Map
   ): ResourcePoolConnection!
   QueryRecentlyActiveResources(
     fromDatetime: String!
@@ -401,9 +402,9 @@ type Query {
     after: String
   ): ResourceConnection!
   QueryResourcePoolHierarchyPath(poolId: ID!): [ResourcePool!]!
-  QueryRootResourcePools(resourceTypeId: ID, tags: TagOr): [ResourcePool!]!
-  QueryLeafResourcePools(resourceTypeId: ID, tags: TagOr): [ResourcePool!]!
-  SearchPoolsByTags(tags: TagOr): [ResourcePool!]!
+  QueryRootResourcePools(resourceTypeId: ID, tags: TagOr, first: Int, last: Int, before: Cursor, after: Cursor, filterByResources: Map): ResourcePoolConnection!
+  QueryLeafResourcePools(resourceTypeId: ID, tags: TagOr, first: Int, last: Int, before: Cursor, after: Cursor, filterByResources: Map): ResourcePoolConnection!
+  SearchPoolsByTags(tags: TagOr, first: Int, last: Int, before: Cursor, after: Cursor): ResourcePoolConnection!
 
   QueryTags: [Tag!]!
   node(id: ID!): Node

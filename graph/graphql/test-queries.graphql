@@ -183,17 +183,21 @@ mutation createAllocationPool {
 
 query QueryAllPools {
     QueryResourcePools{
-        id
-        Name
-        PoolType
-        Tags {
-            Tag
-        }
-        AllocationStrategy {
-            Name
-        }
-        ResourceType {
-            Name
+        edges {
+            node {
+                id
+                Name
+                PoolType
+                Tags {
+                    Tag
+                }
+                AllocationStrategy {
+                    Name
+                }
+                ResourceType {
+                    Name
+                }
+            }
         }
     }
 }

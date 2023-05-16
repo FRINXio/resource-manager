@@ -38,7 +38,7 @@ type ResourceEdges struct {
 	Pool *ResourcePool `json:"pool,omitempty"`
 	// Properties holds the value of the properties edge.
 	Properties []*Property `json:"properties,omitempty"`
-	// pool hierarchies can use this link between resoruce and pool
+	// pool hierarchies can use this link between resource and pool
 	NestedPool *ResourcePool `json:"nested_pool,omitempty"`
 	// loadedTypes holds the information for reporting if a
 	// type was loaded (or requested) in eager-loading or not.
