@@ -701,7 +701,7 @@ func (r *queryResolver) QueryResources(ctx context.Context, poolID int, first *i
 func (r *queryResolver) QueryResourcesByAltID(ctx context.Context, input map[string]interface{}, poolID *int, first *int, last *int, before *string, after *string) (*ent.ResourceConnection, error) {
 	typeFixedAlternativeId, err := p.ConvertValuesToFloat64(ctx, input)
 	if err != nil {
-		return nil, gqlerror.Errorf("Unable to process input data", err)
+		return nil, gqlerror.Errorf("Unable to process input data %v", err)
 	}
 
 	if poolID != nil {
@@ -775,7 +775,7 @@ func (r *queryResolver) QueryRequiredPoolProperties(ctx context.Context, allocat
 	allocationStrategy, err := r.ClientFrom(ctx).AllocationStrategy.Query().Where(allocationstrategy.Name(allocationStrategyName)).Only(ctx)
 	if err != nil {
 		log.Error(ctx, err, "Unable to retrieve required allocation strategy by name: %s", allocationStrategyName)
-		return nil, gqlerror.Errorf("Unable to retrieve required allocation strategy by name: %s", allocationStrategyName, err)
+		return nil, gqlerror.Errorf("Unable to retrieve required allocation strategy by name: %s", allocationStrategyName)
 	}
 
 	requiredPropertyTypes, err := r.ClientFrom(ctx).PropertyType.Query().Where(func(s *sql.Selector) {
@@ -783,7 +783,7 @@ func (r *queryResolver) QueryRequiredPoolProperties(ctx context.Context, allocat
 	}).All(ctx)
 	if err != nil {
 		log.Error(ctx, err, "Unable to retrieve required pool properties for allocation strategy: %s", allocationStrategyName)
-		return nil, gqlerror.Errorf("Unable to retrieve required pool properties for allocation strategy: %s", allocationStrategyName, err)
+		return nil, gqlerror.Errorf("Unable to retrieve required pool properties for allocation strategy: %s", allocationStrategyName)
 	}
 	return requiredPropertyTypes, nil
 }
