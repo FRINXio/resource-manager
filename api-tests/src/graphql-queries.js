@@ -242,7 +242,11 @@ export async function searchPoolsByTags(searchExpression){
         query: gql`
             query getPoolsByTags($searchExpression: TagOr) {
                 SearchPoolsByTags(tags: $searchExpression) {
-                    id
+                    edges {
+                        node {
+                            id
+                        }
+                    }
                 }
             }
         `,
@@ -823,24 +827,28 @@ export async function getLeafPools(resourceTypeId, tags) {
         query: gql`
             query QueryLeafResourcePools($resourceTypeId: ID, $tags: TagOr) {
                 QueryLeafResourcePools(resourceTypeId: $resourceTypeId, tags: $tags) {
-                    id
-                    Name
-                    AllocationStrategy {
-                        id
-                        Name
-                        Description
-                    }
-                    ResourceType {
-                        id
-                        Name
-                    }
-                    Resources{
-                        id
-                        Properties
-                        NestedPool {
+                    edges {
+                        node {
                             id
                             Name
-                            PoolType
+                            AllocationStrategy {
+                                id
+                                Name
+                                Description
+                            }
+                            ResourceType {
+                                id
+                                Name
+                            }
+                            Resources{
+                                id
+                                Properties
+                                NestedPool {
+                                    id
+                                    Name
+                                    PoolType
+                                }
+                            }
                         }
                     }
                 }
@@ -860,24 +868,28 @@ export async function getAllPoolsByTypeOrTag(resourceTypeId, tags) {
         query: gql`
             query QueryResourcePools($resourceTypeId: ID, $tags: TagOr) {
                 QueryResourcePools(resourceTypeId: $resourceTypeId, tags: $tags) {
-                    id
-                    Name
-                    AllocationStrategy {
-                        id
-                        Name
-                        Description
-                    }
-                    ResourceType {
-                        id
-                        Name
-                    }
-                    Resources{
-                        id
-                        Properties
-                        NestedPool {
+                    edges {
+                        node {
                             id
                             Name
-                            PoolType
+                            AllocationStrategy {
+                                id
+                                Name
+                                Description
+                            }
+                            ResourceType {
+                                id
+                                Name
+                            }
+                            Resources{
+                                id
+                                Properties
+                                NestedPool {
+                                    id
+                                    Name
+                                    PoolType
+                                }
+                            }
                         }
                     }
                 }
@@ -916,24 +928,28 @@ export async function getEmptyPools(resourceTypeId){
         query: gql`
             query QueryEmptyResourcePools($resourceTypeId: ID) {
                 QueryEmptyResourcePools(resourceTypeId: $resourceTypeId) {
-                    id
-                    Name
-                    AllocationStrategy {
-                        id
-                        Name
-                        Description
-                    }
-                    ResourceType {
-                        id
-                        Name
-                    }
-                    Resources{
-                        id
-                        Properties
-                        NestedPool {
+                    edges {
+                        node {
                             id
                             Name
-                            PoolType
+                            AllocationStrategy {
+                                id
+                                Name
+                                Description
+                            }
+                            ResourceType {
+                                id
+                                Name
+                            }
+                            Resources{
+                                id
+                                Properties
+                                NestedPool {
+                                    id
+                                    Name
+                                    PoolType
+                                }
+                            }
                         }
                     }
                 }
@@ -965,5 +981,52 @@ export async function getRequiredPoolProperties(allocationStrategyName) {
         }
     })
     .then(result => result.data.QueryRequiredPoolProperties)
+    .catch(error => console.log(error));
+}
+
+export async function queryResourcePools(first, last, before, after, filter){
+    return client.query({
+        query: gql`
+            query getResourcePools($first: Int, $last: Int, $before: Cursor, $after: Cursor, $filter: Map) {
+                QueryResourcePools(first: $first, last: $last, before: $before, after: $after, filterByResources: $filter) {
+                    edges {
+                        node {
+                            id
+                            allocatedResources {
+                                edges {
+                                    node {
+                                        id
+                                        Properties
+                                    }
+                                }
+                            }
+                        }
+                        cursor{
+                            ID
+                        }
+                    }
+                    pageInfo {
+                        endCursor {
+                            ID
+                        }
+                        startCursor {
+                            ID
+                        }
+                        hasPreviousPage
+                        hasNextPage
+                    }
+                    totalCount
+                }
+            }
+        `,
+        variables: {
+            first: first,
+            last: last,
+            before: before,
+            after: after,
+            filter: filter
+        }
+    })
+    .then(result => result.data.QueryResourcePools)
     .catch(error => console.log(error));
 }

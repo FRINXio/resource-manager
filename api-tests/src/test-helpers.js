@@ -297,22 +297,47 @@ export async function cleanup() {
     for (let i = 0; i < resourceIds.size; i++) {
         let pools = await getAllPoolsByTypeOrTag(resourceIds[i]);
         let leafPools = await getLeafPools(resourceIds[i]);
-        while (leafPools.length > 0) {
-            for (let j = 0; j < leafPools.length; j++) {
-                pools = pools.filter(function (e) {return e.id !== leafPools[j].id});
-                await cleanPool(leafPools[j])
+
+        while (leafPools?.edges?.length > 0) {
+            for (let j = 0; j < leafPools?.edges?.length; j++) {
+                pools = pools?.edges?.filter(function (e) {return e.node.id !== leafPools?.edges?.[j].node.id});
+                await cleanPool(leafPools?.edges?.[j])
             }
             leafPools = await getLeafPools(resourceIds[i]);
         }
-        for (let j = 0; j < pools.length; j++) {
-            await cleanPool(pools[j]);
+        for (let j = 0; j < pools?.edges?.length; j++) {
+            await cleanPool(pools?.edges?.[j]);
         }
     }
 }
 
 export async function cleanPool(pool) {
-    for (let j = 0; j < pool.Resources.length; j++) {
-        await freeResource(pool.id, pool.Resources[j].Properties);
+    for (let j = 0; j < pool.node.Resources.length; j++) {
+        await freeResource(pool.node.id, pool.node.Resources[j].Properties);
     }
-    await deleteResourcePool(pool.id);
+    await deleteResourcePool(pool.node.id);
+}
+
+export async function prepareDataForFiltering() {
+    const ipv6 = await createIpv6PrefixRootPool("dead::", 64, true);
+    const ipv4 = await createIpv4RootPool("10.0.0.0", 24, false);
+
+    await claimResource(ipv6, {
+        desiredSize: 2
+    });
+    await claimResource(ipv6, {
+        desiredSize: 2
+    });
+
+    await claimResource(ipv4, {
+        desiredSize: 2
+    });
+    await claimResource(ipv4, {
+        desiredSize: 2
+    });
+
+    return {
+        ipv4,
+        ipv6
+    }
 }

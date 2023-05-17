@@ -2,11 +2,14 @@ package resolver
 
 import (
 	"context"
+	"encoding/json"
 	"entgo.io/ent/dialect/sql"
 	"entgo.io/ent/dialect/sql/sqljson"
 	"fmt"
 	"github.com/net-auto/resourceManager/ent"
 	"github.com/net-auto/resourceManager/ent/predicate"
+	"github.com/net-auto/resourceManager/ent/property"
+	"github.com/net-auto/resourceManager/ent/propertytype"
 	"github.com/net-auto/resourceManager/ent/resource"
 	resourcePool "github.com/net-auto/resourceManager/ent/resourcepool"
 	"github.com/net-auto/resourceManager/ent/tag"
@@ -252,5 +255,91 @@ func ClaimResource(pool pools.Pool, userInput map[string]interface{}, descriptio
 		return nil, gqlerror.Errorf("Unable to claim resource: %v", err)
 	} else {
 		return res, nil
+	}
+}
+
+func FilterResourcePoolByAllocatedResources(ctx context.Context, query *ent.ResourcePoolQuery, filter map[string]interface{}) ([]int, error) {
+	var compliantAllocatedResourceIDs = make([]int, 0)
+	for filterKey, filterVal := range filter {
+		allocPropertyTypesQuery := query.QueryClaims().QueryProperties().QueryType().Where(propertytype.Name(filterKey))
+
+		if numVal, ok := filterVal.(json.Number); ok {
+			numValIDs, err := filterByJsonNumberVal(ctx, allocPropertyTypesQuery, numVal)
+
+			if err != nil {
+				return nil, err
+			}
+
+			compliantAllocatedResourceIDs = append(compliantAllocatedResourceIDs, numValIDs...)
+		}
+
+		if stringVal, ok := filterVal.(string); ok {
+			stringValIDs, err := filterByStringVal(ctx, allocPropertyTypesQuery, stringVal)
+
+			if err != nil {
+				return nil, err
+			}
+
+			compliantAllocatedResourceIDs = append(compliantAllocatedResourceIDs, stringValIDs...)
+		}
+
+		if floatVal, ok := filterVal.(float64); ok {
+			floatValIDs := filterByFloatVal(ctx, allocPropertyTypesQuery, floatVal)
+			compliantAllocatedResourceIDs = append(compliantAllocatedResourceIDs, floatValIDs...)
+		}
+
+		if intVal, ok := filterVal.(int); ok {
+			intValIDs, err := filterByIntVal(ctx, allocPropertyTypesQuery, intVal)
+
+			if err != nil {
+				return nil, err
+			}
+
+			compliantAllocatedResourceIDs = append(compliantAllocatedResourceIDs, intValIDs...)
+		}
+
+		if boolVal, ok := filterVal.(bool); ok {
+			boolValIDs, err := filterByBoolVal(ctx, allocPropertyTypesQuery, boolVal)
+
+			if err != nil {
+				return nil, err
+			}
+
+			compliantAllocatedResourceIDs = append(compliantAllocatedResourceIDs, boolValIDs...)
+		}
+	}
+
+	return compliantAllocatedResourceIDs, nil
+}
+
+func filterByFloatVal(ctx context.Context, allocPropertyTypesQuery *ent.PropertyTypeQuery, floatVal float64) []int {
+	rangeFrom, _ := allocPropertyTypesQuery.QueryProperties().Where(property.RangeFromValEQ(floatVal)).IDs(ctx)
+	rangeTo, _ := allocPropertyTypesQuery.QueryProperties().Where(property.RangeToValEQ(floatVal)).IDs(ctx)
+	lat, _ := allocPropertyTypesQuery.QueryProperties().Where(property.LatitudeValEQ(floatVal)).IDs(ctx)
+	lng, _ := allocPropertyTypesQuery.QueryProperties().Where(property.LongitudeValEQ(floatVal)).IDs(ctx)
+	float, _ := allocPropertyTypesQuery.QueryProperties().Where(property.FloatValEQ(floatVal)).IDs(ctx)
+
+	return append(append(append(append(rangeFrom, rangeTo...), lat...), lng...), float...)
+}
+
+func filterByStringVal(ctx context.Context, query *ent.PropertyTypeQuery, stringVal string) ([]int, error) {
+	return query.QueryProperties().Where(property.StringValContains(stringVal)).IDs(ctx)
+}
+
+func filterByBoolVal(ctx context.Context, query *ent.PropertyTypeQuery, boolVal bool) ([]int, error) {
+	return query.QueryProperties().Where(property.BoolVal(boolVal)).IDs(ctx)
+}
+
+func filterByIntVal(ctx context.Context, query *ent.PropertyTypeQuery, intVal int) ([]int, error) {
+	return query.QueryProperties().Where(property.IntVal(intVal)).IDs(ctx)
+}
+
+func filterByJsonNumberVal(ctx context.Context, query *ent.PropertyTypeQuery, jsonNumberVal json.Number) ([]int, error) {
+	if intVal, err := jsonNumberVal.Int64(); err == nil {
+		return filterByIntVal(ctx, query, int(intVal))
+	} else if floatVal, err := jsonNumberVal.Float64(); err == nil {
+		return filterByFloatVal(ctx, query, floatVal), nil
+	} else {
+		return nil, gqlerror.Errorf("Unable to filter by json number value: %v", err)
 	}
 }

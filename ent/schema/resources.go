@@ -5,9 +5,11 @@
 package schema
 
 import (
-	"entgo.io/contrib/entgql"
-	"entgo.io/ent/schema/index"
 	"time"
+
+	"entgo.io/contrib/entgql"
+	"entgo.io/ent/schema"
+	"entgo.io/ent/schema/index"
 
 	"entgo.io/ent"
 	"entgo.io/ent/schema/edge"
@@ -140,7 +142,7 @@ func (ResourcePool) Edges() []ent.Edge {
 			Annotations(entgql.Bind()),
 		edge.From("parent_resource", Resource.Type).
 			Ref("nested_pool").
-			Comment("pool hierarchies can use this link between resoruce and pool").
+			Comment("pool hierarchies can use this link between resource and pool").
 			Unique(),
 	}
 }
@@ -149,6 +151,12 @@ func (ResourcePool) Indexes() []ent.Index {
 	return []ent.Index{
 		index.
 			Edges("allocation_strategy"),
+	}
+}
+
+func (ResourcePool) Annotations() []schema.Annotation {
+	return []schema.Annotation{
+		entgql.RelayConnection(),
 	}
 }
 
@@ -186,7 +194,7 @@ func (Resource) Edges() []ent.Edge {
 		edge.To("properties", Property.Type).
 			Annotations(entgql.Bind()),
 		edge.To("nested_pool", ResourcePool.Type).
-			Comment("pool hierarchies can use this link between resoruce and pool").
+			Comment("pool hierarchies can use this link between resource and pool").
 			Unique().
 			Annotations(entgql.Bind()),
 	}
