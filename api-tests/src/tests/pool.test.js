@@ -616,7 +616,7 @@ test('test pagination of resource pools', async (t) => {
     t.end();
 });
 
-test('test connection structure of resource pool query', async (t) => {
+test('test filtering by allocated resource properties', async (t) => {
     await prepareDataForFiltering();
     const byIpv6Addr = await queryResourcePools(undefined, undefined, undefined, undefined, {
         address: "dead::"
