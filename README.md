@@ -286,13 +286,6 @@ See RM frontend project on [github](https://github.com/FRINXio/resource-manager-
 
 ## Developer guide
 
-### Dependency on symphony
-
-:warning: **RM currently depends on a project called symphony.**
-
-This project is not publicly accessible and without access to it, RM cannot be built.
-In that case, use pre built docker images from dockerhub.
-
 ### Folder structure
 
 * [ent](ent) - ORM schema and generated code for the DB
