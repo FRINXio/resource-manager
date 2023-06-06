@@ -202,6 +202,9 @@ func (r *mutationResolver) ClaimResource(ctx context.Context, poolID int, descri
 		return nil, gqlerror.Errorf("Resource pool is not existing, for you to be able to claim resource: %v", err)
 	}
 
+	r.lockingService.Lock(strconv.Itoa(poolID))
+	defer r.lockingService.Unlock(strconv.Itoa(poolID))
+
 	return ClaimResource(pool, userInput, description, nil)
 }
 
@@ -211,6 +214,9 @@ func (r *mutationResolver) ClaimResourceWithAltID(ctx context.Context, poolID in
 	if err != nil {
 		return nil, gqlerror.Errorf("Resource pool is not existing, for you to be able to claim resource: %v", err)
 	}
+
+	r.lockingService.Lock(strconv.Itoa(poolID))
+	defer r.lockingService.Unlock(strconv.Itoa(poolID))
 
 	return ClaimResource(pool, userInput, description, alternativeID)
 }
