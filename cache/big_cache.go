@@ -18,9 +18,9 @@ type BigCacheServiceImpl[T any] struct {
 	cache *bigcache.BigCache
 }
 
-func NewBigCacheService[T any](invalidateAfter time.Duration) BigCacheServiceImpl[T] {
+func NewBigCacheService[T any](invalidateAfter time.Duration) *BigCacheServiceImpl[T] {
 	cache, _ := bigcache.NewBigCache(bigcache.DefaultConfig(invalidateAfter))
-	return BigCacheServiceImpl[T]{cache: cache}
+	return &BigCacheServiceImpl[T]{cache: cache}
 }
 
 func (b *BigCacheServiceImpl[T]) Set(key string, value T) error {

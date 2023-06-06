@@ -13,7 +13,7 @@ type LockingService interface {
 }
 
 type LockingServiceImpl struct {
-	locks cache.BigCacheServiceImpl[sync.Mutex]
+	locks *cache.BigCacheServiceImpl[sync.Mutex]
 }
 
 func NewLockingService() *LockingServiceImpl {
