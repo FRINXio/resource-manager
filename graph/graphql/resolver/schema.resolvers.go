@@ -197,26 +197,26 @@ func (r *mutationResolver) TestAllocationStrategy(ctx context.Context, allocatio
 
 // ClaimResource is the resolver for the ClaimResource field.
 func (r *mutationResolver) ClaimResource(ctx context.Context, poolID int, description *string, userInput map[string]interface{}) (*ent.Resource, error) {
+	r.lockingService.Lock(strconv.Itoa(poolID))
+	defer r.lockingService.Unlock(strconv.Itoa(poolID))
+
 	pool, err := p.ExistingPoolFromId(ctx, r.ClientFrom(ctx), poolID)
 	if err != nil {
 		return nil, gqlerror.Errorf("Resource pool is not existing, for you to be able to claim resource: %v", err)
 	}
-
-	r.lockingService.Lock(strconv.Itoa(poolID))
-	defer r.lockingService.Unlock(strconv.Itoa(poolID))
 
 	return ClaimResource(pool, userInput, description, nil)
 }
 
 // ClaimResourceWithAltID is the resolver for the ClaimResourceWithAltId field.
 func (r *mutationResolver) ClaimResourceWithAltID(ctx context.Context, poolID int, description *string, userInput map[string]interface{}, alternativeID map[string]interface{}) (*ent.Resource, error) {
+	r.lockingService.Lock(strconv.Itoa(poolID))
+	defer r.lockingService.Unlock(strconv.Itoa(poolID))
+
 	pool, err := p.ExistingPoolFromId(ctx, r.ClientFrom(ctx), poolID)
 	if err != nil {
 		return nil, gqlerror.Errorf("Resource pool is not existing, for you to be able to claim resource: %v", err)
 	}
-
-	r.lockingService.Lock(strconv.Itoa(poolID))
-	defer r.lockingService.Unlock(strconv.Itoa(poolID))
 
 	return ClaimResource(pool, userInput, description, alternativeID)
 }

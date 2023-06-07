@@ -6,10 +6,18 @@ import {
     claimResourceWithAltId, queryResourcesByAltId, queryResourcesByAltIdAndPoolId
 } from '../graphql-queries.js';
 import {
-    createIpv4PrefixRootPool, createIpv4PrefixNestedPool,
+    createIpv4PrefixRootPool,
+    createIpv4PrefixNestedPool,
     createSingletonIpv4PrefixNestedPool,
-    createIpv4NestedPool, get2ChildrenIds,
-    prepareIpv4Pool, allocateFromIPv4PoolSerially, allocateFromIPv4PoolParallelly, queryIPs, cleanup, createIpv4RootPool
+    createIpv4NestedPool,
+    get2ChildrenIds,
+    prepareIpv4Pool,
+    allocateFromIPv4PoolSerially,
+    allocateFromIPv4PoolParallelly,
+    queryIPs,
+    cleanup,
+    createIpv4RootPool,
+    createVlanRangeRootPool
 } from '../test-helpers.js';
 
 import tap from 'tap';
@@ -277,6 +285,27 @@ test('search resources by Optional<poolId> and altId', async (t) => {
 
     t.equal(resources.edges.length, 6);
     t.equal(resources2.edges.length, 3);
+
+    await cleanup();
+    t.end();
+});
+
+test('Claim resources from the same pool in parallel way', async (t) => {
+    const poolId = await createVlanRangeRootPool();
+
+    const promises = [];
+
+    for (let i = 0; i < 100; i++) {
+        promises.push(claimResource(poolId, {desiredSize: 1}));
+    }
+
+    await Promise.all(promises);
+    const pool = await getResourcePool(poolId);
+
+    const allocatedResourceProperties = pool.allocatedResources.edges.map(({node}) => node.Properties);
+
+    t.equal(allocatedResourceProperties[0].from, "1");
+    t.equal(allocatedResourceProperties[99].from, "100");
 
     await cleanup();
     t.end();

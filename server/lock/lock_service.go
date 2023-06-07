@@ -3,45 +3,41 @@ package lock
 import (
 	"sync"
 	"time"
-
-	cache "github.com/net-auto/resourceManager/cache"
 )
 
 type LockingService interface {
-	Lock(lockName string, timeout int) (bool, error)
+	Lock(lockName string, timeout time.Duration) (bool, error)
 	Unlock(lockName string) (bool, error)
 }
 
 type LockingServiceImpl struct {
-	locks *cache.BigCacheServiceImpl[sync.Mutex]
+	locks *LocksStorageImpl
 }
 
 func NewLockingService() *LockingServiceImpl {
-	return &LockingServiceImpl{locks: cache.NewBigCacheService[sync.Mutex](10 * time.Minute)}
+	return &LockingServiceImpl{locks: NewLocksStorage(2 * time.Minute)}
 }
 
 func (l *LockingServiceImpl) Lock(lockName string) (bool, error) {
-	if _, err := l.locks.Get(lockName); err != nil {
-		l.locks.Set(lockName, sync.Mutex{})
-	}
+	mtx, ok := l.locks.Load(lockName)
 
-	mtx, err := l.locks.Get(lockName)
-
-	if err != nil {
-		return false, err
+	if !ok {
+		mtx = &sync.Mutex{}
+		l.locks.Store(lockName, mtx)
+	} else {
+		l.locks.UpdateTimestamp(lockName)
 	}
 
 	mtx.Lock()
+
 	return true, nil
 }
 
 func (l *LockingServiceImpl) Unlock(lockName string) (bool, error) {
-	mtx, err := l.locks.Get(lockName)
-
-	if err != nil {
-		return false, err
+	if mtx, ok := l.locks.Load(lockName); !ok {
+		return false, nil
+	} else {
+		mtx.Unlock()
 	}
-
-	mtx.Unlock()
 	return true, nil
 }
