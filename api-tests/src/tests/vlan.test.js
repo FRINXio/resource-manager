@@ -1,4 +1,4 @@
-import { claimResource} from '../graphql-queries.js';
+import {claimResource, getResourcePool} from '../graphql-queries.js';
 import {
     createVlanRangeRootPool,
     createVlanNestedPool,
@@ -63,6 +63,27 @@ test('allocate specific vlan from vlan resource pool with bad format', async (t)
     });
 
     t.notOk(allocatedResource);
+
+    await cleanup();
+    t.end();
+});
+
+test('Claim resources from the same pool in parallel way', async (t) => {
+    const poolId = await createVlanRangeRootPool();
+
+    const promises = [];
+
+    for (let i = 0; i < 100; i++) {
+        promises.push(claimResource(poolId, {desiredSize: 1}));
+    }
+
+    await Promise.all(promises);
+    const pool = await getResourcePool(poolId);
+
+    const allocatedResourceProperties = pool.allocatedResources.edges.map(({node}) => node.Properties);
+
+    t.equal(allocatedResourceProperties[0].from, "1");
+    t.equal(allocatedResourceProperties[99].from, "100");
 
     await cleanup();
     t.end();
