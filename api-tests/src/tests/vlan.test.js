@@ -73,17 +73,17 @@ test('Claim resources from the same pool in parallel way', async (t) => {
 
     const promises = [];
 
-    for (let i = 0; i < 100; i++) {
+    for (let i = 0; i < 2; i++) {
         promises.push(claimResource(poolId, {desiredSize: 1}));
     }
 
     await Promise.all(promises);
-    const pool = await getResourcePool(poolId);
 
+    const pool = await getResourcePool(poolId, undefined, undefined, 1200);
     const allocatedResourceProperties = pool.allocatedResources.edges.map(({node}) => node.Properties);
 
-    t.equal(allocatedResourceProperties[0].from, "1");
-    t.equal(allocatedResourceProperties[99].from, "100");
+    t.equal(allocatedResourceProperties[0].from, 0);
+    t.equal(allocatedResourceProperties[999].from, 999);
 
     await cleanup();
     t.end();

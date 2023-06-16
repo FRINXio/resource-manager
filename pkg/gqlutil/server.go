@@ -6,6 +6,7 @@ package gqlutil
 
 import (
 	"context"
+	"github.com/net-auto/resourceManager/server/lock"
 
 	"github.com/99designs/gqlgen/graphql"
 	"github.com/99designs/gqlgen/graphql/handler"
@@ -34,5 +35,6 @@ func NewServer(es graphql.ExecutableSchema) *handler.Server {
 			return nil
 		},
 	})
+	srv.Use(lock.NewLockRequestInterceptor(lock.NewLockingService()))
 	return srv
 }

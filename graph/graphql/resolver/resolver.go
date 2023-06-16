@@ -5,7 +5,6 @@ import (
 
 	"github.com/net-auto/resourceManager/ent"
 	"github.com/net-auto/resourceManager/logging/log"
-	"github.com/net-auto/resourceManager/server/lock"
 )
 
 type (
@@ -19,15 +18,14 @@ type (
 	Option func(*Resolver)
 
 	Resolver struct {
-		logger         log.Logger
-		mutation       struct{ transactional bool }
-		lockingService *lock.LockingServiceImpl
+		logger   log.Logger
+		mutation struct{ transactional bool }
 	}
 )
 
 // New creates a graphql resolver.
 func New(cfg Config, opts ...Option) *Resolver {
-	r := &Resolver{logger: cfg.Logger, lockingService: lock.NewLockingService()}
+	r := &Resolver{logger: cfg.Logger}
 	for _, opt := range opts {
 		opt(r)
 	}

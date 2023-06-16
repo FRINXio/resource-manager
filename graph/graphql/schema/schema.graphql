@@ -5,6 +5,8 @@ directive @goModel(model: String, models: [String!]) on OBJECT
     | INTERFACE
     | UNION
 
+directive @lock on FIELD_DEFINITION
+
 """
 Interface for entities needed by the relay-framework
 """
@@ -373,7 +375,7 @@ type Query {
     QueryRecentlyActiveResources(fromDatetime: String!, toDatetime: String,
         first: Int, last: Int, before: String, after: String): ResourceConnection!
     QueryResourcePoolHierarchyPath(poolId: ID!): [ResourcePool!]!
-    QueryRootResourcePools(resourceTypeId: ID, tags: TagOr, first: Int, last: Int, before: Cursor, after: Cursor, filterByResources: Map): ResourcePoolConnection!
+    QueryRootResourcePools(resourceTypeId: ID, tags: TagOr, first: Int, last: Int, before: Cursor, after: Cursor, filterByResources: Map): ResourcePoolConnection! @lock
     QueryLeafResourcePools(resourceTypeId: ID, tags: TagOr, first: Int, last: Int, before: Cursor, after: Cursor, filterByResources: Map): ResourcePoolConnection!
     SearchPoolsByTags(tags: TagOr, first: Int, last: Int, before: Cursor, after: Cursor): ResourcePoolConnection!
 
@@ -552,8 +554,8 @@ type Mutation {
         currentResources: [ResourceInput!]!, userInput: Map!): Map!
 
     # managing resources via pools
-    ClaimResource(poolId: ID!, description: String, userInput: Map!): Resource!
-    ClaimResourceWithAltId(poolId: ID!, description: String, userInput: Map!, alternativeId: Map!): Resource!
+    ClaimResource(poolId: ID!, description: String, userInput: Map!): Resource! @lock
+    ClaimResourceWithAltId(poolId: ID!, description: String, userInput: Map!, alternativeId: Map!): Resource! @lock
     FreeResource(input: Map!, poolId: ID!): String!
 
     # create/update/delete resource pool

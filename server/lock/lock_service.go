@@ -5,20 +5,15 @@ import (
 	"time"
 )
 
-type LockingService interface {
-	Lock(lockName string, timeout time.Duration) (bool, error)
-	Unlock(lockName string) (bool, error)
-}
-
-type LockingServiceImpl struct {
+type LockingService struct {
 	locks *LocksStorageImpl
 }
 
-func NewLockingService() *LockingServiceImpl {
-	return &LockingServiceImpl{locks: NewLocksStorage(2 * time.Minute)}
+func NewLockingService() *LockingService {
+	return &LockingService{locks: NewLocksStorage(2 * time.Minute)}
 }
 
-func (l *LockingServiceImpl) Lock(lockName string) (bool, error) {
+func (l *LockingService) Lock(lockName string) (bool, error) {
 	mtx, ok := l.locks.Load(lockName)
 
 	if !ok {
@@ -33,7 +28,7 @@ func (l *LockingServiceImpl) Lock(lockName string) (bool, error) {
 	return true, nil
 }
 
-func (l *LockingServiceImpl) Unlock(lockName string) (bool, error) {
+func (l *LockingService) Unlock(lockName string) (bool, error) {
 	if mtx, ok := l.locks.Load(lockName); !ok {
 		return false, nil
 	} else {
