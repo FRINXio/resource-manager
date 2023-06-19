@@ -2,6 +2,7 @@ package lock
 
 import (
 	"context"
+	"fmt"
 	"github.com/99designs/gqlgen/graphql"
 	log "github.com/net-auto/resourceManager/logging"
 	"github.com/pkg/errors"
@@ -23,11 +24,10 @@ var _ interface {
 } = &LockRequestInterceptor{}
 
 func (l *LockRequestInterceptor) InterceptResponse(ctx context.Context, next graphql.ResponseHandler) *graphql.Response {
-	return next(ctx)
-}
-
-func (l *LockRequestInterceptor) InterceptOperation(ctx context.Context, next graphql.OperationHandler) graphql.ResponseHandler {
 	oc := graphql.GetOperationContext(ctx)
+
+	fmt.Println("response interceptor")
+	fmt.Println(oc.Operation.Directives)
 
 	if !isMutation(oc) {
 		if hasProperty(oc, "poolId") && (oc.Operation.Name == "ClaimResource" || oc.Operation.Name == "ClaimResourceWithAltId") {
@@ -37,12 +37,15 @@ func (l *LockRequestInterceptor) InterceptOperation(ctx context.Context, next gr
 			if err != nil {
 				return nil
 			}
-			//defer l.lockingService.Unlock(poolId)
+			l.lockingService.Unlock(poolId)
 		}
 	}
 
-	newCtx := context.WithValue(ctx, "lockRequest", l.lockingService)
-	return next(newCtx)
+	return next(ctx)
+}
+
+func (l *LockRequestInterceptor) InterceptOperation(ctx context.Context, next graphql.OperationHandler) graphql.ResponseHandler {
+	return next(ctx)
 }
 
 func (l *LockRequestInterceptor) ExtensionName() string {

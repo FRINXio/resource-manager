@@ -6,7 +6,8 @@
   "type": "module",
   "scripts": {
     "test": "tap --no-timeout src/tests",
-    "bench": "tap --no-timeout src/bench"
+    "bench": "tap --no-timeout src/bench",
+    "vlan": "tap --no-timeout src/tests/vlan.test.js"
   },
   "dependencies": {
     "@apollo/client": "^3.2.1",
