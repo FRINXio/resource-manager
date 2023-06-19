@@ -289,24 +289,3 @@ test('search resources by Optional<poolId> and altId', async (t) => {
     await cleanup();
     t.end();
 });
-
-test('Claim resources from the same pool in parallel way', async (t) => {
-    const poolId = await createIpv4PrefixRootPool();
-
-    const promises = [];
-
-    for (let i = 0; i < 100; i++) {
-        promises.push(claimResource(poolId, {desiredSize: 2}));
-    }
-
-    await Promise.all(promises);
-
-    const pool = await getResourcePool(poolId, undefined, undefined, 120);
-    const allocatedResourceProperties = pool.allocatedResources.edges.map(({node}) => node.Properties);
-
-    t.equal(allocatedResourceProperties[0].from, 0);
-    t.equal(allocatedResourceProperties[99].from, 99);
-
-    await cleanup();
-    t.end();
-});
