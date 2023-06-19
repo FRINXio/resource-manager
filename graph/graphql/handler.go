@@ -11,7 +11,6 @@ import (
 	"errors"
 	"github.com/net-auto/resourceManager/graph/graphql/generated"
 	"github.com/net-auto/resourceManager/logging/log"
-	"github.com/net-auto/resourceManager/server/lock"
 	"github.com/net-auto/resourceManager/telemetry/ocgql"
 	"github.com/net-auto/resourceManager/viewer"
 	"math/bits"
@@ -129,32 +128,11 @@ func NewHandler(cfg HandlerConfig) (http.Handler, error) {
 				Resolvers: rsv,
 				// TODO directive
 				// Directives: directive.New(cfg.Logger),
-				Directives: generated.DirectiveRoot{
-					Lock: func(ctx context.Context, obj interface{}, next graphql.Resolver) (res interface{}, err error) {
-						//oc := graphql.GetOperationContext(ctx)
-						//
-						//if oc.Operation.Operation == ast.Mutation {
-						//	if oc.Variables["poolId"] != nil && (oc.Operation.Name == "ClaimResource" || oc.Operation.Name == "ClaimResourceWithAltId") {
-						//		lockingService := ctx.Value("lockingService").(*lock.LockingService)
-						//		poolId := oc.Variables["poolId"].(string)
-						//
-						//		defer func(lockingService *lock.LockingService, lockName string) {
-						//			_, err := lockingService.Unlock(lockName)
-						//			if err != nil {
-						//				cfg.Logger.For(ctx).Error("failed to unlock", zap.Error(err))
-						//			}
-						//		}(lockingService, poolId)
-						//	}
-						//}
-						//
-						return next(ctx)
-					},
-				},
+				Directives: generated.DirectiveRoot{},
 			},
 		),
 	)
 
-	srv.Use(lock.NewLockRequestInterceptor(lock.NewLockingService()))
 	srv.Use(entgql.Transactioner{
 		TxOpener: entgql.TxOpenerFunc(openAndExposeTx),
 	})

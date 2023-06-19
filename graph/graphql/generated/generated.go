@@ -48,7 +48,6 @@ type ResolverRoot interface {
 }
 
 type DirectiveRoot struct {
-	Lock func(ctx context.Context, obj interface{}, next graphql.Resolver) (res interface{}, err error)
 }
 
 type ComplexityRoot struct {
@@ -1414,8 +1413,6 @@ var sources = []*ast.Source{
     | INTERFACE
     | UNION
 
-directive @lock on FIELD_DEFINITION
-
 """
 Interface for entities needed by the relay-framework
 """
@@ -1784,7 +1781,7 @@ type Query {
     QueryRecentlyActiveResources(fromDatetime: String!, toDatetime: String,
         first: Int, last: Int, before: String, after: String): ResourceConnection!
     QueryResourcePoolHierarchyPath(poolId: ID!): [ResourcePool!]!
-    QueryRootResourcePools(resourceTypeId: ID, tags: TagOr, first: Int, last: Int, before: Cursor, after: Cursor, filterByResources: Map): ResourcePoolConnection! @lock
+    QueryRootResourcePools(resourceTypeId: ID, tags: TagOr, first: Int, last: Int, before: Cursor, after: Cursor, filterByResources: Map): ResourcePoolConnection!
     QueryLeafResourcePools(resourceTypeId: ID, tags: TagOr, first: Int, last: Int, before: Cursor, after: Cursor, filterByResources: Map): ResourcePoolConnection!
     SearchPoolsByTags(tags: TagOr, first: Int, last: Int, before: Cursor, after: Cursor): ResourcePoolConnection!
 
@@ -1963,8 +1960,8 @@ type Mutation {
         currentResources: [ResourceInput!]!, userInput: Map!): Map!
 
     # managing resources via pools
-    ClaimResource(poolId: ID!, description: String, userInput: Map!): Resource! @lock
-    ClaimResourceWithAltId(poolId: ID!, description: String, userInput: Map!, alternativeId: Map!): Resource! @lock
+    ClaimResource(poolId: ID!, description: String, userInput: Map!): Resource!
+    ClaimResourceWithAltId(poolId: ID!, description: String, userInput: Map!, alternativeId: Map!): Resource!
     FreeResource(input: Map!, poolId: ID!): String!
 
     # create/update/delete resource pool
@@ -4570,28 +4567,8 @@ func (ec *executionContext) _Mutation_ClaimResource(ctx context.Context, field g
 		}
 	}()
 	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
-		directive0 := func(rctx context.Context) (interface{}, error) {
-			ctx = rctx // use context from middleware stack in children
-			return ec.resolvers.Mutation().ClaimResource(rctx, fc.Args["poolId"].(int), fc.Args["description"].(*string), fc.Args["userInput"].(map[string]interface{}))
-		}
-		directive1 := func(ctx context.Context) (interface{}, error) {
-			if ec.directives.Lock == nil {
-				return nil, errors.New("directive lock is not implemented")
-			}
-			return ec.directives.Lock(ctx, nil, directive0)
-		}
-
-		tmp, err := directive1(rctx)
-		if err != nil {
-			return nil, graphql.ErrorOnPath(ctx, err)
-		}
-		if tmp == nil {
-			return nil, nil
-		}
-		if data, ok := tmp.(*ent.Resource); ok {
-			return data, nil
-		}
-		return nil, fmt.Errorf(`unexpected type %T from directive, should be *github.com/net-auto/resourceManager/ent.Resource`, tmp)
+		ctx = rctx // use context from middleware stack in children
+		return ec.resolvers.Mutation().ClaimResource(rctx, fc.Args["poolId"].(int), fc.Args["description"].(*string), fc.Args["userInput"].(map[string]interface{}))
 	})
 	if err != nil {
 		ec.Error(ctx, err)
@@ -4659,28 +4636,8 @@ func (ec *executionContext) _Mutation_ClaimResourceWithAltId(ctx context.Context
 		}
 	}()
 	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
-		directive0 := func(rctx context.Context) (interface{}, error) {
-			ctx = rctx // use context from middleware stack in children
-			return ec.resolvers.Mutation().ClaimResourceWithAltID(rctx, fc.Args["poolId"].(int), fc.Args["description"].(*string), fc.Args["userInput"].(map[string]interface{}), fc.Args["alternativeId"].(map[string]interface{}))
-		}
-		directive1 := func(ctx context.Context) (interface{}, error) {
-			if ec.directives.Lock == nil {
-				return nil, errors.New("directive lock is not implemented")
-			}
-			return ec.directives.Lock(ctx, nil, directive0)
-		}
-
-		tmp, err := directive1(rctx)
-		if err != nil {
-			return nil, graphql.ErrorOnPath(ctx, err)
-		}
-		if tmp == nil {
-			return nil, nil
-		}
-		if data, ok := tmp.(*ent.Resource); ok {
-			return data, nil
-		}
-		return nil, fmt.Errorf(`unexpected type %T from directive, should be *github.com/net-auto/resourceManager/ent.Resource`, tmp)
+		ctx = rctx // use context from middleware stack in children
+		return ec.resolvers.Mutation().ClaimResourceWithAltID(rctx, fc.Args["poolId"].(int), fc.Args["description"].(*string), fc.Args["userInput"].(map[string]interface{}), fc.Args["alternativeId"].(map[string]interface{}))
 	})
 	if err != nil {
 		ec.Error(ctx, err)
@@ -6985,28 +6942,8 @@ func (ec *executionContext) _Query_QueryRootResourcePools(ctx context.Context, f
 		}
 	}()
 	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
-		directive0 := func(rctx context.Context) (interface{}, error) {
-			ctx = rctx // use context from middleware stack in children
-			return ec.resolvers.Query().QueryRootResourcePools(rctx, fc.Args["resourceTypeId"].(*int), fc.Args["tags"].(*model.TagOr), fc.Args["first"].(*int), fc.Args["last"].(*int), fc.Args["before"].(*ent.Cursor), fc.Args["after"].(*ent.Cursor), fc.Args["filterByResources"].(map[string]interface{}))
-		}
-		directive1 := func(ctx context.Context) (interface{}, error) {
-			if ec.directives.Lock == nil {
-				return nil, errors.New("directive lock is not implemented")
-			}
-			return ec.directives.Lock(ctx, nil, directive0)
-		}
-
-		tmp, err := directive1(rctx)
-		if err != nil {
-			return nil, graphql.ErrorOnPath(ctx, err)
-		}
-		if tmp == nil {
-			return nil, nil
-		}
-		if data, ok := tmp.(*ent.ResourcePoolConnection); ok {
-			return data, nil
-		}
-		return nil, fmt.Errorf(`unexpected type %T from directive, should be *github.com/net-auto/resourceManager/ent.ResourcePoolConnection`, tmp)
+		ctx = rctx // use context from middleware stack in children
+		return ec.resolvers.Query().QueryRootResourcePools(rctx, fc.Args["resourceTypeId"].(*int), fc.Args["tags"].(*model.TagOr), fc.Args["first"].(*int), fc.Args["last"].(*int), fc.Args["before"].(*ent.Cursor), fc.Args["after"].(*ent.Cursor), fc.Args["filterByResources"].(map[string]interface{}))
 	})
 	if err != nil {
 		ec.Error(ctx, err)

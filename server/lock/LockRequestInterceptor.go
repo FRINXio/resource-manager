@@ -2,10 +2,7 @@ package lock
 
 import (
 	"context"
-	"fmt"
 	"github.com/99designs/gqlgen/graphql"
-	log "github.com/net-auto/resourceManager/logging"
-	"github.com/pkg/errors"
 	"github.com/vektah/gqlparser/v2/ast"
 )
 
@@ -26,18 +23,16 @@ var _ interface {
 func (l *LockRequestInterceptor) InterceptResponse(ctx context.Context, next graphql.ResponseHandler) *graphql.Response {
 	oc := graphql.GetOperationContext(ctx)
 
-	fmt.Println("response interceptor")
-	fmt.Println(oc.Operation.Directives)
-
-	if !isMutation(oc) {
-		if hasProperty(oc, "poolId") && (oc.Operation.Name == "ClaimResource" || oc.Operation.Name == "ClaimResourceWithAltId") {
+	if isMutation(oc) {
+		if hasProperty(oc, "poolId", "ClaimResource") || hasProperty(oc, "poolId", "ClaimResourceWithAltId") {
 			poolId := oc.Variables["poolId"].(string)
-			log.Error(ctx, errors.Errorf("Locking pool"), "poolId", poolId)
 			_, err := l.lockingService.Lock(poolId)
 			if err != nil {
 				return nil
 			}
+			response := next(ctx)
 			l.lockingService.Unlock(poolId)
+			return response
 		}
 	}
 
@@ -60,11 +55,14 @@ func isMutation(oc *graphql.OperationContext) bool {
 	return oc.Operation != nil && oc.Operation.Operation == ast.Mutation
 }
 
-func hasProperty(oc *graphql.OperationContext, propertyName string) bool {
-	for k, _ := range oc.Variables {
-		if k == propertyName {
-			return true
+func hasProperty(oc *graphql.OperationContext, propertyName string, operationName string) bool {
+	for _, selection := range oc.Operation.SelectionSet {
+		if field, ok := selection.(*ast.Field); ok {
+			if operationName == field.Name && field.Arguments.ForName(propertyName) != nil {
+				return true
+			}
 		}
 	}
+
 	return false
 }

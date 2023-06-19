@@ -9,81 +9,81 @@ import {
 import tap from 'tap';
 const test = tap.test;
 
-// test('create vlan root pool', async (t) => {
-//     t.ok(await createVlanRangeRootPool());
+test('create vlan root pool', async (t) => {
+    t.ok(await createVlanRangeRootPool());
+
+    await cleanup()
+    t.end();
+});
+
+//             vlan hierarchy
 //
-//     await cleanup()
-//     t.end();
-// });
-//
-// //             vlan hierarchy
-// //
-// //               [0-4095]
-// //                   |
-// //          [0-2000]   [2001-4095]
-//
-// test('create vlan hierarchy', async (t) => {
-//     let rootPoolId = await createVlanRangeRootPool();
-//     let firstParentResourceId = (await claimResource(rootPoolId, {desiredSize: 2001})).id;
-//     let secondParentResourceId = (await claimResource(rootPoolId, {desiredSize: 2095})).id;
-//     let nestedPool1Id = await createVlanNestedPool(firstParentResourceId);
-//     let nestedPool2Id = await createVlanNestedPool(secondParentResourceId);
-//
-//     const children = await get2ChildrenIds(rootPoolId);
-//     t.same(children, [nestedPool1Id, nestedPool2Id]);
-//
-//     let resource1 = await claimResource(nestedPool1Id, {});
-//     let resource2 = await claimResource(nestedPool2Id, {});
-//
-//     t.equal(resource1.Properties.vlan, 0);
-//     t.equal(resource2.Properties.vlan, 2001);
-//
-//     await cleanup()
-//     t.end();
-// });
-//
-// test('allocate specific vlan from vlan resource pool', async (t) => {
-//     const rootPoolId = await createVlanRootPool();
-//
-//     const allocatedResource = await claimResource(rootPoolId, {
-//         desiredValue: "1000"
-//     });
-//
-//     t.equal(allocatedResource.Properties.vlan, 1000);
-//
-//     await cleanup();
-//     t.end();
-// });
-//
-// test('allocate specific vlan from vlan resource pool with bad format', async (t) => {
-//     const rootPoolId = await createVlanRootPool();
-//
-//     const allocatedResource = await claimResource(rootPoolId, {
-//         desiredValue: 1000
-//     });
-//
-//     t.notOk(allocatedResource);
-//
-//     await cleanup();
-//     t.end();
-// });
+//               [0-4095]
+//                   |
+//          [0-2000]   [2001-4095]
+
+test('create vlan hierarchy', async (t) => {
+    let rootPoolId = await createVlanRangeRootPool();
+    let firstParentResourceId = (await claimResource(rootPoolId, {desiredSize: 2001})).id;
+    let secondParentResourceId = (await claimResource(rootPoolId, {desiredSize: 2095})).id;
+    let nestedPool1Id = await createVlanNestedPool(firstParentResourceId);
+    let nestedPool2Id = await createVlanNestedPool(secondParentResourceId);
+
+    const children = await get2ChildrenIds(rootPoolId);
+    t.same(children, [nestedPool1Id, nestedPool2Id]);
+
+    let resource1 = await claimResource(nestedPool1Id, {});
+    let resource2 = await claimResource(nestedPool2Id, {});
+
+    t.equal(resource1.Properties.vlan, 0);
+    t.equal(resource2.Properties.vlan, 2001);
+
+    await cleanup()
+    t.end();
+});
+
+test('allocate specific vlan from vlan resource pool', async (t) => {
+    const rootPoolId = await createVlanRootPool();
+
+    const allocatedResource = await claimResource(rootPoolId, {
+        desiredValue: "1000"
+    });
+
+    t.equal(allocatedResource.Properties.vlan, 1000);
+
+    await cleanup();
+    t.end();
+});
+
+test('allocate specific vlan from vlan resource pool with bad format', async (t) => {
+    const rootPoolId = await createVlanRootPool();
+
+    const allocatedResource = await claimResource(rootPoolId, {
+        desiredValue: 1000
+    });
+
+    t.notOk(allocatedResource);
+
+    await cleanup();
+    t.end();
+});
 
 test('Claim resources from the same pool in parallel way', async (t) => {
     const poolId = await createVlanRangeRootPool();
 
     const promises = [];
 
-    for (let i = 0; i < 2; i++) {
+    for (let i = 0; i < 100; i++) {
         promises.push(claimResource(poolId, {desiredSize: 1}));
     }
 
     await Promise.all(promises);
 
-    const pool = await getResourcePool(poolId, undefined, undefined, 1200);
+    const pool = await getResourcePool(poolId, undefined, undefined, 120);
     const allocatedResourceProperties = pool.allocatedResources.edges.map(({node}) => node.Properties);
 
     t.equal(allocatedResourceProperties[0].from, 0);
-    t.equal(allocatedResourceProperties[999].from, 999);
+    t.equal(allocatedResourceProperties[99].from, 99);
 
     await cleanup();
     t.end();
