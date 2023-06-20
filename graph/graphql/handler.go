@@ -11,6 +11,7 @@ import (
 	"errors"
 	"github.com/net-auto/resourceManager/graph/graphql/generated"
 	"github.com/net-auto/resourceManager/logging/log"
+	"github.com/net-auto/resourceManager/server/lock"
 	"github.com/net-auto/resourceManager/telemetry/ocgql"
 	"github.com/net-auto/resourceManager/viewer"
 	"math/bits"
@@ -93,7 +94,7 @@ func OpenTxFromContext(ctx context.Context) (context.Context, driver.Tx, error) 
 	return ctx, tx, nil
 }
 
-func openAndExposeTx(ctx context.Context) (context.Context, driver.Tx, error) {
+func OpenAndExposeTx(ctx context.Context) (context.Context, driver.Tx, error) {
 	fromContext, tx, err := OpenTxFromContext(ctx)
 	if tx != nil {
 		// Expose TX under "tx" key
@@ -133,8 +134,9 @@ func NewHandler(cfg HandlerConfig) (http.Handler, error) {
 		),
 	)
 
+	srv.Use(lock.NewLockRequestInterceptor(lock.NewLockingService()))
 	srv.Use(entgql.Transactioner{
-		TxOpener: entgql.TxOpenerFunc(openAndExposeTx),
+		TxOpener: entgql.TxOpenerFunc(OpenAndExposeTx),
 	})
 
 	srv.SetErrorPresenter(errorPresenter(cfg.Logger))

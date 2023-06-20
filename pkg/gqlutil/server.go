@@ -11,7 +11,6 @@ import (
 	"github.com/99designs/gqlgen/graphql/handler/extension"
 	"github.com/99designs/gqlgen/graphql/handler/lru"
 	"github.com/99designs/gqlgen/graphql/handler/transport"
-	"github.com/net-auto/resourceManager/server/lock"
 	"github.com/net-auto/resourceManager/telemetry/ocgql"
 	"github.com/net-auto/resourceManager/viewer"
 	"go.opencensus.io/trace"
@@ -34,6 +33,5 @@ func NewServer(es graphql.ExecutableSchema) *handler.Server {
 			return nil
 		},
 	})
-	srv.Use(lock.NewLockRequestInterceptor(lock.NewLockingService()))
 	return srv
 }

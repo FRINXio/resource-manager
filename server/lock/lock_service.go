@@ -1,38 +1,25 @@
 package lock
 
 import (
-	"sync"
 	"time"
 )
 
+// LockingService provides a locking mechanism for the server.
 type LockingService struct {
-	locks *LocksStorageImpl
+	locks LocksStorage
 }
 
+// NewLockingService creates a new locking service.
 func NewLockingService() *LockingService {
-	return &LockingService{locks: NewLocksStorage(2 * time.Minute)}
+	return &LockingService{locks: NewLocksStorageImpl(2 * time.Minute)}
 }
 
-func (l *LockingService) Lock(lockName string) (bool, error) {
-	mtx, ok := l.locks.Load(lockName)
-
-	if !ok {
-		mtx = &sync.Mutex{}
-		l.locks.Store(lockName, mtx)
-	} else {
-		l.locks.UpdateTimestamp(lockName)
-	}
-
-	mtx.Lock()
-
-	return true, nil
+// Lock acquires mutex by lockName and locks it.
+func (l *LockingService) Lock(lockName string) {
+	l.locks.AcquireLock(lockName).Lock()
 }
 
-func (l *LockingService) Unlock(lockName string) (bool, error) {
-	if mtx, ok := l.locks.Load(lockName); !ok {
-		return false, nil
-	} else {
-		mtx.Unlock()
-	}
-	return true, nil
+// Unlock unlocks a lockName.
+func (l *LockingService) Unlock(lockName string) {
+	l.locks.AcquireLock(lockName).Unlock()
 }

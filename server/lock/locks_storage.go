@@ -5,55 +5,93 @@ import (
 	"time"
 )
 
+// This mutex handle synchronized access to the locks' storage.
+// It is used as prevention before race conditions.
+var (
+	mutex = &sync.Mutex{}
+)
+
+// LocksStorage provides a storage mechanism for the locks.
+// It provides methods to acquire and release locks.
 type LocksStorage interface {
-	Store(lockName string, mtx *sync.Mutex)
-	Load(lockName string) (mtx *sync.Mutex, ok bool)
-	Delete(lockName string)
-	UpdateTimestamp(lockName string)
+	AcquireLock(lockName string) *sync.Mutex
+	ReleaseLock(lockName string)
 }
 
-type LocksMap struct {
+// LockItem is a structure that represents a lock.
+// It contains a name, a mutex and a timestamp.
+// The timestamp is used to indicate when the lock was last used.
+// We use timestamp to help us to know which locks are not used for a long time.
+type LockItem struct {
+	name      string
 	mutex     *sync.Mutex
 	timestamp int64
 }
 
 type LocksStorageImpl struct {
-	locks           sync.Map
+	locks           *sync.Map
 	invalidateAfter time.Duration
 }
 
-func NewLocksStorage(invalidateAfter time.Duration) *LocksStorageImpl {
-	lockingServiceCleaner := &LocksStorageImpl{locks: sync.Map{}, invalidateAfter: invalidateAfter}
+func NewLocksStorageImpl(invalidateAfter time.Duration) LocksStorage {
+	locks := &sync.Map{}
+	locksStorage := &LocksStorageImpl{locks: locks, invalidateAfter: invalidateAfter}
+	go runCleanerJob(locksStorage)
 
-	go startCleanerJob(lockingServiceCleaner)
-
-	return lockingServiceCleaner
+	return locksStorage
 }
 
-func (l *LocksStorageImpl) Store(lockName string, mtx *sync.Mutex) {
-	l.locks.Store(lockName, LocksMap{mutex: mtx, timestamp: time.Now().Unix()})
-}
+// AcquireLock acquires mutex by lockName.
+// If the lockName is not in the storage, it creates a new lock with new mutex and set pointer to it.
+// If the lockName is in the storage, it returns the mutex.
+// It also updates the timestamp of the lock to the current time.
+func (l *LocksStorageImpl) AcquireLock(lockName string) *sync.Mutex {
+	mutex.Lock()
+	defer mutex.Unlock()
 
-func (l *LocksStorageImpl) Load(lockName string) (mtx *sync.Mutex, ok bool) {
-	if v, ok := l.locks.Load(lockName); ok {
-		mtx = v.(LocksMap).mutex
-		ok = true
+	timeNow := time.Now().Unix()
+	var mtx *sync.Mutex
 
-		return mtx, ok
+	if lockItem, ok := l.locks.Load(lockName); !ok {
+		mtx = &sync.Mutex{}
+		lockItem = &LockItem{name: lockName, mutex: mtx, timestamp: timeNow}
+		l.locks.Store(lockName, lockItem)
+	} else {
+		lockItem.(*LockItem).timestamp = timeNow
+		mtx = lockItem.(*LockItem).mutex
+		l.locks.Store(lockName, lockItem)
 	}
 
-	return nil, false
+	return mtx
 }
 
-func (l *LocksStorageImpl) Delete(lockName string) {
-	l.locks.Delete(lockName)
+// ReleaseLock releases a lockName.
+// It sets the timestamp of the lock to 0 and sets the mutex to nil.
+// It also removes the lockName from the storage.
+func (l *LocksStorageImpl) ReleaseLock(lockName string) {
+	mutex.Lock()
+	defer mutex.Unlock()
+
+	if lockItem, ok := l.locks.Load(lockName); ok {
+		lockItem.(*LockItem).timestamp = 0
+		lockItem.(*LockItem).mutex = nil
+		l.locks.Delete(lockName)
+	}
 }
 
-func (l *LocksStorageImpl) Clean() {
+// Clean removes locks that are not used for a long time.
+// It is based on the timestamp.
+// It is called in the background by the locks storage (executed when creating new locks storage).
+// It is called every 5 seconds.
+// invalidateAfter is set when creating new locks storage. It is set by developer.
+func clean(l *LocksStorageImpl) {
+	mutex.Lock()
+	defer mutex.Unlock()
+
 	timeNow := time.Now().Unix()
 
 	l.locks.Range(func(key, value interface{}) bool {
-		if timeNow-value.(LocksMap).timestamp > int64(l.invalidateAfter.Seconds()) {
+		if timeNow-value.(*LockItem).timestamp > int64(l.invalidateAfter.Seconds()) {
 			l.locks.Delete(key)
 		}
 
@@ -61,15 +99,10 @@ func (l *LocksStorageImpl) Clean() {
 	})
 }
 
-func (l *LocksStorageImpl) UpdateTimestamp(lockName string) {
-	if v, ok := l.locks.Load(lockName); ok {
-		l.locks.Store(lockName, LocksMap{mutex: v.(LocksMap).mutex, timestamp: time.Now().Unix()})
-	}
-}
-
-func startCleanerJob(l *LocksStorageImpl) {
+// runCleanerJob is used to start a cleaner job that will remove locks that are not used longer then their invalidateAfter.
+func runCleanerJob(l *LocksStorageImpl) {
 	for {
-		time.Sleep(time.Minute * 5)
-		l.Clean()
+		time.Sleep(time.Second * 5)
+		clean(l)
 	}
 }
