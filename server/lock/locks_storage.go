@@ -19,7 +19,7 @@ type LocksStorage interface {
 }
 
 // LockItem is a structure that represents a lock.
-// It contains a name, a mutex and a timestamp.
+// It contains a testID, a mutex and a timestamp.
 // The timestamp is used to indicate when the lock was last used.
 // We use timestamp to help us to know which locks are not used for a long time.
 type LockItem struct {
@@ -92,7 +92,18 @@ func clean(l *LocksStorageImpl) {
 
 	l.locks.Range(func(key, value interface{}) bool {
 		if timeNow-value.(*LockItem).timestamp > int64(l.invalidateAfter.Seconds()) {
-			l.locks.Delete(key)
+			load, _ := l.locks.LoadAndDelete(key)
+			if load.(LockItem).mutex.TryLock() {
+				// mutex was unlocked and invalid, we can delete
+				load.(LockItem).mutex.Unlock()
+			} else {
+				// mutex is locked and invalid, what now ?
+				// keep it in locks map]
+				//log.Warn("Lock taking too long")
+				l.locks.Store(key, load)
+			}
+
+			// mutex is unlocked but used / referenced from somewhere else -> this is a known rare race condition we will live with
 		}
 
 		return true
@@ -102,7 +113,7 @@ func clean(l *LocksStorageImpl) {
 // runCleanerJob is used to start a cleaner job that will remove locks that are not used longer then their invalidateAfter.
 func runCleanerJob(l *LocksStorageImpl) {
 	for {
-		time.Sleep(time.Second * 5)
+		time.Sleep(time.Millisecond) // TODO make configurable ... default 10 seconds
 		clean(l)
 	}
 }

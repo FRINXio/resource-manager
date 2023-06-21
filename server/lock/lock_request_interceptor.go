@@ -33,9 +33,18 @@ func (l *LockRequestInterceptor) InterceptResponse(ctx context.Context, next gra
 		if hasProperty(oc, "poolId", "ClaimResource") || hasProperty(oc, "poolId", "ClaimResourceWithAltId") {
 			poolId := oc.Variables["poolId"].(string)
 			l.lockingService.Lock(poolId)
-			response := next(ctx)
-			l.lockingService.Unlock(poolId)
-			return response
+
+			select {
+			case <-ctx.Done():
+				l.lockingService.Unlock(poolId)
+				//log.Warn("") // TODO finish this "DONE" to prevent allocation after request timeout
+				return graphql.ErrorResponse(ctx, "Request has been canceled")
+			default:
+				response := next(ctx)
+				l.lockingService.Unlock(poolId)
+				return response
+			}
+
 		}
 	}
 
@@ -59,7 +68,7 @@ func isMutation(oc *graphql.OperationContext) bool {
 	return oc.Operation != nil && oc.Operation.Operation == ast.Mutation
 }
 
-// hasProperty checks if the operation has a property with the given name and operation name.
+// hasProperty checks if the operation has a property with the given testID and operation testID.
 func hasProperty(oc *graphql.OperationContext, propertyName string, operationName string) bool {
 	for _, selection := range oc.Operation.SelectionSet {
 		if field, ok := selection.(*ast.Field); ok {
