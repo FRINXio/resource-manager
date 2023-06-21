@@ -134,7 +134,7 @@ func NewHandler(cfg HandlerConfig) (http.Handler, error) {
 		),
 	)
 
-	srv.Use(lock.NewLockRequestInterceptor(lock.NewLockingService()))
+	srv.Use(lock.NewLockRequestInterceptor(lock.NewLockingService(time.Second*10, nil)))
 	srv.Use(entgql.Transactioner{
 		TxOpener: entgql.TxOpenerFunc(OpenAndExposeTx),
 	})

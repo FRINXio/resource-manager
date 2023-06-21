@@ -3,16 +3,17 @@ package lock
 import (
 	"context"
 	"github.com/99designs/gqlgen/graphql"
+	log "github.com/net-auto/resourceManager/logging"
 	"github.com/vektah/gqlparser/v2/ast"
 )
 
 // LockRequestInterceptor is a graphql interceptor that locks a resource pool when a mutation is performed on it.
 type LockRequestInterceptor struct {
-	lockingService *LockingService
+	lockingService LockingService
 }
 
 // NewLockRequestInterceptor creates a new LockRequestInterceptor.
-func NewLockRequestInterceptor(lockingService *LockingService) *LockRequestInterceptor {
+func NewLockRequestInterceptor(lockingService LockingService) *LockRequestInterceptor {
 	return &LockRequestInterceptor{lockingService: lockingService}
 }
 
@@ -32,12 +33,14 @@ func (l *LockRequestInterceptor) InterceptResponse(ctx context.Context, next gra
 	if isMutation(oc) {
 		if hasProperty(oc, "poolId", "ClaimResource") || hasProperty(oc, "poolId", "ClaimResourceWithAltId") {
 			poolId := oc.Variables["poolId"].(string)
-			l.lockingService.Lock(poolId)
+			l.lockingService.Acquire(poolId).Lock()
 
 			select {
 			case <-ctx.Done():
 				l.lockingService.Unlock(poolId)
-				//log.Warn("") // TODO finish this "DONE" to prevent allocation after request timeout
+
+				// TODO finish this "DONE" to prevent allocation after request timeout
+				log.Warn(ctx, "HTTP request finished earlier then allocation of resource")
 				return graphql.ErrorResponse(ctx, "Request has been canceled")
 			default:
 				response := next(ctx)
@@ -68,7 +71,7 @@ func isMutation(oc *graphql.OperationContext) bool {
 	return oc.Operation != nil && oc.Operation.Operation == ast.Mutation
 }
 
-// hasProperty checks if the operation has a property with the given testID and operation testID.
+// hasProperty checks if the operation has a property with the given  and operation testID.
 func hasProperty(oc *graphql.OperationContext, propertyName string, operationName string) bool {
 	for _, selection := range oc.Operation.SelectionSet {
 		if field, ok := selection.(*ast.Field); ok {
