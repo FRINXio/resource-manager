@@ -6,7 +6,6 @@ package gqlutil
 
 import (
 	"context"
-
 	"github.com/99designs/gqlgen/graphql"
 	"github.com/99designs/gqlgen/graphql/handler"
 	"github.com/99designs/gqlgen/graphql/handler/extension"

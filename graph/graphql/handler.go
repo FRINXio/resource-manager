@@ -11,6 +11,7 @@ import (
 	"errors"
 	"github.com/net-auto/resourceManager/graph/graphql/generated"
 	"github.com/net-auto/resourceManager/logging/log"
+	"github.com/net-auto/resourceManager/server/lock"
 	"github.com/net-auto/resourceManager/telemetry/ocgql"
 	"github.com/net-auto/resourceManager/viewer"
 	"math/bits"
@@ -133,6 +134,9 @@ func NewHandler(cfg HandlerConfig) (http.Handler, error) {
 		),
 	)
 
+	// Add locking service (to prevent race conditions while claiming resources) before transactioner
+	// So that transaction is encapsulated by locking service to prevent transaction serialization issues
+	srv.Use(lock.NewLockRequestInterceptor(lock.NewLockingService(time.Minute, nil)))
 	srv.Use(entgql.Transactioner{
 		TxOpener: entgql.TxOpenerFunc(openAndExposeTx),
 	})
