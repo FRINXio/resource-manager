@@ -6,10 +6,18 @@ import {
     claimResourceWithAltId, queryResourcesByAltId, queryResourcesByAltIdAndPoolId
 } from '../graphql-queries.js';
 import {
-    createIpv4PrefixRootPool, createIpv4PrefixNestedPool,
+    createIpv4PrefixRootPool,
+    createIpv4PrefixNestedPool,
     createSingletonIpv4PrefixNestedPool,
-    createIpv4NestedPool, get2ChildrenIds,
-    prepareIpv4Pool, allocateFromIPv4PoolSerially, allocateFromIPv4PoolParallelly, queryIPs, cleanup, createIpv4RootPool
+    createIpv4NestedPool,
+    get2ChildrenIds,
+    prepareIpv4Pool,
+    allocateFromIPv4PoolSerially,
+    allocateFromIPv4PoolParallelly,
+    queryIPs,
+    cleanup,
+    createIpv4RootPool,
+    createVlanRangeRootPool
 } from '../test-helpers.js';
 
 import tap from 'tap';
