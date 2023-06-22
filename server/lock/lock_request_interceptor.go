@@ -2,6 +2,7 @@ package lock
 
 import (
 	"context"
+	"fmt"
 	"github.com/99designs/gqlgen/graphql"
 	log "github.com/net-auto/resourceManager/logging"
 	"github.com/vektah/gqlparser/v2/ast"
@@ -31,27 +32,34 @@ func (l *LockRequestInterceptor) InterceptResponse(ctx context.Context, next gra
 	oc := graphql.GetOperationContext(ctx)
 
 	if isMutation(oc) {
-		if hasProperty(oc, "poolId", "ClaimResource") || hasProperty(oc, "poolId", "ClaimResourceWithAltId") {
-			poolId := oc.Variables["poolId"].(string)
-			l.lockingService.Acquire(poolId).Lock()
+		if isLockable(oc) {
+			poolId, err := getArgument(oc, "poolId")
+			if err != nil {
+				log.Warn(ctx, "Unable to find poolId for query %s. Query will not be locked", oc.OperationName)
+				return next(ctx)
+			}
+
+			l.lockingService.Acquire(*poolId).Lock()
 
 			select {
 			case <-ctx.Done():
-				l.lockingService.Unlock(poolId)
-
-				// TODO finish this "DONE" to prevent allocation after request timeout
-				log.Warn(ctx, "HTTP request finished earlier then allocation of resource")
+				l.lockingService.Unlock(*poolId)
+				log.Warn(ctx, "HTTP request finished before successfully locking. Skipping further executions")
 				return graphql.ErrorResponse(ctx, "Request has been canceled")
 			default:
 				response := next(ctx)
-				l.lockingService.Unlock(poolId)
+				l.lockingService.Unlock(*poolId)
 				return response
 			}
-
 		}
 	}
 
 	return next(ctx)
+}
+
+func isLockable(oc *graphql.OperationContext) bool {
+	return matchesNameAndArgument(oc, "poolId", "ClaimResource") ||
+		matchesNameAndArgument(oc, "poolId", "ClaimResourceWithAltId")
 }
 
 func (l *LockRequestInterceptor) InterceptOperation(ctx context.Context, next graphql.OperationHandler) graphql.ResponseHandler {
@@ -71,8 +79,8 @@ func isMutation(oc *graphql.OperationContext) bool {
 	return oc.Operation != nil && oc.Operation.Operation == ast.Mutation
 }
 
-// hasProperty checks if the operation has a property with the given  and operation testID.
-func hasProperty(oc *graphql.OperationContext, propertyName string, operationName string) bool {
+// matchesNameAndArgument checks if the operation has a property with the given  and operation testID.
+func matchesNameAndArgument(oc *graphql.OperationContext, propertyName string, operationName string) bool {
 	for _, selection := range oc.Operation.SelectionSet {
 		if field, ok := selection.(*ast.Field); ok {
 			if operationName == field.Name && field.Arguments.ForName(propertyName) != nil {
@@ -82,4 +90,20 @@ func hasProperty(oc *graphql.OperationContext, propertyName string, operationNam
 	}
 
 	return false
+}
+func getArgument(oc *graphql.OperationContext, propertyName string) (*string, error) {
+	err := fmt.Errorf("cannot find %s argument", propertyName)
+	for _, selection := range oc.Operation.SelectionSet {
+		if field, ok := selection.(*ast.Field); ok {
+			if field.Arguments.ForName(propertyName) != nil {
+				argMap := selection.(*ast.Field).ArgumentMap(oc.Variables)
+				propertyValueAsStr := fmt.Sprintf("%v", argMap[propertyName])
+				return &propertyValueAsStr, nil
+			} else {
+				return nil, err
+			}
+		}
+	}
+
+	return nil, err
 }

@@ -94,7 +94,7 @@ func OpenTxFromContext(ctx context.Context) (context.Context, driver.Tx, error) 
 	return ctx, tx, nil
 }
 
-func OpenAndExposeTx(ctx context.Context) (context.Context, driver.Tx, error) {
+func openAndExposeTx(ctx context.Context) (context.Context, driver.Tx, error) {
 	fromContext, tx, err := OpenTxFromContext(ctx)
 	if tx != nil {
 		// Expose TX under "tx" key
@@ -134,9 +134,11 @@ func NewHandler(cfg HandlerConfig) (http.Handler, error) {
 		),
 	)
 
-	srv.Use(lock.NewLockRequestInterceptor(lock.NewLockingService(time.Second*10, nil)))
+	// Add locking service (to prevent race conditions while claiming resources) before transactioner
+	// So that transaction is encapsulated by locking service to prevent transaction serialization issues
+	srv.Use(lock.NewLockRequestInterceptor(lock.NewLockingService(time.Minute, nil)))
 	srv.Use(entgql.Transactioner{
-		TxOpener: entgql.TxOpenerFunc(OpenAndExposeTx),
+		TxOpener: entgql.TxOpenerFunc(openAndExposeTx),
 	})
 
 	srv.SetErrorPresenter(errorPresenter(cfg.Logger))
