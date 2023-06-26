@@ -257,9 +257,9 @@ func (ipv4prefix *Ipv4Prefix) Invoke() (map[string]interface{}, error) {
 	if desiredSizeErr != nil || err != nil {
 		return nil, err
 	}
-	if desiredSize.(int) < 0 {
+	if desiredSize.(int) < 1 {
 		return nil, errors.New("Unable to allocate subnet from root prefix: " + rootPrefixStr +
-			". Desired size is invalid: " + strconv.Itoa(desiredSize.(int)) + ". Use values >= 2")
+			". Desired size is invalid: " + strconv.Itoa(desiredSize.(int)) + ". Use values >= 1")
 	}
 	newSubnetMask, newSubnetCapacity := calculateDesiredSubnetIpv4Mask(desiredSize.(int))
 

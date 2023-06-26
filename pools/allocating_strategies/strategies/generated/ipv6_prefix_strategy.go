@@ -148,14 +148,15 @@ func (ipv6Prefix *Ipv6Prefix) Invoke() (map[string]interface{}, error) {
 	if err != nil {
 		return nil, err
 	}
-	if desiredSize.Cmp(big.NewInt(2)) < 0 {
-		return nil, errors.New("Unable to allocate subnet from root prefix: " + rootPrefixStr +
-			". Desired size is invalid: " + desiredSize.String() + ". Use values >= 2")
-	}
 
 	if isSubnet.(bool) == true {
 		// reserve subnet address and broadcast
 		desiredSize.Add(desiredSize, big.NewInt(2))
+	}
+
+	if desiredSize.Cmp(big.NewInt(1)) < 0 {
+		return nil, errors.New("Unable to allocate subnet from root prefix: " + rootPrefixStr +
+			". Desired size is invalid: " + desiredSize.String() + ". Use values >= 1")
 	}
 
 	// Calculate smallest possible subnet mask to fit desiredSize
