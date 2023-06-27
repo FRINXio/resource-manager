@@ -6,6 +6,7 @@ import (
 	"github.com/pkg/errors"
 	"math/big"
 	"reflect"
+	"strconv"
 	"testing"
 )
 
@@ -381,5 +382,63 @@ func TestCorrectlyCalculatedIPv6NetworkAddressForErrorMsg(t *testing.T) {
 
 	if eq := reflect.DeepEqual(err.Error(), expectedErrorOutput.Error()); !eq {
 		t.Fatalf("different output of %s expected, got: %s", expectedErrorOutput, err)
+	}
+}
+
+func TestAllocationOfResourceWithDesiredSizeOfOneAndSubnetFalse(t *testing.T) {
+	resourcePool := map[string]interface{}{"prefix": 120, "address": "dead::be00", "subnet": false}
+	userInput := map[string]interface{}{"desiredSize": 1}
+	var allocated []map[string]interface{}
+	ipv6PrefixStruct := src.NewIpv6Prefix(allocated, resourcePool, userInput)
+	output, err := ipv6PrefixStruct.Invoke()
+	if eq := reflect.DeepEqual(err, nil); !eq {
+		t.Fatalf("different output of nil expected, got: %s", err)
+	}
+	if eq := reflect.DeepEqual(output, ipv6PrefixWithSubnet("dead::be00", 128, false)["Properties"]); !eq {
+		t.Fatalf("different output of %s expected, got: %s",
+			ipv6PrefixWithSubnet("dead::be00", 128, false)["Properties"], output)
+	}
+}
+
+func TestAllocationOfResourceWithDesiredSizeOfOneAndSubnetTrue(t *testing.T) {
+	resourcePool := map[string]interface{}{"prefix": 120, "address": "dead::be00", "subnet": true}
+	userInput := map[string]interface{}{"desiredSize": 1}
+	var allocated []map[string]interface{}
+	ipv6PrefixStruct := src.NewIpv6Prefix(allocated, resourcePool, userInput)
+	output, err := ipv6PrefixStruct.Invoke()
+	if eq := reflect.DeepEqual(err, nil); !eq {
+		t.Fatalf("different output of nil expected, got: %s", err)
+	}
+	if eq := reflect.DeepEqual(output, ipv6PrefixWithSubnet("dead::be00", 126, true)["Properties"]); !eq {
+		t.Fatalf("different output of %s expected, got: %s",
+			ipv6PrefixWithSubnet("dead::be00", 126, true)["Properties"], output)
+	}
+}
+
+func TestAllocationOfResourceWhenNegativeValueAndSubnetTrue(t *testing.T) {
+	resourcePool := map[string]interface{}{"prefix": 120, "address": "dead::be00", "subnet": true}
+	userInput := map[string]interface{}{"desiredSize": -1}
+	var allocated []map[string]interface{}
+	ipv6PrefixStruct := src.NewIpv6Prefix(allocated, resourcePool, userInput)
+	_, err := ipv6PrefixStruct.Invoke()
+	expectedError := errors.New("Unable to allocate subnet from root prefix: " + strconv.Itoa(120) +
+		". Desired size is invalid: " + strconv.Itoa(-1) + ". Use values >= 1")
+
+	if eq := reflect.DeepEqual(err.Error(), expectedError.Error()); eq {
+		t.Fatalf("Expected error to be: %s, got: %s", expectedError, err)
+	}
+}
+
+func TestAllocationOfResourceWhenZeroValueAndSubnetTrue(t *testing.T) {
+	resourcePool := map[string]interface{}{"prefix": 120, "address": "dead::be00", "subnet": true}
+	userInput := map[string]interface{}{"desiredSize": 0}
+	var allocated []map[string]interface{}
+	ipv6PrefixStruct := src.NewIpv6Prefix(allocated, resourcePool, userInput)
+	_, err := ipv6PrefixStruct.Invoke()
+	expectedError := errors.New("Unable to allocate subnet from root prefix: " + strconv.Itoa(120) +
+		". Desired size is invalid: " + strconv.Itoa(0) + ". Use values >= 1")
+
+	if eq := reflect.DeepEqual(err.Error(), expectedError.Error()); eq {
+		t.Fatalf("Expected error to be %s, got: %s", expectedError, err)
 	}
 }
