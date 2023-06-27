@@ -281,10 +281,62 @@ test('search resources by Optional<poolId> and altId', async (t) => {
         altId: "altId1",
     });
 
-    console.log(resources, resources2);
-
     t.equal(resources.edges.length, 6);
     t.equal(resources2.edges.length, 3);
+
+    await cleanup();
+    t.end();
+});
+
+test('Claim resource with desired size of 1 and subnet false', async (t) => {
+    const pool = await createIpv4PrefixRootPool("10.0.0.0", 24, false);
+
+    const resource = await claimResource(pool.id, {
+        desiredSize: 1,
+    });
+
+    t.equal(resource.Properties.address, "10.0.0.0");
+    t.equal(resource.Properties.prefix, 32);
+
+    await cleanup();
+    t.end();
+});
+
+test('Claim resource with desired size of 1 and subnet true', async (t) => {
+    const pool = await createIpv4PrefixRootPool("10.0.0.0", 24, true);
+
+    const resource = await claimResource(pool.id, {
+        desiredSize: 1,
+    });
+
+    t.equal(resource.Properties.address, "10.0.0.0");
+    t.equal(resource.Properties.prefix, 30);
+
+    await cleanup();
+    t.end();
+});
+
+test('Claim resource with desired size of -1 and subnet false', async (t) => {
+    const pool = await createIpv4PrefixRootPool("10.0.0.0", 24, false);
+
+    const resource = await claimResource(pool.id, {
+        desiredSize: -1,
+    });
+
+    t.notOk(resource);
+
+    await cleanup();
+    t.end();
+});
+
+test('Claim resource with desired size of 0 and subnet true', async (t) => {
+    const pool = await createIpv4PrefixRootPool("10.0.0.0", 24, true);
+
+    const resource = await claimResource(pool.id, {
+        desiredSize: 0,
+    });
+
+    t.notOk(resource);
 
     await cleanup();
     t.end();
