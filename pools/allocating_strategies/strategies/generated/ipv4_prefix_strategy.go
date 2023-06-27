@@ -234,7 +234,12 @@ func (ipv4prefix *Ipv4Prefix) Invoke() (map[string]interface{}, error) {
 			desSize, ok := desiredSize.(int)
 
 			if !ok {
-				return nil, gqlerror.Errorf("Unable to claim resource: usrInput.desiredSize was sent in bad format. Required format is int or string and was: %s", reflect.TypeOf(desiredSize))
+				return nil, gqlerror.Errorf("Unable to claim resource: userInput.desiredSize was sent in bad format. Required format is int or string and was: %s", reflect.TypeOf(desiredSize))
+			}
+
+			if desSize < 1 {
+				return nil, errors.New("Unable to allocate subnet from root prefix: " + rootPrefixStr +
+					". Desired size is invalid: " + strconv.Itoa(desSize) + ". Use values >= 1")
 			}
 
 			desiredSize = desSize + 2

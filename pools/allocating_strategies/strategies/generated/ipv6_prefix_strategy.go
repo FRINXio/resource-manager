@@ -149,15 +149,17 @@ func (ipv6Prefix *Ipv6Prefix) Invoke() (map[string]interface{}, error) {
 		return nil, err
 	}
 
+	if desiredSize.Cmp(big.NewInt(1)) < 0 {
+		return nil, errors.New("Unable to allocate subnet from root prefix: " + rootPrefixStr +
+			". Desired size is invalid: " + desiredSize.String() + ". Use values >= 1")
+	}
+
 	if isSubnet.(bool) == true {
 		// reserve subnet address and broadcast
 		desiredSize.Add(desiredSize, big.NewInt(2))
 	}
 
-	if desiredSize.Cmp(big.NewInt(1)) < 0 {
-		return nil, errors.New("Unable to allocate subnet from root prefix: " + rootPrefixStr +
-			". Desired size is invalid: " + desiredSize.String() + ". Use values >= 1")
-	}
+	fmt.Println("desiredSize: ", desiredSize.String())
 
 	// Calculate smallest possible subnet mask to fit desiredSize
 	newSubnetMask, newSubnetCapacity := calculateDesiredSubnetMask(desiredSize)
@@ -298,12 +300,12 @@ func (ipv6Prefix *Ipv6Prefix) Invoke() (map[string]interface{}, error) {
 func calculateDesiredSubnetMask(desiredSize *big.Int) (int, *big.Int) {
 	newSubnetBits := big.NewInt(1)
 	newSubnet := 1
-	for i := 1; i <= 128; i++ {
-		newSubnetBits.Mul(newSubnetBits, big.NewInt(2))
+	for i := 0; i <= 128; i++ {
 		if newSubnetBits.Cmp(desiredSize) >= 0 {
 			newSubnet = i
 			break
 		}
+		newSubnetBits.Mul(newSubnetBits, big.NewInt(2))
 	}
 	newSubnetMask := 128 - newSubnet
 	newSubnetCapacity := ipv6SubnetAddresses(newSubnetMask)

@@ -1,13 +1,67 @@
 import { claimResource, queryResource } from '../graphql-queries.js';
 import {
     cleanup,
-    createIpv4RootPool,
     createIpv6NestedPool,
-    createIpv6PrefixRootPool, createIpv6RootPool,
+    createIpv6PrefixRootPool,
     get2ChildrenIds
 } from '../test-helpers.js';
 import tap from 'tap';
 const test = tap.test;
+
+
+test('Claim resource with desired size of 1 and subnet false', async (t) => {
+    const poolId = await createIpv6PrefixRootPool("dead::", 64, false);
+
+    const resource = await claimResource(poolId, {
+        desiredSize: 1,
+    });
+
+    t.equal(resource.Properties.address, "dead::");
+    t.equal(resource.Properties.prefix, 128);
+
+    await cleanup();
+    t.end();
+});
+
+test('Claim resource with desired size of 1 and subnet true', async (t) => {
+    const poolId = await createIpv6PrefixRootPool("dead::", 64, true);
+
+    const resource = await claimResource(poolId, {
+        desiredSize: 1,
+    });
+
+    t.equal(resource.Properties.address, "dead::");
+    t.equal(resource.Properties.prefix, 126);
+
+    await cleanup();
+    t.end();
+});
+
+test('Claim resource with desired size of -1 and subnet false', async (t) => {
+    const poolId = await createIpv6PrefixRootPool("dead::", 64, false);
+
+    const resource = await claimResource(poolId, {
+        desiredSize: -1,
+    });
+
+    t.notOk(resource);
+
+    await cleanup();
+    t.end();
+});
+
+test('Claim resource with desired size of 0 and subnet true', async (t) => {
+    const poolId = await createIpv6PrefixRootPool("dead::", 64, true);
+
+    const resource = await claimResource(poolId, {
+        desiredSize: 0,
+    });
+
+    t.notOk(resource);
+
+    await cleanup();
+    t.end();
+});
 
 test('create ipv6 root pool', async (t) => {
     t.ok(await createIpv6PrefixRootPool());

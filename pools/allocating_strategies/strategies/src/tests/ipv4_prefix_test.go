@@ -562,3 +562,68 @@ func TestCapacityWhenSubnetTrue(t *testing.T) {
 		t.Fatalf("expected error to be nil, instead got: %s", err)
 	}
 }
+
+func TestCapacityOfOneWhenSubnetFalse(t *testing.T) {
+	var allocated []map[string]interface{}
+	var resourcePool = map[string]interface{}{"prefix": 24, "address": "10.0.0.0", "subnet": false}
+	var userInput = map[string]interface{}{"desiredSize": 1}
+
+	ipv4PrefixStruct := src.NewIpv4Prefix(allocated, resourcePool, userInput)
+	output, err := ipv4PrefixStruct.Invoke()
+	expectedOutput := map[string]interface{}{"prefix": 32, "address": "10.0.0.0", "subnet": false}
+
+	if eq := reflect.DeepEqual(output, expectedOutput); !eq {
+		t.Fatalf("different output of %s expected, got: %s", expectedOutput, output)
+	}
+
+	if eq := reflect.DeepEqual(err, nil); !eq {
+		t.Fatalf("expected error to be nil, instead got: %s", err)
+	}
+}
+
+func TestCapacityOf4WhenSubnetTrue(t *testing.T) {
+	var allocated []map[string]interface{}
+	var resourcePool = map[string]interface{}{"prefix": 24, "address": "10.0.0.0", "subnet": true}
+	var userInput = map[string]interface{}{"desiredSize": 1}
+
+	ipv4PrefixStruct := src.NewIpv4Prefix(allocated, resourcePool, userInput)
+	output, err := ipv4PrefixStruct.Invoke()
+
+	expectedOutput := map[string]interface{}{"prefix": 30, "address": "10.0.0.0", "subnet": true}
+
+	if eq := reflect.DeepEqual(output, expectedOutput); !eq {
+		t.Fatalf("different output of %s expected, got: %s", expectedOutput, output)
+	}
+
+	if eq := reflect.DeepEqual(err, nil); !eq {
+		t.Fatalf("expected error to be nil, instead got: %s", err)
+	}
+}
+
+func TestAllocationWhenNegativeDesiredSizeAndSubnetTrue(t *testing.T) {
+	var allocated []map[string]interface{}
+	var resourcePool = map[string]interface{}{"prefix": 24, "address": "10.0.0.0", "subnet": true}
+	var userInput = map[string]interface{}{"desiredSize": -1}
+
+	ipv4PrefixStruct := src.NewIpv4Prefix(allocated, resourcePool, userInput)
+	_, err := ipv4PrefixStruct.Invoke()
+	expectedError := errors.New("Unable to allocate subnet from root prefix: 10.0.0.0/24. Desired size is invalid: " + strconv.Itoa(-1) + ". Use values >= 1")
+
+	if eq := reflect.DeepEqual(err.Error(), expectedError.Error()); !eq {
+		t.Fatalf("expected error to be: %s , instead got: %s", expectedError, err)
+	}
+}
+
+func TestAllocationWhenZeroDesiredSizeAndSubnetTrue(t *testing.T) {
+	var allocated []map[string]interface{}
+	var resourcePool = map[string]interface{}{"prefix": 24, "address": "10.0.0.0", "subnet": true}
+	var userInput = map[string]interface{}{"desiredSize": 0}
+
+	ipv4PrefixStruct := src.NewIpv4Prefix(allocated, resourcePool, userInput)
+	_, err := ipv4PrefixStruct.Invoke()
+	expectedError := errors.New("Unable to allocate subnet from root prefix: 10.0.0.0/24. Desired size is invalid: " + strconv.Itoa(0) + ". Use values >= 1")
+
+	if eq := reflect.DeepEqual(err.Error(), expectedError.Error()); !eq {
+		t.Fatalf("expected error to be: %s , instead got: %s", expectedError, err)
+	}
+}
