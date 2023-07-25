@@ -1,68 +1,68 @@
 package src
 
 import (
-	"context"
 	"encoding/json"
-	"entgo.io/ent/dialect/sql"
 	"fmt"
-	"github.com/net-auto/resourceManager/ent"
-	log "github.com/net-auto/resourceManager/logging"
 	"github.com/pkg/errors"
 	"strconv"
 	"strings"
 )
 
 type UniqueId struct {
-	ctx                    context.Context
-	resourcePoolID         int
+	currentResources       []map[string]interface{}
 	resourcePoolProperties map[string]interface{}
 	userInput              map[string]interface{}
 }
 
-func NewUniqueId(ctx context.Context,
-	resourcePoolID int,
+func NewUniqueId(
+	currentResources []map[string]interface{},
 	resourcePoolProperties map[string]interface{},
 	userInput map[string]interface{}) UniqueId {
-	return UniqueId{ctx, resourcePoolID, resourcePoolProperties, userInput}
+	return UniqueId{currentResources, resourcePoolProperties, userInput}
 }
 
-func (uniqueId *UniqueId) getNextFreeCounter(poolId int, fromValue int, toValue int, desiredValue int,
-	ctx context.Context) (int, error) {
+func (uniqueId *UniqueId) getNextFreeCounter(fromValue int, toValue int, desiredValue int, allocatedResources []map[string]interface{}) (int, error) {
+	if desiredValue != -1 {
+		if desiredValue >= fromValue && desiredValue <= toValue {
+			for _, allocResource := range allocatedResources {
+				counter, ok := allocResource["counter"]
 
-	transaction := ctx.Value(ent.TxCtxKey{})
-	if transaction == nil {
-		log.Error(ctx, nil, "Unable retrieve already opened transaction for pool with ID: %d", poolId)
-		return -1, errors.Wrapf(nil, "Unable retrieve already opened transaction for pool with ID: %d", poolId)
+				if !ok {
+					continue
+				}
+
+				if counter == desiredValue {
+					return -1, errors.New("desiredValue is already allocated")
+				}
+			}
+
+			return desiredValue, nil
+		} else {
+			return -1, errors.New("desiredValue is not in range")
+		}
 	}
-	tx := transaction.(*ent.Tx)
-	if desiredValue >= 0 {
-		query := "SELECT properties.int_val FROM properties JOIN resources " +
-			"ON properties.resource_properties = resources.id WHERE " +
-			"resources.resource_pool_claims = " + strconv.Itoa(poolId) +
-			" AND properties.int_val = " + strconv.Itoa(desiredValue) + ";"
-		valueExist, value, err := selectValueFromDB(ctx, tx, query)
-		if err != nil {
-			return 0, err
+
+	for i := fromValue; i <= toValue; i++ {
+		isAllocated := false
+		for _, allocResource := range allocatedResources {
+			counter, ok := allocResource["counter"]
+
+			if !ok {
+				continue
+			}
+
+			if counter == i {
+				isAllocated = true
+				break
+			}
 		}
-		if valueExist == true {
-			return 0, errors.New("Unique-id " + strconv.Itoa(int(value)) + " was already claimed.")
+
+		if !isAllocated {
+			return i, nil
 		}
-		return desiredValue, nil
-	} else {
-		query := "WITH t as (SELECT generate_series(" + strconv.Itoa(fromValue) + ", " + strconv.Itoa(toValue) +
-			") AS N) SELECT n FROM t LEFT OUTER JOIN ( SELECT properties.int_val FROM properties " +
-			"JOIN resources ON properties.resource_properties = resources.id " +
-			"WHERE resources.resource_pool_claims = " + strconv.Itoa(poolId) + ") AS pr " +
-			"ON n = pr.int_val WHERE pr.int_val IS null LIMIT 1;"
-		valueExist, value, err := selectValueFromDB(ctx, tx, query)
-		if err != nil {
-			return 0, err
-		}
-		if valueExist == true {
-			return int(value), nil
-		}
-		return 0, errors.New("Unique-id pool " + strconv.Itoa(poolId) + " is full.")
 	}
+
+	return -1, nil
 }
 
 func (uniqueId *UniqueId) Invoke() (map[string]interface{}, error) {
@@ -75,8 +75,7 @@ func (uniqueId *UniqueId) Invoke() (map[string]interface{}, error) {
 		resourcePoolfromValue, _ := NumberToInt(resourcePoolfromValue)
 		fromValue = resourcePoolfromValue.(int)
 	} else {
-		return nil, errors.New("Missing property 'from' in resource pool " +
-			strconv.Itoa(uniqueId.resourcePoolID) + " UniqueId")
+		return nil, errors.New("Missing property 'from' in resource pool.")
 	}
 
 	idFormat, ok := uniqueId.resourcePoolProperties["idFormat"]
@@ -93,8 +92,7 @@ func (uniqueId *UniqueId) Invoke() (map[string]interface{}, error) {
 		resourcePooltoValue, _ := NumberToInt(resourcePooltoValue)
 		toValue = uint(resourcePooltoValue.(int))
 	} else {
-		return nil, errors.New("Missing property 'to' in resource pool " +
-			strconv.Itoa(uniqueId.resourcePoolID) + " UniqueId")
+		return nil, errors.New("Missing property 'to' in resource pool.")
 	}
 
 	replacePoolProperties := make(map[string]interface{})
@@ -117,8 +115,7 @@ func (uniqueId *UniqueId) Invoke() (map[string]interface{}, error) {
 		}
 	}
 
-	nextFreeCounter, err := uniqueId.getNextFreeCounter(uniqueId.resourcePoolID, fromValue, resourcePooltoValue.(int),
-		desiredValue, uniqueId.ctx)
+	nextFreeCounter, err := uniqueId.getNextFreeCounter(fromValue, int(toValue), desiredValue, uniqueId.currentResources)
 	if err != nil {
 		return nil, err
 	}
@@ -153,70 +150,40 @@ func (uniqueId *UniqueId) Invoke() (map[string]interface{}, error) {
 }
 
 func (uniqueId *UniqueId) Capacity() (map[string]interface{}, error) {
-	ctx := uniqueId.ctx
-
-	transaction := ctx.Value(ent.TxCtxKey{})
-	if transaction == nil {
-		log.Error(ctx, nil, "Unable retrieve already opened transaction for pool with ID: %d", 1)
-		return nil, errors.Wrapf(nil, "Unable retrieve already opened transaction for pool with ID: %d", 1)
-	}
-	tx := transaction.(*ent.Tx)
-
 	var result = make(map[string]interface{})
-	var fromValue float64
-	var toValue float64
-	to, ok := uniqueId.resourcePoolProperties["to"]
-	if ok {
-		toValue = float64(to.(int))
-	} else {
-		toValue = float64(^uint(0) >> 1)
-	}
-	from, ok := uniqueId.resourcePoolProperties["from"]
-	if ok {
-		fromValue = float64(from.(int))
-	} else {
-		fromValue = float64(0)
-	}
-	query := "SELECT COUNT(properties.int_val) FROM properties JOIN resources " +
-		"ON properties.resource_properties = resources.id WHERE resources.resource_pool_claims = " +
-		strconv.Itoa(uniqueId.resourcePoolID) + " AND properties.int_val IS NOT null;"
-	valueExist, value, err := selectValueFromDB(ctx, tx, query)
-	if err != nil {
-		return nil, err
-	}
-	if valueExist == true {
-		freeCapacity := toValue - float64(value) - fromValue + 1
-		result["freeCapacity"] = fmt.Sprintf("%v", freeCapacity)
-		result["utilizedCapacity"] = strconv.Itoa(int(value))
-	}
-	return result, nil
-}
 
-func selectValueFromDB(ctx context.Context, tx *ent.Tx, query string) (valueExist bool, resultValue int64, error error) {
-	rows := &sql.Rows{}
-	var args []interface{}
-	err := tx.UnderlyingTx().Query(ctx, query, args, rows)
-	if err != nil {
-		log.Error(ctx, err, "Error while executing query: %v", err)
-		return false, 0, err
+	if uniqueId.resourcePoolProperties == nil {
+		return nil, errors.New("Unable to extract resource pool properties")
 	}
-	defer rows.Close()
 
-	type value struct {
-		intValue sql.NullInt64
+	var fromValue = 0
+	resourcePoolfromValue, ok := uniqueId.resourcePoolProperties["from"]
+
+	if ok {
+		resourcePoolFromValue, _ := NumberToInt(resourcePoolfromValue)
+		fromValue = resourcePoolFromValue.(int)
+	} else {
+		return nil, errors.New("Missing property 'from' in resource pool.")
 	}
-	var result value
-	for rows.Next() {
-		err = rows.Scan(&result.intValue)
+
+	var toValue = int(^uint(0) >> 1) // max int
+	resourcePoolToValue, ok := uniqueId.resourcePoolProperties["to"]
+
+	if ok {
+		resourcePoolToValueInt, err := NumberToInt(resourcePoolToValue)
+
 		if err != nil {
-			log.Error(ctx, err, "Error while scanning results: %v", err)
-			return false, 0, err
+			return nil, errors.New("Unable to convert toValue to int")
 		}
+
+		toValue = resourcePoolToValueInt.(int)
+
+		result["utilizedCapacity"] = len(uniqueId.currentResources)
+		result["freeCapacity"] = toValue - fromValue - len(uniqueId.currentResources)
+	} else {
+		result["utilizedCapacity"] = len(uniqueId.currentResources)
+		result["freeCapacity"] = toValue - fromValue - len(uniqueId.currentResources)
 	}
 
-	if err != nil {
-		log.Error(ctx, err, "Failed to execute query: %v", err)
-		return false, 0, err
-	}
-	return result.intValue.Valid, result.intValue.Int64, err
+	return result, nil
 }

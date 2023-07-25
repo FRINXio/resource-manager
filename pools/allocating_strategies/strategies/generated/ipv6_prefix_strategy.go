@@ -159,8 +159,6 @@ func (ipv6Prefix *Ipv6Prefix) Invoke() (map[string]interface{}, error) {
 		desiredSize.Add(desiredSize, big.NewInt(2))
 	}
 
-	fmt.Println("desiredSize: ", desiredSize.String())
-
 	// Calculate smallest possible subnet mask to fit desiredSize
 	newSubnetMask, newSubnetCapacity := calculateDesiredSubnetMask(desiredSize)
 

@@ -187,7 +187,7 @@ func invokeGo(
 		vlan := strategies.NewVlan(currentResourcesArray, poolPropertiesMaps, userInput)
 		goStrategy = &vlan
 	case "unique_id":
-		id := strategies.NewUniqueId(ctx, resourcePool.ResourcePoolID, poolPropertiesMaps, userInput)
+		id := strategies.NewUniqueId(currentResourcesArray, poolPropertiesMaps, userInput)
 		goStrategy = &id
 	case "ipv4":
 		// TODO: Pass currentResourcesArray as pointer
