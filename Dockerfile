@@ -20,6 +20,7 @@ RUN ./build.sh
 
 # final image:
 FROM golang:1.18.6-buster
+LABEL org.opencontainers.image.source="https://github.com/FRINXio/resource-manager"
 ARG RM_LOG_FILE=rm.log
 WORKDIR /resMgr
 
