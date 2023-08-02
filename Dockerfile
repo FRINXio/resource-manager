@@ -20,8 +20,12 @@ RUN ./build.sh
 
 # final image:
 FROM golang:1.18.6-buster
-LABEL org.opencontainers.image.source="https://github.com/FRINXio/resource-manager"
+
 ARG RM_LOG_FILE=rm.log
+ARG git_commit=unspecified
+LABEL git_commit="${git_commit}"
+LABEL org.opencontainers.image.source="https://github.com/FRINXio/resource-manager"
+
 WORKDIR /resMgr
 
 # Add log rotation
