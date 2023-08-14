@@ -161,8 +161,6 @@ func (uniqueId *UniqueId) Capacity() (map[string]interface{}, error) {
 		return nil, errors.Wrapf(nil, "Unable retrieve already opened transaction for pool with ID: %d", 1)
 	}
 	tx := transaction.(*ent.Tx)
-	// transaction need to be commited so that we will not block other transactions in pipeline
-	defer tx.Commit()
 
 	var result = make(map[string]interface{})
 	var fromValue float64

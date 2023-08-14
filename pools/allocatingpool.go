@@ -221,6 +221,7 @@ func (pool AllocatingPool) Capacity() (string, string, error) {
 			return "0", "0", errors.Wrapf(err, "Unable to open new read transaction for pool %d", pool.ID)
 		}
 		pool.ctx = context.WithValue(pool.ctx, ent.TxCtxKey{}, tx)
+		defer tx.Commit()
 	}
 
 	var emptyMap = map[string]interface{}{}
