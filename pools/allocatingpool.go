@@ -206,6 +206,12 @@ func (pool AllocatingPool) Capacity() (string, string, error) {
 			return "0", "0", errors.Wrapf(err, "Unable to open new read transaction for pool %d", pool.ID)
 		}
 		pool.ctx = context.WithValue(pool.ctx, ent.TxCtxKey{}, tx)
+		defer func(tx *ent.Tx) {
+			err := tx.Commit()
+			if err != nil {
+				log.Error(pool.ctx, err, "Unable to commit read transaction for pool %d", pool.ID)
+			}
+		}(tx)
 	}
 
 	ps, err := pool.PoolProperties()
