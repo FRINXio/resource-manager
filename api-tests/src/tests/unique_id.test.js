@@ -76,7 +76,7 @@ test('test loading multiple unique id pools', async (t) => {
     }
 
     const pools = await getAllPoolsByTypeOrTag();
-    t.equal(pools.edges.length, 100);
+    t.equal(pools.length, 100);
 
     await cleanup();
     t.end();
