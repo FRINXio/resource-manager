@@ -191,6 +191,21 @@ func (pool AllocatingPool) Capacity() (string, string, error) {
 	}
 	var currentResources []*model.ResourceInput
 
+	ps, err := pool.PoolProperties()
+
+	if err != nil {
+		log.Error(pool.ctx, err, "Unable to load resources for pool %d", pool.ID)
+		return "0", "0", errors.Wrapf(err,
+			"Unable to get properties from pool #%d, resource type loading error ", pool.ID)
+	}
+
+	propMap, propErr := convertProperties(ps)
+
+	if propErr != nil {
+		log.Error(pool.ctx, propErr, "Unable to convert value from property")
+		return "0", "0", errors.Wrapf(propErr, "Unable to convert value from property")
+	}
+
 	if !manualSqlExecutionStrategies[strat.Name] {
 		currentResources, err = getFullListOfResources(pool)
 		if err != nil {
@@ -212,21 +227,6 @@ func (pool AllocatingPool) Capacity() (string, string, error) {
 				log.Error(pool.ctx, err, "Unable to commit read transaction for pool %d", pool.ID)
 			}
 		}(tx)
-	}
-
-	ps, err := pool.PoolProperties()
-
-	if err != nil {
-		log.Error(pool.ctx, err, "Unable to load resources for pool %d", pool.ID)
-		return "0", "0", errors.Wrapf(err,
-			"Unable to get properties from pool #%d, resource type loading error ", pool.ID)
-	}
-
-	propMap, propErr := convertProperties(ps)
-
-	if propErr != nil {
-		log.Error(pool.ctx, propErr, "Unable to convert value from property")
-		return "0", "0", errors.Wrapf(propErr, "Unable to convert value from property")
 	}
 
 	var emptyMap = map[string]interface{}{}
