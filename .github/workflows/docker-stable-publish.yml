@@ -1,0 +1,123 @@
+name: Docker Stable Publish
+
+on:
+  workflow_dispatch:
+  push:
+    # Publish `stable-1.0.x` as Docker `RM without pagination` image.
+    branches:
+      - stable-1.0.x
+
+    # Publish `v1.2.3` tags as releases.
+    tags:
+      - v*
+
+  # Run tests for any PRs.
+  pull_request:
+
+env:
+  IMAGE_NAME: frinx/resource-manager
+jobs:
+  unit-test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v2
+      - uses: actions/setup-go@v3
+        with:
+          go-version: '1.18.6'
+      - name: Run unit tests
+        run: |
+          export GITHUB_TOKEN_EXTERNAL=${{ secrets.TOKEN }}
+          ./unit-test.sh
+
+  integration-test:
+    # Ensure unit-test job passes before pushing image.
+    needs: unit-test
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v2
+        with:
+          fetch-depth: 0
+      - uses: actions/setup-go@v3
+        with:
+          go-version: '1.18.6'
+      - name: Build image
+        run: docker build --build-arg GITHUB_TOKEN_EXTERNAL_DOCKERFILE=${{ secrets.TOKEN }} . --file Dockerfile-testing --tag ${IMAGE_NAME}-testing
+      - name: Run integration-test
+        run: ./integration-test.sh
+
+  api-test:
+    # Ensure unit-test job passes before pushing image.
+    needs: unit-test
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v2
+        with:
+          fetch-depth: 0
+      - uses: actions/setup-node@v2-beta
+        with:
+          node-version: 16
+      - run: npm install -g yarn
+      - name: Build image
+        run: docker build --build-arg GITHUB_TOKEN_EXTERNAL_DOCKERFILE=${{ secrets.TOKEN }} . --file Dockerfile --tag $IMAGE_NAME
+      - name: Run api-tests
+        run: api-tests/test.sh yarn test
+
+  push:
+    # Ensure unit-test job passes before pushing image.
+    # FIXME depend on integration-test
+    needs: unit-test
+    runs-on: ubuntu-latest
+    if: github.event_name == 'push'
+    steps:
+      - uses: actions/checkout@v2
+        with:
+          fetch-depth: 0
+      - name: Build image
+        run: docker build --build-arg GITHUB_TOKEN_EXTERNAL_DOCKERFILE=${{ secrets.TOKEN }} . --file Dockerfile --tag $IMAGE_NAME
+      - name: Log into docker hub
+        run: echo "${{ secrets.DOCKER_HUB_PASSWORD }}" | docker login -u ${{ secrets.DOCKER_HUB_USERNAME }} --password-stdin
+      - name: Push image
+        run: |
+          IMAGE_ID=$IMAGE_NAME
+          # Change all uppercase to lowercase
+          IMAGE_ID=$(echo $IMAGE_ID | tr '[A-Z]' '[a-z]')
+          # Strip git ref prefix from version
+          VERSION=$(echo "${{ github.ref }}" | sed -e 's,.*/\(.*\),\1,')
+          # Strip "v" prefix from tag name
+          [[ "${{ github.ref }}" == "refs/tags/"* ]] && VERSION=$(echo $VERSION | sed -e 's/^v//')
+          # Use Docker `latest` tag convention
+          [ "$VERSION" == "master" ] && VERSION=latest
+          echo IMAGE_ID=$IMAGE_ID
+          echo VERSION=$VERSION
+          docker tag $IMAGE_NAME $IMAGE_ID:$VERSION
+          docker push $IMAGE_ID:$VERSION
+          # Add latest tag if we are on master and github.ref points to a tag
+          if [[ "${{ github.ref }}" == "refs/tags/"* ]]; then
+            MASTER=$(git show-ref --hash origin/master)
+            echo "master: $MASTER"
+            HEAD=$(git rev-parse HEAD)
+            echo "head: $HEAD"
+            echo "github.ref ${{ github.ref }}"
+            if [[ $MASTER == $HEAD ]]; then
+              VERSION=latest
+              echo VERSION=$VERSION
+              docker tag $IMAGE_NAME $IMAGE_ID:$VERSION
+              docker push $IMAGE_ID:$VERSION
+            fi
+          fi
+
+  bench:
+    # Ensure benchmarks are not broken.
+    # Runs after push, so only on master to avoid slowing down PR checks.
+    needs: push
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v2
+        with:
+          fetch-depth: 0
+      - uses: actions/setup-node@v2-beta
+        with:
+          node-version: 16
+      - run: npm install -g yarn
+      - name: Run benchmarks
+        run: api-tests/test.sh yarn bench
