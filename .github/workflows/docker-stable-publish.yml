@@ -5,7 +5,7 @@ on:
   push:
     # Publish `stable-1.0.x` as Docker `RM without pagination` image.
     branches:
-      - stable-1.0.x
+      - stable-1.0.X
 
     # Publish `v1.2.3` tags as releases.
     tags:
