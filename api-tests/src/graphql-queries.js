@@ -871,6 +871,10 @@ export async function getAllPoolsByTypeOrTag(resourceTypeId, tags) {
                         id
                         Name
                     }
+                    Capacity {
+                        utilizedCapacity
+                        freeCapacity
+                    }
                     Resources{
                         id
                         Properties

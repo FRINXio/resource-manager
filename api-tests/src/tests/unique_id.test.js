@@ -1,4 +1,4 @@
-import { claimResource, deleteResourcePool, getCapacityForPool } from '../graphql-queries.js';
+import {claimResource, deleteResourcePool, getAllPoolsByTypeOrTag, getCapacityForPool} from '../graphql-queries.js';
 import { cleanup, createUniqueIdPool } from '../test-helpers.js';
 
 import tap from 'tap';
@@ -67,5 +67,17 @@ test('unique_id pool capacity', async (t) => {
     t.notOk(resource16)
 
     await cleanup()
+    t.end();
+});
+
+test('test loading multiple unique id pools', async (t) => {
+    for (let i = 1; i <= 100; i++) {
+        await createUniqueIdPool();
+    }
+
+    const pools = await getAllPoolsByTypeOrTag();
+    t.equal(pools.length, 100);
+
+    await cleanup();
     t.end();
 });

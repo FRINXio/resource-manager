@@ -7,7 +7,6 @@ import (
 	"math/big"
 	"regexp"
 	"strconv"
-	"time"
 )
 
 type Vlan struct {
@@ -64,7 +63,6 @@ func NumberToInt(number interface{}) (interface{}, error) {
 }
 
 func (vlan *Vlan) Invoke() (map[string]interface{}, error) {
-	time.Sleep(5 * time.Second)
 	if vlan.resourcePoolProperties == nil {
 		return nil, errors.New("Unable to extract parent vlan range from pool name")
 	}
