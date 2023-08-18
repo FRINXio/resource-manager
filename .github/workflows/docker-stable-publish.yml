@@ -90,7 +90,7 @@ jobs:
           [ "$VERSION" == "${IMAGE_TAG}" ] && VERSION=${IMAGE_TAG}
           echo IMAGE_ID=$IMAGE_ID
           echo VERSION=$VERSION
-          docker tag $IMAGE_NAME $IMAGE_ID:$VERSION
+          docker tag $IMAGE_NAME:$IMAGE_TAG $IMAGE_ID:$VERSION
           docker push $IMAGE_ID:$VERSION
           # Add latest tag if we are on master and github.ref points to a tag
           if [[ "${{ github.ref }}" == "refs/tags/"* ]]; then
