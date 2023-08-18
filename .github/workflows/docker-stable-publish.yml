@@ -102,7 +102,7 @@ jobs:
             if [[ $MASTER == $HEAD ]]; then
               VERSION=${IMAGE_TAG}
               echo VERSION=$VERSION
-              docker tag $IMAGE_NAME $IMAGE_ID:$VERSION
+              docker tag $IMAGE_NAME:$IMAGE_TAG $IMAGE_ID:$VERSION
               docker push $IMAGE_ID:$VERSION
             fi
           fi
