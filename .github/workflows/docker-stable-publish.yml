@@ -9,13 +9,14 @@ on:
 
     # Publish `v1.2.3` tags as releases.
     tags:
-      - v*
+      - v1*
 
   # Run tests for any PRs.
   pull_request:
 
 env:
   IMAGE_NAME: frinx/resource-manager
+  IMAGE_TAG: stable-1.0.X
 jobs:
   unit-test:
     runs-on: ubuntu-latest
@@ -73,7 +74,7 @@ jobs:
         with:
           fetch-depth: 0
       - name: Build image
-        run: docker build --build-arg GITHUB_TOKEN_EXTERNAL_DOCKERFILE=${{ secrets.TOKEN }} . --file Dockerfile --tag $IMAGE_NAME
+        run: docker build --build-arg GITHUB_TOKEN_EXTERNAL_DOCKERFILE=${{ secrets.TOKEN }} . --file Dockerfile --tag $IMAGE_NAME:$IMAGE_TAG
       - name: Log into docker hub
         run: echo "${{ secrets.DOCKER_HUB_PASSWORD }}" | docker login -u ${{ secrets.DOCKER_HUB_USERNAME }} --password-stdin
       - name: Push image
@@ -85,21 +86,21 @@ jobs:
           VERSION=$(echo "${{ github.ref }}" | sed -e 's,.*/\(.*\),\1,')
           # Strip "v" prefix from tag name
           [[ "${{ github.ref }}" == "refs/tags/"* ]] && VERSION=$(echo $VERSION | sed -e 's/^v//')
-          # Use Docker `latest` tag convention
-          [ "$VERSION" == "master" ] && VERSION=latest
+          # Use Docker `stable-1.0.X` tag convention
+          [ "$VERSION" == "${IMAGE_TAG}" ] && VERSION=${IMAGE_TAG}
           echo IMAGE_ID=$IMAGE_ID
           echo VERSION=$VERSION
           docker tag $IMAGE_NAME $IMAGE_ID:$VERSION
           docker push $IMAGE_ID:$VERSION
           # Add latest tag if we are on master and github.ref points to a tag
           if [[ "${{ github.ref }}" == "refs/tags/"* ]]; then
-            MASTER=$(git show-ref --hash origin/master)
-            echo "master: $MASTER"
+            STABLE=$(git show-ref --hash origin/${IMAGE_TAG})
+            echo "stable: $STABLE"
             HEAD=$(git rev-parse HEAD)
             echo "head: $HEAD"
             echo "github.ref ${{ github.ref }}"
             if [[ $MASTER == $HEAD ]]; then
-              VERSION=latest
+              VERSION=${IMAGE_TAG}
               echo VERSION=$VERSION
               docker tag $IMAGE_NAME $IMAGE_ID:$VERSION
               docker push $IMAGE_ID:$VERSION
