@@ -800,7 +800,7 @@ func (r *queryResolver) QueryResourcePool(ctx context.Context, poolID int) (*ent
 }
 
 // QueryEmptyResourcePools is the resolver for the QueryEmptyResourcePools field.
-func (r *queryResolver) QueryEmptyResourcePools(ctx context.Context, resourceTypeID *int, first *int, last *int, before *ent.Cursor, after *ent.Cursor) (*ent.ResourcePoolConnection, error) {
+func (r *queryResolver) QueryEmptyResourcePools(ctx context.Context, resourceTypeID *int, first *int, last *int, before *ent.Cursor, after *ent.Cursor, sortBy *model.SortResourcePoolsInput) (*ent.ResourcePoolConnection, error) {
 	client := r.ClientFrom(ctx)
 	query := client.ResourcePool.Query()
 
@@ -808,6 +808,10 @@ func (r *queryResolver) QueryEmptyResourcePools(ctx context.Context, resourceTyp
 		query.Where(resourcePool.HasResourceTypeWith(resourcetype.ID(*resourceTypeID))).Where(resourcePool.Not(resourcePool.HasClaims()))
 	} else {
 		query.Where(resourcePool.Not(resourcePool.HasClaims()))
+	}
+
+	if sortBy != nil {
+		query = orderResourcePool(sortBy, query)
 	}
 
 	if resourcePools, err := query.Paginate(ctx, after, first, before, last); err != nil {
@@ -819,7 +823,7 @@ func (r *queryResolver) QueryEmptyResourcePools(ctx context.Context, resourceTyp
 }
 
 // QueryResourcePools is the resolver for the QueryResourcePools field.
-func (r *queryResolver) QueryResourcePools(ctx context.Context, resourceTypeID *int, tags *model.TagOr, first *int, last *int, before *ent.Cursor, after *ent.Cursor, filterByResources map[string]interface{}) (*ent.ResourcePoolConnection, error) {
+func (r *queryResolver) QueryResourcePools(ctx context.Context, resourceTypeID *int, tags *model.TagOr, first *int, last *int, before *ent.Cursor, after *ent.Cursor, filterByResources map[string]interface{}, sortBy *model.SortResourcePoolsInput) (*ent.ResourcePoolConnection, error) {
 	client := r.ClientFrom(ctx)
 	query := client.ResourcePool.Query()
 
@@ -841,6 +845,10 @@ func (r *queryResolver) QueryResourcePools(ctx context.Context, resourceTypeID *
 	if tags != nil {
 		// TODO make sure all tags exist
 		query.Where(resourcePoolTagPredicate(tags))
+	}
+
+	if sortBy != nil {
+		query = orderResourcePool(sortBy, query)
 	}
 
 	if resourcePools, err := query.Paginate(ctx, after, first, before, last); err != nil {
@@ -923,7 +931,7 @@ func (r *queryResolver) QueryResourcePoolHierarchyPath(ctx context.Context, pool
 }
 
 // QueryRootResourcePools is the resolver for the QueryRootResourcePools field.
-func (r *queryResolver) QueryRootResourcePools(ctx context.Context, resourceTypeID *int, tags *model.TagOr, first *int, last *int, before *ent.Cursor, after *ent.Cursor, filterByResources map[string]interface{}) (*ent.ResourcePoolConnection, error) {
+func (r *queryResolver) QueryRootResourcePools(ctx context.Context, resourceTypeID *int, tags *model.TagOr, first *int, last *int, before *ent.Cursor, after *ent.Cursor, filterByResources map[string]interface{}, sortBy *model.SortResourcePoolsInput) (*ent.ResourcePoolConnection, error) {
 	client := r.ClientFrom(ctx)
 	query := client.ResourcePool.
 		Query().
@@ -949,6 +957,10 @@ func (r *queryResolver) QueryRootResourcePools(ctx context.Context, resourceType
 		query.Where(resourcePoolTagPredicate(tags))
 	}
 
+	if sortBy != nil {
+		query = orderResourcePool(sortBy, query)
+	}
+
 	if resourcePools, err := query.Paginate(ctx, after, first, before, last); err != nil {
 		log.Error(ctx, err, "Unable to retrieve root resource pools")
 		return nil, gqlerror.Errorf("Unable to query resource pools: %v", err)
@@ -958,7 +970,7 @@ func (r *queryResolver) QueryRootResourcePools(ctx context.Context, resourceType
 }
 
 // QueryLeafResourcePools is the resolver for the QueryLeafResourcePools field.
-func (r *queryResolver) QueryLeafResourcePools(ctx context.Context, resourceTypeID *int, tags *model.TagOr, first *int, last *int, before *ent.Cursor, after *ent.Cursor, filterByResources map[string]interface{}) (*ent.ResourcePoolConnection, error) {
+func (r *queryResolver) QueryLeafResourcePools(ctx context.Context, resourceTypeID *int, tags *model.TagOr, first *int, last *int, before *ent.Cursor, after *ent.Cursor, filterByResources map[string]interface{}, sortBy *model.SortResourcePoolsInput) (*ent.ResourcePoolConnection, error) {
 	client := r.ClientFrom(ctx)
 	query := client.ResourcePool.
 		Query().
@@ -983,6 +995,10 @@ func (r *queryResolver) QueryLeafResourcePools(ctx context.Context, resourceType
 	if tags != nil {
 		// TODO make sure all tags exist
 		query.Where(resourcePoolTagPredicate(tags))
+	}
+
+	if sortBy != nil {
+		query = orderResourcePool(sortBy, query)
 	}
 
 	if resourcePools, err := query.Paginate(ctx, after, first, before, last); err != nil {
