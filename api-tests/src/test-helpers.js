@@ -115,11 +115,26 @@ export async function createIpv6NestedPool(parentResourceId) {
         parentResourceId);
 }
 
-export async function createIpv4PrefixRootPool(address = "10.0.0.0", prefix = 8, subnet = false) {
+export async function createIpv4PrefixRootPool(address = "10.0.0.0", prefix = 8, subnet = false, dealocationSafetyPeriod = 0) {
     let resourceTypeId = await findResourceTypeId('ipv4_prefix');
     let strategyId = await findAllocationStrategyId('ipv4_prefix');
     return await createAllocationPool(
         getUniqueName('ipv4-root'),
+        resourceTypeId,
+        strategyId,
+        {prefix: "int", address: "string", subnet: "bool"},
+        {prefix: prefix, address: address, subnet: subnet},
+        null,
+        false,
+        dealocationSafetyPeriod
+    );
+}
+
+export async function createIpv4PrefixRootPoolWithName(name, address = "10.0.0.0", prefix = 8, subnet = false) {
+    let resourceTypeId = await findResourceTypeId('ipv4_prefix');
+    let strategyId = await findAllocationStrategyId('ipv4_prefix');
+    return await createAllocationPool(
+        getUniqueName(name),
         resourceTypeId,
         strategyId,
         {prefix: "int", address: "string", subnet: "bool"},

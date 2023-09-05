@@ -305,18 +305,18 @@ func (e SortDirection) MarshalGQL(w io.Writer) {
 type SortResourcePoolsBy string
 
 const (
-	SortResourcePoolsByName                     SortResourcePoolsBy = "name"
-	SortResourcePoolsByDeallocationSafetyPeriod SortResourcePoolsBy = "deallocationSafetyPeriod"
+	SortResourcePoolsByName                    SortResourcePoolsBy = "name"
+	SortResourcePoolsByDealocationSafetyPeriod SortResourcePoolsBy = "dealocationSafetyPeriod"
 )
 
 var AllSortResourcePoolsBy = []SortResourcePoolsBy{
 	SortResourcePoolsByName,
-	SortResourcePoolsByDeallocationSafetyPeriod,
+	SortResourcePoolsByDealocationSafetyPeriod,
 }
 
 func (e SortResourcePoolsBy) IsValid() bool {
 	switch e {
-	case SortResourcePoolsByName, SortResourcePoolsByDeallocationSafetyPeriod:
+	case SortResourcePoolsByName, SortResourcePoolsByDealocationSafetyPeriod:
 		return true
 	}
 	return false

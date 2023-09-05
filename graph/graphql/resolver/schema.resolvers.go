@@ -5,6 +5,7 @@ package resolver
 
 import (
 	"context"
+	"fmt"
 	"regexp"
 	"strconv"
 	"time"
@@ -1210,6 +1211,9 @@ type resourcePoolResolver struct{ *Resolver }
 //   - When renaming or deleting a resolver the old code will be put in here. You can safely delete
 //     it when you're done.
 //   - You have helper methods in this file. Move them out to keep these resolver files clean.
+func (r *resourcePoolResolver) PoolDealocationSafetyPeriod(ctx context.Context, obj *ent.ResourcePool) (int, error) {
+	panic(fmt.Errorf("not implemented: PoolDealocationSafetyPeriod - PoolDealocationSafetyPeriod"))
+}
 func (r *resourceResolver) NestedPool(ctx context.Context, obj *ent.Resource) (*ent.ResourcePool, error) {
 	if es, err := obj.Edges.NestedPoolOrErr(); !ent.IsNotLoaded(err) {
 		log.Error(ctx, err, "Unable to retrieve nested pool for resource with ID %d", obj.ID)

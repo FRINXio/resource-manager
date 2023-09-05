@@ -205,17 +205,18 @@ type ComplexityRoot struct {
 	}
 
 	ResourcePool struct {
-		AllocatedResources func(childComplexity int, first *int, last *int, before *string, after *string) int
-		AllocationStrategy func(childComplexity int) int
-		Capacity           func(childComplexity int) int
-		ID                 func(childComplexity int) int
-		Name               func(childComplexity int) int
-		ParentResource     func(childComplexity int) int
-		PoolProperties     func(childComplexity int) int
-		PoolType           func(childComplexity int) int
-		ResourceType       func(childComplexity int) int
-		Resources          func(childComplexity int) int
-		Tags               func(childComplexity int) int
+		AllocatedResources      func(childComplexity int, first *int, last *int, before *string, after *string) int
+		AllocationStrategy      func(childComplexity int) int
+		Capacity                func(childComplexity int) int
+		DealocationSafetyPeriod func(childComplexity int) int
+		ID                      func(childComplexity int) int
+		Name                    func(childComplexity int) int
+		ParentResource          func(childComplexity int) int
+		PoolProperties          func(childComplexity int) int
+		PoolType                func(childComplexity int) int
+		ResourceType            func(childComplexity int) int
+		Resources               func(childComplexity int) int
+		Tags                    func(childComplexity int) int
 	}
 
 	ResourcePoolConnection struct {
@@ -1149,6 +1150,13 @@ func (e *executableSchema) Complexity(typeName, field string, childComplexity in
 
 		return e.complexity.ResourcePool.Capacity(childComplexity), true
 
+	case "ResourcePool.DealocationSafetyPeriod":
+		if e.complexity.ResourcePool.DealocationSafetyPeriod == nil {
+			break
+		}
+
+		return e.complexity.ResourcePool.DealocationSafetyPeriod(childComplexity), true
+
 	case "ResourcePool.id":
 		if e.complexity.ResourcePool.ID == nil {
 			break
@@ -1503,6 +1511,7 @@ type ResourcePool implements Node
     PoolType: PoolType!
     ResourceType: ResourceType!
     Resources: [Resource!]!
+    DealocationSafetyPeriod: Int!
     Tags: [Tag!]!
     allocatedResources(first: Int, last: Int, before: String, after: String): ResourceConnection
     id: ID!
@@ -1764,7 +1773,7 @@ type PoolCapacityPayload {
 
 enum SortResourcePoolsBy {
     name
-    deallocationSafetyPeriod
+    dealocationSafetyPeriod
 }
 
 enum SortDirection {
@@ -3459,6 +3468,8 @@ func (ec *executionContext) fieldContext_CreateAllocatingPoolPayload_pool(ctx co
 				return ec.fieldContext_ResourcePool_ResourceType(ctx, field)
 			case "Resources":
 				return ec.fieldContext_ResourcePool_Resources(ctx, field)
+			case "DealocationSafetyPeriod":
+				return ec.fieldContext_ResourcePool_DealocationSafetyPeriod(ctx, field)
 			case "Tags":
 				return ec.fieldContext_ResourcePool_Tags(ctx, field)
 			case "allocatedResources":
@@ -3577,6 +3588,8 @@ func (ec *executionContext) fieldContext_CreateNestedAllocatingPoolPayload_pool(
 				return ec.fieldContext_ResourcePool_ResourceType(ctx, field)
 			case "Resources":
 				return ec.fieldContext_ResourcePool_Resources(ctx, field)
+			case "DealocationSafetyPeriod":
+				return ec.fieldContext_ResourcePool_DealocationSafetyPeriod(ctx, field)
 			case "Tags":
 				return ec.fieldContext_ResourcePool_Tags(ctx, field)
 			case "allocatedResources":
@@ -3642,6 +3655,8 @@ func (ec *executionContext) fieldContext_CreateNestedSetPoolPayload_pool(ctx con
 				return ec.fieldContext_ResourcePool_ResourceType(ctx, field)
 			case "Resources":
 				return ec.fieldContext_ResourcePool_Resources(ctx, field)
+			case "DealocationSafetyPeriod":
+				return ec.fieldContext_ResourcePool_DealocationSafetyPeriod(ctx, field)
 			case "Tags":
 				return ec.fieldContext_ResourcePool_Tags(ctx, field)
 			case "allocatedResources":
@@ -3707,6 +3722,8 @@ func (ec *executionContext) fieldContext_CreateNestedSingletonPoolPayload_pool(c
 				return ec.fieldContext_ResourcePool_ResourceType(ctx, field)
 			case "Resources":
 				return ec.fieldContext_ResourcePool_Resources(ctx, field)
+			case "DealocationSafetyPeriod":
+				return ec.fieldContext_ResourcePool_DealocationSafetyPeriod(ctx, field)
 			case "Tags":
 				return ec.fieldContext_ResourcePool_Tags(ctx, field)
 			case "allocatedResources":
@@ -3826,6 +3843,8 @@ func (ec *executionContext) fieldContext_CreateSetPoolPayload_pool(ctx context.C
 				return ec.fieldContext_ResourcePool_ResourceType(ctx, field)
 			case "Resources":
 				return ec.fieldContext_ResourcePool_Resources(ctx, field)
+			case "DealocationSafetyPeriod":
+				return ec.fieldContext_ResourcePool_DealocationSafetyPeriod(ctx, field)
 			case "Tags":
 				return ec.fieldContext_ResourcePool_Tags(ctx, field)
 			case "allocatedResources":
@@ -3891,6 +3910,8 @@ func (ec *executionContext) fieldContext_CreateSingletonPoolPayload_pool(ctx con
 				return ec.fieldContext_ResourcePool_ResourceType(ctx, field)
 			case "Resources":
 				return ec.fieldContext_ResourcePool_Resources(ctx, field)
+			case "DealocationSafetyPeriod":
+				return ec.fieldContext_ResourcePool_DealocationSafetyPeriod(ctx, field)
 			case "Tags":
 				return ec.fieldContext_ResourcePool_Tags(ctx, field)
 			case "allocatedResources":
@@ -6689,6 +6710,8 @@ func (ec *executionContext) fieldContext_Query_QueryResourcePool(ctx context.Con
 				return ec.fieldContext_ResourcePool_ResourceType(ctx, field)
 			case "Resources":
 				return ec.fieldContext_ResourcePool_Resources(ctx, field)
+			case "DealocationSafetyPeriod":
+				return ec.fieldContext_ResourcePool_DealocationSafetyPeriod(ctx, field)
 			case "Tags":
 				return ec.fieldContext_ResourcePool_Tags(ctx, field)
 			case "allocatedResources":
@@ -6957,6 +6980,8 @@ func (ec *executionContext) fieldContext_Query_QueryResourcePoolHierarchyPath(ct
 				return ec.fieldContext_ResourcePool_ResourceType(ctx, field)
 			case "Resources":
 				return ec.fieldContext_ResourcePool_Resources(ctx, field)
+			case "DealocationSafetyPeriod":
+				return ec.fieldContext_ResourcePool_DealocationSafetyPeriod(ctx, field)
 			case "Tags":
 				return ec.fieldContext_ResourcePool_Tags(ctx, field)
 			case "allocatedResources":
@@ -7496,6 +7521,8 @@ func (ec *executionContext) fieldContext_Resource_NestedPool(ctx context.Context
 				return ec.fieldContext_ResourcePool_ResourceType(ctx, field)
 			case "Resources":
 				return ec.fieldContext_ResourcePool_Resources(ctx, field)
+			case "DealocationSafetyPeriod":
+				return ec.fieldContext_ResourcePool_DealocationSafetyPeriod(ctx, field)
 			case "Tags":
 				return ec.fieldContext_ResourcePool_Tags(ctx, field)
 			case "allocatedResources":
@@ -7564,6 +7591,8 @@ func (ec *executionContext) fieldContext_Resource_ParentPool(ctx context.Context
 				return ec.fieldContext_ResourcePool_ResourceType(ctx, field)
 			case "Resources":
 				return ec.fieldContext_ResourcePool_Resources(ctx, field)
+			case "DealocationSafetyPeriod":
+				return ec.fieldContext_ResourcePool_DealocationSafetyPeriod(ctx, field)
 			case "Tags":
 				return ec.fieldContext_ResourcePool_Tags(ctx, field)
 			case "allocatedResources":
@@ -8359,6 +8388,50 @@ func (ec *executionContext) fieldContext_ResourcePool_Resources(ctx context.Cont
 	return fc, nil
 }
 
+func (ec *executionContext) _ResourcePool_DealocationSafetyPeriod(ctx context.Context, field graphql.CollectedField, obj *ent.ResourcePool) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_ResourcePool_DealocationSafetyPeriod(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.DealocationSafetyPeriod, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(int)
+	fc.Result = res
+	return ec.marshalNInt2int(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_ResourcePool_DealocationSafetyPeriod(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "ResourcePool",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type Int does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
 func (ec *executionContext) _ResourcePool_Tags(ctx context.Context, field graphql.CollectedField, obj *ent.ResourcePool) (ret graphql.Marshaler) {
 	fc, err := ec.fieldContext_ResourcePool_Tags(ctx, field)
 	if err != nil {
@@ -8766,6 +8839,8 @@ func (ec *executionContext) fieldContext_ResourcePoolEdge_node(ctx context.Conte
 				return ec.fieldContext_ResourcePool_ResourceType(ctx, field)
 			case "Resources":
 				return ec.fieldContext_ResourcePool_Resources(ctx, field)
+			case "DealocationSafetyPeriod":
+				return ec.fieldContext_ResourcePool_DealocationSafetyPeriod(ctx, field)
 			case "Tags":
 				return ec.fieldContext_ResourcePool_Tags(ctx, field)
 			case "allocatedResources":
@@ -8878,6 +8953,8 @@ func (ec *executionContext) fieldContext_ResourceType_Pools(ctx context.Context,
 				return ec.fieldContext_ResourcePool_ResourceType(ctx, field)
 			case "Resources":
 				return ec.fieldContext_ResourcePool_Resources(ctx, field)
+			case "DealocationSafetyPeriod":
+				return ec.fieldContext_ResourcePool_DealocationSafetyPeriod(ctx, field)
 			case "Tags":
 				return ec.fieldContext_ResourcePool_Tags(ctx, field)
 			case "allocatedResources":
@@ -9047,6 +9124,8 @@ func (ec *executionContext) fieldContext_Tag_Pools(ctx context.Context, field gr
 				return ec.fieldContext_ResourcePool_ResourceType(ctx, field)
 			case "Resources":
 				return ec.fieldContext_ResourcePool_Resources(ctx, field)
+			case "DealocationSafetyPeriod":
+				return ec.fieldContext_ResourcePool_DealocationSafetyPeriod(ctx, field)
 			case "Tags":
 				return ec.fieldContext_ResourcePool_Tags(ctx, field)
 			case "allocatedResources":
@@ -13753,6 +13832,13 @@ func (ec *executionContext) _ResourcePool(ctx context.Context, sel ast.Selection
 				return innerFunc(ctx)
 
 			})
+		case "DealocationSafetyPeriod":
+
+			out.Values[i] = ec._ResourcePool_DealocationSafetyPeriod(ctx, field, obj)
+
+			if out.Values[i] == graphql.Null {
+				atomic.AddUint32(&invalids, 1)
+			}
 		case "Tags":
 			field := field
 

@@ -24,7 +24,7 @@ import {
 } from "../graphql-queries.js";
 import {
     cleanup,
-    createIpv4PrefixRootPool,
+    createIpv4PrefixRootPool, createIpv4PrefixRootPoolWithName,
     createIpv4RootPool,
     createIpv6PrefixRootPool,
     createIpv6RootPool, createRandomIntRootPool, createRdRootPool,
@@ -636,6 +636,73 @@ test('test filtering by allocated resource properties', async (t) => {
     t.equal(byIpv6Addr.edges.length, 1);
     t.equal(byIpv6Addr2.edges.length, 1);
     t.equal(byIpv4Addr.edges.length, 1);
+
+    await cleanup();
+    t.end();
+});
+
+test('test ordering of resource pools by name in descending direction', async (t) => {
+    for (let i = 0; i < 3; i++) {
+        await createIpv4PrefixRootPoolWithName(`pool-${i}`);
+    }
+
+    const pools = await queryResourcePools(undefined, undefined, undefined, undefined, undefined, {
+        sortKey: "name",
+        direction: "desc"
+    });
+
+    t.equal(pools.edges[0].node.Name.substring(0, 6), "pool-2");
+
+    await cleanup();
+    t.end();
+});
+
+test('test ordering of resource pools by name in ascending direction', async (t) => {
+    for (let i = 0; i < 3; i++) {
+        await createIpv4PrefixRootPoolWithName(`pool-${i}`);
+    }
+
+    const pools = await queryResourcePools(undefined, undefined, undefined, undefined, undefined, {
+        sortKey: "name",
+        direction: "asc"
+    });
+
+    t.equal(pools.edges[0].node.Name.substring(0, 6), "pool-0");
+
+    await cleanup();
+    t.end();
+});
+
+test('test ordering of resource pools by dealocation safety period in descending direction', async (t) => {
+    for (let i = 0; i < 3; i++) {
+        await createIpv4PrefixRootPool("10.0.0.0", 24, false, i);
+    }
+
+    const pools = await queryResourcePools(undefined, undefined, undefined, undefined, undefined, {
+        sortKey: "dealocationSafetyPeriod",
+        direction: "desc"
+    });
+
+    console.log(pools.edges.map((pool) => pool.node.DealocationSafetyPeriod));
+    t.equal(pools.edges[0].node.DealocationSafetyPeriod, 2);
+
+    await cleanup();
+    t.end();
+});
+
+test('test ordering of resource pools by dealocation safety period in ascending direction', async (t) => {
+    for (let i = 0; i < 3; i++) {
+        await createIpv4PrefixRootPool("10.0.0.0", 24, false, i);
+    }
+
+    const pools = await queryResourcePools(undefined, undefined, undefined, undefined, undefined, {
+        sortKey: "dealocationSafetyPeriod",
+        direction: "asc"
+    });
+
+    console.log(pools.edges.map((pool) => pool.node.DealocationSafetyPeriod));
+
+    t.equal(pools.edges[0].node.DealocationSafetyPeriod, 0);
 
     await cleanup();
     t.end();
