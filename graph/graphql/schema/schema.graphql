@@ -353,6 +353,21 @@ type PoolCapacityPayload {
     utilizedCapacity: String!
 }
 
+enum SortResourcePoolsBy {
+    name
+    deallocationSafetyPeriod
+}
+
+enum SortDirection {
+    asc
+    desc
+}
+
+input SortResourcePoolsInput {
+    sortKey: SortResourcePoolsBy!
+    direction: SortDirection!
+}
+
 type Query {
     # Deprecated, use capacity object inside the Resource pool
     QueryPoolCapacity(poolId: ID!): PoolCapacityPayload!
@@ -368,13 +383,13 @@ type Query {
 
     QueryResourcePool(poolId: ID!): ResourcePool!
 
-    QueryEmptyResourcePools(resourceTypeId: ID, first: Int, last: Int, before: Cursor, after: Cursor): ResourcePoolConnection!
-    QueryResourcePools(resourceTypeId: ID, tags: TagOr, first: Int, last: Int, before: Cursor, after: Cursor, filterByResources: Map): ResourcePoolConnection!
+    QueryEmptyResourcePools(resourceTypeId: ID, first: Int, last: Int, before: Cursor, after: Cursor, sortBy: SortResourcePoolsInput): ResourcePoolConnection!
+    QueryResourcePools(resourceTypeId: ID, tags: TagOr, first: Int, last: Int, before: Cursor, after: Cursor, filterByResources: Map, sortBy: SortResourcePoolsInput): ResourcePoolConnection!
     QueryRecentlyActiveResources(fromDatetime: String!, toDatetime: String,
         first: Int, last: Int, before: String, after: String): ResourceConnection!
     QueryResourcePoolHierarchyPath(poolId: ID!): [ResourcePool!]!
-    QueryRootResourcePools(resourceTypeId: ID, tags: TagOr, first: Int, last: Int, before: Cursor, after: Cursor, filterByResources: Map): ResourcePoolConnection!
-    QueryLeafResourcePools(resourceTypeId: ID, tags: TagOr, first: Int, last: Int, before: Cursor, after: Cursor, filterByResources: Map): ResourcePoolConnection!
+    QueryRootResourcePools(resourceTypeId: ID, tags: TagOr, first: Int, last: Int, before: Cursor, after: Cursor, filterByResources: Map, sortBy: SortResourcePoolsInput): ResourcePoolConnection!
+    QueryLeafResourcePools(resourceTypeId: ID, tags: TagOr, first: Int, last: Int, before: Cursor, after: Cursor, filterByResources: Map, sortBy: SortResourcePoolsInput): ResourcePoolConnection!
     SearchPoolsByTags(tags: TagOr, first: Int, last: Int, before: Cursor, after: Cursor): ResourcePoolConnection!
 
     QueryTags: [Tag!]!

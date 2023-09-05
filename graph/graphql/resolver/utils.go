@@ -342,3 +342,22 @@ func filterByJsonNumberVal(ctx context.Context, query *ent.PropertyTypeQuery, js
 		return nil, gqlerror.Errorf("Unable to filter by json number value: %v", err)
 	}
 }
+
+func orderResourcePool(input *model.SortResourcePoolsInput, query *ent.ResourcePoolQuery) *ent.ResourcePoolQuery {
+	var orderFunc ent.OrderFunc = nil
+	var sortKey = ""
+
+	if input.SortKey == model.SortResourcePoolsByDeallocationSafetyPeriod {
+		sortKey = "deallocation_safety_period"
+	} else {
+		sortKey = string(input.SortKey)
+	}
+
+	if input.Direction == model.SortDirectionAsc {
+		orderFunc = ent.Asc(sortKey)
+	} else {
+		orderFunc = ent.Desc(sortKey)
+	}
+
+	return query.Order(orderFunc)
+}
