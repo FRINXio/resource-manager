@@ -626,15 +626,15 @@ export async function createSetPool(poolName, resourceTypeId, poolValues){
     .catch(error => console.log(error));
 }
 
-export async function createAllocationPool(poolName, resourceTypeId, strategyId, poolPropertyTypes, poolProperties, tags = null, suppressErrors = false){
+export async function createAllocationPool(poolName, resourceTypeId, strategyId, poolPropertyTypes, poolProperties, tags = null, suppressErrors = false, dealocationSafetyPeriod = 0){
     return client.mutate({
         mutation: gql`
-            mutation createAllocPool($poolName: String!, $resourceTypeId: ID!, $strategyId: ID!, $poolProperties: Map!, $poolPropertyTypes: Map!, $tags: [String!]) {
+            mutation createAllocPool($poolName: String!, $resourceTypeId: ID!, $strategyId: ID!, $poolProperties: Map!, $poolPropertyTypes: Map!, $tags: [String!], $dealocationSafetyPeriod: Int!) {
                 CreateAllocatingPool( input:  {
                     resourceTypeId: $resourceTypeId
                     poolName: $poolName
                     allocationStrategyId: $strategyId
-                    poolDealocationSafetyPeriod: 0
+                    poolDealocationSafetyPeriod: $dealocationSafetyPeriod
                     poolPropertyTypes: $poolPropertyTypes
                     poolProperties: $poolProperties
                     tags: $tags
@@ -653,6 +653,7 @@ export async function createAllocationPool(poolName, resourceTypeId, strategyId,
             strategyId: strategyId,
             poolProperties: poolProperties,
             poolPropertyTypes: poolPropertyTypes,
+            dealocationSafetyPeriod: dealocationSafetyPeriod,
             tags: tags,
         }
     })
@@ -988,11 +989,11 @@ export async function getRequiredPoolProperties(allocationStrategyName) {
     .catch(error => console.log(error));
 }
 
-export async function queryResourcePools(first, last, before, after, filter){
+export async function queryResourcePools(first, last, before, after, filter, sortBy){
     return client.query({
         query: gql`
-            query getResourcePools($first: Int, $last: Int, $before: Cursor, $after: Cursor, $filter: Map) {
-                QueryResourcePools(first: $first, last: $last, before: $before, after: $after, filterByResources: $filter) {
+            query getResourcePools($first: Int, $last: Int, $before: Cursor, $after: Cursor, $filter: Map, $sortBy: SortResourcePoolsInput) {
+                QueryResourcePools(first: $first, last: $last, before: $before, after: $after, filterByResources: $filter, sortBy: $sortBy) {
                     edges {
                         node {
                             id
@@ -1004,6 +1005,8 @@ export async function queryResourcePools(first, last, before, after, filter){
                                     }
                                 }
                             }
+                            Name
+                            DealocationSafetyPeriod
                         }
                         cursor{
                             ID
@@ -1028,7 +1031,8 @@ export async function queryResourcePools(first, last, before, after, filter){
             last: last,
             before: before,
             after: after,
-            filter: filter
+            filter: filter,
+            sortBy: sortBy
         }
     })
     .then(result => result.data.QueryResourcePools)

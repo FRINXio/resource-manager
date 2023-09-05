@@ -347,8 +347,8 @@ func orderResourcePool(input *model.SortResourcePoolsInput, query *ent.ResourceP
 	var orderFunc ent.OrderFunc = nil
 	var sortKey = ""
 
-	if input.SortKey == model.SortResourcePoolsByDeallocationSafetyPeriod {
-		sortKey = "deallocation_safety_period"
+	if input.SortKey == model.SortResourcePoolsByDealocationSafetyPeriod {
+		sortKey = "dealocation_safety_period"
 	} else {
 		sortKey = string(input.SortKey)
 	}

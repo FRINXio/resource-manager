@@ -94,6 +94,7 @@ type ResourcePool implements Node
     PoolType: PoolType!
     ResourceType: ResourceType!
     Resources: [Resource!]!
+    DealocationSafetyPeriod: Int!
     Tags: [Tag!]!
     allocatedResources(first: Int, last: Int, before: String, after: String): ResourceConnection
     id: ID!
@@ -355,7 +356,7 @@ type PoolCapacityPayload {
 
 enum SortResourcePoolsBy {
     name
-    deallocationSafetyPeriod
+    dealocationSafetyPeriod
 }
 
 enum SortDirection {
