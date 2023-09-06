@@ -812,7 +812,14 @@ func (r *queryResolver) QueryEmptyResourcePools(ctx context.Context, resourceTyp
 	}
 
 	if sortBy != nil {
-		query = orderResourcePool(sortBy, query)
+		orderQuery, err := orderResourcePool(sortBy, query)
+
+		if err != nil {
+			log.Error(ctx, err, "Unable to retrieve resource pools")
+			return nil, gqlerror.Errorf("Unable to query resource pools: %v", err)
+		}
+
+		query = orderQuery
 	}
 
 	if resourcePools, err := query.Paginate(ctx, after, first, before, last); err != nil {
@@ -849,7 +856,14 @@ func (r *queryResolver) QueryResourcePools(ctx context.Context, resourceTypeID *
 	}
 
 	if sortBy != nil {
-		query = orderResourcePool(sortBy, query)
+		orderQuery, err := orderResourcePool(sortBy, query)
+
+		if err != nil {
+			log.Error(ctx, err, "Unable to retrieve resource pools")
+			return nil, gqlerror.Errorf("Unable to query resource pools: %v", err)
+		}
+
+		query = orderQuery
 	}
 
 	if resourcePools, err := query.Paginate(ctx, after, first, before, last); err != nil {
@@ -959,7 +973,14 @@ func (r *queryResolver) QueryRootResourcePools(ctx context.Context, resourceType
 	}
 
 	if sortBy != nil {
-		query = orderResourcePool(sortBy, query)
+		orderQuery, err := orderResourcePool(sortBy, query)
+
+		if err != nil {
+			log.Error(ctx, err, "Unable to retrieve resource pools")
+			return nil, gqlerror.Errorf("Unable to query resource pools: %v", err)
+		}
+
+		query = orderQuery
 	}
 
 	if resourcePools, err := query.Paginate(ctx, after, first, before, last); err != nil {
@@ -999,7 +1020,14 @@ func (r *queryResolver) QueryLeafResourcePools(ctx context.Context, resourceType
 	}
 
 	if sortBy != nil {
-		query = orderResourcePool(sortBy, query)
+		orderQuery, err := orderResourcePool(sortBy, query)
+
+		if err != nil {
+			log.Error(ctx, err, "Unable to retrieve resource pools")
+			return nil, gqlerror.Errorf("Unable to query resource pools: %v", err)
+		}
+
+		query = orderQuery
 	}
 
 	if resourcePools, err := query.Paginate(ctx, after, first, before, last); err != nil {
