@@ -166,8 +166,8 @@ type ComplexityRoot struct {
 		Node                           func(childComplexity int, id int) int
 		QueryAllocationStrategies      func(childComplexity int, byName *string) int
 		QueryAllocationStrategy        func(childComplexity int, allocationStrategyID int) int
-		QueryEmptyResourcePools        func(childComplexity int, resourceTypeID *int, first *int, last *int, before *ent.Cursor, after *ent.Cursor, sortBy *model.SortResourcePoolsInput) int
-		QueryLeafResourcePools         func(childComplexity int, resourceTypeID *int, tags *model.TagOr, first *int, last *int, before *ent.Cursor, after *ent.Cursor, filterByResources map[string]interface{}, sortBy *model.SortResourcePoolsInput) int
+		QueryEmptyResourcePools        func(childComplexity int, resourceTypeID *int, first *int, last *int, before *ent.Cursor, after *ent.Cursor, sortBy *ent.ResourcePoolOrder) int
+		QueryLeafResourcePools         func(childComplexity int, resourceTypeID *int, tags *model.TagOr, first *int, last *int, before *ent.Cursor, after *ent.Cursor, filterByResources map[string]interface{}, sortBy *ent.ResourcePoolOrder) int
 		QueryPoolCapacity              func(childComplexity int, poolID int) int
 		QueryPoolTypes                 func(childComplexity int) int
 		QueryRecentlyActiveResources   func(childComplexity int, fromDatetime string, toDatetime *string, first *int, last *int, before *string, after *string) int
@@ -175,11 +175,11 @@ type ComplexityRoot struct {
 		QueryResource                  func(childComplexity int, input map[string]interface{}, poolID int) int
 		QueryResourcePool              func(childComplexity int, poolID int) int
 		QueryResourcePoolHierarchyPath func(childComplexity int, poolID int) int
-		QueryResourcePools             func(childComplexity int, resourceTypeID *int, tags *model.TagOr, first *int, last *int, before *ent.Cursor, after *ent.Cursor, filterByResources map[string]interface{}, sortBy *model.SortResourcePoolsInput) int
+		QueryResourcePools             func(childComplexity int, resourceTypeID *int, tags *model.TagOr, first *int, last *int, before *ent.Cursor, after *ent.Cursor, filterByResources map[string]interface{}, sortBy *ent.ResourcePoolOrder) int
 		QueryResourceTypes             func(childComplexity int, byName *string) int
 		QueryResources                 func(childComplexity int, poolID int, first *int, last *int, before *string, after *string) int
 		QueryResourcesByAltID          func(childComplexity int, input map[string]interface{}, poolID *int, first *int, last *int, before *string, after *string) int
-		QueryRootResourcePools         func(childComplexity int, resourceTypeID *int, tags *model.TagOr, first *int, last *int, before *ent.Cursor, after *ent.Cursor, filterByResources map[string]interface{}, sortBy *model.SortResourcePoolsInput) int
+		QueryRootResourcePools         func(childComplexity int, resourceTypeID *int, tags *model.TagOr, first *int, last *int, before *ent.Cursor, after *ent.Cursor, filterByResources map[string]interface{}, sortBy *ent.ResourcePoolOrder) int
 		QueryTags                      func(childComplexity int) int
 		SearchPoolsByTags              func(childComplexity int, tags *model.TagOr, first *int, last *int, before *ent.Cursor, after *ent.Cursor) int
 	}
@@ -301,12 +301,12 @@ type QueryResolver interface {
 	QueryResourceTypes(ctx context.Context, byName *string) ([]*ent.ResourceType, error)
 	QueryRequiredPoolProperties(ctx context.Context, allocationStrategyName string) ([]*ent.PropertyType, error)
 	QueryResourcePool(ctx context.Context, poolID int) (*ent.ResourcePool, error)
-	QueryEmptyResourcePools(ctx context.Context, resourceTypeID *int, first *int, last *int, before *ent.Cursor, after *ent.Cursor, sortBy *model.SortResourcePoolsInput) (*ent.ResourcePoolConnection, error)
-	QueryResourcePools(ctx context.Context, resourceTypeID *int, tags *model.TagOr, first *int, last *int, before *ent.Cursor, after *ent.Cursor, filterByResources map[string]interface{}, sortBy *model.SortResourcePoolsInput) (*ent.ResourcePoolConnection, error)
+	QueryEmptyResourcePools(ctx context.Context, resourceTypeID *int, first *int, last *int, before *ent.Cursor, after *ent.Cursor, sortBy *ent.ResourcePoolOrder) (*ent.ResourcePoolConnection, error)
+	QueryResourcePools(ctx context.Context, resourceTypeID *int, tags *model.TagOr, first *int, last *int, before *ent.Cursor, after *ent.Cursor, filterByResources map[string]interface{}, sortBy *ent.ResourcePoolOrder) (*ent.ResourcePoolConnection, error)
 	QueryRecentlyActiveResources(ctx context.Context, fromDatetime string, toDatetime *string, first *int, last *int, before *string, after *string) (*ent.ResourceConnection, error)
 	QueryResourcePoolHierarchyPath(ctx context.Context, poolID int) ([]*ent.ResourcePool, error)
-	QueryRootResourcePools(ctx context.Context, resourceTypeID *int, tags *model.TagOr, first *int, last *int, before *ent.Cursor, after *ent.Cursor, filterByResources map[string]interface{}, sortBy *model.SortResourcePoolsInput) (*ent.ResourcePoolConnection, error)
-	QueryLeafResourcePools(ctx context.Context, resourceTypeID *int, tags *model.TagOr, first *int, last *int, before *ent.Cursor, after *ent.Cursor, filterByResources map[string]interface{}, sortBy *model.SortResourcePoolsInput) (*ent.ResourcePoolConnection, error)
+	QueryRootResourcePools(ctx context.Context, resourceTypeID *int, tags *model.TagOr, first *int, last *int, before *ent.Cursor, after *ent.Cursor, filterByResources map[string]interface{}, sortBy *ent.ResourcePoolOrder) (*ent.ResourcePoolConnection, error)
+	QueryLeafResourcePools(ctx context.Context, resourceTypeID *int, tags *model.TagOr, first *int, last *int, before *ent.Cursor, after *ent.Cursor, filterByResources map[string]interface{}, sortBy *ent.ResourcePoolOrder) (*ent.ResourcePoolConnection, error)
 	SearchPoolsByTags(ctx context.Context, tags *model.TagOr, first *int, last *int, before *ent.Cursor, after *ent.Cursor) (*ent.ResourcePoolConnection, error)
 	QueryTags(ctx context.Context) ([]*ent.Tag, error)
 	Node(ctx context.Context, id int) (ent.Noder, error)
@@ -875,7 +875,7 @@ func (e *executableSchema) Complexity(typeName, field string, childComplexity in
 			return 0, false
 		}
 
-		return e.complexity.Query.QueryEmptyResourcePools(childComplexity, args["resourceTypeId"].(*int), args["first"].(*int), args["last"].(*int), args["before"].(*ent.Cursor), args["after"].(*ent.Cursor), args["sortBy"].(*model.SortResourcePoolsInput)), true
+		return e.complexity.Query.QueryEmptyResourcePools(childComplexity, args["resourceTypeId"].(*int), args["first"].(*int), args["last"].(*int), args["before"].(*ent.Cursor), args["after"].(*ent.Cursor), args["sortBy"].(*ent.ResourcePoolOrder)), true
 
 	case "Query.QueryLeafResourcePools":
 		if e.complexity.Query.QueryLeafResourcePools == nil {
@@ -887,7 +887,7 @@ func (e *executableSchema) Complexity(typeName, field string, childComplexity in
 			return 0, false
 		}
 
-		return e.complexity.Query.QueryLeafResourcePools(childComplexity, args["resourceTypeId"].(*int), args["tags"].(*model.TagOr), args["first"].(*int), args["last"].(*int), args["before"].(*ent.Cursor), args["after"].(*ent.Cursor), args["filterByResources"].(map[string]interface{}), args["sortBy"].(*model.SortResourcePoolsInput)), true
+		return e.complexity.Query.QueryLeafResourcePools(childComplexity, args["resourceTypeId"].(*int), args["tags"].(*model.TagOr), args["first"].(*int), args["last"].(*int), args["before"].(*ent.Cursor), args["after"].(*ent.Cursor), args["filterByResources"].(map[string]interface{}), args["sortBy"].(*ent.ResourcePoolOrder)), true
 
 	case "Query.QueryPoolCapacity":
 		if e.complexity.Query.QueryPoolCapacity == nil {
@@ -978,7 +978,7 @@ func (e *executableSchema) Complexity(typeName, field string, childComplexity in
 			return 0, false
 		}
 
-		return e.complexity.Query.QueryResourcePools(childComplexity, args["resourceTypeId"].(*int), args["tags"].(*model.TagOr), args["first"].(*int), args["last"].(*int), args["before"].(*ent.Cursor), args["after"].(*ent.Cursor), args["filterByResources"].(map[string]interface{}), args["sortBy"].(*model.SortResourcePoolsInput)), true
+		return e.complexity.Query.QueryResourcePools(childComplexity, args["resourceTypeId"].(*int), args["tags"].(*model.TagOr), args["first"].(*int), args["last"].(*int), args["before"].(*ent.Cursor), args["after"].(*ent.Cursor), args["filterByResources"].(map[string]interface{}), args["sortBy"].(*ent.ResourcePoolOrder)), true
 
 	case "Query.QueryResourceTypes":
 		if e.complexity.Query.QueryResourceTypes == nil {
@@ -1026,7 +1026,7 @@ func (e *executableSchema) Complexity(typeName, field string, childComplexity in
 			return 0, false
 		}
 
-		return e.complexity.Query.QueryRootResourcePools(childComplexity, args["resourceTypeId"].(*int), args["tags"].(*model.TagOr), args["first"].(*int), args["last"].(*int), args["before"].(*ent.Cursor), args["after"].(*ent.Cursor), args["filterByResources"].(map[string]interface{}), args["sortBy"].(*model.SortResourcePoolsInput)), true
+		return e.complexity.Query.QueryRootResourcePools(childComplexity, args["resourceTypeId"].(*int), args["tags"].(*model.TagOr), args["first"].(*int), args["last"].(*int), args["before"].(*ent.Cursor), args["after"].(*ent.Cursor), args["filterByResources"].(map[string]interface{}), args["sortBy"].(*ent.ResourcePoolOrder)), true
 
 	case "Query.QueryTags":
 		if e.complexity.Query.QueryTags == nil {
@@ -1771,19 +1771,19 @@ type PoolCapacityPayload {
     utilizedCapacity: String!
 }
 
-enum SortResourcePoolsBy {
+enum OrderDirection @goModel(model: "github.com/net-auto/resourceManager/ent.OrderDirection") {
+    ASC
+    DESC
+}
+
+enum ResourcePoolOrderField @goModel(model: "github.com/net-auto/resourceManager/ent.ResourcePoolOrderField") {
     name
     dealocationSafetyPeriod
 }
 
-enum SortDirection {
-    asc
-    desc
-}
-
-input SortResourcePoolsInput {
-    sortKey: SortResourcePoolsBy!
-    direction: SortDirection!
+input SortResourcePoolsInput @goModel(model: "github.com/net-auto/resourceManager/ent.ResourcePoolOrder") {
+    direction: OrderDirection!
+    field: ResourcePoolOrderField
 }
 
 type Query {
@@ -2522,10 +2522,10 @@ func (ec *executionContext) field_Query_QueryEmptyResourcePools_args(ctx context
 		}
 	}
 	args["after"] = arg4
-	var arg5 *model.SortResourcePoolsInput
+	var arg5 *ent.ResourcePoolOrder
 	if tmp, ok := rawArgs["sortBy"]; ok {
 		ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("sortBy"))
-		arg5, err = ec.unmarshalOSortResourcePoolsInput2ᚖgithubᚗcomᚋnetᚑautoᚋresourceManagerᚋgraphᚋgraphqlᚋmodelᚐSortResourcePoolsInput(ctx, tmp)
+		arg5, err = ec.unmarshalOSortResourcePoolsInput2ᚖgithubᚗcomᚋnetᚑautoᚋresourceManagerᚋentᚐResourcePoolOrder(ctx, tmp)
 		if err != nil {
 			return nil, err
 		}
@@ -2600,10 +2600,10 @@ func (ec *executionContext) field_Query_QueryLeafResourcePools_args(ctx context.
 		}
 	}
 	args["filterByResources"] = arg6
-	var arg7 *model.SortResourcePoolsInput
+	var arg7 *ent.ResourcePoolOrder
 	if tmp, ok := rawArgs["sortBy"]; ok {
 		ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("sortBy"))
-		arg7, err = ec.unmarshalOSortResourcePoolsInput2ᚖgithubᚗcomᚋnetᚑautoᚋresourceManagerᚋgraphᚋgraphqlᚋmodelᚐSortResourcePoolsInput(ctx, tmp)
+		arg7, err = ec.unmarshalOSortResourcePoolsInput2ᚖgithubᚗcomᚋnetᚑautoᚋresourceManagerᚋentᚐResourcePoolOrder(ctx, tmp)
 		if err != nil {
 			return nil, err
 		}
@@ -2798,10 +2798,10 @@ func (ec *executionContext) field_Query_QueryResourcePools_args(ctx context.Cont
 		}
 	}
 	args["filterByResources"] = arg6
-	var arg7 *model.SortResourcePoolsInput
+	var arg7 *ent.ResourcePoolOrder
 	if tmp, ok := rawArgs["sortBy"]; ok {
 		ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("sortBy"))
-		arg7, err = ec.unmarshalOSortResourcePoolsInput2ᚖgithubᚗcomᚋnetᚑautoᚋresourceManagerᚋgraphᚋgraphqlᚋmodelᚐSortResourcePoolsInput(ctx, tmp)
+		arg7, err = ec.unmarshalOSortResourcePoolsInput2ᚖgithubᚗcomᚋnetᚑautoᚋresourceManagerᚋentᚐResourcePoolOrder(ctx, tmp)
 		if err != nil {
 			return nil, err
 		}
@@ -3026,10 +3026,10 @@ func (ec *executionContext) field_Query_QueryRootResourcePools_args(ctx context.
 		}
 	}
 	args["filterByResources"] = arg6
-	var arg7 *model.SortResourcePoolsInput
+	var arg7 *ent.ResourcePoolOrder
 	if tmp, ok := rawArgs["sortBy"]; ok {
 		ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("sortBy"))
-		arg7, err = ec.unmarshalOSortResourcePoolsInput2ᚖgithubᚗcomᚋnetᚑautoᚋresourceManagerᚋgraphᚋgraphqlᚋmodelᚐSortResourcePoolsInput(ctx, tmp)
+		arg7, err = ec.unmarshalOSortResourcePoolsInput2ᚖgithubᚗcomᚋnetᚑautoᚋresourceManagerᚋentᚐResourcePoolOrder(ctx, tmp)
 		if err != nil {
 			return nil, err
 		}
@@ -6750,7 +6750,7 @@ func (ec *executionContext) _Query_QueryEmptyResourcePools(ctx context.Context, 
 	}()
 	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
 		ctx = rctx // use context from middleware stack in children
-		return ec.resolvers.Query().QueryEmptyResourcePools(rctx, fc.Args["resourceTypeId"].(*int), fc.Args["first"].(*int), fc.Args["last"].(*int), fc.Args["before"].(*ent.Cursor), fc.Args["after"].(*ent.Cursor), fc.Args["sortBy"].(*model.SortResourcePoolsInput))
+		return ec.resolvers.Query().QueryEmptyResourcePools(rctx, fc.Args["resourceTypeId"].(*int), fc.Args["first"].(*int), fc.Args["last"].(*int), fc.Args["before"].(*ent.Cursor), fc.Args["after"].(*ent.Cursor), fc.Args["sortBy"].(*ent.ResourcePoolOrder))
 	})
 	if err != nil {
 		ec.Error(ctx, err)
@@ -6813,7 +6813,7 @@ func (ec *executionContext) _Query_QueryResourcePools(ctx context.Context, field
 	}()
 	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
 		ctx = rctx // use context from middleware stack in children
-		return ec.resolvers.Query().QueryResourcePools(rctx, fc.Args["resourceTypeId"].(*int), fc.Args["tags"].(*model.TagOr), fc.Args["first"].(*int), fc.Args["last"].(*int), fc.Args["before"].(*ent.Cursor), fc.Args["after"].(*ent.Cursor), fc.Args["filterByResources"].(map[string]interface{}), fc.Args["sortBy"].(*model.SortResourcePoolsInput))
+		return ec.resolvers.Query().QueryResourcePools(rctx, fc.Args["resourceTypeId"].(*int), fc.Args["tags"].(*model.TagOr), fc.Args["first"].(*int), fc.Args["last"].(*int), fc.Args["before"].(*ent.Cursor), fc.Args["after"].(*ent.Cursor), fc.Args["filterByResources"].(map[string]interface{}), fc.Args["sortBy"].(*ent.ResourcePoolOrder))
 	})
 	if err != nil {
 		ec.Error(ctx, err)
@@ -7020,7 +7020,7 @@ func (ec *executionContext) _Query_QueryRootResourcePools(ctx context.Context, f
 	}()
 	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
 		ctx = rctx // use context from middleware stack in children
-		return ec.resolvers.Query().QueryRootResourcePools(rctx, fc.Args["resourceTypeId"].(*int), fc.Args["tags"].(*model.TagOr), fc.Args["first"].(*int), fc.Args["last"].(*int), fc.Args["before"].(*ent.Cursor), fc.Args["after"].(*ent.Cursor), fc.Args["filterByResources"].(map[string]interface{}), fc.Args["sortBy"].(*model.SortResourcePoolsInput))
+		return ec.resolvers.Query().QueryRootResourcePools(rctx, fc.Args["resourceTypeId"].(*int), fc.Args["tags"].(*model.TagOr), fc.Args["first"].(*int), fc.Args["last"].(*int), fc.Args["before"].(*ent.Cursor), fc.Args["after"].(*ent.Cursor), fc.Args["filterByResources"].(map[string]interface{}), fc.Args["sortBy"].(*ent.ResourcePoolOrder))
 	})
 	if err != nil {
 		ec.Error(ctx, err)
@@ -7083,7 +7083,7 @@ func (ec *executionContext) _Query_QueryLeafResourcePools(ctx context.Context, f
 	}()
 	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
 		ctx = rctx // use context from middleware stack in children
-		return ec.resolvers.Query().QueryLeafResourcePools(rctx, fc.Args["resourceTypeId"].(*int), fc.Args["tags"].(*model.TagOr), fc.Args["first"].(*int), fc.Args["last"].(*int), fc.Args["before"].(*ent.Cursor), fc.Args["after"].(*ent.Cursor), fc.Args["filterByResources"].(map[string]interface{}), fc.Args["sortBy"].(*model.SortResourcePoolsInput))
+		return ec.resolvers.Query().QueryLeafResourcePools(rctx, fc.Args["resourceTypeId"].(*int), fc.Args["tags"].(*model.TagOr), fc.Args["first"].(*int), fc.Args["last"].(*int), fc.Args["before"].(*ent.Cursor), fc.Args["after"].(*ent.Cursor), fc.Args["filterByResources"].(map[string]interface{}), fc.Args["sortBy"].(*ent.ResourcePoolOrder))
 	})
 	if err != nil {
 		ec.Error(ctx, err)
@@ -11947,33 +11947,33 @@ func (ec *executionContext) unmarshalInputResourcePoolInput(ctx context.Context,
 	return it, nil
 }
 
-func (ec *executionContext) unmarshalInputSortResourcePoolsInput(ctx context.Context, obj interface{}) (model.SortResourcePoolsInput, error) {
-	var it model.SortResourcePoolsInput
+func (ec *executionContext) unmarshalInputSortResourcePoolsInput(ctx context.Context, obj interface{}) (ent.ResourcePoolOrder, error) {
+	var it ent.ResourcePoolOrder
 	asMap := map[string]interface{}{}
 	for k, v := range obj.(map[string]interface{}) {
 		asMap[k] = v
 	}
 
-	fieldsInOrder := [...]string{"sortKey", "direction"}
+	fieldsInOrder := [...]string{"direction", "field"}
 	for _, k := range fieldsInOrder {
 		v, ok := asMap[k]
 		if !ok {
 			continue
 		}
 		switch k {
-		case "sortKey":
-			var err error
-
-			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("sortKey"))
-			it.SortKey, err = ec.unmarshalNSortResourcePoolsBy2githubᚗcomᚋnetᚑautoᚋresourceManagerᚋgraphᚋgraphqlᚋmodelᚐSortResourcePoolsBy(ctx, v)
-			if err != nil {
-				return it, err
-			}
 		case "direction":
 			var err error
 
 			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("direction"))
-			it.Direction, err = ec.unmarshalNSortDirection2githubᚗcomᚋnetᚑautoᚋresourceManagerᚋgraphᚋgraphqlᚋmodelᚐSortDirection(ctx, v)
+			it.Direction, err = ec.unmarshalNOrderDirection2githubᚗcomᚋnetᚑautoᚋresourceManagerᚋentᚐOrderDirection(ctx, v)
+			if err != nil {
+				return it, err
+			}
+		case "field":
+			var err error
+
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("field"))
+			it.Field, err = ec.unmarshalOResourcePoolOrderField2ᚖgithubᚗcomᚋnetᚑautoᚋresourceManagerᚋentᚐResourcePoolOrderField(ctx, v)
 			if err != nil {
 				return it, err
 			}
@@ -14938,6 +14938,16 @@ func (ec *executionContext) marshalNMap2ᚕmapᚄ(ctx context.Context, sel ast.S
 	return ret
 }
 
+func (ec *executionContext) unmarshalNOrderDirection2githubᚗcomᚋnetᚑautoᚋresourceManagerᚋentᚐOrderDirection(ctx context.Context, v interface{}) (ent.OrderDirection, error) {
+	var res ent.OrderDirection
+	err := res.UnmarshalGQL(v)
+	return res, graphql.ErrorOnPath(ctx, err)
+}
+
+func (ec *executionContext) marshalNOrderDirection2githubᚗcomᚋnetᚑautoᚋresourceManagerᚋentᚐOrderDirection(ctx context.Context, sel ast.SelectionSet, v ent.OrderDirection) graphql.Marshaler {
+	return v
+}
+
 func (ec *executionContext) marshalNOutputCursor2githubᚗcomᚋnetᚑautoᚋresourceManagerᚋentᚐCursor(ctx context.Context, sel ast.SelectionSet, v ent.Cursor) graphql.Marshaler {
 	return v
 }
@@ -15384,26 +15394,6 @@ func (ec *executionContext) marshalNResourceType2ᚖgithubᚗcomᚋnetᚑautoᚋ
 		return graphql.Null
 	}
 	return ec._ResourceType(ctx, sel, v)
-}
-
-func (ec *executionContext) unmarshalNSortDirection2githubᚗcomᚋnetᚑautoᚋresourceManagerᚋgraphᚋgraphqlᚋmodelᚐSortDirection(ctx context.Context, v interface{}) (model.SortDirection, error) {
-	var res model.SortDirection
-	err := res.UnmarshalGQL(v)
-	return res, graphql.ErrorOnPath(ctx, err)
-}
-
-func (ec *executionContext) marshalNSortDirection2githubᚗcomᚋnetᚑautoᚋresourceManagerᚋgraphᚋgraphqlᚋmodelᚐSortDirection(ctx context.Context, sel ast.SelectionSet, v model.SortDirection) graphql.Marshaler {
-	return v
-}
-
-func (ec *executionContext) unmarshalNSortResourcePoolsBy2githubᚗcomᚋnetᚑautoᚋresourceManagerᚋgraphᚋgraphqlᚋmodelᚐSortResourcePoolsBy(ctx context.Context, v interface{}) (model.SortResourcePoolsBy, error) {
-	var res model.SortResourcePoolsBy
-	err := res.UnmarshalGQL(v)
-	return res, graphql.ErrorOnPath(ctx, err)
-}
-
-func (ec *executionContext) marshalNSortResourcePoolsBy2githubᚗcomᚋnetᚑautoᚋresourceManagerᚋgraphᚋgraphqlᚋmodelᚐSortResourcePoolsBy(ctx context.Context, sel ast.SelectionSet, v model.SortResourcePoolsBy) graphql.Marshaler {
-	return v
 }
 
 func (ec *executionContext) unmarshalNString2string(ctx context.Context, v interface{}) (string, error) {
@@ -16100,7 +16090,23 @@ func (ec *executionContext) marshalOResourcePoolEdge2ᚖgithubᚗcomᚋnetᚑaut
 	return ec._ResourcePoolEdge(ctx, sel, v)
 }
 
-func (ec *executionContext) unmarshalOSortResourcePoolsInput2ᚖgithubᚗcomᚋnetᚑautoᚋresourceManagerᚋgraphᚋgraphqlᚋmodelᚐSortResourcePoolsInput(ctx context.Context, v interface{}) (*model.SortResourcePoolsInput, error) {
+func (ec *executionContext) unmarshalOResourcePoolOrderField2ᚖgithubᚗcomᚋnetᚑautoᚋresourceManagerᚋentᚐResourcePoolOrderField(ctx context.Context, v interface{}) (*ent.ResourcePoolOrderField, error) {
+	if v == nil {
+		return nil, nil
+	}
+	var res = new(ent.ResourcePoolOrderField)
+	err := res.UnmarshalGQL(v)
+	return res, graphql.ErrorOnPath(ctx, err)
+}
+
+func (ec *executionContext) marshalOResourcePoolOrderField2ᚖgithubᚗcomᚋnetᚑautoᚋresourceManagerᚋentᚐResourcePoolOrderField(ctx context.Context, sel ast.SelectionSet, v *ent.ResourcePoolOrderField) graphql.Marshaler {
+	if v == nil {
+		return graphql.Null
+	}
+	return v
+}
+
+func (ec *executionContext) unmarshalOSortResourcePoolsInput2ᚖgithubᚗcomᚋnetᚑautoᚋresourceManagerᚋentᚐResourcePoolOrder(ctx context.Context, v interface{}) (*ent.ResourcePoolOrder, error) {
 	if v == nil {
 		return nil, nil
 	}

@@ -111,7 +111,8 @@ func (ResourcePool) Fields() []ent.Field {
 	return []ent.Field{
 		field.String("name").
 			NotEmpty().
-			Unique(),
+			Unique().
+			Annotations(entgql.OrderField("name")),
 		field.Text("description").
 			Optional().
 			Nillable(),
@@ -120,7 +121,8 @@ func (ResourcePool) Fields() []ent.Field {
 		field.Int("dealocation_safety_period").
 			Default(0).
 			Comment("How long to keep resources unavailable after dealocation (in seconds)." +
-				" -1 release never, 0 release immediately"),
+				" -1 release never, 0 release immediately").
+			Annotations(entgql.OrderField("dealocationSafetyPeriod")),
 	}
 }
 

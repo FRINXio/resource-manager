@@ -3,10 +3,6 @@
 package model
 
 import (
-	"fmt"
-	"io"
-	"strconv"
-
 	"github.com/net-auto/resourceManager/ent"
 	"github.com/net-auto/resourceManager/ent/allocationstrategy"
 )
@@ -202,11 +198,6 @@ type ResourcePoolInput struct {
 	PoolProperties   map[string]interface{} `json:"poolProperties"`
 }
 
-type SortResourcePoolsInput struct {
-	SortKey   SortResourcePoolsBy `json:"sortKey"`
-	Direction SortDirection       `json:"direction"`
-}
-
 // Helper entities for tag search
 type TagAnd struct {
 	MatchesAll []string `json:"matchesAll"`
@@ -259,86 +250,4 @@ type UpdateTagInput struct {
 // Output of updating a tag
 type UpdateTagPayload struct {
 	Tag *ent.Tag `json:"tag"`
-}
-
-type SortDirection string
-
-const (
-	SortDirectionAsc  SortDirection = "asc"
-	SortDirectionDesc SortDirection = "desc"
-)
-
-var AllSortDirection = []SortDirection{
-	SortDirectionAsc,
-	SortDirectionDesc,
-}
-
-func (e SortDirection) IsValid() bool {
-	switch e {
-	case SortDirectionAsc, SortDirectionDesc:
-		return true
-	}
-	return false
-}
-
-func (e SortDirection) String() string {
-	return string(e)
-}
-
-func (e *SortDirection) UnmarshalGQL(v interface{}) error {
-	str, ok := v.(string)
-	if !ok {
-		return fmt.Errorf("enums must be strings")
-	}
-
-	*e = SortDirection(str)
-	if !e.IsValid() {
-		return fmt.Errorf("%s is not a valid SortDirection", str)
-	}
-	return nil
-}
-
-func (e SortDirection) MarshalGQL(w io.Writer) {
-	fmt.Fprint(w, strconv.Quote(e.String()))
-}
-
-type SortResourcePoolsBy string
-
-const (
-	SortResourcePoolsByName                    SortResourcePoolsBy = "name"
-	SortResourcePoolsByDealocationSafetyPeriod SortResourcePoolsBy = "dealocationSafetyPeriod"
-)
-
-var AllSortResourcePoolsBy = []SortResourcePoolsBy{
-	SortResourcePoolsByName,
-	SortResourcePoolsByDealocationSafetyPeriod,
-}
-
-func (e SortResourcePoolsBy) IsValid() bool {
-	switch e {
-	case SortResourcePoolsByName, SortResourcePoolsByDealocationSafetyPeriod:
-		return true
-	}
-	return false
-}
-
-func (e SortResourcePoolsBy) String() string {
-	return string(e)
-}
-
-func (e *SortResourcePoolsBy) UnmarshalGQL(v interface{}) error {
-	str, ok := v.(string)
-	if !ok {
-		return fmt.Errorf("enums must be strings")
-	}
-
-	*e = SortResourcePoolsBy(str)
-	if !e.IsValid() {
-		return fmt.Errorf("%s is not a valid SortResourcePoolsBy", str)
-	}
-	return nil
-}
-
-func (e SortResourcePoolsBy) MarshalGQL(w io.Writer) {
-	fmt.Fprint(w, strconv.Quote(e.String()))
 }
