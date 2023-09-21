@@ -39,6 +39,7 @@ COPY --from=wasmer /app/wasm-worker/wasm ./wasm
 RUN ./.wasmer/bin/wasmer ./wasm/quickjs/quickjs.wasm -- --std -e 'console.log("Wasmer works!")'
 
 COPY run.sh run.sh
+COPY go.mod go.mod
 COPY --from=build /resMgr/resourceManager resourceManager
 
 RUN groupadd -r resManager && \
