@@ -354,19 +354,19 @@ type PoolCapacityPayload {
     utilizedCapacity: String!
 }
 
-enum SortResourcePoolsBy {
+enum OrderDirection @goModel(model: "github.com/net-auto/resourceManager/ent.OrderDirection") {
+    ASC
+    DESC
+}
+
+enum ResourcePoolOrderField @goModel(model: "github.com/net-auto/resourceManager/ent.ResourcePoolOrderField") {
     name
     dealocationSafetyPeriod
 }
 
-enum SortDirection {
-    asc
-    desc
-}
-
-input SortResourcePoolsInput {
-    sortKey: SortResourcePoolsBy!
-    direction: SortDirection!
+input SortResourcePoolsInput @goModel(model: "github.com/net-auto/resourceManager/ent.ResourcePoolOrder") {
+    direction: OrderDirection!
+    field: ResourcePoolOrderField
 }
 
 type Query {

@@ -342,27 +342,3 @@ func filterByJsonNumberVal(ctx context.Context, query *ent.PropertyTypeQuery, js
 		return nil, gqlerror.Errorf("Unable to filter by json number value: %v", err)
 	}
 }
-
-func orderResourcePool(input *model.SortResourcePoolsInput, query *ent.ResourcePoolQuery) (*ent.ResourcePoolQuery, error) {
-	var orderFunc ent.OrderFunc = nil
-	var sortKey = ""
-
-	switch input.SortKey {
-	case model.SortResourcePoolsByDealocationSafetyPeriod:
-		sortKey = resourcePool.FieldDealocationSafetyPeriod
-
-	case model.SortResourcePoolsByName:
-		sortKey = resourcePool.FieldName
-
-	default:
-		return nil, gqlerror.Errorf("Unable to order resource pool, unknown sort key: %v", input.SortKey)
-	}
-
-	if input.Direction == model.SortDirectionAsc {
-		orderFunc = ent.Asc(sortKey)
-	} else {
-		orderFunc = ent.Desc(sortKey)
-	}
-
-	return query.Order(orderFunc), nil
-}

@@ -647,8 +647,8 @@ test('test ordering of resource pools by name in descending direction', async (t
     }
 
     const pools = await queryResourcePools(undefined, undefined, undefined, undefined, undefined, {
-        sortKey: "name",
-        direction: "desc"
+        field: "name",
+        direction: "DESC"
     });
 
     t.equal(pools.edges[0].node.Name.substring(0, 6), "pool-2");
@@ -663,8 +663,8 @@ test('test ordering of resource pools by name in ascending direction', async (t)
     }
 
     const pools = await queryResourcePools(undefined, undefined, undefined, undefined, undefined, {
-        sortKey: "name",
-        direction: "asc"
+        field: "name",
+        direction: "ASC"
     });
 
     t.equal(pools.edges[0].node.Name.substring(0, 6), "pool-0");
@@ -679,8 +679,8 @@ test('test ordering of resource pools by dealocation safety period in descending
     }
 
     const pools = await queryResourcePools(undefined, undefined, undefined, undefined, undefined, {
-        sortKey: "dealocationSafetyPeriod",
-        direction: "desc"
+        field: "dealocationSafetyPeriod",
+        direction: "DESC"
     });
 
     t.equal(pools.edges[0].node.DealocationSafetyPeriod, 2);
@@ -695,8 +695,8 @@ test('test ordering of resource pools by dealocation safety period in ascending 
     }
 
     const pools = await queryResourcePools(undefined, undefined, undefined, undefined, undefined, {
-        sortKey: "dealocationSafetyPeriod",
-        direction: "asc"
+        field: "dealocationSafetyPeriod",
+        direction: "ASC"
     });
 
     t.equal(pools.edges[0].node.DealocationSafetyPeriod, 0);
@@ -705,18 +705,33 @@ test('test ordering of resource pools by dealocation safety period in ascending 
     t.end();
 });
 
-test('test ordering of resource pools by dealocation safety period in ascending direction', async (t) => {
+test('test ordering of resource pools by non existing field in ascending direction', async (t) => {
     for (let i = 0; i < 3; i++) {
         await createIpv4PrefixRootPool("10.0.0.0", 24, false, i);
     }
 
     const pools = await queryResourcePools(undefined, undefined, undefined, undefined, undefined, {
-        sortKey: "nonExistingSortKey",
-        direction: "asc"
+        field: "nonExistingSortKey",
+        direction: "ASC"
     });
 
-
     t.notOk(pools);
+
+    await cleanup();
+    t.end();
+});
+
+test('test ordering of resource pools by dealocation safety period in ascending direction with pagination', async (t) => {
+    for (let i = 0; i < 3; i++) {
+        await createIpv4PrefixRootPool("10.0.0.0", 24, false, i);
+    }
+
+    const pools = await queryResourcePools(20, undefined, undefined, undefined, undefined, {
+        field: "dealocationSafetyPeriod",
+        direction: "ASC"
+    });
+
+    t.ok(pools);
 
     await cleanup();
     t.end();
