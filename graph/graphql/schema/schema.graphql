@@ -41,14 +41,6 @@ type PropertyType implements Node
     id: ID!
 }
 
-"""
-Holds the string value for pagination
-"""
-type OutputCursor
-@goModel(model: "github.com/net-auto/resourceManager/ent.Cursor"){
-    ID: String!
-}
-
 scalar Cursor @goModel(model: "github.com/net-auto/resourceManager/ent.Cursor")
 
 """
@@ -56,10 +48,10 @@ Holds information about the requested pagination page
 """
 type PageInfo
 @goModel(model: "github.com/net-auto/resourceManager/ent.PageInfo"){
-    endCursor: OutputCursor
+    endCursor: Cursor
     hasNextPage: Boolean!
     hasPreviousPage: Boolean!
-    startCursor: OutputCursor
+    startCursor: Cursor
 }
 
 """
@@ -67,7 +59,7 @@ A Relay-specific entity that holds information about the requested pagination pa
 """
 type ResourceEdge
 @goModel(model: "github.com/net-auto/resourceManager/ent.ResourceEdge"){
-    cursor: OutputCursor!
+    cursor: Cursor!
     node: Resource!
 }
 
@@ -96,13 +88,13 @@ type ResourcePool implements Node
     Resources: [Resource!]!
     DealocationSafetyPeriod: Int!
     Tags: [Tag!]!
-    allocatedResources(first: Int, last: Int, before: String, after: String): ResourceConnection
+    allocatedResources(first: Int, last: Int, before: Cursor, after: Cursor): ResourceConnection
     id: ID!
 }
 
 type ResourcePoolEdge
 @goModel(model: "github.com/net-auto/resourceManager/ent.ResourcePoolEdge") {
-  cursor: OutputCursor!
+  cursor: Cursor!
   node: ResourcePool!
 }
 
@@ -374,9 +366,9 @@ type Query {
     QueryPoolCapacity(poolId: ID!): PoolCapacityPayload!
     QueryPoolTypes: [PoolType!]!
     QueryResource(input: Map!, poolId: ID!): Resource!
-    QueryResources(poolId: ID!, first: Int, last: Int, before: String, after: String): ResourceConnection!
+    QueryResources(poolId: ID!, first: Int, last: Int, before: Cursor, after: Cursor): ResourceConnection!
     QueryResourcesByAltId(input: Map!, poolId: ID,
-        first: Int, last: Int, before: String, after: String): ResourceConnection!
+        first: Int, last: Int, before: Cursor, after: Cursor): ResourceConnection!
     QueryAllocationStrategy(allocationStrategyId: ID!): AllocationStrategy!
     QueryAllocationStrategies(byName: String): [AllocationStrategy!]!
     QueryResourceTypes(byName: String): [ResourceType!]!
