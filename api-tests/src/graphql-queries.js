@@ -88,7 +88,7 @@ export async function getResourcePool(poolId, before, after, first, last) {
     }
     return client.query({
         query: gql`
-            query getResourcePool($poolId: ID!, $before: String, $after: String, $first: Int, $last: Int) {
+            query getResourcePool($poolId: ID!, $before: Cursor, $after: Cursor, $first: Int, $last: Int) {
                 QueryResourcePool(poolId: $poolId) {
                    AllocationStrategy {
                        id
@@ -98,21 +98,15 @@ export async function getResourcePool(poolId, before, after, first, last) {
                    PoolType
                    allocatedResources(first: $first, last: $last, before: $before, after: $after) {
                        edges {
-                           cursor {
-                               ID
-                           }
+                           cursor
                            node {
                                Properties
                                id
                            }
                        }
                        pageInfo {
-                           endCursor {
-                               ID
-                           }
-                           startCursor {
-                               ID
-                           }
+                           endCursor
+                           startCursor
                            hasNextPage
                            hasPreviousPage
                        }
@@ -206,7 +200,7 @@ export async function getResourcesForPool(poolId){
 export async function getPaginatedResourcesForPool(poolId, first, last, before, after){
     return client.query({
         query: gql`
-            query getResources($poolId: ID!, $first: Int, $last: Int, $before: String, $after: String) {
+            query getResources($poolId: ID!, $first: Int, $last: Int, $before: Cursor, $after: Cursor) {
                 QueryResources(poolId: $poolId,  first: $first, last: $last, before: $before, after: $after) {
                     edges {
                         node {
@@ -218,9 +212,7 @@ export async function getPaginatedResourcesForPool(poolId, first, last, before, 
                                 PoolType
                             }
                         }
-                        cursor{
-                            ID
-                        }
+                        cursor
                     }
                 }
             }
@@ -1008,17 +1000,11 @@ export async function queryResourcePools(first, last, before, after, filter, sor
                             Name
                             DealocationSafetyPeriod
                         }
-                        cursor{
-                            ID
-                        }
+                        cursor
                     }
                     pageInfo {
-                        endCursor {
-                            ID
-                        }
-                        startCursor {
-                            ID
-                        }
+                        endCursor
+                        startCursor
                         hasPreviousPage
                         hasNextPage
                     }
