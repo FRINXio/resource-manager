@@ -40,7 +40,6 @@ type Config struct {
 
 type ResolverRoot interface {
 	Mutation() MutationResolver
-	OutputCursor() OutputCursorResolver
 	PropertyType() PropertyTypeResolver
 	Query() QueryResolver
 	Resource() ResourceResolver
@@ -136,10 +135,6 @@ type ComplexityRoot struct {
 		UpdateTag                  func(childComplexity int, input model.UpdateTagInput) int
 	}
 
-	OutputCursor struct {
-		ID func(childComplexity int) int
-	}
-
 	PageInfo struct {
 		EndCursor       func(childComplexity int) int
 		HasNextPage     func(childComplexity int) int
@@ -177,8 +172,8 @@ type ComplexityRoot struct {
 		QueryResourcePoolHierarchyPath func(childComplexity int, poolID int) int
 		QueryResourcePools             func(childComplexity int, resourceTypeID *int, tags *model.TagOr, first *int, last *int, before *ent.Cursor, after *ent.Cursor, filterByResources map[string]interface{}, sortBy *ent.ResourcePoolOrder) int
 		QueryResourceTypes             func(childComplexity int, byName *string) int
-		QueryResources                 func(childComplexity int, poolID int, first *int, last *int, before *string, after *string) int
-		QueryResourcesByAltID          func(childComplexity int, input map[string]interface{}, poolID *int, first *int, last *int, before *string, after *string) int
+		QueryResources                 func(childComplexity int, poolID int, first *int, last *int, before *ent.Cursor, after *ent.Cursor) int
+		QueryResourcesByAltID          func(childComplexity int, input map[string]interface{}, poolID *int, first *int, last *int, before *ent.Cursor, after *ent.Cursor) int
 		QueryRootResourcePools         func(childComplexity int, resourceTypeID *int, tags *model.TagOr, first *int, last *int, before *ent.Cursor, after *ent.Cursor, filterByResources map[string]interface{}, sortBy *ent.ResourcePoolOrder) int
 		QueryTags                      func(childComplexity int) int
 		SearchPoolsByTags              func(childComplexity int, tags *model.TagOr, first *int, last *int, before *ent.Cursor, after *ent.Cursor) int
@@ -205,7 +200,7 @@ type ComplexityRoot struct {
 	}
 
 	ResourcePool struct {
-		AllocatedResources      func(childComplexity int, first *int, last *int, before *string, after *string) int
+		AllocatedResources      func(childComplexity int, first *int, last *int, before *ent.Cursor, after *ent.Cursor) int
 		AllocationStrategy      func(childComplexity int) int
 		Capacity                func(childComplexity int) int
 		DealocationSafetyPeriod func(childComplexity int) int
@@ -284,9 +279,6 @@ type MutationResolver interface {
 	UpdateResourceTypeName(ctx context.Context, input model.UpdateResourceTypeNameInput) (*model.UpdateResourceTypeNamePayload, error)
 	UpdateResourceAltID(ctx context.Context, input map[string]interface{}, poolID int, alternativeID map[string]interface{}) (*ent.Resource, error)
 }
-type OutputCursorResolver interface {
-	ID(ctx context.Context, obj *ent.Cursor) (string, error)
-}
 type PropertyTypeResolver interface {
 	Type(ctx context.Context, obj *ent.PropertyType) (string, error)
 }
@@ -294,8 +286,8 @@ type QueryResolver interface {
 	QueryPoolCapacity(ctx context.Context, poolID int) (*model.PoolCapacityPayload, error)
 	QueryPoolTypes(ctx context.Context) ([]resourcepool.PoolType, error)
 	QueryResource(ctx context.Context, input map[string]interface{}, poolID int) (*ent.Resource, error)
-	QueryResources(ctx context.Context, poolID int, first *int, last *int, before *string, after *string) (*ent.ResourceConnection, error)
-	QueryResourcesByAltID(ctx context.Context, input map[string]interface{}, poolID *int, first *int, last *int, before *string, after *string) (*ent.ResourceConnection, error)
+	QueryResources(ctx context.Context, poolID int, first *int, last *int, before *ent.Cursor, after *ent.Cursor) (*ent.ResourceConnection, error)
+	QueryResourcesByAltID(ctx context.Context, input map[string]interface{}, poolID *int, first *int, last *int, before *ent.Cursor, after *ent.Cursor) (*ent.ResourceConnection, error)
 	QueryAllocationStrategy(ctx context.Context, allocationStrategyID int) (*ent.AllocationStrategy, error)
 	QueryAllocationStrategies(ctx context.Context, byName *string) ([]*ent.AllocationStrategy, error)
 	QueryResourceTypes(ctx context.Context, byName *string) ([]*ent.ResourceType, error)
@@ -323,7 +315,7 @@ type ResourcePoolResolver interface {
 
 	Resources(ctx context.Context, obj *ent.ResourcePool) ([]*ent.Resource, error)
 
-	AllocatedResources(ctx context.Context, obj *ent.ResourcePool, first *int, last *int, before *string, after *string) (*ent.ResourceConnection, error)
+	AllocatedResources(ctx context.Context, obj *ent.ResourcePool, first *int, last *int, before *ent.Cursor, after *ent.Cursor) (*ent.ResourceConnection, error)
 }
 
 type executableSchema struct {
@@ -731,13 +723,6 @@ func (e *executableSchema) Complexity(typeName, field string, childComplexity in
 
 		return e.complexity.Mutation.UpdateTag(childComplexity, args["input"].(model.UpdateTagInput)), true
 
-	case "OutputCursor.ID":
-		if e.complexity.OutputCursor.ID == nil {
-			break
-		}
-
-		return e.complexity.OutputCursor.ID(childComplexity), true
-
 	case "PageInfo.endCursor":
 		if e.complexity.PageInfo.EndCursor == nil {
 			break
@@ -1002,7 +987,7 @@ func (e *executableSchema) Complexity(typeName, field string, childComplexity in
 			return 0, false
 		}
 
-		return e.complexity.Query.QueryResources(childComplexity, args["poolId"].(int), args["first"].(*int), args["last"].(*int), args["before"].(*string), args["after"].(*string)), true
+		return e.complexity.Query.QueryResources(childComplexity, args["poolId"].(int), args["first"].(*int), args["last"].(*int), args["before"].(*ent.Cursor), args["after"].(*ent.Cursor)), true
 
 	case "Query.QueryResourcesByAltId":
 		if e.complexity.Query.QueryResourcesByAltID == nil {
@@ -1014,7 +999,7 @@ func (e *executableSchema) Complexity(typeName, field string, childComplexity in
 			return 0, false
 		}
 
-		return e.complexity.Query.QueryResourcesByAltID(childComplexity, args["input"].(map[string]interface{}), args["poolId"].(*int), args["first"].(*int), args["last"].(*int), args["before"].(*string), args["after"].(*string)), true
+		return e.complexity.Query.QueryResourcesByAltID(childComplexity, args["input"].(map[string]interface{}), args["poolId"].(*int), args["first"].(*int), args["last"].(*int), args["before"].(*ent.Cursor), args["after"].(*ent.Cursor)), true
 
 	case "Query.QueryRootResourcePools":
 		if e.complexity.Query.QueryRootResourcePools == nil {
@@ -1134,7 +1119,7 @@ func (e *executableSchema) Complexity(typeName, field string, childComplexity in
 			return 0, false
 		}
 
-		return e.complexity.ResourcePool.AllocatedResources(childComplexity, args["first"].(*int), args["last"].(*int), args["before"].(*string), args["after"].(*string)), true
+		return e.complexity.ResourcePool.AllocatedResources(childComplexity, args["first"].(*int), args["last"].(*int), args["before"].(*ent.Cursor), args["after"].(*ent.Cursor)), true
 
 	case "ResourcePool.AllocationStrategy":
 		if e.complexity.ResourcePool.AllocationStrategy == nil {
@@ -1458,14 +1443,6 @@ type PropertyType implements Node
     id: ID!
 }
 
-"""
-Holds the string value for pagination
-"""
-type OutputCursor
-@goModel(model: "github.com/net-auto/resourceManager/ent.Cursor"){
-    ID: String!
-}
-
 scalar Cursor @goModel(model: "github.com/net-auto/resourceManager/ent.Cursor")
 
 """
@@ -1473,10 +1450,10 @@ Holds information about the requested pagination page
 """
 type PageInfo
 @goModel(model: "github.com/net-auto/resourceManager/ent.PageInfo"){
-    endCursor: OutputCursor
+    endCursor: Cursor
     hasNextPage: Boolean!
     hasPreviousPage: Boolean!
-    startCursor: OutputCursor
+    startCursor: Cursor
 }
 
 """
@@ -1484,7 +1461,7 @@ A Relay-specific entity that holds information about the requested pagination pa
 """
 type ResourceEdge
 @goModel(model: "github.com/net-auto/resourceManager/ent.ResourceEdge"){
-    cursor: OutputCursor!
+    cursor: Cursor!
     node: Resource!
 }
 
@@ -1513,13 +1490,13 @@ type ResourcePool implements Node
     Resources: [Resource!]!
     DealocationSafetyPeriod: Int!
     Tags: [Tag!]!
-    allocatedResources(first: Int, last: Int, before: String, after: String): ResourceConnection
+    allocatedResources(first: Int, last: Int, before: Cursor, after: Cursor): ResourceConnection
     id: ID!
 }
 
 type ResourcePoolEdge
 @goModel(model: "github.com/net-auto/resourceManager/ent.ResourcePoolEdge") {
-  cursor: OutputCursor!
+  cursor: Cursor!
   node: ResourcePool!
 }
 
@@ -1791,9 +1768,9 @@ type Query {
     QueryPoolCapacity(poolId: ID!): PoolCapacityPayload!
     QueryPoolTypes: [PoolType!]!
     QueryResource(input: Map!, poolId: ID!): Resource!
-    QueryResources(poolId: ID!, first: Int, last: Int, before: String, after: String): ResourceConnection!
+    QueryResources(poolId: ID!, first: Int, last: Int, before: Cursor, after: Cursor): ResourceConnection!
     QueryResourcesByAltId(input: Map!, poolId: ID,
-        first: Int, last: Int, before: String, after: String): ResourceConnection!
+        first: Int, last: Int, before: Cursor, after: Cursor): ResourceConnection!
     QueryAllocationStrategy(allocationStrategyId: ID!): AllocationStrategy!
     QueryAllocationStrategies(byName: String): [AllocationStrategy!]!
     QueryResourceTypes(byName: String): [ResourceType!]!
@@ -2888,19 +2865,19 @@ func (ec *executionContext) field_Query_QueryResourcesByAltId_args(ctx context.C
 		}
 	}
 	args["last"] = arg3
-	var arg4 *string
+	var arg4 *ent.Cursor
 	if tmp, ok := rawArgs["before"]; ok {
 		ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("before"))
-		arg4, err = ec.unmarshalOString2ᚖstring(ctx, tmp)
+		arg4, err = ec.unmarshalOCursor2ᚖgithubᚗcomᚋnetᚑautoᚋresourceManagerᚋentᚐCursor(ctx, tmp)
 		if err != nil {
 			return nil, err
 		}
 	}
 	args["before"] = arg4
-	var arg5 *string
+	var arg5 *ent.Cursor
 	if tmp, ok := rawArgs["after"]; ok {
 		ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("after"))
-		arg5, err = ec.unmarshalOString2ᚖstring(ctx, tmp)
+		arg5, err = ec.unmarshalOCursor2ᚖgithubᚗcomᚋnetᚑautoᚋresourceManagerᚋentᚐCursor(ctx, tmp)
 		if err != nil {
 			return nil, err
 		}
@@ -2939,19 +2916,19 @@ func (ec *executionContext) field_Query_QueryResources_args(ctx context.Context,
 		}
 	}
 	args["last"] = arg2
-	var arg3 *string
+	var arg3 *ent.Cursor
 	if tmp, ok := rawArgs["before"]; ok {
 		ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("before"))
-		arg3, err = ec.unmarshalOString2ᚖstring(ctx, tmp)
+		arg3, err = ec.unmarshalOCursor2ᚖgithubᚗcomᚋnetᚑautoᚋresourceManagerᚋentᚐCursor(ctx, tmp)
 		if err != nil {
 			return nil, err
 		}
 	}
 	args["before"] = arg3
-	var arg4 *string
+	var arg4 *ent.Cursor
 	if tmp, ok := rawArgs["after"]; ok {
 		ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("after"))
-		arg4, err = ec.unmarshalOString2ᚖstring(ctx, tmp)
+		arg4, err = ec.unmarshalOCursor2ᚖgithubᚗcomᚋnetᚑautoᚋresourceManagerᚋentᚐCursor(ctx, tmp)
 		if err != nil {
 			return nil, err
 		}
@@ -3140,19 +3117,19 @@ func (ec *executionContext) field_ResourcePool_allocatedResources_args(ctx conte
 		}
 	}
 	args["last"] = arg1
-	var arg2 *string
+	var arg2 *ent.Cursor
 	if tmp, ok := rawArgs["before"]; ok {
 		ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("before"))
-		arg2, err = ec.unmarshalOString2ᚖstring(ctx, tmp)
+		arg2, err = ec.unmarshalOCursor2ᚖgithubᚗcomᚋnetᚑautoᚋresourceManagerᚋentᚐCursor(ctx, tmp)
 		if err != nil {
 			return nil, err
 		}
 	}
 	args["before"] = arg2
-	var arg3 *string
+	var arg3 *ent.Cursor
 	if tmp, ok := rawArgs["after"]; ok {
 		ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("after"))
-		arg3, err = ec.unmarshalOString2ᚖstring(ctx, tmp)
+		arg3, err = ec.unmarshalOCursor2ᚖgithubᚗcomᚋnetᚑautoᚋresourceManagerᚋentᚐCursor(ctx, tmp)
 		if err != nil {
 			return nil, err
 		}
@@ -5479,50 +5456,6 @@ func (ec *executionContext) fieldContext_Mutation_UpdateResourceAltId(ctx contex
 	return fc, nil
 }
 
-func (ec *executionContext) _OutputCursor_ID(ctx context.Context, field graphql.CollectedField, obj *ent.Cursor) (ret graphql.Marshaler) {
-	fc, err := ec.fieldContext_OutputCursor_ID(ctx, field)
-	if err != nil {
-		return graphql.Null
-	}
-	ctx = graphql.WithFieldContext(ctx, fc)
-	defer func() {
-		if r := recover(); r != nil {
-			ec.Error(ctx, ec.Recover(ctx, r))
-			ret = graphql.Null
-		}
-	}()
-	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
-		ctx = rctx // use context from middleware stack in children
-		return ec.resolvers.OutputCursor().ID(rctx, obj)
-	})
-	if err != nil {
-		ec.Error(ctx, err)
-		return graphql.Null
-	}
-	if resTmp == nil {
-		if !graphql.HasFieldError(ctx, fc) {
-			ec.Errorf(ctx, "must not be null")
-		}
-		return graphql.Null
-	}
-	res := resTmp.(string)
-	fc.Result = res
-	return ec.marshalNString2string(ctx, field.Selections, res)
-}
-
-func (ec *executionContext) fieldContext_OutputCursor_ID(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
-	fc = &graphql.FieldContext{
-		Object:     "OutputCursor",
-		Field:      field,
-		IsMethod:   true,
-		IsResolver: true,
-		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
-			return nil, errors.New("field of type String does not have child fields")
-		},
-	}
-	return fc, nil
-}
-
 func (ec *executionContext) _PageInfo_endCursor(ctx context.Context, field graphql.CollectedField, obj *ent.PageInfo) (ret graphql.Marshaler) {
 	fc, err := ec.fieldContext_PageInfo_endCursor(ctx, field)
 	if err != nil {
@@ -5548,7 +5481,7 @@ func (ec *executionContext) _PageInfo_endCursor(ctx context.Context, field graph
 	}
 	res := resTmp.(*ent.Cursor)
 	fc.Result = res
-	return ec.marshalOOutputCursor2ᚖgithubᚗcomᚋnetᚑautoᚋresourceManagerᚋentᚐCursor(ctx, field.Selections, res)
+	return ec.marshalOCursor2ᚖgithubᚗcomᚋnetᚑautoᚋresourceManagerᚋentᚐCursor(ctx, field.Selections, res)
 }
 
 func (ec *executionContext) fieldContext_PageInfo_endCursor(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
@@ -5558,11 +5491,7 @@ func (ec *executionContext) fieldContext_PageInfo_endCursor(ctx context.Context,
 		IsMethod:   false,
 		IsResolver: false,
 		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
-			switch field.Name {
-			case "ID":
-				return ec.fieldContext_OutputCursor_ID(ctx, field)
-			}
-			return nil, fmt.Errorf("no field named %q was found under type OutputCursor", field.Name)
+			return nil, errors.New("field of type Cursor does not have child fields")
 		},
 	}
 	return fc, nil
@@ -5681,7 +5610,7 @@ func (ec *executionContext) _PageInfo_startCursor(ctx context.Context, field gra
 	}
 	res := resTmp.(*ent.Cursor)
 	fc.Result = res
-	return ec.marshalOOutputCursor2ᚖgithubᚗcomᚋnetᚑautoᚋresourceManagerᚋentᚐCursor(ctx, field.Selections, res)
+	return ec.marshalOCursor2ᚖgithubᚗcomᚋnetᚑautoᚋresourceManagerᚋentᚐCursor(ctx, field.Selections, res)
 }
 
 func (ec *executionContext) fieldContext_PageInfo_startCursor(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
@@ -5691,11 +5620,7 @@ func (ec *executionContext) fieldContext_PageInfo_startCursor(ctx context.Contex
 		IsMethod:   false,
 		IsResolver: false,
 		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
-			switch field.Name {
-			case "ID":
-				return ec.fieldContext_OutputCursor_ID(ctx, field)
-			}
-			return nil, fmt.Errorf("no field named %q was found under type OutputCursor", field.Name)
+			return nil, errors.New("field of type Cursor does not have child fields")
 		},
 	}
 	return fc, nil
@@ -6273,7 +6198,7 @@ func (ec *executionContext) _Query_QueryResources(ctx context.Context, field gra
 	}()
 	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
 		ctx = rctx // use context from middleware stack in children
-		return ec.resolvers.Query().QueryResources(rctx, fc.Args["poolId"].(int), fc.Args["first"].(*int), fc.Args["last"].(*int), fc.Args["before"].(*string), fc.Args["after"].(*string))
+		return ec.resolvers.Query().QueryResources(rctx, fc.Args["poolId"].(int), fc.Args["first"].(*int), fc.Args["last"].(*int), fc.Args["before"].(*ent.Cursor), fc.Args["after"].(*ent.Cursor))
 	})
 	if err != nil {
 		ec.Error(ctx, err)
@@ -6336,7 +6261,7 @@ func (ec *executionContext) _Query_QueryResourcesByAltId(ctx context.Context, fi
 	}()
 	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
 		ctx = rctx // use context from middleware stack in children
-		return ec.resolvers.Query().QueryResourcesByAltID(rctx, fc.Args["input"].(map[string]interface{}), fc.Args["poolId"].(*int), fc.Args["first"].(*int), fc.Args["last"].(*int), fc.Args["before"].(*string), fc.Args["after"].(*string))
+		return ec.resolvers.Query().QueryResourcesByAltID(rctx, fc.Args["input"].(map[string]interface{}), fc.Args["poolId"].(*int), fc.Args["first"].(*int), fc.Args["last"].(*int), fc.Args["before"].(*ent.Cursor), fc.Args["after"].(*ent.Cursor))
 	})
 	if err != nil {
 		ec.Error(ctx, err)
@@ -7911,7 +7836,7 @@ func (ec *executionContext) _ResourceEdge_cursor(ctx context.Context, field grap
 	}
 	res := resTmp.(ent.Cursor)
 	fc.Result = res
-	return ec.marshalNOutputCursor2githubᚗcomᚋnetᚑautoᚋresourceManagerᚋentᚐCursor(ctx, field.Selections, res)
+	return ec.marshalNCursor2githubᚗcomᚋnetᚑautoᚋresourceManagerᚋentᚐCursor(ctx, field.Selections, res)
 }
 
 func (ec *executionContext) fieldContext_ResourceEdge_cursor(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
@@ -7921,11 +7846,7 @@ func (ec *executionContext) fieldContext_ResourceEdge_cursor(ctx context.Context
 		IsMethod:   false,
 		IsResolver: false,
 		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
-			switch field.Name {
-			case "ID":
-				return ec.fieldContext_OutputCursor_ID(ctx, field)
-			}
-			return nil, fmt.Errorf("no field named %q was found under type OutputCursor", field.Name)
+			return nil, errors.New("field of type Cursor does not have child fields")
 		},
 	}
 	return fc, nil
@@ -8498,7 +8419,7 @@ func (ec *executionContext) _ResourcePool_allocatedResources(ctx context.Context
 	}()
 	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
 		ctx = rctx // use context from middleware stack in children
-		return ec.resolvers.ResourcePool().AllocatedResources(rctx, obj, fc.Args["first"].(*int), fc.Args["last"].(*int), fc.Args["before"].(*string), fc.Args["after"].(*string))
+		return ec.resolvers.ResourcePool().AllocatedResources(rctx, obj, fc.Args["first"].(*int), fc.Args["last"].(*int), fc.Args["before"].(*ent.Cursor), fc.Args["after"].(*ent.Cursor))
 	})
 	if err != nil {
 		ec.Error(ctx, err)
@@ -8764,7 +8685,7 @@ func (ec *executionContext) _ResourcePoolEdge_cursor(ctx context.Context, field 
 	}
 	res := resTmp.(ent.Cursor)
 	fc.Result = res
-	return ec.marshalNOutputCursor2githubᚗcomᚋnetᚑautoᚋresourceManagerᚋentᚐCursor(ctx, field.Selections, res)
+	return ec.marshalNCursor2githubᚗcomᚋnetᚑautoᚋresourceManagerᚋentᚐCursor(ctx, field.Selections, res)
 }
 
 func (ec *executionContext) fieldContext_ResourcePoolEdge_cursor(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
@@ -8774,11 +8695,7 @@ func (ec *executionContext) fieldContext_ResourcePoolEdge_cursor(ctx context.Con
 		IsMethod:   false,
 		IsResolver: false,
 		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
-			switch field.Name {
-			case "ID":
-				return ec.fieldContext_OutputCursor_ID(ctx, field)
-			}
-			return nil, fmt.Errorf("no field named %q was found under type OutputCursor", field.Name)
+			return nil, errors.New("field of type Cursor does not have child fields")
 		},
 	}
 	return fc, nil
@@ -12848,47 +12765,6 @@ func (ec *executionContext) _Mutation(ctx context.Context, sel ast.SelectionSet)
 	return out
 }
 
-var outputCursorImplementors = []string{"OutputCursor"}
-
-func (ec *executionContext) _OutputCursor(ctx context.Context, sel ast.SelectionSet, obj *ent.Cursor) graphql.Marshaler {
-	fields := graphql.CollectFields(ec.OperationContext, sel, outputCursorImplementors)
-	out := graphql.NewFieldSet(fields)
-	var invalids uint32
-	for i, field := range fields {
-		switch field.Name {
-		case "__typename":
-			out.Values[i] = graphql.MarshalString("OutputCursor")
-		case "ID":
-			field := field
-
-			innerFunc := func(ctx context.Context) (res graphql.Marshaler) {
-				defer func() {
-					if r := recover(); r != nil {
-						ec.Error(ctx, ec.Recover(ctx, r))
-					}
-				}()
-				res = ec._OutputCursor_ID(ctx, field, obj)
-				if res == graphql.Null {
-					atomic.AddUint32(&invalids, 1)
-				}
-				return res
-			}
-
-			out.Concurrently(i, func() graphql.Marshaler {
-				return innerFunc(ctx)
-
-			})
-		default:
-			panic("unknown field " + strconv.Quote(field.Name))
-		}
-	}
-	out.Dispatch()
-	if invalids > 0 {
-		return graphql.Null
-	}
-	return out
-}
-
 var pageInfoImplementors = []string{"PageInfo"}
 
 func (ec *executionContext) _PageInfo(ctx context.Context, sel ast.SelectionSet, obj *ent.PageInfo) graphql.Marshaler {
@@ -14758,6 +14634,16 @@ func (ec *executionContext) marshalNCreateTagPayload2ᚖgithubᚗcomᚋnetᚑaut
 	return ec._CreateTagPayload(ctx, sel, v)
 }
 
+func (ec *executionContext) unmarshalNCursor2githubᚗcomᚋnetᚑautoᚋresourceManagerᚋentᚐCursor(ctx context.Context, v interface{}) (ent.Cursor, error) {
+	var res ent.Cursor
+	err := res.UnmarshalGQL(v)
+	return res, graphql.ErrorOnPath(ctx, err)
+}
+
+func (ec *executionContext) marshalNCursor2githubᚗcomᚋnetᚑautoᚋresourceManagerᚋentᚐCursor(ctx context.Context, sel ast.SelectionSet, v ent.Cursor) graphql.Marshaler {
+	return v
+}
+
 func (ec *executionContext) marshalNDeleteAllocationStrategyPayload2githubᚗcomᚋnetᚑautoᚋresourceManagerᚋgraphᚋgraphqlᚋmodelᚐDeleteAllocationStrategyPayload(ctx context.Context, sel ast.SelectionSet, v model.DeleteAllocationStrategyPayload) graphql.Marshaler {
 	return ec._DeleteAllocationStrategyPayload(ctx, sel, &v)
 }
@@ -14945,10 +14831,6 @@ func (ec *executionContext) unmarshalNOrderDirection2githubᚗcomᚋnetᚑauto�
 }
 
 func (ec *executionContext) marshalNOrderDirection2githubᚗcomᚋnetᚑautoᚋresourceManagerᚋentᚐOrderDirection(ctx context.Context, sel ast.SelectionSet, v ent.OrderDirection) graphql.Marshaler {
-	return v
-}
-
-func (ec *executionContext) marshalNOutputCursor2githubᚗcomᚋnetᚑautoᚋresourceManagerᚋentᚐCursor(ctx context.Context, sel ast.SelectionSet, v ent.Cursor) graphql.Marshaler {
 	return v
 }
 
@@ -15998,13 +15880,6 @@ func (ec *executionContext) marshalONode2githubᚗcomᚋnetᚑautoᚋresourceMan
 		return graphql.Null
 	}
 	return ec._Node(ctx, sel, v)
-}
-
-func (ec *executionContext) marshalOOutputCursor2ᚖgithubᚗcomᚋnetᚑautoᚋresourceManagerᚋentᚐCursor(ctx context.Context, sel ast.SelectionSet, v *ent.Cursor) graphql.Marshaler {
-	if v == nil {
-		return graphql.Null
-	}
-	return v
 }
 
 func (ec *executionContext) marshalOPoolCapacityPayload2ᚖgithubᚗcomᚋnetᚑautoᚋresourceManagerᚋgraphᚋgraphqlᚋmodelᚐPoolCapacityPayload(ctx context.Context, sel ast.SelectionSet, v *model.PoolCapacityPayload) graphql.Marshaler {
