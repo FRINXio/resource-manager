@@ -9,7 +9,6 @@ package main
 import (
 	"context"
 	"contrib.go.opencensus.io/integrations/ocsql"
-	"github.com/net-auto/resourceManager/ent"
 	"github.com/net-auto/resourceManager/graph/graphhttp"
 	"github.com/net-auto/resourceManager/logging"
 	"github.com/net-auto/resourceManager/logging/log"
@@ -32,16 +31,12 @@ import (
 func newApplication(ctx context.Context, flags *cliFlags) (*application, func(), error) {
 	logger := provideLogger(ctx, flags)
 	zapLogger := log.ProvideZapLogger(logger)
-	psqlTenancy, err := newPsqlTenancy(ctx, flags)
-	if err != nil {
-		return nil, nil, err
-	}
-	tenancy, err := newTenancy(ctx, psqlTenancy)
+	tenancy, err := newFixedTenancy(ctx, flags, zapLogger)
 	if err != nil {
 		return nil, nil, err
 	}
 	config := flags.TelemetryConfig
-	v := newHealthChecks(psqlTenancy)
+	v := newHealthChecks(tenancy)
 	graphhttpConfig := graphhttp.Config{
 		Tenancy:      tenancy,
 		Logger:       logger,
@@ -80,19 +75,16 @@ func newApplication(ctx context.Context, flags *cliFlags) (*application, func(),
 
 // wire.go:
 
-func newTenancy(ctx context.Context, tenancy *viewer.PsqlTenancy) (viewer.Tenancy, error) {
-	initFunc := func(client *ent.Client) {
-
-	}
-	return viewer.NewCacheTenancy(tenancy, initFunc), nil
-}
-
-func newHealthChecks(tenancy *viewer.PsqlTenancy) []health.Checker {
+func newHealthChecks(tenancy viewer.Tenancy) []health.Checker {
 	return []health.Checker{tenancy}
 }
 
-func newPsqlTenancy(ctx context.Context, flags *cliFlags) (*viewer.PsqlTenancy, error) {
-	return viewer.NewPsqlTenancy(ctx, flags.DatabaseURL, flags.TenancyConfig.TenantMaxConn)
+func newFixedTenancy(ctx context.Context, flags *cliFlags, logger *zap.Logger) (viewer.Tenancy, error) {
+	client, checker, err := viewer.PsqlClient(ctx, flags.DatabaseURL, flags.MaxDbConnections, logger)
+	if err != nil {
+		return nil, err
+	}
+	return viewer.NewFixedTenancy(client, checker), nil
 }
 
 // Adapter exposing RM logger into symphony logger
