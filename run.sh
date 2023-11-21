@@ -14,6 +14,7 @@ else
   fi
 fi
 
+#RM_DB_CONNECTION_STRING_DEFAULT="postgres://postgres:postgres@localhost:5432/rm_tenant_frinx?search_path=resources&sslmode=disable"
 RM_DB_CONNECTION_STRING_DEFAULT="postgres://postgres:postgres@localhost:5432/postgres?sslmode=disable"
 RM_API_PORT_DEFAULT=8884
 

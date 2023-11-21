@@ -15,10 +15,7 @@ import (
 	log2 "github.com/net-auto/resourceManager/logging/log"
 	"go.uber.org/atomic"
 	"go.uber.org/zap/zapcore"
-	"sort"
-
 	"net/http"
-	"net/url"
 	"strings"
 
 	"go.opencensus.io/tag"
@@ -50,14 +47,8 @@ var (
 	KeyUserAgent = tag.MustNewKey(UserAgentAttribute)
 )
 
-// Config configures the viewer package.
-type Config struct {
-	TenantMaxConn int      `name:"tenancy.db_max_conn" env:"TENANCY_DB_MAX_CONN" default:"1" help:"Max connections to database per tenant."`
-	FeaturesURL   *url.URL `name:"features.url" env:"FEATURES_URL" placeholder:"URL" help:"URL to fetch tenant features."`
-}
-
-// TenancyHandler adds viewer / tenancy into incoming requests.
-func TenancyHandler(h http.Handler, tenancy Tenancy, symphLogger log2.Logger) http.Handler {
+// DbClientHandler adds db client into incoming requests.
+func DbClientHandler(h http.Handler, tenancy Tenancy, symphLogger log2.Logger) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		tenant := r.Header.Get(TenantHeader)
 		if tenant == "" {
@@ -75,8 +66,6 @@ func TenancyHandler(h http.Handler, tenancy Tenancy, symphLogger log2.Logger) ht
 
 		roles := r.Header.Get(RoleHeader)
 		groups := r.Header.Get(GroupHeader)
-
-		logger.Debug(r.Context(), "getting tenancy client for %+v", zap.String("tenant", tenant))
 
 		client, err := tenancy.ClientFor(r.Context(), tenant, symphLogger.For(r.Context()))
 		if err != nil {
@@ -135,8 +124,7 @@ func tags(r *http.Request, v *schema.Identity) []tag.Mutator {
 type Option func(Viewer)
 
 type viewer struct {
-	tenant   string
-	features FeatureSet
+	tenant string
 }
 
 type User struct {
@@ -147,11 +135,6 @@ type User struct {
 // Tenant is the tenant of the viewer.
 func (v *viewer) Tenant() string {
 	return v.tenant
-}
-
-// Features is the features applied for the viewer.
-func (v *viewer) Features() FeatureSet {
-	return v.features
 }
 
 // User returns the ent user of the viewer.
@@ -183,7 +166,6 @@ func TraceAttrs(v Viewer) []trace.Attribute {
 type Viewer interface {
 	zapcore.ObjectMarshaler
 	Tenant() string
-	Features() FeatureSet
 	Name() string
 	Role() string
 }
@@ -192,22 +174,6 @@ type Viewer interface {
 type UserViewer struct {
 	viewer
 	user atomic.Value
-}
-
-// String returns the textual representation of a feature set.
-func (f FeatureSet) String() string {
-	features := make([]string, 0, len(f))
-	for feature := range f {
-		features = append(features, feature)
-	}
-	sort.Strings(features)
-	return strings.Join(features, ",")
-}
-
-// Enabled check if feature is in FeatureSet.
-func (f FeatureSet) Enabled(feature string) bool {
-	_, ok := f[feature]
-	return ok
 }
 
 type ctxKey struct{}
