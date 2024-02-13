@@ -64,6 +64,22 @@ export async function findAllocationStrategyId(name){
     .catch(error => console.log(error));
 }
 
+export async function getAllocationStrategies(){
+    return client.query({
+        query: gql`
+            query { QueryAllocationStrategies {
+                id
+                Name
+                Description
+                Lang
+            }
+            }
+        `,
+    })
+    .then(result => result.data.QueryAllocationStrategies)
+    .catch(error => console.log(error));
+}
+
 export async function getCapacityForPool(poolId){
     return client.query({
         query: gql`
