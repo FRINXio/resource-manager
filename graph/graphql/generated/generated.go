@@ -1552,6 +1552,7 @@ enum AllocationStrategyLang
 {
     js
     py
+    go
 }
 
 """
