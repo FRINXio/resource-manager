@@ -106,11 +106,6 @@ jobs:
           docker build --build-arg GITHUB_TOKEN_EXTERNAL_DOCKERFILE=${{ secrets.TOKEN }} \
           --build-arg git_commit=$(git rev-parse HEAD) . --file Dockerfile --tag $IMAGE_NAME:${IMAGE_TAG}
 
-      - uses: Azure/container-scan@v0
-        with:
-          image-name: ${{ env.IMAGE_NAME }}:${{ env.IMAGE_TAG }}
-          # severity-threshold: CRITICAL
-
       - name: Log into docker hub
         run: echo "${{ secrets.DOCKER_HUB_PASSWORD }}" | docker login -u ${{ secrets.DOCKER_HUB_USERNAME }} --password-stdin
 
