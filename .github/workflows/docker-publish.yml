@@ -19,21 +19,7 @@ on:
 env:
   IMAGE_NAME: frinx/resource-manager
 jobs:
-  unit-test:
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v2
-      - uses: actions/setup-go@v3
-        with:
-          go-version: '1.18.6'
-      - name: Run unit tests
-        run: |
-          export GITHUB_TOKEN_EXTERNAL=${{ secrets.TOKEN }}
-          ./unit-test.sh
-
-  integration-test:
-    # Ensure unit-test job passes before pushing image.
-    needs: unit-test
+  tests:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v2
@@ -42,32 +28,25 @@ jobs:
       - uses: actions/setup-go@v3
         with:
           go-version: '1.18.6'
-      - name: Build image
-        run: docker build --build-arg GITHUB_TOKEN_EXTERNAL_DOCKERFILE=${{ secrets.TOKEN }} . --file Dockerfile-testing --tag ${IMAGE_NAME}-testing
-      - name: Run integration-test
-        run: ./integration-test.sh
-
-  api-test:
-    # Ensure unit-test job passes before pushing image.
-    needs: unit-test
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v2
-        with:
-          fetch-depth: 0
       - uses: actions/setup-node@v2-beta
         with:
           node-version: 16
       - run: npm install -g yarn
       - name: Build image
-        run: docker build --build-arg GITHUB_TOKEN_EXTERNAL_DOCKERFILE=${{ secrets.TOKEN }} . --file Dockerfile --tag $IMAGE_NAME
-      - name: Run api-tests
+        run: docker build --build-arg GITHUB_TOKEN_EXTERNAL_DOCKERFILE=${{ secrets.TOKEN }} . --file Dockerfile-testing --tag ${IMAGE_NAME}-testing
+      - name: Run unit-test
+        run: |
+          export GITHUB_TOKEN_EXTERNAL=${{ secrets.TOKEN }}
+          go test -v -short ./pools/...
+      - name: Run integration-test
+        run: ./integration-test.sh
+      - name: Run api-test
         run: api-tests/test.sh yarn test
 
   push:
     # Ensure unit-test job passes before pushing image.
     # FIXME depend on integration-test
-    needs: unit-test
+    needs: tests
     runs-on: ubuntu-latest
     if: github.event_name == 'push'
     steps:
