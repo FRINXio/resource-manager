@@ -8,7 +8,7 @@ COPY build_strategies.sh build_strategies.sh
 # Build allocating strats
 RUN ./build_strategies.sh
 
-FROM golang:1.18.6-buster as build
+FROM golang:1.21.7 as build
 ARG GITHUB_TOKEN_EXTERNAL_DOCKERFILE
 WORKDIR /resMgr
 
@@ -19,7 +19,7 @@ ENV GITHUB_TOKEN_EXTERNAL=$GITHUB_TOKEN_EXTERNAL_DOCKERFILE
 RUN ./build.sh
 
 # final image:
-FROM golang:1.18.6-buster
+FROM golang:1.21.7
 
 ARG RM_LOG_FILE=rm.log
 ARG git_commit=unspecified
