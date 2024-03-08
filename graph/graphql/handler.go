@@ -9,14 +9,15 @@ import (
 	"database/sql"
 	"database/sql/driver"
 	"errors"
+	"math/bits"
+	"net/http"
+	"time"
+
 	"github.com/net-auto/resourceManager/graph/graphql/generated"
 	"github.com/net-auto/resourceManager/logging/log"
 	"github.com/net-auto/resourceManager/server/lock"
 	"github.com/net-auto/resourceManager/telemetry/ocgql"
 	"github.com/net-auto/resourceManager/viewer"
-	"math/bits"
-	"net/http"
-	"time"
 
 	"entgo.io/contrib/entgql"
 	"github.com/99designs/gqlgen/graphql/handler/extension"
@@ -25,6 +26,7 @@ import (
 
 	"github.com/net-auto/resourceManager/ent"
 	"github.com/net-auto/resourceManager/ent/privacy"
+
 	//"github.com/net-auto/resourceManager/graph/graphql/generated"
 	"github.com/net-auto/resourceManager/graph/graphql/resolver"
 
@@ -145,14 +147,14 @@ func NewHandler(cfg HandlerConfig) (http.Handler, error) {
 	srv.SetRecoverFunc(gqlutil.RecoverFunc(cfg.Logger))
 	srv.Use(extension.FixedComplexityLimit(Infinite))
 
-	router.Path("/graphiql").
+	router.Path("/").
 		Handler(
 			ochttp.WithRouteTag(
-				playground.Handler(
+				playground.ApolloSandboxHandler(
 					"GraphQL playground",
-					"/graph/query",
+					"/api/resource",
 				),
-				"graphiql",
+				"/api/resource",
 			),
 		)
 	router.Path("/query").
