@@ -3,7 +3,7 @@ import {
     testStrategy,
     createAllocationStrategy,
     findAllocationStrategyId,
-    createResourceType, findResourceTypeId, deleteResourceType, getRequiredPoolProperties
+    createResourceType, findResourceTypeId, deleteResourceType, getRequiredPoolProperties, getAllocationStrategies
 } from '../graphql-queries.js';
 import {cleanup, getUniqueName} from '../test-helpers.js';
 import tap from 'tap';
@@ -255,5 +255,14 @@ test('vlan strategy', async (t) => {
     t.equal(allocated.stdout.vlan, 0);
 
     await cleanup()
+    t.end();
+});
+
+test('query all allocation strategies', async (t) => {
+    let strategies = await getAllocationStrategies();
+
+    t.ok(strategies);
+
+    await cleanup();
     t.end();
 });

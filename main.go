@@ -12,7 +12,6 @@ import (
 	"github.com/net-auto/resourceManager/server"
 	"github.com/net-auto/resourceManager/server/metrics"
 	"github.com/net-auto/resourceManager/telemetry"
-	"github.com/net-auto/resourceManager/viewer"
 	stdlog "log"
 	"net/url"
 	"os"
@@ -25,16 +24,16 @@ import (
 )
 
 type cliFlags struct {
-	ConfigFile      kong.ConfigFlag   `type:"existingfile" placeholder:"PATH" help:"Configuration file path."`
-	ListenAddress   string            `name:"web.listen-address" default:":http" help:"Web address to listen on."`
-	MetricsAddress  metrics.Addr      `name:"metrics.listen-address" default:":9464" help:"Metrics address to listen on."`
-	DatabaseURL     *url.URL          `name:"db.url" env:"DB_URL" required:"" placeholder:"URL" help:"Database URL."`
-	TelemetryConfig telemetry.Config  `embed:""`
-	TenancyConfig   viewer.Config     `embed:""`
-	RbacConfig      schema.RbacConfig `embed:""`
-	LogPath         string            `name:"logPath" env:"RM_LOG_PATH" default:"./rm.log" help:"Path to logfile." type:"path"`
-	LogLevel        string            `name:"loglevel" env:"RM_LOG_LEVEL" default:"info" help:"Logging level - fatal, error, warning, info, debug or trace." type:"string"`
-	LogWithColors   bool              `name:"logWithColors" default:"false" help:"Force colors in log." type:"bool"`
+	ConfigFile       kong.ConfigFlag   `type:"existingfile" placeholder:"PATH" help:"Configuration file path."`
+	ListenAddress    string            `name:"web.listen-address" default:":http" help:"Web address to listen on."`
+	MetricsAddress   metrics.Addr      `name:"metrics.listen-address" default:":9464" help:"Metrics address to listen on."`
+	DatabaseURL      *url.URL          `name:"db.url" env:"DB_URL" required:"" placeholder:"URL" help:"Database URL."`
+	MaxDbConnections int               `name:"tenancy.db_max_conn" env:"TENANCY_DB_MAX_CONNECTIONS" default:"20" help:"Database max connections."`
+	TelemetryConfig  telemetry.Config  `embed:""`
+	RbacConfig       schema.RbacConfig `embed:""`
+	LogPath          string            `name:"logPath" env:"RM_LOG_PATH" default:"./rm.log" help:"Path to logfile." type:"path"`
+	LogLevel         string            `name:"loglevel" env:"RM_LOG_LEVEL" default:"info" help:"Logging level - fatal, error, warning, info, debug or trace." type:"string"`
+	LogWithColors    bool              `name:"logWithColors" default:"false" help:"Force colors in log." type:"bool"`
 }
 
 func main() {

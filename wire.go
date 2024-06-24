@@ -11,7 +11,6 @@ import (
 	"context"
 	"contrib.go.opencensus.io/integrations/ocsql"
 	"github.com/google/wire"
-	"github.com/net-auto/resourceManager/ent"
 	"github.com/net-auto/resourceManager/graph/graphhttp"
 	logger "github.com/net-auto/resourceManager/logging"
 	"github.com/net-auto/resourceManager/logging/log"
@@ -38,9 +37,8 @@ func newApplication(ctx context.Context, flags *cliFlags) (*application, func(),
 			new(application),
 			"*",
 		),
-		newTenancy,
+		newFixedTenancy,
 		newHealthChecks,
-		newPsqlTenancy,
 		metrics.Provider,
 		telemetry.ProvideViewExporter,
 		provideViews,
@@ -50,19 +48,16 @@ func newApplication(ctx context.Context, flags *cliFlags) (*application, func(),
 	return nil, nil, nil
 }
 
-func newTenancy(ctx context.Context, tenancy *viewer.PsqlTenancy) (viewer.Tenancy, error) {
-	initFunc := func(client *ent.Client) {
-
-	}
-	return viewer.NewCacheTenancy(tenancy, initFunc), nil
-}
-
-func newHealthChecks(tenancy *viewer.PsqlTenancy) []health.Checker {
+func newHealthChecks(tenancy viewer.Tenancy) []health.Checker {
 	return []health.Checker{tenancy}
 }
 
-func newPsqlTenancy(ctx context.Context, flags *cliFlags) (*viewer.PsqlTenancy, error) {
-	return viewer.NewPsqlTenancy(ctx, flags.DatabaseURL, flags.TenancyConfig.TenantMaxConn)
+func newFixedTenancy(ctx context.Context, flags *cliFlags, logger *zap.Logger) (viewer.Tenancy, error) {
+	client, checker, err := viewer.PsqlClient(ctx, flags.DatabaseURL, flags.MaxDbConnections, logger)
+	if err != nil {
+		return nil, err
+	}
+	return viewer.NewFixedTenancy(client, checker), nil
 }
 
 // Adapter exposing RM logger into symphony logger

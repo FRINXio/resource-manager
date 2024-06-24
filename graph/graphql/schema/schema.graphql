@@ -41,14 +41,6 @@ type PropertyType implements Node
     id: ID!
 }
 
-"""
-Holds the string value for pagination
-"""
-type OutputCursor
-@goModel(model: "github.com/net-auto/resourceManager/ent.Cursor"){
-    ID: String!
-}
-
 scalar Cursor @goModel(model: "github.com/net-auto/resourceManager/ent.Cursor")
 
 """
@@ -56,10 +48,10 @@ Holds information about the requested pagination page
 """
 type PageInfo
 @goModel(model: "github.com/net-auto/resourceManager/ent.PageInfo"){
-    endCursor: OutputCursor
+    endCursor: Cursor
     hasNextPage: Boolean!
     hasPreviousPage: Boolean!
-    startCursor: OutputCursor
+    startCursor: Cursor
 }
 
 """
@@ -67,7 +59,7 @@ A Relay-specific entity that holds information about the requested pagination pa
 """
 type ResourceEdge
 @goModel(model: "github.com/net-auto/resourceManager/ent.ResourceEdge"){
-    cursor: OutputCursor!
+    cursor: Cursor!
     node: Resource!
 }
 
@@ -94,14 +86,15 @@ type ResourcePool implements Node
     PoolType: PoolType!
     ResourceType: ResourceType!
     Resources: [Resource!]!
+    DealocationSafetyPeriod: Int!
     Tags: [Tag!]!
-    allocatedResources(first: Int, last: Int, before: String, after: String): ResourceConnection
+    allocatedResources(first: Int, last: Int, before: Cursor, after: Cursor): ResourceConnection
     id: ID!
 }
 
 type ResourcePoolEdge
 @goModel(model: "github.com/net-auto/resourceManager/ent.ResourcePoolEdge") {
-  cursor: OutputCursor!
+  cursor: Cursor!
   node: ResourcePool!
 }
 
@@ -157,6 +150,7 @@ enum AllocationStrategyLang
 {
     js
     py
+    go
 }
 
 """
@@ -353,14 +347,29 @@ type PoolCapacityPayload {
     utilizedCapacity: String!
 }
 
+enum OrderDirection @goModel(model: "github.com/net-auto/resourceManager/ent.OrderDirection") {
+    ASC
+    DESC
+}
+
+enum ResourcePoolOrderField @goModel(model: "github.com/net-auto/resourceManager/ent.ResourcePoolOrderField") {
+    name
+    dealocationSafetyPeriod
+}
+
+input SortResourcePoolsInput @goModel(model: "github.com/net-auto/resourceManager/ent.ResourcePoolOrder") {
+    direction: OrderDirection!
+    field: ResourcePoolOrderField
+}
+
 type Query {
     # Deprecated, use capacity object inside the Resource pool
     QueryPoolCapacity(poolId: ID!): PoolCapacityPayload!
     QueryPoolTypes: [PoolType!]!
     QueryResource(input: Map!, poolId: ID!): Resource!
-    QueryResources(poolId: ID!, first: Int, last: Int, before: String, after: String): ResourceConnection!
+    QueryResources(poolId: ID!, first: Int, last: Int, before: Cursor, after: Cursor): ResourceConnection!
     QueryResourcesByAltId(input: Map!, poolId: ID,
-        first: Int, last: Int, before: String, after: String): ResourceConnection!
+        first: Int, last: Int, before: Cursor, after: Cursor): ResourceConnection!
     QueryAllocationStrategy(allocationStrategyId: ID!): AllocationStrategy!
     QueryAllocationStrategies(byName: String): [AllocationStrategy!]!
     QueryResourceTypes(byName: String): [ResourceType!]!
@@ -368,13 +377,13 @@ type Query {
 
     QueryResourcePool(poolId: ID!): ResourcePool!
 
-    QueryEmptyResourcePools(resourceTypeId: ID, first: Int, last: Int, before: Cursor, after: Cursor): ResourcePoolConnection!
-    QueryResourcePools(resourceTypeId: ID, tags: TagOr, first: Int, last: Int, before: Cursor, after: Cursor, filterByResources: Map): ResourcePoolConnection!
+    QueryEmptyResourcePools(resourceTypeId: ID, first: Int, last: Int, before: Cursor, after: Cursor, sortBy: SortResourcePoolsInput): ResourcePoolConnection!
+    QueryResourcePools(resourceTypeId: ID, tags: TagOr, first: Int, last: Int, before: Cursor, after: Cursor, filterByResources: Map, sortBy: SortResourcePoolsInput): ResourcePoolConnection!
     QueryRecentlyActiveResources(fromDatetime: String!, toDatetime: String,
         first: Int, last: Int, before: String, after: String): ResourceConnection!
     QueryResourcePoolHierarchyPath(poolId: ID!): [ResourcePool!]!
-    QueryRootResourcePools(resourceTypeId: ID, tags: TagOr, first: Int, last: Int, before: Cursor, after: Cursor, filterByResources: Map): ResourcePoolConnection!
-    QueryLeafResourcePools(resourceTypeId: ID, tags: TagOr, first: Int, last: Int, before: Cursor, after: Cursor, filterByResources: Map): ResourcePoolConnection!
+    QueryRootResourcePools(resourceTypeId: ID, tags: TagOr, first: Int, last: Int, before: Cursor, after: Cursor, filterByResources: Map, sortBy: SortResourcePoolsInput): ResourcePoolConnection!
+    QueryLeafResourcePools(resourceTypeId: ID, tags: TagOr, first: Int, last: Int, before: Cursor, after: Cursor, filterByResources: Map, sortBy: SortResourcePoolsInput): ResourcePoolConnection!
     SearchPoolsByTags(tags: TagOr, first: Int, last: Int, before: Cursor, after: Cursor): ResourcePoolConnection!
 
     QueryTags: [Tag!]!

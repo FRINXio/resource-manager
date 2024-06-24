@@ -11,6 +11,11 @@ services:
       - LC_CTYPE=en_US.UTF-8
     ports:
       - 5432:5432
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -d db-name -U postgres"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
 
   resource-manager:
     container_name: resource-manager
@@ -22,10 +27,11 @@ services:
       - RM_ADMIN_ROLES=OWNER
       - RM_ADMIN_GROUPS=NETWORK-ADMIN
       - RM_LOG_PATH=/var/log/rm.log
-      - RM_LOG_LEVEL=warn
+      - RM_LOG_LEVEL=info
       - WASMER_MAX_TIMEOUT_MILLIS=10000
     depends_on:
-      - postgresql
+      postgresql:
+        condition: service_healthy
     ports:
       - 8884:8884
       - 2345:2345

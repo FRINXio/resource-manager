@@ -26,7 +26,7 @@ func newRouter(cfg routerConfig) (*mux.Router, error) {
 	router := mux.NewRouter()
 	router.Use(
 		func(h http.Handler) http.Handler {
-			return viewer.TenancyHandler(h, cfg.viewer.tenancy, cfg.logger)
+			return viewer.DbClientHandler(h, cfg.viewer.tenancy, cfg.logger)
 		},
 	)
 

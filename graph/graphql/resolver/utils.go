@@ -165,19 +165,7 @@ func tagFromDb(ctx context.Context, client *ent.Client, tagValue string) (*ent.T
 
 // QueryResourcesByAltId returns paginate resources if alt Id matches
 func QueryResourcesByAltId(ctx context.Context, client *ent.Client, alternativeId map[string]interface{}, poolId *int, first *int,
-	last *int, before *string, after *string) (*ent.ResourceConnection, error) {
-
-	afterCursor, errA := decodeCursor(after)
-	if errA != nil {
-		log.Error(ctx, errA, "Unable to decode after value (\"%s\") for pagination", *after)
-		return nil, errA
-	}
-
-	beforeCursor, errB := decodeCursor(before)
-	if errB != nil {
-		log.Error(ctx, errB, "Unable to decode before value (\"%s\") for pagination", *before)
-		return nil, errB
-	}
+	last *int, before *ent.Cursor, after *ent.Cursor) (*ent.ResourceConnection, error) {
 
 	if poolId != nil {
 		res, err := client.Resource.Query().
@@ -187,7 +175,7 @@ func QueryResourcesByAltId(ctx context.Context, client *ent.Client, alternativeI
 					selector.Where(sqljson.ValueContains("alternate_id", v, sqljson.Path(k)))
 				}
 			}).
-			Paginate(ctx, afterCursor, first, beforeCursor, last)
+			Paginate(ctx, after, first, before, last)
 
 		if err != nil {
 			log.Error(ctx, err, "Unable to retrieve resources with alternative ID %v", alternativeId)
@@ -204,7 +192,7 @@ func QueryResourcesByAltId(ctx context.Context, client *ent.Client, alternativeI
 					selector.Where(sqljson.ValueContains("alternate_id", v, sqljson.Path(k)))
 				}
 			}).
-			Paginate(ctx, afterCursor, first, beforeCursor, last)
+			Paginate(ctx, after, first, before, last)
 
 		if err != nil {
 			log.Error(ctx, err, "Unable to retrieve resources with alternative ID %v", alternativeId)

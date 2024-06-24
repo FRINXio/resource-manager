@@ -5,6 +5,7 @@ package resolver
 
 import (
 	"context"
+	"fmt"
 	"regexp"
 	"strconv"
 	"time"
@@ -626,12 +627,6 @@ func (r *mutationResolver) UpdateResourceAltID(ctx context.Context, input map[st
 	return queryResource, nil
 }
 
-// ID is the resolver for the ID field.
-func (r *outputCursorResolver) ID(ctx context.Context, obj *ent.Cursor) (string, error) {
-	//this will never be called because ent.Cursor will use its msgpack annotation
-	return "", nil
-}
-
 // Type is the resolver for the Type field.
 func (r *propertyTypeResolver) Type(ctx context.Context, obj *ent.PropertyType) (string, error) {
 	// Just converts enum to string
@@ -677,28 +672,17 @@ func (r *queryResolver) QueryResource(ctx context.Context, input map[string]inte
 }
 
 // QueryResources is the resolver for the QueryResources field.
-func (r *queryResolver) QueryResources(ctx context.Context, poolID int, first *int, last *int, before *string, after *string) (*ent.ResourceConnection, error) {
+func (r *queryResolver) QueryResources(ctx context.Context, poolID int, first *int, last *int, before *ent.Cursor, after *ent.Cursor) (*ent.ResourceConnection, error) {
 	pool, err := p.ExistingPoolFromId(ctx, r.ClientFrom(ctx), poolID)
 	if err != nil {
 		return nil, gqlerror.Errorf("Unable to query resources: %v", err)
 	}
 
-	afterCursor, errA := decodeCursor(after)
-	if errA != nil {
-		log.Error(ctx, errA, "Unable to decode after value (\"%s\") for pagination", *after)
-		return nil, errA
-	}
-
-	beforeCursor, errB := decodeCursor(before)
-	if errB != nil {
-		log.Error(ctx, errB, "Unable to decode before value (\"%s\") for pagination", *before)
-		return nil, errB
-	}
-	return pool.QueryPaginatedResources(first, last, afterCursor, beforeCursor)
+	return pool.QueryPaginatedResources(first, last, after, before)
 }
 
 // QueryResourcesByAltID is the resolver for the QueryResourcesByAltId field.
-func (r *queryResolver) QueryResourcesByAltID(ctx context.Context, input map[string]interface{}, poolID *int, first *int, last *int, before *string, after *string) (*ent.ResourceConnection, error) {
+func (r *queryResolver) QueryResourcesByAltID(ctx context.Context, input map[string]interface{}, poolID *int, first *int, last *int, before *ent.Cursor, after *ent.Cursor) (*ent.ResourceConnection, error) {
 	typeFixedAlternativeId, err := p.ConvertValuesToFloat64(ctx, input)
 	if err != nil {
 		return nil, gqlerror.Errorf("Unable to process input data %v", err)
@@ -800,7 +784,7 @@ func (r *queryResolver) QueryResourcePool(ctx context.Context, poolID int) (*ent
 }
 
 // QueryEmptyResourcePools is the resolver for the QueryEmptyResourcePools field.
-func (r *queryResolver) QueryEmptyResourcePools(ctx context.Context, resourceTypeID *int, first *int, last *int, before *ent.Cursor, after *ent.Cursor) (*ent.ResourcePoolConnection, error) {
+func (r *queryResolver) QueryEmptyResourcePools(ctx context.Context, resourceTypeID *int, first *int, last *int, before *ent.Cursor, after *ent.Cursor, sortBy *ent.ResourcePoolOrder) (*ent.ResourcePoolConnection, error) {
 	client := r.ClientFrom(ctx)
 	query := client.ResourcePool.Query()
 
@@ -810,7 +794,7 @@ func (r *queryResolver) QueryEmptyResourcePools(ctx context.Context, resourceTyp
 		query.Where(resourcePool.Not(resourcePool.HasClaims()))
 	}
 
-	if resourcePools, err := query.Paginate(ctx, after, first, before, last); err != nil {
+	if resourcePools, err := query.Paginate(ctx, after, first, before, last, ent.WithResourcePoolOrder(sortBy)); err != nil {
 		log.Error(ctx, err, "Unable to retrieve resource pools")
 		return nil, gqlerror.Errorf("Unable to query resource pools: %v", err)
 	} else {
@@ -819,7 +803,7 @@ func (r *queryResolver) QueryEmptyResourcePools(ctx context.Context, resourceTyp
 }
 
 // QueryResourcePools is the resolver for the QueryResourcePools field.
-func (r *queryResolver) QueryResourcePools(ctx context.Context, resourceTypeID *int, tags *model.TagOr, first *int, last *int, before *ent.Cursor, after *ent.Cursor, filterByResources map[string]interface{}) (*ent.ResourcePoolConnection, error) {
+func (r *queryResolver) QueryResourcePools(ctx context.Context, resourceTypeID *int, tags *model.TagOr, first *int, last *int, before *ent.Cursor, after *ent.Cursor, filterByResources map[string]interface{}, sortBy *ent.ResourcePoolOrder) (*ent.ResourcePoolConnection, error) {
 	client := r.ClientFrom(ctx)
 	query := client.ResourcePool.Query()
 
@@ -843,7 +827,7 @@ func (r *queryResolver) QueryResourcePools(ctx context.Context, resourceTypeID *
 		query.Where(resourcePoolTagPredicate(tags))
 	}
 
-	if resourcePools, err := query.Paginate(ctx, after, first, before, last); err != nil {
+	if resourcePools, err := query.Paginate(ctx, after, first, before, last, ent.WithResourcePoolOrder(sortBy)); err != nil {
 		log.Error(ctx, err, "Unable to retrieve resource pools")
 		return nil, gqlerror.Errorf("Unable to query resource pools: %v", err)
 	} else {
@@ -923,7 +907,7 @@ func (r *queryResolver) QueryResourcePoolHierarchyPath(ctx context.Context, pool
 }
 
 // QueryRootResourcePools is the resolver for the QueryRootResourcePools field.
-func (r *queryResolver) QueryRootResourcePools(ctx context.Context, resourceTypeID *int, tags *model.TagOr, first *int, last *int, before *ent.Cursor, after *ent.Cursor, filterByResources map[string]interface{}) (*ent.ResourcePoolConnection, error) {
+func (r *queryResolver) QueryRootResourcePools(ctx context.Context, resourceTypeID *int, tags *model.TagOr, first *int, last *int, before *ent.Cursor, after *ent.Cursor, filterByResources map[string]interface{}, sortBy *ent.ResourcePoolOrder) (*ent.ResourcePoolConnection, error) {
 	client := r.ClientFrom(ctx)
 	query := client.ResourcePool.
 		Query().
@@ -949,7 +933,7 @@ func (r *queryResolver) QueryRootResourcePools(ctx context.Context, resourceType
 		query.Where(resourcePoolTagPredicate(tags))
 	}
 
-	if resourcePools, err := query.Paginate(ctx, after, first, before, last); err != nil {
+	if resourcePools, err := query.Paginate(ctx, after, first, before, last, ent.WithResourcePoolOrder(sortBy)); err != nil {
 		log.Error(ctx, err, "Unable to retrieve root resource pools")
 		return nil, gqlerror.Errorf("Unable to query resource pools: %v", err)
 	} else {
@@ -958,7 +942,7 @@ func (r *queryResolver) QueryRootResourcePools(ctx context.Context, resourceType
 }
 
 // QueryLeafResourcePools is the resolver for the QueryLeafResourcePools field.
-func (r *queryResolver) QueryLeafResourcePools(ctx context.Context, resourceTypeID *int, tags *model.TagOr, first *int, last *int, before *ent.Cursor, after *ent.Cursor, filterByResources map[string]interface{}) (*ent.ResourcePoolConnection, error) {
+func (r *queryResolver) QueryLeafResourcePools(ctx context.Context, resourceTypeID *int, tags *model.TagOr, first *int, last *int, before *ent.Cursor, after *ent.Cursor, filterByResources map[string]interface{}, sortBy *ent.ResourcePoolOrder) (*ent.ResourcePoolConnection, error) {
 	client := r.ClientFrom(ctx)
 	query := client.ResourcePool.
 		Query().
@@ -985,7 +969,7 @@ func (r *queryResolver) QueryLeafResourcePools(ctx context.Context, resourceType
 		query.Where(resourcePoolTagPredicate(tags))
 	}
 
-	if resourcePools, err := query.Paginate(ctx, after, first, before, last); err != nil {
+	if resourcePools, err := query.Paginate(ctx, after, first, before, last, ent.WithResourcePoolOrder(sortBy)); err != nil {
 		log.Error(ctx, err, "Unable to retrieve leaf resource pools")
 		return nil, gqlerror.Errorf("Unable to query resource pools: %v", err)
 	} else {
@@ -1134,7 +1118,7 @@ func (r *resourcePoolResolver) Resources(ctx context.Context, obj *ent.ResourceP
 }
 
 // AllocatedResources is the resolver for the allocatedResources field.
-func (r *resourcePoolResolver) AllocatedResources(ctx context.Context, obj *ent.ResourcePool, first *int, last *int, before *string, after *string) (*ent.ResourceConnection, error) {
+func (r *resourcePoolResolver) AllocatedResources(ctx context.Context, obj *ent.ResourcePool, first *int, last *int, before *ent.Cursor, after *ent.Cursor) (*ent.ResourceConnection, error) {
 	//pagination https://relay.dev/graphql/connections.htm
 
 	//we query resources only for a specific pool
@@ -1142,22 +1126,10 @@ func (r *resourcePoolResolver) AllocatedResources(ctx context.Context, obj *ent.
 		return rq.Where(resource.HasPoolWith(resourcePool.ID(obj.ID))), nil
 	}
 
-	afterCursor, errA := decodeCursor(after)
-	if errA != nil {
-		log.Error(ctx, errA, "Unable to decode after value (\"%s\") for pagination", *after)
-		return nil, errA
-	}
-
-	beforeCursor, errB := decodeCursor(before)
-	if errB != nil {
-		log.Error(ctx, errB, "Unable to decode before value (\"%s\") for pagination", *before)
-		return nil, errB
-	}
-
-	resourceConnection, err := r.ClientFrom(ctx).Resource.Query().Paginate(ctx, afterCursor, first, beforeCursor, last, ent.WithResourceFilter(onlyForPool))
+	resourceConnection, err := r.ClientFrom(ctx).Resource.Query().Paginate(ctx, after, first, before, last, ent.WithResourceFilter(onlyForPool))
 
 	if err != nil {
-		log.Error(ctx, errB, "Loading resources for a pagination query for pool ID %d failed", obj.ID)
+		log.Error(ctx, err, "Loading resources for a pagination query for pool ID %d failed", obj.ID)
 	}
 
 	return resourceConnection, err
@@ -1165,9 +1137,6 @@ func (r *resourcePoolResolver) AllocatedResources(ctx context.Context, obj *ent.
 
 // Mutation returns generated.MutationResolver implementation.
 func (r *Resolver) Mutation() generated.MutationResolver { return &mutationResolver{r} }
-
-// OutputCursor returns generated.OutputCursorResolver implementation.
-func (r *Resolver) OutputCursor() generated.OutputCursorResolver { return &outputCursorResolver{r} }
 
 // PropertyType returns generated.PropertyTypeResolver implementation.
 func (r *Resolver) PropertyType() generated.PropertyTypeResolver { return &propertyTypeResolver{r} }
@@ -1182,7 +1151,6 @@ func (r *Resolver) Resource() generated.ResourceResolver { return &resourceResol
 func (r *Resolver) ResourcePool() generated.ResourcePoolResolver { return &resourcePoolResolver{r} }
 
 type mutationResolver struct{ *Resolver }
-type outputCursorResolver struct{ *Resolver }
 type propertyTypeResolver struct{ *Resolver }
 type queryResolver struct{ *Resolver }
 type resourceResolver struct{ *Resolver }
@@ -1194,6 +1162,9 @@ type resourcePoolResolver struct{ *Resolver }
 //   - When renaming or deleting a resolver the old code will be put in here. You can safely delete
 //     it when you're done.
 //   - You have helper methods in this file. Move them out to keep these resolver files clean.
+func (r *resourcePoolResolver) PoolDealocationSafetyPeriod(ctx context.Context, obj *ent.ResourcePool) (int, error) {
+	panic(fmt.Errorf("not implemented: PoolDealocationSafetyPeriod - PoolDealocationSafetyPeriod"))
+}
 func (r *resourceResolver) NestedPool(ctx context.Context, obj *ent.Resource) (*ent.ResourcePool, error) {
 	if es, err := obj.Edges.NestedPoolOrErr(); !ent.IsNotLoaded(err) {
 		log.Error(ctx, err, "Unable to retrieve nested pool for resource with ID %d", obj.ID)

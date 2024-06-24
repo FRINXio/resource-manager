@@ -1600,6 +1600,63 @@ func (rp *ResourcePoolQuery) Paginate(
 	return conn, nil
 }
 
+var (
+	// ResourcePoolOrderFieldName orders ResourcePool by name.
+	ResourcePoolOrderFieldName = &ResourcePoolOrderField{
+		field: resourcepool.FieldName,
+		toCursor: func(rp *ResourcePool) Cursor {
+			return Cursor{
+				ID:    rp.ID,
+				Value: rp.Name,
+			}
+		},
+	}
+	// ResourcePoolOrderFieldDealocationSafetyPeriod orders ResourcePool by dealocation_safety_period.
+	ResourcePoolOrderFieldDealocationSafetyPeriod = &ResourcePoolOrderField{
+		field: resourcepool.FieldDealocationSafetyPeriod,
+		toCursor: func(rp *ResourcePool) Cursor {
+			return Cursor{
+				ID:    rp.ID,
+				Value: rp.DealocationSafetyPeriod,
+			}
+		},
+	}
+)
+
+// String implement fmt.Stringer interface.
+func (f ResourcePoolOrderField) String() string {
+	var str string
+	switch f.field {
+	case resourcepool.FieldName:
+		str = "name"
+	case resourcepool.FieldDealocationSafetyPeriod:
+		str = "dealocationSafetyPeriod"
+	}
+	return str
+}
+
+// MarshalGQL implements graphql.Marshaler interface.
+func (f ResourcePoolOrderField) MarshalGQL(w io.Writer) {
+	io.WriteString(w, strconv.Quote(f.String()))
+}
+
+// UnmarshalGQL implements graphql.Unmarshaler interface.
+func (f *ResourcePoolOrderField) UnmarshalGQL(v interface{}) error {
+	str, ok := v.(string)
+	if !ok {
+		return fmt.Errorf("ResourcePoolOrderField %T must be a string", v)
+	}
+	switch str {
+	case "name":
+		*f = *ResourcePoolOrderFieldName
+	case "dealocationSafetyPeriod":
+		*f = *ResourcePoolOrderFieldDealocationSafetyPeriod
+	default:
+		return fmt.Errorf("%s is not a valid ResourcePoolOrderField", str)
+	}
+	return nil
+}
+
 // ResourcePoolOrderField defines the ordering field of ResourcePool.
 type ResourcePoolOrderField struct {
 	field    string
