@@ -381,5 +381,5 @@ http://localhost:8884/healthz/readiness
 Prometheus style metrics are exposed at:
 
 ```
-http://localhost:8884/metrics
+http://localhost:9464/metrics
 ```
